@@ -115,6 +115,7 @@ class HttpBackend implements Backend {
           'password': registration.ownerPassword ?? '',
           'firstName': firstName,
           'lastName': lastName,
+          'phoneNumber': registration.ownerPhoneNo ?? '',
           'role': 3,
           'platform': 'mobile',
         }),

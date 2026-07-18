@@ -6,7 +6,7 @@ import 'package:client/common/domain/booking/booking_draft.dart';
 /// Lifecycle:
 ///   1. Booking flow sets draft via [save].
 ///   2. Guest hits a protected action → auth gate opens.
-///   3. Auth succeeds → caller calls [consume] to get the draft back.
+///   3. Auth succeeds → caller calls [restore] to get the draft back.
 ///   4. On successful booking, call [clear].
 ///   5. On account switch, [clear] is called during logout to prevent
 ///      cross-account draft leakage.

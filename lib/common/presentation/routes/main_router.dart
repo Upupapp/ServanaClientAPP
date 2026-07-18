@@ -96,9 +96,9 @@ class MainRouter {
         final loc = state.matchedLocation;
 
         // Protected routes require a signed-in session.
-        final isProtected = loc.startsWith('/Bookings') ||
-            loc.startsWith('/Messages') ||
-            loc.startsWith('/Profile');
+        final isProtected = loc.startsWith(BookingsScreen.route) ||
+            loc.startsWith(MessagesInboxScreen.route) ||
+            loc.startsWith(ProfileScreen.route);
 
         if (isProtected && !authState.isAuthenticated) {
           return AuthenticationGateScreen.route;

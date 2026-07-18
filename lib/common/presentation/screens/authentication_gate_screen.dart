@@ -49,6 +49,7 @@ class _AuthGateSheet extends StatelessWidget {
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
+                  tooltip: 'Close',
                   icon: Icon(
                     Icons.close_rounded,
                     color: ColorPalette.primaryColorDark,
@@ -99,7 +100,7 @@ class _AuthGateSheet extends StatelessWidget {
 
               // Context copy
               Text(
-                'Your service selections are saved.\nSign in or create an account $reason.',
+                'Sign in or create an account $reason.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: FontPalette.primaryFontFamily,
