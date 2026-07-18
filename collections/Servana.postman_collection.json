@@ -1,0 +1,1501 @@
+{
+  "info": {
+    "_postman_id": "8718e092-bc5a-434d-8a4b-b4770500c49c",
+    "name": "Servana",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "20584132",
+    "_collection_link": "https://go.postman.co/collection/20584132-8718e092-bc5a-434d-8a4b-b4770500c49c?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"firstName\": \"Technician\",\r\n    \"lastName\": \"Account\",\r\n    \"role\": 2\r\n}\r\n// super/dev - 0\r\n// admin - 1\r\n// technician - 2\r\n// customer - 3",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/auth/signup",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Signup",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"firstName\": \"Technician\",\r\n    \"lastName\": \"Account\",\r\n    \"role\": 2\r\n}\r\n// super/dev - 0\r\n// admin - 1\r\n// technician - 2\r\n// customer - 3",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}/api/auth/signup",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "signup"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "429"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1ad-3a5zcy9iQsWvhk3j9BAuS1c/J+0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 10 Feb 2026 18:59:06 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"dbRegister\": {\n            \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n            \"email\": \"bitolak355@deposin.com\",\n            \"firstName\": \"Technician\",\n            \"lastName\": \"Account\",\n            \"role\": \"2\",\n            \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n            \"phoneNumber\": null\n        },\n        \"verify\": \"https://servana-59bee.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=xtr3cWvZua1wLjJP6QhFNnWdV-wwZhF2734N6xaDP-sAAAGcSOvn7w&apiKey=AIzaSyByFnVC6Dw-ecoxLuJMj9bZATfv7P0qf0w&lang=en\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Signin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = JSON.parse(responseBody);\r",
+                  "    postman.setEnvironmentVariable(\"token\", jsonData.data.token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"fcmToken\": \"\"\r\n} ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/auth/signin",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signin"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Signin",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"fcmToken\": \"\"\r\n} ",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}/api/auth/signin",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "signin"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "1453"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"5ad-W/j3DtvoP2WUy1Z8S1DZqA+Y/pM\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 10 Feb 2026 18:59:59 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IjRiMTFjYjdhYjVmY2JlNDFlOTQ4MDk0ZTlkZjRjNWI1ZWNhMDAwOWUiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiVGVjaG5pY2lhbiBBY2NvdW50IiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3NlcnZhbmEtNTliZWUiLCJhdWQiOiJzZXJ2YW5hLTU5YmVlIiwiYXV0aF90aW1lIjoxNzcwNzQ5OTk5LCJ1c2VyX2lkIjoicG4zYlp1T3VkRWUySEtkTUJ4Y2lQTXVYUDNEMyIsInN1YiI6InBuM2JadU91ZEVlMkhLZE1CeGNpUE11WFAzRDMiLCJpYXQiOjE3NzA3NDk5OTksImV4cCI6MTc3MDc1MzU5OSwiZW1haWwiOiJiaXRvbGFrMzU1QGRlcG9zaW4uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYml0b2xhazM1NUBkZXBvc2luLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bOkARcn4wcsvI-_NNvQpZ5gJ2FjDjX2nJyfB2aTx5pSrg8HuPwEzDon5sTZG_ozRs2VIbr5kD6bIl6Qn_Ll_Vl9n6NpaHpVganfDz4GnaXV0iQsAHBVTXbhxVAp4yBUwiBDXAl18D9lnobJZlPr_5EQSvKx8udi18V4ptxYnc2-KTIgh7FqSRF-NPIrVIdr-kGF0Elkdx7o6nCSsdeRayBQ0lgkQbCsbhomiTTV01ZQ-8upmpJMO7Hhs168Epvo5hY__28gxv_YfIa7kyx7Zu3YGFIQosc2BCHzCFIpI5ufvAcY2kZ5SjMynVda878AMQGONyGTuP7_S6UBNT3kBBg\",\n        \"refreshToken\": \"AMf-vBwheOlkQD23Cy1Ms5TQtL_AiB_CuOxjVo87tERzn2YvB5YXYmrZ7OyB72AkRPWtH_Qx2cqpauOIobWFU1Q-aNFuGeQ2EG1hIFzUzQVwpWENZGIGMppXahaOkj1SgDxAWH4LFyxMvCwZuqsnpIoq1m9JfjDMhFsQMqTYcM9B_gr6lKdz4Jk2jUDbP3ZvJ9y-VcuewsrOEluOBStloHUGtBdBfBF4RMNv9KsudaR5gT7UZPgPLVQ\",\n        \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"email\": \"bitolak355@deposin.com\",\n        \"firstName\": \"Technician\",\n        \"lastName\": \"Account\",\n        \"role\": \"2\",\n        \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n        \"phoneNumber\": null\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Firebase-login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "fcmToken",
+                "value": "fcmToken",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"idToken\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYWM0MWY3NTA4OGZlOGUwOWEwN2Q0NDRjZmQ2YjhjZTQ4MTJhMzEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiVGVjaG5pY2lhbiBBY2NvdW50IiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3NlcnZhbmEtNTliZWUiLCJhdWQiOiJzZXJ2YW5hLTU5YmVlIiwiYXV0aF90aW1lIjoxNzczMTY2NTY3LCJ1c2VyX2lkIjoicG4zYlp1T3VkRWUySEtkTUJ4Y2lQTXVYUDNEMyIsInN1YiI6InBuM2JadU91ZEVlMkhLZE1CeGNpUE11WFAzRDMiLCJpYXQiOjE3NzMxNjY1NjcsImV4cCI6MTc3MzE3MDE2NywiZW1haWwiOiJiaXRvbGFrMzU1QGRlcG9zaW4uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYml0b2xhazM1NUBkZXBvc2luLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bF35JlHseSVyHwPlNkiWg274BZQ89GFanCC9zGQnUt5gjbpGLPm7QXee77q9fNV7DU1IWIY8WSgnIh84QbhewKO8HdYLpfrUrwJmOF9YA3Glg9mvBM_pHbO5cL_0WfHmCS3VMydy-uLZgRZPRIExMFJ09cdU0fK6wzG2e-dz9yHaY4-McIipTnGUQtQi8QqF_wV5d7BahxeNlV6KBhVBB26ataPtxhGC4Mr6k2kYteb6Z2FuMAPeFvfGjeNQZaezaRxKcT9gd2B-g_669IEJAxH1qiWtslwNetvFmNOiS5wkj7-YnCaANgnXLIc5ZGIyHigENgY33YxcbYBMXXArRg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/auth/firebase-login",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "firebase-login"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Firebase-login",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fcmToken",
+                    "value": "fcmToken",
+                    "type": "text",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"idToken\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYWM0MWY3NTA4OGZlOGUwOWEwN2Q0NDRjZmQ2YjhjZTQ4MTJhMzEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiVGVjaG5pY2lhbiBBY2NvdW50IiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3NlcnZhbmEtNTliZWUiLCJhdWQiOiJzZXJ2YW5hLTU5YmVlIiwiYXV0aF90aW1lIjoxNzczMTY2NTY3LCJ1c2VyX2lkIjoicG4zYlp1T3VkRWUySEtkTUJ4Y2lQTXVYUDNEMyIsInN1YiI6InBuM2JadU91ZEVlMkhLZE1CeGNpUE11WFAzRDMiLCJpYXQiOjE3NzMxNjY1NjcsImV4cCI6MTc3MzE3MDE2NywiZW1haWwiOiJiaXRvbGFrMzU1QGRlcG9zaW4uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYml0b2xhazM1NUBkZXBvc2luLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bF35JlHseSVyHwPlNkiWg274BZQ89GFanCC9zGQnUt5gjbpGLPm7QXee77q9fNV7DU1IWIY8WSgnIh84QbhewKO8HdYLpfrUrwJmOF9YA3Glg9mvBM_pHbO5cL_0WfHmCS3VMydy-uLZgRZPRIExMFJ09cdU0fK6wzG2e-dz9yHaY4-McIipTnGUQtQi8QqF_wV5d7BahxeNlV6KBhVBB26ataPtxhGC4Mr6k2kYteb6Z2FuMAPeFvfGjeNQZaezaRxKcT9gd2B-g_669IEJAxH1qiWtslwNetvFmNOiS5wkj7-YnCaANgnXLIc5ZGIyHigENgY33YxcbYBMXXArRg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}/api/auth/firebase-login",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "firebase-login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "370"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"172-QZ+FoLSvTHhsF6+xvlpQ80HvE/M\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 10 Mar 2026 18:32:09 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Authenticated successfully\",\n    \"dbRegister\": {\n        \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"email\": \"bitolak355@deposin.com\",\n        \"firstName\": \"Technician\",\n        \"lastName\": \"Account\",\n        \"role\": \"2\",\n        \"createdDate\": \"2026-03-10T10:32:09.825Z\",\n        \"isArchived\": false,\n        \"phoneNumber\": 441234567890\n    },\n    \"firebase\": {\n        \"uid\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"phoneNumber\": null,\n        \"email\": \"bitolak355@deposin.com\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resend Verification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/auth/resendverification?email=bitolak355@deposin.com",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resendverification"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "bitolak355@deposin.com"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Add user address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"userId\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n    \"locationId\": \"ChIJ8T1GpMGzljMRq2q5T1u7I0w\",\n    \"addressOne\": \"Makati City\",\n    \"addressTwo\": null,\n    \"zipCode\": \"\",\n    \"postTown\": \"Metro Manila\",\n    \"country\": \"Philippines\",\n    \"lat\": 14.5547,\n    \"lon\": 121.0244,\n    \"label\": \"Main\",\n    \"isPrimary\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/user/adduseraddress",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "adduseraddress"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Add user address",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"userId\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n    \"locationId\": \"EicyIEdyZWF0IFdlc3Rlcm4gUmQsIENoZWx0ZW5oYW0gR0w1MCwgVUsiMBIuChQKEgnt1sghnBtxSBGSYTRaiVHa0BACKhQKEgmbFrMhnBtxSBHt1tRYPxxipA\",\n    \"addressOne\": \"24 Great Western Road\",\n    \"addressTwo\": null,\n    \"zipCode\": \"GL50 3QN\",\n    \"postTown\": \"Cheltenham\",\n    \"country\": \"UK\",\n    \"lat\": 51.9026702,\n    \"lon\": -2.0897985,\n    \"label\": \"House\",\n    \"isPrimary\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}/api/user/adduseraddress",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "adduseraddress"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "541"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"21d-nvODv6y+55jZDrIjNAtGrEtSPKY\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 12 Feb 2026 17:19:48 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"addressId\": \"CAD-26-737429\",\n        \"locationId\": \"EicyIEdyZWF0IFdlc3Rlcm4gUmQsIENoZWx0ZW5oYW0gR0w1MCwgVUsiMBIuChQKEgnt1sghnBtxSBGSYTRaiVHa0BACKhQKEgmbFrMhnBtxSBHt1tRYPxxipA\",\n        \"addressOne\": \"24 Great Western Road\",\n        \"addressTwo\": null,\n        \"zipCode\": \"GL50 3QN\",\n        \"postTown\": \"Cheltenham\",\n        \"country\": \"UK\",\n        \"label\": \"House\",\n        \"isPrimary\": true,\n        \"lat\": -2.0897985,\n        \"lon\": 51.9026702,\n        \"createdAt\": \"2026-02-12T09:19:47.814Z\",\n        \"createdBy\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"updatedAt\": \"2026-02-12T09:19:47.814Z\",\n        \"updatedBy\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Make Address primary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/user/makeaddressprimary?addressId=CAD-26-737429",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "makeaddressprimary"
+              ],
+              "query": [
+                {
+                  "key": "addressId",
+                  "value": "CAD-26-737429"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all user's address",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_url}}/api/user/alluseraddresses",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "alluseraddresses"
+              ],
+              "query": [
+                {
+                  "key": "isArchived",
+                  "value": null,
+                  "description": "optional: true or false",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": null,
+                  "description": "optional: 2 or 3; If not provided, both 2 and 3 will show.",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user's address by address ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_url}}/api/user/getaddressbyid?id=CAD-26-737429",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "getaddressbyid"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "CAD-26-737429"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Address by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/user/deleteaddress?addressId=CAD-26-290682",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "deleteaddress"
+              ],
+              "query": [
+                {
+                  "key": "addressId",
+                  "value": "CAD-26-290682"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n    \"birthdate\": \"1998-10-04\",\n    \"gender\": \"Male\",\n    \"photoUrl\": \"\",\n    \"phoneNumber\": \"+441234567890\",\n    \"photoFile\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/user/updateprofile",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "updateprofile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete/Archive Account",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}user/archieve?userId=xyz",
+              "host": [
+                "{{api_url}}user"
+              ],
+              "path": [
+                "archieve"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "xyz"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_url}}/api/user/profile?id=pn3bZuOudEe2HKdMBxciPMuXP3D3",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "pn3bZuOudEe2HKdMBxciPMuXP3D3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all registered users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/user/registereduser",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "registereduser"
+              ],
+              "query": [
+                {
+                  "key": "isArchived",
+                  "value": "false",
+                  "description": "optional: true or false",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "2",
+                  "description": "optional: 2 or 3; If not provided, both 2 and 3 will show.",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Get all registered users",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_url}}/api/user/registereduser",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "registereduser"
+                  ],
+                  "query": [
+                    {
+                      "key": "isArchived",
+                      "value": "false",
+                      "description": "optional: true or false",
+                      "disabled": true
+                    },
+                    {
+                      "key": "role",
+                      "value": "2",
+                      "description": "optional: 2 or 3; If not provided, both 2 and 3 will show.",
+                      "type": "text",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "236"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"ec-GQk0Hicw3o//22nxeWLrMslZfx8\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 10 Feb 2026 19:09:49 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n            \"email\": \"bitolak355@deposin.com\",\n            \"firstName\": \"Technician\",\n            \"lastName\": \"Account\",\n            \"role\": \"2\",\n            \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n            \"isArchived\": false,\n            \"phoneNumber\": null\n        }\n    ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Beauty and Wellness",
+          "item": [
+            {
+              "name": "Beauty & Wellness Branches",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_url}}/api/services/:serviceId/branches",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "services",
+                    ":serviceId",
+                    "branches"
+                  ],
+                  "variable": [
+                    {
+                      "key": "serviceId",
+                      "value": "2"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Branch Slots",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_url}}/api/branches/:branchId/slots?date=2026-02-20",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "branches",
+                    ":branchId",
+                    "slots"
+                  ],
+                  "query": [
+                    {
+                      "key": "date",
+                      "value": "2026-02-20",
+                      "type": "text"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "branchId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Aircon",
+          "item": [
+            {
+              "name": "Pricing Aircon qoute",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"optionId\": 27,\n  \"hpKey\": \"1.5hp\",\n  \"heightKey\": \"2nd_floor\",\n  \"distanceKey\": \"5-10km\",\n  \"addonOptionIds\": [2],\n  \"parts\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}/api/quote",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "quote"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create GEO Coverage",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"centerLat\": 14.5547,\n  \"centerLon\": 121.0244,\n  \"radiusKm\": 25,\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}/api/services/:serviceId/coverage-geo",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "services",
+                    ":serviceId",
+                    "coverage-geo"
+                  ],
+                  "variable": [
+                    {
+                      "key": "serviceId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Aircon Geo Coverage",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{api_url}}/api/services/:serviceId/coverage-geo",
+                  "host": [
+                    "{{api_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "services",
+                    ":serviceId",
+                    "coverage-geo"
+                  ],
+                  "variable": [
+                    {
+                      "key": "serviceId",
+                      "value": "2"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Services",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/services",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "services"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Level 2 Services",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/services/:serviceId/level2",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                ":serviceId",
+                "level2"
+              ],
+              "variable": [
+                {
+                  "key": "serviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Service Options with Add ons",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/:serviceId/options-with-addons",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":serviceId",
+                "options-with-addons"
+              ],
+              "variable": [
+                {
+                  "key": "serviceId",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Worker",
+      "item": [
+        {
+          "name": "Technicians",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{api_url}}/api/workers/role/2",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "workers",
+                "role",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Aestheticians",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/workers/role/4",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "workers",
+                "role",
+                "4"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Workers by uid",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/workers/:uid",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "workers",
+                ":uid"
+              ],
+              "variable": [
+                {
+                  "key": "uid",
+                  "value": "pn3bZuOudEe2HKdMBxciPMuXP3D3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/workers/location/:uid",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "workers",
+                "location",
+                ":uid"
+              ],
+              "variable": [
+                {
+                  "key": "uid",
+                  "value": "pn3bZuOudEe2HKdMBxciPMuXP3D3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Technician Location",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n  \"latitude\": 14.553,\n  \"longitude\": 121.020,\n  \"isOnline\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/workers/location",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "workers",
+                "location"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Booking for Aircon",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userAddressId\": \"CAD-26-940687\",\n  \"serviceOptionId\": 27,\n  \"schedule\": \"2026-02-20T10:00:00Z\",\n  \"paymentMethod\": \"CASH\",\n  \"pricing\": {\n    \"optionId\": 27,\n    \"hpKey\": \"1.5hp\",\n    \"heightKey\": \"2nd_floor\",\n    \"distanceKey\": \"5-10km\",\n    \"addonOptionIds\": [2]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/bookings?userId=pn3bZuOudEe2HKdMBxciPMuXP3D3",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "pn3bZuOudEe2HKdMBxciPMuXP3D3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Booking for Beauty & Wellness",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userAddressId\": \"CAD-26-940687\",\n  \"serviceOptionId\": 1,\n  \"schedule\": \"2026-02-23T14:00:00.000Z\",\n  \"paymentMethod\": \"CASH\",\n  \"pricing\": {\n    \"addonOptionIds\": [6, 7]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/bookings?userId=pn3bZuOudEe2HKdMBxciPMuXP3D3",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "pn3bZuOudEe2HKdMBxciPMuXP3D3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{api_url}}/api/:id/confirm-otp?otp=712801",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":id",
+                "confirm-otp"
+              ],
+              "query": [
+                {
+                  "key": "otp",
+                  "value": "712801"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "9"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/:id",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "9"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Booking Tracking",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/:id/tracking",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":id",
+                "tracking"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "9"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "Gcash Proof",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"referenceNo\":\"12345\",\n    \"proofUrl\":\"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/:bookingId/gcash-submit",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":bookingId",
+                "gcash-submit"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "9"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve GCASH Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/:bookingId/approve",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":bookingId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "9"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Cash Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{api_url}}/api/:bookingId/mark-cash-paid",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                ":bookingId",
+                "mark-cash-paid"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "6"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Create Slots",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"branchId\":1,\n     \"slotTime\":\"15:00:00\", \n     \"maxCapacity\":3\n\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}/api/branches/slots",
+              "host": [
+                "{{api_url}}"
+              ],
+              "path": [
+                "api",
+                "branches",
+                "slots"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "306195353425",
+    "project_id": "servana-1d13b",
+    "storage_bucket": "servana-1d13b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:306195353425:android:cc084398b4dd6e49f38d70",
+        "android_client_info": {
+          "package_name": "com.servana.client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkOUK84lSzwyg-u88MiQolfM2Tt_e53J0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:306195353425:android:9bf73ee9d7b1c509f38d70",
+        "android_client_info": {
+          "package_name": "com.servana.merchant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkOUK84lSzwyg-u88MiQolfM2Tt_e53J0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:306195353425:android:29ce6108818e60baf38d70",
+        "android_client_info": {
+          "package_name": "com.servana.serviceclient"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkOUK84lSzwyg-u88MiQolfM2Tt_e53J0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

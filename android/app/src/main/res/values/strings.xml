@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- White-label: override these per flavor/build variant -->
+    <string name="app_name">Servana</string>
+    <!-- Default key for existing build; override per flavor/build variant -->
+    <string name="google_maps_key">AIzaSyBl1ZmjZpUJ683IJak5S7ny5xj6iShBjP0</string>
+</resources>
+

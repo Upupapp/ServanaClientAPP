@@ -1,0 +1,429 @@
+import 'dart:convert';
+import 'dart:developer' as dev;
+
+import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:http/http.dart' as http;
+
+/// Thin, low-level client that wraps every Servana REST API endpoint.
+///
+/// Auth is handled automatically: on each request the client reads the current
+/// session from [SessionService] and attaches a `Bearer` token if one exists.
+/// Callers never need to pass tokens manually.
+class ServanaApiClient {
+  final String baseUrl;
+  final http.Client _client;
+
+  ServanaApiClient({
+    required this.baseUrl,
+    http.Client? client,
+  }) : _client = client ?? http.Client();
+
+  Uri _uri(String path, [Map<String, dynamic>? query]) {
+    return Uri.parse('$baseUrl$path').replace(
+      queryParameters: query?.map(
+        (key, value) => MapEntry(key, value?.toString()),
+      ),
+    );
+  }
+
+  Future<Map<String, String>> _headers() async {
+    final session = await SessionService.getSession();
+    final token = session?.token;
+    if (token != null && token.isNotEmpty) {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+    }
+    return {'Content-Type': 'application/json'};
+  }
+
+  Future<Map<String, dynamic>> _decodeJson(http.Response response) async {
+    final status = response.statusCode;
+    if (status < 200 || status >= 300) {
+      dev.log(
+        'HTTP $status ${response.request?.method ?? ''} ${response.request?.url ?? ''}\n${response.body}',
+        name: 'ServanaApi',
+      );
+      throw ServanaApiException(
+        statusCode: status,
+        body: response.body,
+      );
+    }
+    if (response.body.isEmpty) return <String, dynamic>{};
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    return <String, dynamic>{'data': decoded};
+  }
+
+  // ───────────────────────── Auth ─────────────────────────
+  // Auth endpoints intentionally skip the auto-token (user isn't logged in yet).
+
+  Future<Map<String, dynamic>> signup({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required int role,
+  }) async {
+    final uri = _uri('/api/auth/signup');
+    final res = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'firstName': firstName,
+        'lastName': lastName,
+        'role': role,
+        'platform': 'mobile',
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> signin({
+    required String email,
+    required String password,
+    String fcmToken = '',
+  }) async {
+    final uri = _uri('/api/auth/signin');
+    final res = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'fcmToken': fcmToken,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> firebaseLogin({
+    required String idToken,
+    String? fcmToken,
+  }) async {
+    final uri = _uri('/api/auth/firebase-login');
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (fcmToken != null && fcmToken.isNotEmpty) 'fcmToken': fcmToken,
+    };
+    final res = await _client.post(
+      uri,
+      headers: headers,
+      body: jsonEncode({'idToken': idToken}),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> resendVerification(
+      {required String email}) async {
+    final uri = _uri('/api/auth/resendverification', {'email': email});
+    final res = await _client.get(uri);
+    return _decodeJson(res);
+  }
+
+  // ───────────────────── User / Profile ─────────────────────
+
+  Future<Map<String, dynamic>> addUserAddress({
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _uri('/api/user/adduseraddress');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> makeAddressPrimary({
+    required String addressId,
+  }) async {
+    final uri = _uri(
+      '/api/user/makeaddressprimary',
+      {'addressId': addressId},
+    );
+    final res = await _client.put(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getAllUserAddresses({
+    bool? isArchived,
+    int? role,
+  }) async {
+    final query = <String, dynamic>{};
+    if (isArchived != null) query['isArchived'] = isArchived;
+    if (role != null) query['role'] = role;
+    final uri =
+        _uri('/api/user/alluseraddresses', query.isEmpty ? null : query);
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getAddressById({
+    required String addressId,
+  }) async {
+    final uri = _uri('/api/user/getaddressbyid', {'id': addressId});
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> deleteAddress({
+    required String addressId,
+  }) async {
+    final uri = _uri('/api/user/deleteaddress', {'addressId': addressId});
+    final res = await _client.delete(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _uri('/api/user/updateprofile');
+    final res = await _client.put(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getUserProfile({required String id}) async {
+    final uri = _uri('/api/user/profile', {'id': id});
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getRegisteredUsers({
+    bool? isArchived,
+    int? role,
+  }) async {
+    final query = <String, dynamic>{};
+    if (isArchived != null) query['isArchived'] = isArchived;
+    if (role != null) query['role'] = role;
+    final uri = _uri('/api/user/registereduser', query.isEmpty ? null : query);
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  // ───────────────────── Services & Coverage ─────────────────────
+
+  Future<Map<String, dynamic>> listServices() async {
+    final uri = _uri('/api/services');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> listLevel2Services({
+    required int serviceId,
+  }) async {
+    final uri = _uri('/api/services/$serviceId/level2');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> listOptionsWithAddons({
+    required int serviceId,
+  }) async {
+    final uri = _uri('/api/$serviceId/options-with-addons');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getBeautyAndWellnessBranches({
+    required int serviceId,
+  }) async {
+    final uri = _uri('/api/services/$serviceId/branches');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getBranchSlots({
+    required int branchId,
+    required DateTime date,
+  }) async {
+    final uri = _uri(
+      '/api/branches/$branchId/slots',
+      {'date': date.toIso8601String().split('T').first},
+    );
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> createGeoCoverage({
+    required int serviceId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _uri('/api/services/$serviceId/coverage-geo');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getGeoCoverage({
+    required int serviceId,
+  }) async {
+    final uri = _uri('/api/services/$serviceId/coverage-geo');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getAirconQuote({
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _uri('/api/quote');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getUserBookings({
+    required String userId,
+  }) async {
+    final uri = _uri('/api/users/$userId/bookings');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  // ───────────────────── Workers ─────────────────────
+
+  Future<Map<String, dynamic>> listWorkersByRole(int role) async {
+    final uri = _uri('/api/workers/role/$role');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getWorkerByUid(String uid) async {
+    final uri = _uri('/api/workers/$uid');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getWorkerLocation(String uid) async {
+    final uri = _uri('/api/workers/location/$uid');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> updateWorkerLocation(
+      Map<String, dynamic> payload) async {
+    final uri = _uri('/api/workers/location');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  // ───────────────────── Bookings & Payment ─────────────────────
+
+  Future<Map<String, dynamic>> createBooking({
+    required String userId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _uri('/api/bookings', {'userId': userId});
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getBooking(int bookingId) async {
+    final uri = _uri('/api/$bookingId');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// Verifies the booking's `otpCode` while it is still in `PENDING_OTP`.
+  /// The code travels in the query string with an empty body, and the BE
+  /// returns 400 (`{success:false,message:...}`) for a wrong code.
+  Future<Map<String, dynamic>> confirmOtp({
+    required int bookingId,
+    required String otp,
+  }) async {
+    final uri = _uri('/api/$bookingId/confirm-otp', {'otp': otp});
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getBookingTracking(int bookingId) async {
+    final uri = _uri('/api/$bookingId/tracking');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> submitGcashProof({
+    required int bookingId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _uri('/api/$bookingId/gcash-submit');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> approveGcashPayment({
+    required int bookingId,
+  }) async {
+    final uri = _uri('/api/$bookingId/approve');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> approveCashPayment({
+    required int bookingId,
+  }) async {
+    final uri = _uri('/api/$bookingId/mark-cash-paid');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> createPaymongoSession({
+    required int bookingId,
+  }) async {
+    final uri = _uri('/api/$bookingId/paymongo/create');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  // ───────────────────── Admin ─────────────────────
+
+  Future<Map<String, dynamic>> createBranchSlot(
+      Map<String, dynamic> payload) async {
+    final uri = _uri('/api/branches/slots');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode(payload),
+    );
+    return _decodeJson(res);
+  }
+}
+
+class ServanaApiException implements Exception {
+  final int statusCode;
+  final String body;
+
+  const ServanaApiException({
+    required this.statusCode,
+    required this.body,
+  });
+
+  @override
+  String toString() =>
+      'ServanaApiException(statusCode: $statusCode, body: $body)';
+}
