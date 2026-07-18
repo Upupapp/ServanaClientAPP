@@ -8,7 +8,7 @@ class SessionService {
   static Future<void> saveSession(UserSession session) async {
     final hive = HiveHelper();
     var box = await hive.openBox("session");
-    box.put("user", session);
+    await box.put("user", session);
   }
 
   static Future<void> deleteSession() async {

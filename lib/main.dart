@@ -21,7 +21,7 @@ import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/routes/main_router.dart';
 import 'package:toastification/toastification.dart';
 
-Future<void> main() async {
+void main() {
   runZonedGuarded(_bootstrap, _onZoneError);
 }
 
@@ -49,7 +49,13 @@ Future<void> _bootstrap() async {
 
 void _onZoneError(Object error, StackTrace stack) {
   if (!kDebugMode) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    // Guard: Crashlytics requires Firebase to be initialized. If this handler
+    // fires before initializeApp() completes (e.g. Hive failure), the call
+    // itself would throw FirebaseException(app-not-initialized) and create a
+    // second unhandled exception — so we swallow any secondary failure here.
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {}
   }
 }
 
