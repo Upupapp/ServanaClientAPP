@@ -30,7 +30,7 @@ void main() {
     });
 
     test('all allowed route names pass', () {
-      const allowed = ['Bookings', 'BookingDetail', 'Messages', 'Chat', 'Profile', 'Notifications'];
+      const allowed = ['Bookings', 'BookingDetail', 'Messages', 'BookingChat', 'Profile', 'Notifications'];
       for (final r in allowed) {
         final intent = AuthReturnIntent.validated(
           destination: ProtectedDestination.bookings,

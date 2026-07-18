@@ -51,7 +51,8 @@ class AuthenticationBloc
 
   Future<void> _onCheckSession(
       AuthCheckSession event, Emitter<AuthenticationState> emit) async {
-    emit(AuthenticationLoading());
+    // No Loading state — passive session restore should be silent.
+    // Only user-initiated actions (login, logout) emit Loading.
     try {
       final session = await SessionService.getSession();
       if (session != null && session.token.isNotEmpty) {

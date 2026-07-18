@@ -35,7 +35,7 @@ class AuthReturnIntent {
     'Bookings',
     'BookingDetail',
     'Messages',
-    'Chat',
+    'BookingChat',
     'Profile',
     'Notifications',
   };
