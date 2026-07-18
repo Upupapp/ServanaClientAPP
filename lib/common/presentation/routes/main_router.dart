@@ -101,7 +101,10 @@ class MainRouter {
             loc.startsWith(ProfileScreen.route);
 
         if (isProtected && !authState.isAuthenticated) {
-          return AuthenticationGateScreen.route;
+          // Always land on WelcomeScreen — post-logout and unauthenticated
+          // deep-link attempts both need a clean entry point, not the auth
+          // gate interstitial (which has no return context here).
+          return WelcomeScreen.route;
         }
         return null;
       },

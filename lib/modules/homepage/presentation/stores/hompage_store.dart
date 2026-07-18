@@ -80,7 +80,10 @@ abstract class _HomeStore with Store {
       final res = await repo.getBookings();
       // Discard response if logout fired while we were awaiting — prevents
       // stale old-account data from writing into a reset store (LEAKSHIELD §7).
-      if (_generation != gen) return;
+      if (_generation != gen) {
+        isLoading = false;
+        return;
+      }
       // Always replace the list with the authoritative API response so an
       // empty result shows a truthful empty state (LEAKSHIELD §9).
       bookings.clear();
