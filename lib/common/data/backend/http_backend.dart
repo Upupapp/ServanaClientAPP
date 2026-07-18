@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:client/common/data/backend/backend.dart';
@@ -24,11 +25,13 @@ import 'package:http/http.dart' as http;
 
 /// Real HTTP backend that talks to the Servana REST API.
 class HttpBackend implements Backend {
+  static const Duration _kTimeout = Duration(seconds: 30);
+
   final String baseUrl;
   final http.Client _client;
 
   HttpBackend({required this.baseUrl, http.Client? client})
-      : _client = client ?? http.Client();
+      : _client = _BackendTimeoutClient(client ?? http.Client(), _kTimeout);
 
   // ───────────────────────── Auth ─────────────────────────
 
@@ -566,4 +569,21 @@ class HttpBackend implements Backend {
   }) {
     throw UnimplementedError('sendJobOrderMessage is not yet integrated');
   }
+}
+
+/// Wraps every outgoing request with a [Duration] timeout.
+/// On timeout, throws [TimeoutException] which the callers' `catch (e)` blocks
+/// catch and return as "Could not reach server."
+class _BackendTimeoutClient extends http.BaseClient {
+  _BackendTimeoutClient(this._inner, this._timeout);
+
+  final http.Client _inner;
+  final Duration _timeout;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      _inner.send(request).timeout(_timeout);
+
+  @override
+  void close() => _inner.close();
 }

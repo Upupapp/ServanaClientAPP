@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:client/common/domain/booking/booking_draft.dart';
 
 /// In-memory singleton that holds the active booking draft across the auth
@@ -34,4 +36,9 @@ class BookingDraftService {
 
   /// Fully consumes the draft. Call after booking is submitted.
   void clear() => _draft = null;
+
+  /// Bypasses [copyWith]'s updatedAt reset so expiry can be tested at the
+  /// service level. FOR TESTING ONLY.
+  @visibleForTesting
+  void injectDraftForTesting(BookingDraft draft) => _draft = draft;
 }

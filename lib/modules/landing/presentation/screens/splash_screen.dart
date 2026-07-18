@@ -3,9 +3,12 @@ import 'dart:math' as math;
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
@@ -135,6 +138,15 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) _maybeNavigate();
+    });
+
+    // Sync the AuthenticationBloc state after the first frame so widgets that
+    // listen to BLoC state see AuthenticationAuthenticated / AuthenticationGuest
+    // rather than the initial AuthenticationUninitialized on cold start.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        BlocProvider.of<AuthenticationBloc>(context).add(AuthCheckSession());
+      }
     });
 
     _checkSession();
