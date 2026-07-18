@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
@@ -148,6 +150,11 @@ class _SplashScreenState extends State<SplashScreen>
       // Hive / encryption / plugin init failure — fall through to Welcome.
     }
     if (!mounted) return;
+    // Inform the router guard of the auth status so protected routes can
+    // redirect correctly even before the BLoC's AuthCheckSession is fired.
+    dpLocator<AuthStateService>().update(
+      hasSession ? AuthStatus.authenticated : AuthStatus.guest,
+    );
     _hasSession = hasSession;
     _sessionCheckDone = true;
     _maybeNavigate();

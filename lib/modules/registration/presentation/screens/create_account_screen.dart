@@ -254,6 +254,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                     .copyWith(ownerEmail: value);
                               },
                             ),
+                            const SizedBox(height: 20),
+                            CustomTextField(
+                              label: "Mobile Number (optional)",
+                              inputType: TextInputType.phone,
+                              enabled: !isLoading,
+                              value: bloc.registration.ownerPhoneNo,
+                              onChange: (value) {
+                                bloc.registration = bloc.registration
+                                    .copyWith(ownerPhoneNo: value.trim());
+                              },
+                            ),
                             const SizedBox(
                               height: 20,
                             ),

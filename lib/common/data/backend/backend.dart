@@ -97,4 +97,7 @@ abstract interface class Backend {
 
   Future<({bool isSuccess, String? message})> resendVerificationEmail(
       {required String email});
+
+  /// Revoke the current session on the backend (best-effort; no-op if unsupported).
+  Future<void> logout();
 }

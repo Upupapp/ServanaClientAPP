@@ -20,6 +20,8 @@ import 'package:client/common/data/backend/backend.dart';
 import 'package:client/common/data/backend/http_backend.dart';
 import 'package:client/common/data/backend/mock_backend.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/domain/booking/booking_draft_service.dart';
+import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/common/services/location_service.dart';
@@ -34,6 +36,12 @@ final dpLocator = GetIt.instance;
 
 void initInjector(AppConfig config) {
   dpLocator.registerSingleton<AppConfig>(config);
+
+  // Auth state notifier — router and BLoC share this singleton.
+  dpLocator.registerLazySingleton(() => AuthStateService());
+
+  // Booking draft — lives in memory, cleared on logout / booking submit.
+  dpLocator.registerLazySingleton(() => BookingDraftService());
 
   // SDK-ish services
   dpLocator.registerLazySingleton(() => LocationService());

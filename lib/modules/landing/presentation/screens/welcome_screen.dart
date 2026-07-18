@@ -2,8 +2,12 @@ import 'dart:math' as math;
 
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/presentation/widgets/servana_banner.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
+import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -60,6 +64,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   void _goToAuth() => context.goNamed(AuthenticationScreen.routeName);
 
+  /// Skip the onboarding and browse as a guest — goes straight to the home
+  /// feed without requiring a sign-in.
+  void _browseAsGuest() {
+    BlocProvider.of<AuthenticationBloc>(context).add(AuthBrowseAsGuest());
+    context.goNamed(HomeScreen.routeName);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,7 +111,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       top: 17 * scale,
                       right: 26 * scale,
                       child: GestureDetector(
-                        onTap: _goToAuth,
+                        onTap: _browseAsGuest,
                         behavior: HitTestBehavior.opaque,
                         child: Padding(
                           padding: EdgeInsets.symmetric(

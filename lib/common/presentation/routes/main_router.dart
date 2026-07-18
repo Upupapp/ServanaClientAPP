@@ -1,5 +1,8 @@
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/data/models/merchant_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
+import 'package:client/common/services/auth_state_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
@@ -78,10 +81,30 @@ class MainRouter {
 
   static GoRouter router() {
     final rootNavigatorKey = GlobalKey<NavigatorState>();
+    final authState = dpLocator<AuthStateService>();
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       initialLocation: SplashScreen.route,
       debugLogDiagnostics: kDebugMode,
+      // Re-evaluate redirect whenever auth status changes (login/logout/guest).
+      refreshListenable: authState,
+      redirect: (context, state) {
+        // Status unknown = splash is still running its session check.
+        // Don't redirect yet — the splash will navigate when ready.
+        if (authState.status == AuthStatus.unknown) return null;
+
+        final loc = state.matchedLocation;
+
+        // Protected routes require a signed-in session.
+        final isProtected = loc.startsWith('/Bookings') ||
+            loc.startsWith('/Messages') ||
+            loc.startsWith('/Profile');
+
+        if (isProtected && !authState.isAuthenticated) {
+          return AuthenticationGateScreen.route;
+        }
+        return null;
+      },
       routes: [
         GoRoute(
           path: SplashScreen.route,
@@ -448,6 +471,14 @@ class MainRouter {
           builder: (context, state) => BookingChatScreen(
             jobOrderId: state.pathParameters["jobOrderId"] ?? '',
             title: state.extra is String ? state.extra as String : null,
+          ),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: AuthenticationGateScreen.route,
+          name: AuthenticationGateScreen.routeName,
+          builder: (context, state) => AuthenticationGateScreen(
+            returnIntent: null,
           ),
         ),
       ],

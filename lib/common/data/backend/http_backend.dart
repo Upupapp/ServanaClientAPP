@@ -148,6 +148,12 @@ class HttpBackend implements Backend {
   }
 
   @override
+  Future<void> logout() async {
+    // No backend logout endpoint currently. Client-side session clear suffices.
+    // TODO: when BE adds POST /api/auth/logout, call it here.
+  }
+
+  @override
   Future<({bool isSuccess, String? message})> resendVerificationEmail(
       {required String email}) async {
     final uri = Uri.parse('$baseUrl/api/auth/resendverification')

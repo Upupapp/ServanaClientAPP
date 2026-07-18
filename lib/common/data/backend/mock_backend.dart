@@ -1430,4 +1430,7 @@ class MockBackend implements Backend {
     await Future.delayed(const Duration(milliseconds: 300));
     return (isSuccess: true, message: 'Verification email sent (mock).');
   }
+
+  @override
+  Future<void> logout() async {}
 }
