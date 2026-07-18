@@ -12,7 +12,12 @@ class SessionService {
   }
 
   static Future<void> deleteSession() async {
-    Hive.deleteBoxFromDisk("session");
+    try {
+      if (Hive.isBoxOpen('session')) {
+        await Hive.box('session').close();
+      }
+    } catch (_) {}
+    await Hive.deleteBoxFromDisk('session');
   }
 
   static Future<UserSession?> getSession() async {

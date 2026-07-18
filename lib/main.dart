@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/config/app_config.dart';
 import 'package:client/common/config/app_theme.dart';
+import 'package:client/firebase_options.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_options_events.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -16,18 +22,35 @@ import 'package:client/common/presentation/routes/main_router.dart';
 import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
+  runZonedGuarded(_bootstrap, _onZoneError);
+}
+
+Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Hive.initFlutter();
+  await Hive.initFlutter();
   HiveHelper.registerAdapters();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  if (!kDebugMode) {
+    FlutterError.onError =
+        FirebaseCrashlytics.instance.recordFlutterFatalError;
+  }
 
   final config = AppConfig.fromEnv();
   ColorPalette.applyBrand(config.brand);
   initInjector(config);
 
-  // FreeRasp.initThreatDetection();
-
   runApp(MyApp(config: config));
+}
+
+void _onZoneError(Object error, StackTrace stack) {
+  if (!kDebugMode) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+  }
 }
 
 class MyApp extends StatefulWidget {

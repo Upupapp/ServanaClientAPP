@@ -10,13 +10,15 @@ import 'package:http/http.dart' as http;
 /// session from [SessionService] and attaches a `Bearer` token if one exists.
 /// Callers never need to pass tokens manually.
 class ServanaApiClient {
+  static const Duration _kTimeout = Duration(seconds: 30);
+
   final String baseUrl;
   final http.Client _client;
 
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     return Uri.parse('$baseUrl$path').replace(
@@ -426,4 +428,26 @@ class ServanaApiException implements Exception {
   @override
   String toString() =>
       'ServanaApiException(statusCode: $statusCode, body: $body)';
+}
+
+/// Wraps an [http.Client] and applies a per-request timeout.
+/// Timed-out requests throw [ServanaApiException] with status 408.
+class _TimeoutClient extends http.BaseClient {
+  _TimeoutClient(this._inner, this._timeout);
+
+  final http.Client _inner;
+  final Duration _timeout;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      _inner.send(request).timeout(
+        _timeout,
+        onTimeout: () => throw ServanaApiException(
+          statusCode: 408,
+          body: 'Request timed out after ${_timeout.inSeconds}s',
+        ),
+      );
+
+  @override
+  void close() => _inner.close();
 }

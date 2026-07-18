@@ -36,7 +36,7 @@ class AppConfig {
   factory AppConfig.fromEnv() {
     const brandId = String.fromEnvironment('BRAND', defaultValue: 'servana');
     const mockBackend =
-        bool.fromEnvironment('https://api.servana.com.ph', defaultValue: false);
+        bool.fromEnvironment('MOCK_BACKEND', defaultValue: false);
     const baseUrl = String.fromEnvironment('API_BASE_URL',
         defaultValue: 'https://api.servana.com.ph');
 

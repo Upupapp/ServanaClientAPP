@@ -1,5 +1,6 @@
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/data/models/merchant_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
@@ -80,7 +81,7 @@ class MainRouter {
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       initialLocation: SplashScreen.route,
-      debugLogDiagnostics: true,
+      debugLogDiagnostics: kDebugMode,
       routes: [
         GoRoute(
           path: SplashScreen.route,
@@ -131,11 +132,20 @@ class MainRouter {
                       parentNavigatorKey: rootNavigatorKey,
                       path: JobOrderScreen.route,
                       name: JobOrderScreen.routeName,
-                      builder: (context, state) => JobOrderScreen(
-                        service: state.extra as MerchantServiceModel,
-                        merchantId: state.pathParameters["id"] as String,
-                        merchantName: state.pathParameters["name"] as String,
-                      ),
+                      builder: (context, state) {
+                        final extra = state.extra;
+                        if (extra is! MerchantServiceModel) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => context.goNamed(HomeScreen.routeName),
+                          );
+                          return const Scaffold();
+                        }
+                        return JobOrderScreen(
+                          service: extra,
+                          merchantId: state.pathParameters["id"] ?? '',
+                          merchantName: state.pathParameters["name"] ?? '',
+                        );
+                      },
                       routes: [
                         GoRoute(
                           parentNavigatorKey: rootNavigatorKey,
@@ -151,15 +161,22 @@ class MainRouter {
                       path: StoreItemsScreen.route,
                       name: StoreItemsScreen.routeName,
                       builder: (context, state) {
-                        final payload = state.extra as ({
-                          String merchantId,
-                          String merchantName,
-                          String? categoryName
-                        });
+                        final extra = state.extra;
+                        if (extra
+                            is! ({
+                              String merchantId,
+                              String merchantName,
+                              String? categoryName
+                            })) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => context.goNamed(HomeScreen.routeName),
+                          );
+                          return const Scaffold();
+                        }
                         return StoreItemsScreen(
-                          merchantId: payload.merchantId,
-                          merchantName: payload.merchantName,
-                          categoryName: payload.categoryName,
+                          merchantId: extra.merchantId,
+                          merchantName: extra.merchantName,
+                          categoryName: extra.categoryName,
                         );
                       },
                     ),
@@ -278,10 +295,16 @@ class MainRouter {
                       path: BwPaymongoScreen.route,
                       name: BwPaymongoScreen.routeName,
                       builder: (context, state) {
-                        final args = state.extra as PaymongoCheckoutArgs;
+                        final extra = state.extra;
+                        if (extra is! PaymongoCheckoutArgs) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => context.goNamed(HomeScreen.routeName),
+                          );
+                          return const Scaffold();
+                        }
                         return BwPaymongoScreen(
-                          checkoutUrl: args.checkoutUrl,
-                          verifyPaymentStatus: args.verifyPaymentStatus,
+                          checkoutUrl: extra.checkoutUrl,
+                          verifyPaymentStatus: extra.verifyPaymentStatus,
                         );
                       },
                     ),
@@ -296,12 +319,19 @@ class MainRouter {
                           path: ItemOptionMenuScreen.route,
                           name: ItemOptionMenuScreen.routeName,
                           builder: (context, state) {
-                            final payload = state.extra as ({
-                              MerchantServiceModel service,
-                              String? joIId
-                            });
+                            final extra = state.extra;
+                            if (extra
+                                is! ({
+                                  MerchantServiceModel service,
+                                  String? joIId
+                                })) {
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => context.goNamed(HomeScreen.routeName),
+                              );
+                              return const Scaffold();
+                            }
                             return ItemOptionMenuScreen(
-                              service: payload.service,
+                              service: extra.service,
                             );
                           },
                         ),
@@ -345,16 +375,23 @@ class MainRouter {
           path: JobOrderSummaryScreen.route,
           name: JobOrderSummaryScreen.routeName,
           builder: (context, state) => JobOrderSummaryScreen(
-            id: state.pathParameters["id"] as String,
+            id: state.pathParameters["id"] ?? '',
           ),
         ),
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,
           path: BookingDetailScreen.route,
           name: BookingDetailScreen.routeName,
-          builder: (context, state) => BookingDetailScreen(
-            booking: state.extra as JobOrder,
-          ),
+          builder: (context, state) {
+            final extra = state.extra;
+            if (extra is! JobOrder) {
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => context.goNamed(HomeScreen.routeName),
+              );
+              return const Scaffold();
+            }
+            return BookingDetailScreen(booking: extra);
+          },
         ),
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,
@@ -409,8 +446,8 @@ class MainRouter {
           path: BookingChatScreen.route,
           name: BookingChatScreen.routeName,
           builder: (context, state) => BookingChatScreen(
-            jobOrderId: state.pathParameters["jobOrderId"] as String,
-            title: state.extra as String?,
+            jobOrderId: state.pathParameters["jobOrderId"] ?? '',
+            title: state.extra is String ? state.extra as String : null,
           ),
         ),
       ],
