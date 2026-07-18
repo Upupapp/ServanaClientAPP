@@ -1,8 +1,12 @@
+import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/common/services/error_message_mapper.dart';
+import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
+import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
+import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'authentication_event.dart';
 import 'authentication_state.dart';
@@ -77,6 +81,14 @@ class AuthenticationBloc
       // Logout is best-effort; always clear local state.
     }
     await SessionService.deleteSession();
+    // Reset all private-data singletons so no previous account's data
+    // leaks to the next user of the device (LEAKSHIELD §5).
+    try {
+      dpLocator<HomeStore>().resetPrivateData();
+      dpLocator<AirconBookingStore>().reset();
+      dpLocator<BwBookingStore>().reset();
+      dpLocator<BookingDraftService>().clear();
+    } catch (_) {}
     _notify(AuthStatus.guest);
     emit(AuthenticationLoggedOut());
   }

@@ -133,11 +133,11 @@ mixin _$HomeStore on _HomeStore, Store {
       ActionController(name: '_HomeStore', context: context);
 
   @override
-  void addMockBooking(JobOrder booking) {
+  void resetPrivateData() {
     final _$actionInfo = _$_HomeStoreActionController.startAction(
-        name: '_HomeStore.addMockBooking');
+        name: '_HomeStore.resetPrivateData');
     try {
-      return super.addMockBooking(booking);
+      return super.resetPrivateData();
     } finally {
       _$_HomeStoreActionController.endAction(_$actionInfo);
     }

@@ -1,12 +1,12 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
-import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatefulWidget {
   static String routeName = "Profile";
@@ -158,10 +158,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
-                      onPressed: () async {
-                        await SessionService.deleteSession();
-                        if (!context.mounted) return;
-                        context.goNamed(WelcomeScreen.routeName);
+                      onPressed: () {
+                        // Route through AuthenticationBloc so it clears all
+                        // private singletons and updates AuthStateService
+                        // before the router redirects (LEAKSHIELD §2, §5).
+                        context.read<AuthenticationBloc>().add(AuthLogout());
                       },
                       child: Text(
                         "Logout",

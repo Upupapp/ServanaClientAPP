@@ -344,8 +344,9 @@ class JobOrderBloc extends Bloc<JOEvent, JOState> {
       createdDate: DateTime.now(),
     );
 
-    // Add to store so it appears in booking history
-    store.addMockBooking(mockBooking);
+    // Optimistically add to store so it appears immediately; upserts by ID
+    // so the real booking replaces it when loadBookings() next succeeds.
+    store.addBooking(mockBooking);
 
     emit(const DoneJOState(""));
   }

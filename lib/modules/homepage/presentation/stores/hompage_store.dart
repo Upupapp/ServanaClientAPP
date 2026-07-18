@@ -25,6 +25,12 @@ abstract class _HomeStore with Store {
     required this.repo,
     required this.locationSerive,
   });
+
+  // Incremented on every resetPrivateData() call. Async actions capture this
+  // at the start and bail before writing results if it changed — prevents
+  // stale in-flight responses from leaking after logout (LEAKSHIELD §7).
+  int _generation = 0;
+
   @observable
   bool isLoading = false;
 
@@ -67,16 +73,20 @@ abstract class _HomeStore with Store {
   @action
   Future<void> loadBookings() async {
     isLoading = true;
+    final gen = _generation;
     session = await SessionService.getSession();
 
     try {
       final res = await repo.getBookings();
-      if (res.isNotEmpty) {
-        bookings.clear();
-        bookings.addAll(res);
-      }
+      // Discard response if logout fired while we were awaiting — prevents
+      // stale old-account data from writing into a reset store (LEAKSHIELD §7).
+      if (_generation != gen) return;
+      // Always replace the list with the authoritative API response so an
+      // empty result shows a truthful empty state (LEAKSHIELD §9).
+      bookings.clear();
+      bookings.addAll(res);
     } catch (_) {
-      // Backend may not have a list-bookings endpoint yet — keep local list.
+      // Backend error — keep existing list rather than showing empty.
     }
 
     try {
@@ -99,9 +109,16 @@ abstract class _HomeStore with Store {
     isLoading = false;
   }
 
+  /// Clear all private session data on logout so no previous account's data
+  /// leaks to the next user of the device (LEAKSHIELD §5).
   @action
-  void addMockBooking(JobOrder booking) {
-    bookings.insert(0, booking);
+  void resetPrivateData() {
+    _generation++;
+    session = null;
+    currentLocation = null;
+    bookings.clear();
+    merchants.clear();
+    searchResults.clear();
   }
 
   /// Push a real API-created booking into the local list so it shows

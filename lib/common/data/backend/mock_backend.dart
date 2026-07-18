@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:client/common/data/backend/backend.dart';
+import 'package:flutter/foundation.dart';
 import 'package:client/common/data/models/job_order_item.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/data/models/merchant_category.dart';
@@ -22,6 +23,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// In-memory mocked backend to make the app runnable without any API server.
 class MockBackend implements Backend {
+  MockBackend() {
+    assert(!kReleaseMode, 'MockBackend must not be used in release builds');
+  }
+
   final _rng = Random(42);
   final Map<String, List<ChatMessage>> _messagesByJobOrderId = {};
 
