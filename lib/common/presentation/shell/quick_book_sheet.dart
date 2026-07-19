@@ -5,8 +5,8 @@ import 'package:client/modules/bw_booking/presentation/screens/beauty_wellness_s
 import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
+import 'package:client/common/services/app_haptics.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 /// Bottom sheet presented by the central Book action in [MainNavScaffold].
@@ -17,7 +17,7 @@ class QuickBookSheet extends StatelessWidget {
   const QuickBookSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
