@@ -359,6 +359,13 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Triggers the BE to re-send the booking OTP for [bookingId].
+  Future<Map<String, dynamic>> resendOtp({required int bookingId}) async {
+    final uri = _uri('/api/$bookingId/resend-otp');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getBookingTracking(int bookingId) async {
     final uri = _uri('/api/$bookingId/tracking');
     final res = await _client.get(uri, headers: await _headers());

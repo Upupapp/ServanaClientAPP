@@ -19,11 +19,36 @@ abstract class _AirconBookingStore with Store {
 
   // ───────── Observable state ─────────
 
+  /// Catalog / quote / generic operations (options loading, quote fetch).
   @observable
   bool isLoading = false;
 
+  /// Set true when address list is being fetched. Separate from [isLoading]
+  /// so address spinners don't disable the quote CTA.
+  @observable
+  bool isAddressLoading = false;
+
+  /// Set true from booking creation until the screen navigates away (or an
+  /// error resets it). Stays true on success — keeps the submit button
+  /// permanently disabled after one successful creation.
+  @observable
+  bool isSubmitting = false;
+
+  /// Set true while creating a PayMongo session. Separate so the payment
+  /// section can show its own spinner without disabling the whole screen.
+  @observable
+  bool isPaymentLoading = false;
+
   @observable
   String? errorMessage;
+
+  /// Submission-specific error (distinct from catalog errorMessage).
+  @observable
+  String? submissionError;
+
+  /// Address-operation-specific error.
+  @observable
+  String? addressError;
 
   /// Top-level services returned by GET /api/services
   @observable
@@ -129,6 +154,11 @@ abstract class _AirconBookingStore with Store {
     workerCode = null;
     paymongoCheckoutUrl = null;
     errorMessage = null;
+    submissionError = null;
+    addressError = null;
+    isSubmitting = false;
+    isAddressLoading = false;
+    isPaymentLoading = false;
     optionsWithAddons.clear();
     // Bridge the gap until the follow-up load() flips this true; otherwise
     // observers render an empty grid between reset() and load().
@@ -189,6 +219,10 @@ abstract class _AirconBookingStore with Store {
     workerCode = null;
     paymongoCheckoutUrl = null;
     errorMessage = null;
+    submissionError = null;
+    addressError = null;
+    isSubmitting = false;
+    isPaymentLoading = false;
     // optionsWithAddons — NOT touched.
   }
 
@@ -221,8 +255,8 @@ abstract class _AirconBookingStore with Store {
 
   @action
   Future<void> loadSavedAddresses() async {
-    isLoading = true;
-    errorMessage = null;
+    isAddressLoading = true;
+    addressError = null;
     try {
       final res = await api.getAllUserAddresses();
       final data = _extractList(res);
@@ -230,9 +264,9 @@ abstract class _AirconBookingStore with Store {
         ..clear()
         ..addAll(data);
     } catch (e) {
-      errorMessage = _errorMsg(e);
+      addressError = _errorMsg(e);
     } finally {
-      isLoading = false;
+      isAddressLoading = false;
     }
   }
 
@@ -325,11 +359,17 @@ abstract class _AirconBookingStore with Store {
 
   @action
   Future<void> createBooking() async {
-    isLoading = true;
-    errorMessage = null;
+    // Guard: only one submission per booking draft.
+    if (isSubmitting) return;
+    isSubmitting = true;
+    submissionError = null;
     try {
       final session = await SessionService.getSession();
       final userId = session?.customerID ?? '';
+      if (userId.isEmpty) {
+        submissionError = 'You must be signed in to create a booking.';
+        return;
+      }
 
       final addressId =
           selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
@@ -367,17 +407,19 @@ abstract class _AirconBookingStore with Store {
       workerCode =
           (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
       if (workerCode!.isEmpty) workerCode = null;
+      // isSubmitting intentionally NOT reset on success — keeps the button
+      // permanently disabled after a booking is created.
     } catch (e) {
-      errorMessage = _errorMsg(e);
-    } finally {
-      isLoading = false;
+      submissionError = _errorMsg(e);
+      // Reset on error only so the user can retry after a genuine failure.
+      isSubmitting = false;
     }
   }
 
   @action
   Future<void> createPaymongoSession() async {
     if (createdBookingId == null) return;
-    isLoading = true;
+    isPaymentLoading = true;
     errorMessage = null;
     try {
       final res =
@@ -394,7 +436,7 @@ abstract class _AirconBookingStore with Store {
     } catch (e) {
       errorMessage = _errorMsg(e);
     } finally {
-      isLoading = false;
+      isPaymentLoading = false;
     }
   }
 

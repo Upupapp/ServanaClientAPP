@@ -1,10 +1,9 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/data/repositories/address_repository.dart';
 import 'package:client/common/domain/auth/auth_return_intent.dart';
 import 'package:client/common/domain/booking/booking_draft.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
-import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
 import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
@@ -12,7 +11,6 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_confirmation_screen.dart';
-import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:flutter/material.dart';
@@ -427,60 +425,28 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
     );
     if (!mounted || result == null) return;
 
-    // Save the address to Servana API
-    try {
-      final session = await SessionService.getSession();
-      final userId = session?.customerID ?? '';
-      final api = dpLocator<ServanaApiClient>();
+    final repo = dpLocator<AddressRepository>();
+    final outcome = await repo.createAddress(
+      result: result,
+      isPrimary: store.savedAddresses.isEmpty,
+    );
 
-      final lat = result.location.latitude;
-      final lon = result.location.longitude;
-      final payload = <String, dynamic>{
-        'userId': userId,
-        'locationId': 'loc_${lat.toStringAsFixed(6)}_${lon.toStringAsFixed(6)}',
-        'addressOne': result.address,
-        'addressTwo':
-            [result.unit, result.street].where((s) => s.isNotEmpty).join(', '),
-        'zipCode': '',
-        'postTown': result.city.isNotEmpty ? result.city : result.province,
-        'country': 'Philippines',
-        'lat': lat,
-        'lon': lon,
-        'label': result.landmark.isNotEmpty
-            ? result.landmark
-            : (result.barangay.isNotEmpty ? result.barangay : 'Home'),
-        'isPrimary': store.savedAddresses.isEmpty,
-      };
-
-      final res = await api.addUserAddress(payload: payload);
-
-      // Refresh the list so the new address appears
-      await store.loadSavedAddresses();
-
-      // Auto-select the newly created address
-      final newAddrId =
-          res['data']?['addressId'] ?? res['addressId'] ?? res['data']?['id'];
-      if (newAddrId != null) {
-        final match =
-            store.savedAddresses.cast<Map<String, dynamic>?>().firstWhere(
-                  (a) => (a?['addressId'] ?? a?['id']) == newAddrId,
-                  orElse: () => null,
-                );
-        if (match != null) store.selectAddress(match);
-      } else if (store.savedAddresses.isNotEmpty) {
-        // Fallback: select the last one (most recently added)
-        store.selectAddress(store.savedAddresses.last);
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Address saved!')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save address: $e')),
-      );
+    if (!mounted) return;
+    switch (outcome) {
+      case AddressCreated(:final newAddress, :final allAddresses):
+        store.savedAddresses
+          ..clear()
+          ..addAll(allAddresses);
+        store.selectAddress(newAddress);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Address saved!')),
+        );
+      case AddressError(:final message):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      case AddressSuccess():
+        break;
     }
   }
 
@@ -501,49 +467,58 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
     store.setSchedule(date.copyWith(hour: time.hour, minute: time.minute));
   }
 
-  bool _submitting = false;
-
   Future<void> _onConfirmBooking() async {
-    // Gate: guest users are redirected to sign in; the draft preserves all
-    // form state so the flow resumes automatically after authentication.
+    // Gate: guest users are redirected to sign in. The draft now includes real
+    // selections so the store state can be restored after authentication.
     if (!dpLocator<AuthStateService>().isAuthenticated) {
+      final opt = store.selectedOption;
       dpLocator<BookingDraftService>().save(BookingDraft(
         id: 'aircon_${DateTime.now().millisecondsSinceEpoch}',
         createdAt: DateTime.now(),
         flowType: BookingFlowType.aircon,
         returnRouteName: AirconCheckoutScreen.routeName,
+        selectedOptions: opt != null
+            ? [(opt['id'] ?? opt['optionId'] ?? '').toString()]
+            : const [],
+        selectedAddons:
+            store.selectedAddonIds.map((id) => id.toString()).toList(),
+        addressLine: store.selectedAddress?['addressOne']?.toString(),
+        lat: (store.selectedAddress?['lat'] as num?)?.toDouble(),
+        lon: (store.selectedAddress?['lon'] as num?)?.toDouble(),
+        selectedDate: store.selectedSchedule,
+        pricingSnapshot: store.quotedTotal > 0 ? store.quotedTotal : null,
       ));
       if (!mounted) return;
       context.goNamed(
         AuthenticationGateScreen.routeName,
-        extra: const AuthReturnIntent(destination: ProtectedDestination.bookingConfirm),
+        extra: const AuthReturnIntent(
+            destination: ProtectedDestination.bookingConfirm),
       );
       return;
     }
-    // Block re-entry for the whole submit — including the window between the
-    // create completing and the navigation removing this screen, where a second
-    // tap would otherwise create a duplicate booking.
-    if (_submitting || store.isLoading) return;
+
+    // Store-level isSubmitting is the authoritative guard — prevents duplicate
+    // submissions even if the widget rebuilds between taps.
+    if (store.isSubmitting) return;
+
     final errors = <String>[];
     if (store.selectedAddress == null) errors.add('Select an address.');
     if (store.selectedSchedule == null) errors.add('Select a schedule.');
 
     if (errors.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errors.join('\n'))),
+        SnackBar(content: Text(errors.first)),
       );
       return;
     }
 
-    _submitting = true;
     await store.createBooking();
     if (!mounted) return;
 
-    if (store.errorMessage != null) {
+    if (store.submissionError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(store.errorMessage!)),
+        SnackBar(content: Text(store.submissionError!)),
       );
-      _submitting = false;
       return;
     }
 
@@ -555,20 +530,19 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
               'Booking created but no reference was returned. Check My Bookings.'),
         ),
       );
-      _submitting = false;
       return;
     }
 
-    // The booking now exists — commit to it. Reset the stack to My Bookings and
-    // anchor the booking detail screen beneath the OTP step: there's no way back
-    // to address/payment (prevents double-booking), and backing out of OTP lands
-    // on the booking's detail page.
-    final jobOrder = store.buildCreatedJobOrder();
-    dpLocator<HomeStore>().addBooking(jobOrder);
+    // Seed the bookings list and navigate.
+    // Single post-frame push (not two) — go to My Bookings tab, then push OTP
+    // only. The OTP success handler advances to confirmation; back from OTP
+    // lands cleanly on My Bookings.
+    dpLocator<HomeStore>().addBooking(store.buildCreatedJobOrder());
+    dpLocator<BookingDraftService>().clear();
+
     final router = GoRouter.of(context);
     router.goNamed(BookingsScreen.routeName);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      router.pushNamed(BookingDetailScreen.routeName, extra: jobOrder);
       router.pushNamed(
         BookingOtpScreen.routeName,
         extra: BookingOtpArgs(

@@ -20,11 +20,32 @@ abstract class _BwBookingStore with Store {
 
   // ───────── Observable state ─────────
 
+  /// Catalog / branch / slot / generic operations.
   @observable
   bool isLoading = false;
 
+  /// Set true when address list is being fetched.
+  @observable
+  bool isAddressLoading = false;
+
+  /// Stays true after successful booking creation — permanently disables submit.
+  @observable
+  bool isSubmitting = false;
+
+  /// Set true while creating a PayMongo session.
+  @observable
+  bool isPaymentLoading = false;
+
   @observable
   String? errorMessage;
+
+  /// Submission-specific error (shown on the submit button section).
+  @observable
+  String? submissionError;
+
+  /// Address-operation-specific error.
+  @observable
+  String? addressError;
 
   /// The B&W service ID the user tapped (passed from navigation)
   @observable
@@ -143,6 +164,11 @@ abstract class _BwBookingStore with Store {
     workerCode = null;
     paymongoCheckoutUrl = null;
     errorMessage = null;
+    submissionError = null;
+    addressError = null;
+    isSubmitting = false;
+    isAddressLoading = false;
+    isPaymentLoading = false;
     optionsWithAddons.clear();
     branches.clear();
     slots.clear();
@@ -168,6 +194,10 @@ abstract class _BwBookingStore with Store {
     workerCode = null;
     paymongoCheckoutUrl = null;
     errorMessage = null;
+    submissionError = null;
+    addressError = null;
+    isSubmitting = false;
+    isPaymentLoading = false;
     // optionsWithAddons, branches, slots, isLoading — NOT touched.
   }
 
@@ -254,8 +284,8 @@ abstract class _BwBookingStore with Store {
 
   @action
   Future<void> loadSavedAddresses() async {
-    isLoading = true;
-    errorMessage = null;
+    isAddressLoading = true;
+    addressError = null;
     try {
       final res = await api.getAllUserAddresses();
       final data = _extractList(res);
@@ -263,9 +293,9 @@ abstract class _BwBookingStore with Store {
         ..clear()
         ..addAll(data);
     } catch (e) {
-      errorMessage = _errorMsg(e);
+      addressError = _errorMsg(e);
     } finally {
-      isLoading = false;
+      isAddressLoading = false;
     }
   }
 
@@ -313,11 +343,16 @@ abstract class _BwBookingStore with Store {
 
   @action
   Future<void> createBooking() async {
-    isLoading = true;
-    errorMessage = null;
+    if (isSubmitting) return;
+    isSubmitting = true;
+    submissionError = null;
     try {
       final session = await SessionService.getSession();
       final userId = session?.customerID ?? '';
+      if (userId.isEmpty) {
+        submissionError = 'You must be signed in to create a booking.';
+        return;
+      }
 
       final addressId =
           selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
@@ -349,10 +384,10 @@ abstract class _BwBookingStore with Store {
       workerCode =
           (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
       if (workerCode!.isEmpty) workerCode = null;
+      // isSubmitting intentionally NOT reset on success.
     } catch (e) {
-      errorMessage = _errorMsg(e);
-    } finally {
-      isLoading = false;
+      submissionError = _errorMsg(e);
+      isSubmitting = false;
     }
   }
 
@@ -381,7 +416,7 @@ abstract class _BwBookingStore with Store {
   @action
   Future<void> createPaymongoSession() async {
     if (createdBookingId == null) return;
-    isLoading = true;
+    isPaymentLoading = true;
     errorMessage = null;
     try {
       final res =
@@ -398,7 +433,7 @@ abstract class _BwBookingStore with Store {
     } catch (e) {
       errorMessage = _errorMsg(e);
     } finally {
-      isLoading = false;
+      isPaymentLoading = false;
     }
   }
 

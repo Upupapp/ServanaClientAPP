@@ -6,9 +6,8 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/booking_otp_screen.dart';
+import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
-import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
-import 'package:client/modules/bw_booking/presentation/screens/bw_paymongo_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -446,32 +445,39 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Future<void> _continuePayment() async {
-    final bwStore = dpLocator<BwBookingStore>();
     final bookingId = int.tryParse(_booking.jobOrderID);
     if (bookingId == null) return;
 
-    bwStore.createdBookingId = bookingId;
-    await bwStore.createPaymongoSession();
+    setState(() => _isRefreshing = true);
+    String? checkoutUrl;
+    String? errorMsg;
+    try {
+      final api = dpLocator<ServanaApiClient>();
+      final res = await api.createPaymongoSession(bookingId: bookingId);
+      final data = res['data'] ?? res;
+      checkoutUrl =
+          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      if (checkoutUrl == null || checkoutUrl.isEmpty) {
+        errorMsg = 'Payment session could not be started. Please retry.';
+      }
+    } catch (e) {
+      errorMsg = 'Could not create payment session. Please try again.';
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
 
     if (!mounted) return;
-    if (bwStore.paymongoCheckoutUrl != null) {
-      await context.pushNamed<bool>(
-        BwPaymongoScreen.routeName,
-        extra: PaymongoCheckoutArgs(
-          checkoutUrl: bwStore.paymongoCheckoutUrl!,
-          verifyPaymentStatus: bwStore.verifyPaymentStatus,
-        ),
-      );
-
-      // After returning from PayMongo, refresh this booking
-      if (mounted) await _refreshBooking();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                bwStore.errorMessage ?? 'Could not create payment session.')),
-      );
+    if (errorMsg != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorMsg)));
+      return;
     }
+
+    await context.pushNamed<bool>(
+      PaymentWebViewScreen.routeName,
+      extra: PaymentScreenArgs(bookingId: bookingId, checkoutUrl: checkoutUrl!),
+    );
+    if (mounted) await _refreshBooking();
   }
 }
 

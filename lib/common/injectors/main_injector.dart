@@ -20,6 +20,7 @@ import 'package:client/common/data/backend/backend.dart';
 import 'package:client/common/data/backend/http_backend.dart';
 import 'package:client/common/data/backend/mock_backend.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/data/repositories/address_repository.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
@@ -42,6 +43,11 @@ void initInjector(AppConfig config) {
 
   // Booking draft — lives in memory, cleared on logout / booking submit.
   dpLocator.registerLazySingleton(() => BookingDraftService());
+
+  // Address repository — shared by both checkout screens.
+  dpLocator.registerLazySingleton(
+    () => AddressRepository(api: dpLocator()),
+  );
 
   // SDK-ish services
   dpLocator.registerLazySingleton(() => LocationService());

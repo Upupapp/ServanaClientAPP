@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -68,27 +68,38 @@ class BookingOtpScreen extends StatefulWidget {
 
 class _BookingOtpScreenState extends State<BookingOtpScreen> {
   static const int _otpLength = 6;
+  static const int _resendCooldownSeconds = 60;
 
   final TextEditingController _controller = TextEditingController();
   String _code = '';
   bool _loading = false;
+  String? _errorText;
+
+  // Resend cooldown
+  Timer? _resendTimer;
+  int _resendCountdown = 0;
+  bool get _canResend => _resendCountdown == 0 && !_loading;
 
   @override
   void dispose() {
     _controller.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _verify() async {
     if (_loading || _code.length < _otpLength) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorText = null;
+    });
     try {
       final res = await dpLocator<ServanaApiClient>()
           .confirmOtp(bookingId: widget.bookingId, otp: _code);
       if (!mounted) return;
       if (res['success'] == false) {
-        _showError((res['message'] ?? 'Invalid code. Please try again.')
-            .toString());
+        setState(() => _errorText =
+            (res['message'] ?? 'Invalid code. Please try again.').toString());
         return;
       }
       if (widget.flow == BookingOtpFlow.checkout &&
@@ -101,13 +112,53 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
       }
     } on ServanaApiException catch (e) {
       if (!mounted) return;
-      _showError(_messageFrom(e));
+      setState(() => _errorText = _messageFrom(e));
     } catch (_) {
       if (!mounted) return;
-      _showError('Something went wrong. Please try again.');
+      setState(() => _errorText = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _resendOtp() async {
+    if (!_canResend) return;
+    setState(() {
+      _loading = true;
+      _errorText = null;
+    });
+    try {
+      await dpLocator<ServanaApiClient>()
+          .resendOtp(bookingId: widget.bookingId);
+      if (!mounted) return;
+      _startResendCooldown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verification code resent.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _errorText = 'Could not resend code. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _startResendCooldown() {
+    setState(() => _resendCountdown = _resendCooldownSeconds);
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        _resendCountdown--;
+        if (_resendCountdown <= 0) {
+          _resendCountdown = 0;
+          t.cancel();
+        }
+      });
+    });
   }
 
   String _messageFrom(ServanaApiException e) {
@@ -119,18 +170,6 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
       }
     } catch (_) {}
     return 'Invalid code. Please try again.';
-  }
-
-  void _showError(String message) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.bottomSlide,
-      headerAnimationLoop: false,
-      dialogType: DialogType.error,
-      title: 'Verification Failed',
-      desc: message,
-      btnOkOnPress: () {},
-    ).show();
   }
 
   @override
@@ -147,7 +186,11 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
       decoration: BoxDecoration(
         color: ColorPalette.secondaryBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColorPalette.secondaryBorder),
+        border: Border.all(
+          color: _errorText != null
+              ? ColorPalette.danger
+              : ColorPalette.secondaryBorder,
+        ),
       ),
     );
     final focusedPinTheme = defaultPinTheme.copyWith(
@@ -211,12 +254,28 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
                 focusedPinTheme: focusedPinTheme,
                 keyboardType: TextInputType.number,
                 enabled: !_loading,
-                onChanged: (value) => setState(() => _code = value),
+                onChanged: (value) => setState(() {
+                  _code = value;
+                  _errorText = null;
+                }),
                 onCompleted: (value) {
                   _code = value;
                   _verify();
                 },
               ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorText!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    color: ColorPalette.danger,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -229,11 +288,25 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
                       )
                     : PrimaryButton(
                         text: 'Verify',
-                        // PrimaryButton ignores `enabled`, so gate onClick
-                        // directly to make an incomplete code non-tappable.
-                        onClick:
-                            _code.length == _otpLength ? _verify : null,
+                        onClick: _code.length == _otpLength ? _verify : null,
                       ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _canResend ? _resendOtp : null,
+                child: Text(
+                  _resendCountdown > 0
+                      ? 'Resend code in ${_resendCountdown}s'
+                      : 'Resend code',
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    color: _canResend
+                        ? ColorPalette.primaryColorDark
+                        : ColorPalette.accentText,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ],
           ),

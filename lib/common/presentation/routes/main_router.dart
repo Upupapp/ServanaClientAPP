@@ -42,7 +42,7 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.
 import 'package:client/modules/bw_booking/presentation/screens/bw_branch_slot_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_checkout_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/bw_paymongo_screen.dart';
+import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class MainRouter {
@@ -319,19 +319,19 @@ class MainRouter {
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
-                      path: BwPaymongoScreen.route,
-                      name: BwPaymongoScreen.routeName,
+                      path: PaymentWebViewScreen.route,
+                      name: PaymentWebViewScreen.routeName,
                       builder: (context, state) {
                         final extra = state.extra;
-                        if (extra is! PaymongoCheckoutArgs) {
+                        if (extra is! PaymentScreenArgs) {
                           WidgetsBinding.instance.addPostFrameCallback(
                             (_) => context.goNamed(HomeScreen.routeName),
                           );
                           return const Scaffold();
                         }
-                        return BwPaymongoScreen(
+                        return PaymentWebViewScreen(
+                          bookingId: extra.bookingId,
                           checkoutUrl: extra.checkoutUrl,
-                          verifyPaymentStatus: extra.verifyPaymentStatus,
                         );
                       },
                     ),

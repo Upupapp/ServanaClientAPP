@@ -41,6 +41,54 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
     });
   }
 
+  late final _$isAddressLoadingAtom =
+      Atom(name: '_BwBookingStore.isAddressLoading', context: context);
+
+  @override
+  bool get isAddressLoading {
+    _$isAddressLoadingAtom.reportRead();
+    return super.isAddressLoading;
+  }
+
+  @override
+  set isAddressLoading(bool value) {
+    _$isAddressLoadingAtom.reportWrite(value, super.isAddressLoading, () {
+      super.isAddressLoading = value;
+    });
+  }
+
+  late final _$isSubmittingAtom =
+      Atom(name: '_BwBookingStore.isSubmitting', context: context);
+
+  @override
+  bool get isSubmitting {
+    _$isSubmittingAtom.reportRead();
+    return super.isSubmitting;
+  }
+
+  @override
+  set isSubmitting(bool value) {
+    _$isSubmittingAtom.reportWrite(value, super.isSubmitting, () {
+      super.isSubmitting = value;
+    });
+  }
+
+  late final _$isPaymentLoadingAtom =
+      Atom(name: '_BwBookingStore.isPaymentLoading', context: context);
+
+  @override
+  bool get isPaymentLoading {
+    _$isPaymentLoadingAtom.reportRead();
+    return super.isPaymentLoading;
+  }
+
+  @override
+  set isPaymentLoading(bool value) {
+    _$isPaymentLoadingAtom.reportWrite(value, super.isPaymentLoading, () {
+      super.isPaymentLoading = value;
+    });
+  }
+
   late final _$errorMessageAtom =
       Atom(name: '_BwBookingStore.errorMessage', context: context);
 
@@ -54,6 +102,38 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   set errorMessage(String? value) {
     _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
       super.errorMessage = value;
+    });
+  }
+
+  late final _$submissionErrorAtom =
+      Atom(name: '_BwBookingStore.submissionError', context: context);
+
+  @override
+  String? get submissionError {
+    _$submissionErrorAtom.reportRead();
+    return super.submissionError;
+  }
+
+  @override
+  set submissionError(String? value) {
+    _$submissionErrorAtom.reportWrite(value, super.submissionError, () {
+      super.submissionError = value;
+    });
+  }
+
+  late final _$addressErrorAtom =
+      Atom(name: '_BwBookingStore.addressError', context: context);
+
+  @override
+  String? get addressError {
+    _$addressErrorAtom.reportRead();
+    return super.addressError;
+  }
+
+  @override
+  set addressError(String? value) {
+    _$addressErrorAtom.reportWrite(value, super.addressError, () {
+      super.addressError = value;
     });
   }
 
@@ -491,7 +571,12 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
+isAddressLoading: ${isAddressLoading},
+isSubmitting: ${isSubmitting},
+isPaymentLoading: ${isPaymentLoading},
 errorMessage: ${errorMessage},
+submissionError: ${submissionError},
+addressError: ${addressError},
 selectedServiceId: ${selectedServiceId},
 optionsWithAddons: ${optionsWithAddons},
 branches: ${branches},
