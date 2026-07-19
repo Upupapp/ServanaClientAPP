@@ -174,8 +174,18 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Compute cell width that fills the screen without overflowing at 360px.
+    // Formula: (usable width − gap total) / cell count, clamped to [42, 56].
+    const double horizontalPadding = 48; // 24dp each side
+    const double gapBetweenCells = 8;
+    const int gapCount = _otpLength - 1;
+    final double usable =
+        MediaQuery.of(context).size.width - horizontalPadding;
+    final double pinWidth =
+        ((usable - gapCount * gapBetweenCells) / _otpLength).clamp(42.0, 56.0);
+
     final defaultPinTheme = PinTheme(
-      width: 50,
+      width: pinWidth,
       height: 56,
       textStyle: TextStyle(
         fontFamily: FontPalette.primaryFontFamily,

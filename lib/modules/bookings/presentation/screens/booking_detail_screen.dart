@@ -5,6 +5,7 @@ import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
@@ -69,9 +70,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       _booking.paymentStatus == 'PENDING' &&
       _booking.paymentMethodUsed == 'PAYMONGO';
 
-  /// A freshly-created booking sits in PENDING_OTP until the customer verifies
-  /// the code; the BE assigns a technician only after that succeeds.
-  bool get _needsOtp => (_bookingStatus ?? '').toUpperCase() == 'PENDING_OTP';
+  /// A freshly-created booking sits in PENDING_OTP (or FOR_OTP alias) until the
+  /// customer verifies the code; the BE assigns a technician only after that.
+  bool get _needsOtp => BookingStatusMapper.requiresOtp(
+      BookingStatusMapper.fromString(_bookingStatus));
 
   bool get _isAssigned => _workerUid != null && _workerUid!.isNotEmpty;
 

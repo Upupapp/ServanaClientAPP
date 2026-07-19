@@ -32,6 +32,7 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
 
   final _poller = AssignmentPollingService();
   AssignmentPollResult? _lastPollResult;
+  bool _pollTimedOut = false;
 
   bool get _isAssigned => _lastPollResult?.isAssigned == true;
 
@@ -58,6 +59,9 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
       bookingId: bookingId,
       onUpdate: (result) {
         if (mounted) setState(() => _lastPollResult = result);
+      },
+      onTimeout: () {
+        if (mounted) setState(() => _pollTimedOut = true);
       },
     );
   }
@@ -298,6 +302,7 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                     ConfirmAssignmentBanner(
                       isAssigned: _isAssigned,
                       isPolling: _poller.isPolling,
+                      timedOut: _pollTimedOut,
                       workerName: _lastPollResult?.workerName,
                       bookingStatus: _lastPollResult != null
                           ? BookingStatusMapper.confirmationTitle(

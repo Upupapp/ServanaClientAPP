@@ -16,12 +16,15 @@ class ConfirmAssignmentBanner extends StatelessWidget {
     required this.isPolling,
     required this.workerName,
     required this.bookingStatus,
+    this.timedOut = false,
   });
 
   final bool isAssigned;
   final bool isPolling;
   final String? workerName;
   final String? bookingStatus;
+  /// True when the polling window closed without finding an assignment.
+  final bool timedOut;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +45,12 @@ class ConfirmAssignmentBanner extends StatelessWidget {
       icon = Icons.search_rounded;
       title = 'Assigning a technician';
       subtitle = 'A technician will be assigned to your booking soon.';
+    } else if (timedOut) {
+      color = Colors.blueGrey;
+      icon = Icons.info_outline_rounded;
+      title = 'Assignment in progress';
+      subtitle =
+          'It\'s taking a bit longer than usual. Check My Bookings to see your assignment.';
     } else {
       color = Colors.blueGrey;
       icon = Icons.hourglass_empty_rounded;
