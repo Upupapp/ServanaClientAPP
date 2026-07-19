@@ -8,6 +8,7 @@ import 'package:client/modules/authentication/presentation/bloc/authentication_b
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
+import 'package:client/modules/registration/presentation/screens/create_account_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -87,7 +88,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     AppHaptics.selection();
     await OnboardingStateService.setStatus(OnboardingStatus.completed);
     if (!mounted) return;
-    context.goNamed(AuthenticationScreen.routeName);
+    // Route to the registration form, not the sign-in form (STITCH-008).
+    context.goNamed(CreateAccountScreen.routeName);
   }
 
   @override
