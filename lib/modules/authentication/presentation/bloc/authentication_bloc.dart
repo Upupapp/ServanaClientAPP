@@ -21,7 +21,7 @@ class AuthenticationBloc
     on<AuthCheckSession>(_onCheckSession);
     on<AuthLogout>(_onLogout);
     on<LoggedOut>(_onLoggedOutLegacy);
-    on<LoggedIn>((_,__) {});
+    on<LoggedIn>((_, __) {});
   }
 
   final AuthenticationRepository repo;

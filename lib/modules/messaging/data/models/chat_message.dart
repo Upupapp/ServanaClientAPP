@@ -20,4 +20,3 @@ class ChatMessage {
 
   bool get isFromCustomer => sender == ChatSender.customer;
 }
-

@@ -85,7 +85,8 @@ void main() {
   group('CategoryExperienceHistory', () {
     setUp(() => CategoryExperienceHistory.resetForTesting());
 
-    test('hasSeenFirstView returns false for every category on fresh state', () {
+    test('hasSeenFirstView returns false for every category on fresh state',
+        () {
       for (final id in ServiceCategoryId.values) {
         expect(
           CategoryExperienceHistory.hasSeenFirstView(id),
@@ -96,9 +97,11 @@ void main() {
     });
 
     test('markFirstViewSeen → hasSeenFirstView returns true', () {
-      CategoryExperienceHistory.markFirstViewSeen(ServiceCategoryId.beautyWellness);
+      CategoryExperienceHistory.markFirstViewSeen(
+          ServiceCategoryId.beautyWellness);
       expect(
-        CategoryExperienceHistory.hasSeenFirstView(ServiceCategoryId.beautyWellness),
+        CategoryExperienceHistory.hasSeenFirstView(
+            ServiceCategoryId.beautyWellness),
         isTrue,
       );
     });
@@ -110,20 +113,23 @@ void main() {
         isFalse,
       );
       expect(
-        CategoryExperienceHistory.hasSeenFirstView(ServiceCategoryId.hairAndNails),
+        CategoryExperienceHistory.hasSeenFirstView(
+            ServiceCategoryId.hairAndNails),
         isFalse,
       );
     });
 
     test('markFirstViewSeen is idempotent', () {
-      CategoryExperienceHistory.markFirstViewSeen(ServiceCategoryId.hairAndNails);
+      CategoryExperienceHistory.markFirstViewSeen(
+          ServiceCategoryId.hairAndNails);
       expect(
-        () =>
-            CategoryExperienceHistory.markFirstViewSeen(ServiceCategoryId.hairAndNails),
+        () => CategoryExperienceHistory.markFirstViewSeen(
+            ServiceCategoryId.hairAndNails),
         returnsNormally,
       );
       expect(
-        CategoryExperienceHistory.hasSeenFirstView(ServiceCategoryId.hairAndNails),
+        CategoryExperienceHistory.hasSeenFirstView(
+            ServiceCategoryId.hairAndNails),
         isTrue,
       );
     });
@@ -242,7 +248,8 @@ void main() {
       expect(dismissed, isTrue);
     });
 
-    testWidgets('Hair & Nails repeat-view renders without error', (tester) async {
+    testWidgets('Hair & Nails repeat-view renders without error',
+        (tester) async {
       const config = CategoryRegistry.hairAndNails;
 
       await tester.pumpWidget(wrap(

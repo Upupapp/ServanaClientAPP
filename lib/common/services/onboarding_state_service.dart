@@ -43,6 +43,7 @@ abstract final class OnboardingStateService {
   /// Returns true when the welcome flow should be skipped on the next launch.
   static Future<bool> hasCompletedOrSkipped() async {
     final s = await getStatus();
-    return s == OnboardingStatus.completed || s == OnboardingStatus.skippedToBrowse;
+    return s == OnboardingStatus.completed ||
+        s == OnboardingStatus.skippedToBrowse;
   }
 }

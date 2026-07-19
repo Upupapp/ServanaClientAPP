@@ -80,7 +80,7 @@ void main() {
 
     test('returns AddressError on API exception', () async {
       final api = _FakeApi()
-        ..listError = ServanaApiException(statusCode: 500, body: 'err');
+        ..listError = const ServanaApiException(statusCode: 500, body: 'err');
       final repo = AddressRepository(api: api);
       final result = await repo.loadAddresses();
       expect(result, isA<AddressError>());

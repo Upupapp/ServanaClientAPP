@@ -285,7 +285,7 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
               const SizedBox(height: 24),
 
               // ──── Schedule ────
-              _SectionHeader(title: 'Schedule'),
+              const _SectionHeader(title: 'Schedule'),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _pickSchedule,
@@ -324,7 +324,7 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
               const SizedBox(height: 24),
 
               // ──── Payment method ────
-              _SectionHeader(title: 'Payment Method'),
+              const _SectionHeader(title: 'Payment Method'),
               const SizedBox(height: 8),
               Row(
                 children: [

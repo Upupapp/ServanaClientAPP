@@ -37,7 +37,9 @@ class AddressRepository {
     try {
       final res = await _api.getAllUserAddresses();
       final raw = res['data'] ?? res['items'] ?? res;
-      final list = raw is List ? raw.cast<Map<String, dynamic>>() : <Map<String, dynamic>>[];
+      final list = raw is List
+          ? raw.cast<Map<String, dynamic>>()
+          : <Map<String, dynamic>>[];
       return AddressSuccess(list);
     } catch (e) {
       return AddressError(_sanitise(e));
@@ -67,9 +69,8 @@ class AddressRepository {
         'userId': userId,
         'locationId': 'loc_${lat.toStringAsFixed(6)}_${lon.toStringAsFixed(6)}',
         'addressOne': result.address,
-        'addressTwo': [result.unit, result.street]
-            .where((s) => s.isNotEmpty)
-            .join(', '),
+        'addressTwo':
+            [result.unit, result.street].where((s) => s.isNotEmpty).join(', '),
         'zipCode': '',
         'postTown': result.city.isNotEmpty ? result.city : result.province,
         'country': 'Philippines',
@@ -90,9 +91,8 @@ class AddressRepository {
       }
 
       // Identify the newly created address by the returned ID.
-      final newId = res['data']?['addressId'] ??
-          res['addressId'] ??
-          res['data']?['id'];
+      final newId =
+          res['data']?['addressId'] ?? res['addressId'] ?? res['data']?['id'];
 
       Map<String, dynamic> newAddress;
       if (newId != null) {

@@ -190,12 +190,11 @@ class MainRouter {
                       name: StoreItemsScreen.routeName,
                       builder: (context, state) {
                         final extra = state.extra;
-                        if (extra
-                            is! ({
-                              String merchantId,
-                              String merchantName,
-                              String? categoryName
-                            })) {
+                        if (extra is! ({
+                          String merchantId,
+                          String merchantName,
+                          String? categoryName
+                        })) {
                           WidgetsBinding.instance.addPostFrameCallback(
                             (_) => context.goNamed(HomeScreen.routeName),
                           );
@@ -301,22 +300,19 @@ class MainRouter {
                       parentNavigatorKey: rootNavigatorKey,
                       path: BwBranchSlotScreen.route,
                       name: BwBranchSlotScreen.routeName,
-                      builder: (context, state) =>
-                          const BwBranchSlotScreen(),
+                      builder: (context, state) => const BwBranchSlotScreen(),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
                       path: BwCheckoutScreen.route,
                       name: BwCheckoutScreen.routeName,
-                      builder: (context, state) =>
-                          const BwCheckoutScreen(),
+                      builder: (context, state) => const BwCheckoutScreen(),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
                       path: BwConfirmationScreen.route,
                       name: BwConfirmationScreen.routeName,
-                      builder: (context, state) =>
-                          const BwConfirmationScreen(),
+                      builder: (context, state) => const BwConfirmationScreen(),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
@@ -348,11 +344,10 @@ class MainRouter {
                           name: ItemOptionMenuScreen.routeName,
                           builder: (context, state) {
                             final extra = state.extra;
-                            if (extra
-                                is! ({
-                                  MerchantServiceModel service,
-                                  String? joIId
-                                })) {
+                            if (extra is! ({
+                              MerchantServiceModel service,
+                              String? joIId
+                            })) {
                               WidgetsBinding.instance.addPostFrameCallback(
                                 (_) => context.goNamed(HomeScreen.routeName),
                               );
@@ -433,8 +428,7 @@ class MainRouter {
             final store = dpLocator<HomeStore>();
             JobOrder? found;
             try {
-              found =
-                  store.bookings.firstWhere((b) => b.jobOrderID == idStr);
+              found = store.bookings.firstWhere((b) => b.jobOrderID == idStr);
             } catch (_) {}
             if (found != null) return BookingDetailScreen(booking: found);
             // Cold start / deep link — placeholder triggers _refreshBooking().

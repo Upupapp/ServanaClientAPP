@@ -62,7 +62,8 @@ class QrWorkerCodeDisplay extends StatelessWidget {
       decoration: BoxDecoration(
         color: ColorPalette.secondaryBackground,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: ColorPalette.primaryColorDark.withOpacity(.3)),
+        border:
+            Border.all(color: ColorPalette.primaryColorDark.withOpacity(.3)),
         boxShadow: [
           BoxShadow(
             color: ColorPalette.shadow(.05),

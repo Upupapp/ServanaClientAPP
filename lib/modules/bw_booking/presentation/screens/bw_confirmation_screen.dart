@@ -153,15 +153,12 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                       ),
                     ),
                   ],
-
                   const SizedBox(height: 20),
                   QrWorkerCodeDisplay(
                     bookingId: store.createdBookingId,
                     workerCode: store.workerCode,
                   ),
-
                   const SizedBox(height: 24),
-
                   _DetailCard(children: [
                     _DetailRow(
                       label: 'Service',
@@ -172,7 +169,8 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                         label: 'Branch',
                         value: _branchName(),
                       ),
-                    if (store.selectedDate != null && store.selectedSlot != null)
+                    if (store.selectedDate != null &&
+                        store.selectedSlot != null)
                       _DetailRow(
                         label: 'Schedule',
                         value:
@@ -199,7 +197,6 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                         value: '${store.selectedAddonIds.length} selected',
                       ),
                   ]),
-
                   if (isPaymongo && !_paymongoCompleted) ...[
                     const SizedBox(height: 24),
                     Container(
@@ -274,7 +271,6 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                       ),
                     ),
                   ],
-
                   if (isPaymongo && _paymongoCompleted) ...[
                     const SizedBox(height: 24),
                     Container(
@@ -303,7 +299,6 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                       ),
                     ),
                   ],
-
                   if (store.createdBookingId != null &&
                       (!isPaymongo || _paymongoCompleted)) ...[
                     const SizedBox(height: 16),
@@ -318,9 +313,7 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                           : null,
                     ),
                   ],
-
                   const SizedBox(height: 32),
-
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -338,7 +331,9 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                         context.goNamed(HomeScreen.routeName);
                       },
                       child: Text(
-                        isPendingPayment ? 'Pay Later & Go Home' : 'Back to Home',
+                        isPendingPayment
+                            ? 'Pay Later & Go Home'
+                            : 'Back to Home',
                         style: TextStyle(
                           fontFamily: FontPalette.primaryFontFamily,
                           fontWeight: FontWeight.w800,

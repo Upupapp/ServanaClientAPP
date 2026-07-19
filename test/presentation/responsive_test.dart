@@ -55,32 +55,41 @@ void main() {
   group('ServanaResponsive.chatBubbleMaxWidth', () {
     testWidgets('is 78% of width on a standard phone', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 390, height: 844, builder: (context) {
-          final max = ServanaResponsive.chatBubbleMaxWidth(context);
-          // 390 * 0.78 = 304.2, clamped to [240, 320] → 304.2
-          expect(max, closeTo(390 * 0.78, 1.0));
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 390,
+            height: 844,
+            builder: (context) {
+              final max = ServanaResponsive.chatBubbleMaxWidth(context);
+              // 390 * 0.78 = 304.2, clamped to [240, 320] → 304.2
+              expect(max, closeTo(390 * 0.78, 1.0));
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('does not exceed 320 on a wide tablet', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 1024, height: 768, builder: (context) {
-          final max = ServanaResponsive.chatBubbleMaxWidth(context);
-          expect(max, equals(320.0));
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 1024,
+            height: 768,
+            builder: (context) {
+              final max = ServanaResponsive.chatBubbleMaxWidth(context);
+              expect(max, equals(320.0));
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('does not go below 240 on the narrowest phone', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 280, height: 568, builder: (context) {
-          final max = ServanaResponsive.chatBubbleMaxWidth(context);
-          expect(max, equals(240.0));
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 280,
+            height: 568,
+            builder: (context) {
+              final max = ServanaResponsive.chatBubbleMaxWidth(context);
+              expect(max, equals(240.0));
+              return const SizedBox.shrink();
+            }),
       );
     });
   });
@@ -88,37 +97,49 @@ void main() {
   group('ServanaResponsive breakpoint helpers', () {
     testWidgets('isCompact is true below 360dp', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 320, height: 568, builder: (context) {
-          expect(ServanaResponsive.isCompact(context), isTrue);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 320,
+            height: 568,
+            builder: (context) {
+              expect(ServanaResponsive.isCompact(context), isTrue);
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('isCompact is false at 360dp', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 360, height: 640, builder: (context) {
-          expect(ServanaResponsive.isCompact(context), isFalse);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 360,
+            height: 640,
+            builder: (context) {
+              expect(ServanaResponsive.isCompact(context), isFalse);
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('isTablet is true at 600dp', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 600, height: 960, builder: (context) {
-          expect(ServanaResponsive.isTablet(context), isTrue);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 600,
+            height: 960,
+            builder: (context) {
+              expect(ServanaResponsive.isTablet(context), isTrue);
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('isTablet is false on a standard phone', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 390, height: 844, builder: (context) {
-          expect(ServanaResponsive.isTablet(context), isFalse);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 390,
+            height: 844,
+            builder: (context) {
+              expect(ServanaResponsive.isTablet(context), isFalse);
+              return const SizedBox.shrink();
+            }),
       );
     });
   });
@@ -126,28 +147,37 @@ void main() {
   group('ServanaResponsive.horizontalPadding', () {
     testWidgets('compact phone gets 12dp', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 320, height: 568, builder: (context) {
-          expect(ServanaResponsive.horizontalPadding(context), 12.0);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 320,
+            height: 568,
+            builder: (context) {
+              expect(ServanaResponsive.horizontalPadding(context), 12.0);
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('standard phone gets 16dp', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 390, height: 844, builder: (context) {
-          expect(ServanaResponsive.horizontalPadding(context), 16.0);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 390,
+            height: 844,
+            builder: (context) {
+              expect(ServanaResponsive.horizontalPadding(context), 16.0);
+              return const SizedBox.shrink();
+            }),
       );
     });
 
     testWidgets('large tablet gets 48dp', (tester) async {
       await tester.pumpWidget(
-        _sizedApp(width: 1024, height: 768, builder: (context) {
-          expect(ServanaResponsive.horizontalPadding(context), 48.0);
-          return const SizedBox.shrink();
-        }),
+        _sizedApp(
+            width: 1024,
+            height: 768,
+            builder: (context) {
+              expect(ServanaResponsive.horizontalPadding(context), 48.0);
+              return const SizedBox.shrink();
+            }),
       );
     });
   });

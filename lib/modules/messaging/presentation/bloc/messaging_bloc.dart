@@ -46,4 +46,3 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     }
   }
 }
-

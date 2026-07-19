@@ -115,8 +115,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     if (initial == null) {
       // Try to recenter on GPS once we're mounted. Auto-attempt is silent on
       // failure; only the explicit FAB tap surfaces feedback.
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _recenterOnGps(showFailureFeedback: false));
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _recenterOnGps(showFailureFeedback: false));
     }
   }
 
@@ -185,8 +185,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
 
   Future<void> _reverseGeocodeAndFill(LatLng target) async {
     setState(() => _isGeocoding = true);
-    final place =
-        await LocationService().reverseGeocode(target.latitude, target.longitude);
+    final place = await LocationService()
+        .reverseGeocode(target.latitude, target.longitude);
     if (!mounted) return;
     if (place == null) {
       setState(() => _isGeocoding = false);
@@ -259,7 +259,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     const SizedBox(height: 8),
                     _field(
                       controller: _addressController,
-                      hint: 'House/Unit/Building, Street, Barangay, City, Province',
+                      hint:
+                          'House/Unit/Building, Street, Barangay, City, Province',
                       onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 12),
@@ -442,9 +443,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   Widget _buildWebGpsBanner() {
     // "Have a non-fallback pin" — either an initialLocation was passed in, or
     // GPS resolved successfully. False when we're still sitting at BGC default.
-    final hasPin =
-        _pickedLatLng.latitude != _fallbackCenter.latitude ||
-            _pickedLatLng.longitude != _fallbackCenter.longitude;
+    final hasPin = _pickedLatLng.latitude != _fallbackCenter.latitude ||
+        _pickedLatLng.longitude != _fallbackCenter.longitude;
     return Container(
       width: double.infinity,
       color: ColorPalette.secondaryBackground,

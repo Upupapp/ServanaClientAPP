@@ -83,7 +83,8 @@ abstract final class BookingErrorMapper {
     if (raw.contains('slot') || raw.contains('unavailable')) {
       return (
         category: BookingErrorCategory.slotUnavailable,
-        message: 'That time slot is no longer available. Please choose another.',
+        message:
+            'That time slot is no longer available. Please choose another.',
       );
     }
     if (raw.contains('address') || raw.contains('coverage')) {
@@ -101,13 +102,15 @@ abstract final class BookingErrorMapper {
     if (raw.contains('price') || raw.contains('changed')) {
       return (
         category: BookingErrorCategory.priceChanged,
-        message: 'The price has changed since you last viewed it. Please review the updated total.',
+        message:
+            'The price has changed since you last viewed it. Please review the updated total.',
       );
     }
     if (raw.contains('duplicate') || raw.contains('already')) {
       return (
         category: BookingErrorCategory.duplicateSubmission,
-        message: 'This booking may already have been created. Check My Bookings.',
+        message:
+            'This booking may already have been created. Check My Bookings.',
       );
     }
     if (raw.contains('network') ||
@@ -117,10 +120,13 @@ abstract final class BookingErrorMapper {
         raw.contains('408')) {
       return (
         category: BookingErrorCategory.networkUnavailable,
-        message: 'No internet connection. Please check your connection and try again.',
+        message:
+            'No internet connection. Please check your connection and try again.',
       );
     }
-    if (raw.contains('401') || raw.contains('403') || raw.contains('unauthorized')) {
+    if (raw.contains('401') ||
+        raw.contains('403') ||
+        raw.contains('unauthorized')) {
       return (
         category: BookingErrorCategory.authenticationRequired,
         message: 'Your session has expired. Please sign in again.',

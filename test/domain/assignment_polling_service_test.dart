@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AssignmentPollResult', () {
-    test('isAssigned requires non-empty workerUid AND assigned/confirmed status',
+    test(
+        'isAssigned requires non-empty workerUid AND assigned/confirmed status',
         () {
       expect(
         const AssignmentPollResult(

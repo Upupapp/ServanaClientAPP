@@ -750,45 +750,53 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                   );
                 }),
             const Gap(25),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: PrimaryButton(
-                text: "Book Now",
-                onClick: () {
-                  var bloc = BlocProvider.of<JobOrderBloc>(context);
+            BlocBuilder<JobOrderBloc, JOState>(
+              builder: (context, state) {
+                final submitting = state is LoadingJOState;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25),
+                  child: PrimaryButton(
+                    text: "Book Now",
+                    onClick: submitting
+                        ? null
+                        : () {
+                            var bloc = BlocProvider.of<JobOrderBloc>(context);
 
-                  final errors = <String>[];
-                  if (_selectedDate == null) {
-                    errors.add("Please select schedule.");
-                  }
-                  if (_selectedLocation == null ||
-                      (_selectedAddress ?? '').trim().isEmpty) {
-                    errors.add("Please confirm your service location.");
-                  }
+                            final errors = <String>[];
+                            if (_selectedDate == null) {
+                              errors.add("Please select schedule.");
+                            }
+                            if (_selectedLocation == null ||
+                                (_selectedAddress ?? '').trim().isEmpty) {
+                              errors
+                                  .add("Please confirm your service location.");
+                            }
 
-                  if (errors.isNotEmpty) {
-                    AwesomeDialog(
-                      context: context,
-                      dialogType: DialogType.error,
-                      title: "Error",
-                      desc: errors.join("\n"),
-                    ).show();
-                    return;
-                  }
+                            if (errors.isNotEmpty) {
+                              AwesomeDialog(
+                                context: context,
+                                dialogType: DialogType.error,
+                                title: "Error",
+                                desc: errors.join("\n"),
+                              ).show();
+                              return;
+                            }
 
-                  bloc.add(
-                    JoRequestEvent(
-                      widget.merchantId,
-                      widget.merchantName,
-                      _selectedDate!,
-                      _selectedLocation!,
-                      _selectedAddress!.trim(),
-                      _notedController.text,
-                    ),
-                  );
-                },
-                width: double.maxFinite,
-              ),
+                            bloc.add(
+                              JoRequestEvent(
+                                widget.merchantId,
+                                widget.merchantName,
+                                _selectedDate!,
+                                _selectedLocation!,
+                                _selectedAddress!.trim(),
+                                _notedController.text,
+                              ),
+                            );
+                          },
+                    width: double.maxFinite,
+                  ),
+                );
+              },
             ),
             const Gap(15),
           ],

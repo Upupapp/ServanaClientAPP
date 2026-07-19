@@ -28,8 +28,7 @@ class JobOrder with _$JobOrder {
     required int numberOfPersonnel,
     required int distanceFromOffice,
     required String merchantServiceName,
-    @Default('')
-    String merchantServicePhoto,
+    @Default('') String merchantServicePhoto,
     DateTime? actualDateStart,
     DateTime? actualDateEnd,
     required double latitude,

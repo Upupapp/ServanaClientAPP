@@ -179,8 +179,7 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
     const double horizontalPadding = 48; // 24dp each side
     const double gapBetweenCells = 8;
     const int gapCount = _otpLength - 1;
-    final double usable =
-        MediaQuery.of(context).size.width - horizontalPadding;
+    final double usable = MediaQuery.of(context).size.width - horizontalPadding;
     final double pinWidth =
         ((usable - gapCount * gapBetweenCells) / _otpLength).clamp(42.0, 56.0);
 

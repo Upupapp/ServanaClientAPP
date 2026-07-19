@@ -82,12 +82,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool get _shouldPoll {
     if (_isAssigned) return false;
     if (_needsPayment) return false; // assignment only happens after payment
-    if (_needsOtp) return false; // BE assigns a technician only after OTP confirm
+    if (_needsOtp) {
+      return false; // BE assigns a technician only after OTP confirm
+    }
     final s = _bookingStatus?.toUpperCase();
-    return s == null ||
-        s == 'CONFIRMED' ||
-        s == 'PAID' ||
-        s == 'PENDING';
+    return s == null || s == 'CONFIRMED' || s == 'PAID' || s == 'PENDING';
   }
 
   /// Re-fetch this booking from the API and update state.
@@ -108,8 +107,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           res['data'] as Map<String, dynamic>? ??
           res;
 
-      final paymentStatus =
-          (b['paymentStatus'] ?? '').toString().toUpperCase();
+      final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
       final status = (b['status'] ?? '').toString().toUpperCase();
       final workerUid = b['workerUid']?.toString();
       final eta = b['etaMinutes'];
@@ -170,7 +168,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _pollTimer = null;
       }
     } catch (_) {
-      if (mounted) setState(() => _refreshError = 'Could not refresh. Tap ↻ to retry.');
+      if (mounted) {
+        setState(() => _refreshError = 'Could not refresh. Tap ↻ to retry.');
+      }
     } finally {
       if (mounted) setState(() => _isRefreshing = false);
     }
@@ -237,8 +237,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child:
-                    CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white),
               ),
             )
           else
@@ -654,7 +654,8 @@ class _AssignmentCard extends StatelessWidget {
       if (assignedAt != null) {
         parts.add('Assigned ${DateFormat('h:mm a').format(assignedAt!)}');
       }
-      subtitle = parts.isEmpty ? 'On the way to your service.' : parts.join(' • ');
+      subtitle =
+          parts.isEmpty ? 'On the way to your service.' : parts.join(' • ');
     } else if (isPolling) {
       color = Colors.blueGrey;
       icon = Icons.search_rounded;

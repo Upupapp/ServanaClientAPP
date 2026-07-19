@@ -12,7 +12,8 @@ class HiveHelper {
   Future<Box<T>> openBox<T>(String box) async {
     final key = await secureStorageRepo.retrieveCipherKey();
     if (key == null) {
-      throw StateError('Cipher key unavailable — secure storage may be inaccessible.');
+      throw StateError(
+          'Cipher key unavailable — secure storage may be inaccessible.');
     }
     final encryptionKeyUint8List = base64Url.decode(key);
     final cipher = HiveAesCipher(encryptionKeyUint8List);

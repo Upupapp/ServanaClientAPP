@@ -7,8 +7,15 @@ class ErrorMessageMapper {
     if (raw == null || raw.isEmpty) return _defaultLogin;
     final lower = raw.toLowerCase();
 
-    if (_contains(lower, ['invalid', 'incorrect', 'wrong', 'bad credential',
-        'not found', 'no account', 'does not exist'])) {
+    if (_contains(lower, [
+      'invalid',
+      'incorrect',
+      'wrong',
+      'bad credential',
+      'not found',
+      'no account',
+      'does not exist'
+    ])) {
       return 'The email or password is incorrect.';
     }
     if (_contains(lower, ['verify', 'verified', 'verification', 'confirm'])) {
@@ -17,8 +24,14 @@ class ErrorMessageMapper {
     if (_contains(lower, ['rate limit', 'too many', 'throttle', 'blocked'])) {
       return 'Too many attempts. Please wait a moment and try again.';
     }
-    if (_contains(lower, ['network', 'connection', 'reach server', 'offline',
-        'socket', 'timeout'])) {
+    if (_contains(lower, [
+      'network',
+      'connection',
+      'reach server',
+      'offline',
+      'socket',
+      'timeout'
+    ])) {
       return 'You appear to be offline. Check your connection and try again.';
     }
     if (_contains(lower, ['server', '500', '503', 'unavailable'])) {
@@ -37,7 +50,8 @@ class ErrorMessageMapper {
     if (_contains(lower, ['already', 'exist', 'duplicate', 'taken'])) {
       return 'An account with this email already exists. Try signing in instead.';
     }
-    if (_contains(lower, ['network', 'connection', 'reach server', 'offline'])) {
+    if (_contains(
+        lower, ['network', 'connection', 'reach server', 'offline'])) {
       return 'You appear to be offline. Check your connection and try again.';
     }
     if (_contains(lower, ['password', 'weak', 'strength'])) {

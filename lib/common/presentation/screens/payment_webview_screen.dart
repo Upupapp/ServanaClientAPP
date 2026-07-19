@@ -301,7 +301,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
                   ],
                 ),
               );
-              if (confirm == true && mounted && !_dismissed) {
+              if (confirm == true && context.mounted && !_dismissed) {
                 _stopPolling();
                 _dismissed = true;
                 Navigator.of(context).pop(false);
@@ -331,7 +331,8 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: ColorPalette.danger),
+              const Icon(Icons.error_outline,
+                  size: 48, color: ColorPalette.danger),
               const SizedBox(height: 12),
               Text(
                 'Payment URL is not available. Please go back and try again.',
@@ -359,10 +360,8 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
 
     return Stack(
       children: [
-        if (_webController != null)
-          WebViewWidget(controller: _webController!),
-        if (_isPageLoading)
-          const Center(child: CircularProgressIndicator()),
+        if (_webController != null) WebViewWidget(controller: _webController!),
+        if (_isPageLoading) const Center(child: CircularProgressIndicator()),
         if (_pollExpired)
           _ManualCheckBanner(onTap: _manualCheck, isChecking: _isChecking),
       ],

@@ -457,12 +457,12 @@ class HttpBackend implements Backend {
       jobOrderNumber: 'BK-$id',
       merchantName: 'Servana',
       merchantID: 'servana',
-      scheduleDate: DateTime.tryParse(b['schedule']?.toString() ?? '') ??
-          DateTime.now(),
+      scheduleDate:
+          DateTime.tryParse(b['schedule']?.toString() ?? '') ?? DateTime.now(),
       jobOrderStatus: jobStatus,
       jobOrderStatusToString: statusLabel,
-      address:
-          '${b['address'] ?? ''}, ${b['postTown'] ?? ''}'.replaceAll(RegExp(r'^, |, $'), ''),
+      address: '${b['address'] ?? ''}, ${b['postTown'] ?? ''}'
+          .replaceAll(RegExp(r'^, |, $'), ''),
       latitude: 0,
       longitude: 0,
       numberOfPersonnel: 1,
@@ -471,8 +471,8 @@ class HttpBackend implements Backend {
       downPayment: 0,
       totalAmount: totalAmount,
       paymentType: paymentMethod == 'PAYMONGO' ? 3 : 1,
-      createdDate: DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
-          DateTime.now(),
+      createdDate:
+          DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime.now(),
       paymentStatus: paymentStatus,
       paymentMethodUsed: paymentMethod,
     );

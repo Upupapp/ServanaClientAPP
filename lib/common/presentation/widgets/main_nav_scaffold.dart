@@ -145,7 +145,8 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = tab.index == current;
-    final color = isActive ? MainNavScaffold._navBlue : MainNavScaffold._navGrey;
+    final color =
+        isActive ? MainNavScaffold._navBlue : MainNavScaffold._navGrey;
 
     return Semantics(
       label: tab.semanticLabel(badge: badge),
@@ -212,8 +213,7 @@ class _NavItem extends StatelessWidget {
                   fontSize: 10,
                   color: color,
                   letterSpacing: -0.4,
-                  fontWeight:
-                      isActive ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ],

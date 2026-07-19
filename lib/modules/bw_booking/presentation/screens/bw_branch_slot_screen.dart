@@ -58,7 +58,7 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
+                  const Icon(Icons.error_outline,
                       size: 48, color: ColorPalette.danger),
                   const SizedBox(height: 12),
                   Text(
@@ -75,9 +75,8 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                         ? () => store.loadBranches(
                             serviceId: store.selectedServiceId!)
                         : () => Navigator.of(context).pop(),
-                    child: Text(store.selectedServiceId != null
-                        ? 'Retry'
-                        : 'Go Back'),
+                    child: Text(
+                        store.selectedServiceId != null ? 'Retry' : 'Go Back'),
                   ),
                 ],
               ),
@@ -91,7 +90,7 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ──── Select Date ────
-              _SectionTitle('Select Date'),
+              const _SectionTitle('Select Date'),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _pickDate,
@@ -130,7 +129,7 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
               // ──── Available Time Slots ────
               if (store.selectedDate != null) ...[
                 const SizedBox(height: 24),
-                _SectionTitle('Available Time Slots'),
+                const _SectionTitle('Available Time Slots'),
                 const SizedBox(height: 8),
                 if (store.isLoading && store.slots.isEmpty)
                   const Padding(
@@ -160,8 +159,7 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                       final selectedSlotTime =
                           store.selectedSlot?['slotTime']?.toString();
                       final isSelected = slotTime == selectedSlotTime;
-                      final isAvailable =
-                          slot['available'] == true;
+                      final isAvailable = slot['available'] == true;
                       final remaining = slot['remainingCapacity'];
                       final displayTime = _formatSlotTime(slotTime);
 
@@ -176,8 +174,7 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isSelected
-                                      ? ColorPalette.primaryText
-                                          .withOpacity(.8)
+                                      ? ColorPalette.primaryText.withOpacity(.8)
                                       : ColorPalette.accentText,
                                 ),
                               ),
@@ -196,9 +193,8 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                                   : ColorPalette.accentText,
                           fontWeight: FontWeight.w600,
                         ),
-                        onSelected: isAvailable
-                            ? (_) => store.selectSlot(slot)
-                            : null,
+                        onSelected:
+                            isAvailable ? (_) => store.selectSlot(slot) : null,
                       );
                     }).toList(),
                   ),

@@ -9,7 +9,8 @@ bool _isHttpUrl(String? url) {
   if (u == null || u.isEmpty) return false;
   final parsed = Uri.tryParse(u);
   if (parsed == null) return false;
-  return parsed.hasScheme && (parsed.scheme == 'http' || parsed.scheme == 'https');
+  return parsed.hasScheme &&
+      (parsed.scheme == 'http' || parsed.scheme == 'https');
 }
 
 bool _allowNetworkImages() {
@@ -74,4 +75,3 @@ class AppImage extends StatelessWidget {
     );
   }
 }
-

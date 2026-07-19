@@ -28,14 +28,14 @@ abstract final class AppMotionTokens {
   static const Duration celebration = Duration(milliseconds: 650);
 
   // Splash-specific
-  static const Duration splashFull    = Duration(milliseconds: 2200);
+  static const Duration splashFull = Duration(milliseconds: 2200);
   static const Duration splashReduced = Duration(milliseconds: 500);
 
   // ── Curves ─────────────────────────────────────────────────────────────────
 
-  static const Curve standardEase   = Curves.easeInOut;
-  static const Curve enterEase      = Curves.easeOutCubic;
-  static const Curve exitEase       = Curves.easeInCubic;
+  static const Curve standardEase = Curves.easeInOut;
+  static const Curve enterEase = Curves.easeOutCubic;
+  static const Curve exitEase = Curves.easeInCubic;
   // Material You "emphasized" easing — fast initial movement, soft settle.
   static const Curve emphasizedEase = Cubic(0.2, 0.0, 0.0, 1.0);
 

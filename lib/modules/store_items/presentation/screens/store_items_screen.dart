@@ -319,8 +319,7 @@ class _StoreItemsScreenState extends State<StoreItemsScreen>
                                                   if (!context.mounted) return;
                                                   context.pushNamed(
                                                     BwOptionsScreen.routeName,
-                                                    extra:
-                                                        s.merchantServiceID,
+                                                    extra: s.merchantServiceID,
                                                   );
                                                   return;
                                                 }

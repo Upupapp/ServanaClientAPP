@@ -422,8 +422,7 @@ abstract class _AirconBookingStore with Store {
     isPaymentLoading = true;
     errorMessage = null;
     try {
-      final res =
-          await api.createPaymongoSession(bookingId: createdBookingId!);
+      final res = await api.createPaymongoSession(bookingId: createdBookingId!);
       final data = res['data'] ?? res;
       paymongoCheckoutUrl =
           data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();

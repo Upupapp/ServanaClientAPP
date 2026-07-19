@@ -6,11 +6,15 @@ void main() {
     test('maps common backend strings', () {
       expect(BookingStatusMapper.fromString('PENDING_OTP'),
           BookingStatus.pendingOtp);
-      expect(BookingStatusMapper.fromString('FOR_OTP'), BookingStatus.pendingOtp);
+      expect(
+          BookingStatusMapper.fromString('FOR_OTP'), BookingStatus.pendingOtp);
       expect(BookingStatusMapper.fromString('PAID'), BookingStatus.paid);
-      expect(BookingStatusMapper.fromString('CONFIRMED'), BookingStatus.confirmed);
-      expect(BookingStatusMapper.fromString('ASSIGNED'), BookingStatus.assigned);
-      expect(BookingStatusMapper.fromString('ACCEPTED'), BookingStatus.assigned);
+      expect(
+          BookingStatusMapper.fromString('CONFIRMED'), BookingStatus.confirmed);
+      expect(
+          BookingStatusMapper.fromString('ASSIGNED'), BookingStatus.assigned);
+      expect(
+          BookingStatusMapper.fromString('ACCEPTED'), BookingStatus.assigned);
       expect(BookingStatusMapper.fromString('AWAITING_ASSIGNMENT'),
           BookingStatus.awaitingAssignment);
       expect(BookingStatusMapper.fromString('FOR_REVIEW'),
@@ -19,7 +23,8 @@ void main() {
 
     test('is case-insensitive', () {
       expect(BookingStatusMapper.fromString('paid'), BookingStatus.paid);
-      expect(BookingStatusMapper.fromString('Confirmed'), BookingStatus.confirmed);
+      expect(
+          BookingStatusMapper.fromString('Confirmed'), BookingStatus.confirmed);
     });
 
     test('returns unknown for unrecognised values', () {
@@ -37,7 +42,8 @@ void main() {
       expect(BookingStatusMapper.requiresPayment(BookingStatus.pendingPayment),
           isTrue);
       expect(BookingStatusMapper.requiresPayment(BookingStatus.paid), isFalse);
-      expect(BookingStatusMapper.requiresPayment(BookingStatus.confirmed), isFalse);
+      expect(BookingStatusMapper.requiresPayment(BookingStatus.confirmed),
+          isFalse);
     });
 
     test('requiresOtp', () {
@@ -46,25 +52,30 @@ void main() {
     });
 
     test('isGenuineSuccess', () {
-      expect(BookingStatusMapper.isGenuineSuccess(BookingStatus.confirmed), isTrue);
-      expect(BookingStatusMapper.isGenuineSuccess(BookingStatus.assigned), isTrue);
+      expect(BookingStatusMapper.isGenuineSuccess(BookingStatus.confirmed),
+          isTrue);
+      expect(
+          BookingStatusMapper.isGenuineSuccess(BookingStatus.assigned), isTrue);
       expect(BookingStatusMapper.isGenuineSuccess(BookingStatus.paid), isTrue);
       expect(BookingStatusMapper.isGenuineSuccess(BookingStatus.pendingPayment),
           isFalse);
-      expect(BookingStatusMapper.isGenuineSuccess(BookingStatus.unknown), isFalse);
+      expect(
+          BookingStatusMapper.isGenuineSuccess(BookingStatus.unknown), isFalse);
     });
 
     test('shouldPollAssignment', () {
       expect(BookingStatusMapper.shouldPollAssignment(BookingStatus.confirmed),
           isTrue);
-      expect(BookingStatusMapper.shouldPollAssignment(BookingStatus.paid), isTrue);
       expect(
-          BookingStatusMapper.shouldPollAssignment(BookingStatus.awaitingAssignment),
+          BookingStatusMapper.shouldPollAssignment(BookingStatus.paid), isTrue);
+      expect(
+          BookingStatusMapper.shouldPollAssignment(
+              BookingStatus.awaitingAssignment),
           isTrue);
-      expect(
-          BookingStatusMapper.shouldPollAssignment(BookingStatus.assigned), isFalse);
-      expect(
-          BookingStatusMapper.shouldPollAssignment(BookingStatus.cancelled), isFalse);
+      expect(BookingStatusMapper.shouldPollAssignment(BookingStatus.assigned),
+          isFalse);
+      expect(BookingStatusMapper.shouldPollAssignment(BookingStatus.cancelled),
+          isFalse);
     });
   });
 

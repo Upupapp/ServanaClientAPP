@@ -25,4 +25,3 @@ class MessagingError extends MessagingState {
   final String message;
   const MessagingError(this.message);
 }
-

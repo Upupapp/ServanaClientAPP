@@ -174,8 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
             constraints: const BoxConstraints(),
           ),
           IconButton(
-            onPressed: () =>
-                context.pushNamed(NotificationsScreen.routeName),
+            onPressed: () => context.pushNamed(NotificationsScreen.routeName),
             icon: const Icon(Icons.notifications_outlined,
                 color: Colors.white, size: 26),
             padding: EdgeInsets.zero,
@@ -193,9 +192,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final session = store.session;
         if (session != null) {
           final parts = session.fullname
-                .split(RegExp(r'\s+'))
-                .where((p) => p.isNotEmpty)
-                .toList();
+              .split(RegExp(r'\s+'))
+              .where((p) => p.isNotEmpty)
+              .toList();
           final first = parts.isNotEmpty ? parts.first : _merchantName;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +513,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     name: name,
                     price: price,
                     imageAsset: imageAsset,
-                    categoryLabel: item.isAircon ? 'Aircon' : 'Beauty & Wellness',
+                    categoryLabel:
+                        item.isAircon ? 'Aircon' : 'Beauty & Wellness',
                     onTap: () {
                       AppHaptics.selection();
                       if (item.isAircon) {
@@ -697,8 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           SizedBox.square(
                             dimension: 100,
                             child: CircleAvatar(
-                              backgroundColor:
-                                  ColorPalette.secondaryBackground,
+                              backgroundColor: ColorPalette.secondaryBackground,
                               child: Text(
                                 _initials(store.session?.fullname),
                                 style: TextStyle(
@@ -864,8 +863,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _initials(String? name) {
     final n = (name ?? '').trim();
     if (n.isEmpty) return '?';
-    final parts =
-        n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     final first = parts.isNotEmpty ? parts.first : n;
     final last = parts.length > 1 ? parts.last : '';
     final a = first.isNotEmpty ? first[0] : '?';

@@ -15,6 +15,7 @@ import 'package:client/modules/store_items/presentation/screens/store_items_scre
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RewardsScreen extends StatefulWidget {
   static String routeName = "Rewards";
@@ -28,17 +29,17 @@ class RewardsScreen extends StatefulWidget {
 class _RewardsScreenState extends State<RewardsScreen> {
   int _points = 1240;
   final List<_RewardItem> _items = [
-    _RewardItem(
+    const _RewardItem(
       title: '₱100 Service Voucher',
       description: 'Valid on any service',
       cost: 500,
     ),
-    _RewardItem(
+    const _RewardItem(
       title: 'Free Transport Fee',
       description: 'Waive base transportation fee',
       cost: 750,
     ),
-    _RewardItem(
+    const _RewardItem(
       title: '₱250 Service Voucher',
       description: 'Valid on bookings above ₱1500',
       cost: 1200,
@@ -554,7 +555,8 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: ColorPalette.danger)),
+            child: const Text('Delete',
+                style: TextStyle(color: ColorPalette.danger)),
           ),
         ],
       ),
@@ -819,8 +821,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 color: ColorPalette.secondaryBackground,
                 borderRadius: BorderRadius.circular(14),
                 child: InkWell(
-                  onTap: () =>
-                      setState(() => _expanded = open ? null : i),
+                  onTap: () => setState(() => _expanded = open ? null : i),
                   borderRadius: BorderRadius.circular(14),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -845,8 +846,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                               open
                                   ? Icons.keyboard_arrow_up_rounded
                                   : Icons.keyboard_arrow_down_rounded,
-                              color: ColorPalette.secondaryText
-                                  .withOpacity(.45),
+                              color:
+                                  ColorPalette.secondaryText.withOpacity(.45),
                               size: 20,
                             ),
                           ],
@@ -858,7 +859,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                             style: TextStyle(
                               fontFamily: FontPalette.primaryFontFamily,
                               fontSize: 13,
-                              color: ColorPalette.secondaryText.withOpacity(.75),
+                              color:
+                                  ColorPalette.secondaryText.withOpacity(.75),
                               height: 1.5,
                             ),
                           ),
@@ -888,11 +890,14 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               color: ColorPalette.primaryColorDark.withOpacity(.07),
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
-                onTap: () {},
+                onTap: () => launchUrl(
+                  Uri.parse('mailto:support@servana.com.ph'),
+                  mode: LaunchMode.externalApplication,
+                ),
                 borderRadius: BorderRadius.circular(14),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     children: [
                       Container(
@@ -925,8 +930,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                               style: TextStyle(
                                 fontFamily: FontPalette.primaryFontFamily,
                                 fontSize: 12,
-                                color: ColorPalette.secondaryText
-                                    .withOpacity(.6),
+                                color:
+                                    ColorPalette.secondaryText.withOpacity(.6),
                               ),
                             ),
                           ],

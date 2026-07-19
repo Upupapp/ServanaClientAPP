@@ -58,8 +58,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
     }
     final query = _searchQuery.trim().toLowerCase();
     if (query.isNotEmpty) {
-      result = result
-          .where((item) => item.name.toLowerCase().contains(query));
+      result = result.where((item) => item.name.toLowerCase().contains(query));
     }
     return result.toList();
   }
@@ -103,8 +102,8 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
               GestureDetector(
                 onTap: () => context.pop(),
                 behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.arrow_back,
-                    color: Colors.white, size: 26),
+                child:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
               ),
               Expanded(
                 child: Text(
@@ -119,8 +118,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () =>
-                    context.pushNamed(NotificationsScreen.routeName),
+                onTap: () => context.pushNamed(NotificationsScreen.routeName),
                 behavior: HitTestBehavior.opaque,
                 child: const Icon(Icons.notifications_outlined,
                     color: Colors.white, size: 26),
@@ -217,9 +215,8 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? ColorPalette.primaryColorDark
-                      : Colors.white,
+                  color:
+                      selected ? ColorPalette.primaryColorDark : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: selected
@@ -233,9 +230,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                     fontFamily: FontPalette.primaryFontFamily,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: selected
-                        ? Colors.white
-                        : ColorPalette.secondaryText,
+                    color: selected ? Colors.white : ColorPalette.secondaryText,
                   ),
                 ),
               ),
@@ -281,8 +276,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
 
     final items = _filteredItems;
     if (items.isEmpty) {
-      final hasFilter =
-          _searchQuery.trim().isNotEmpty || _selectedChip != 0;
+      final hasFilter = _searchQuery.trim().isNotEmpty || _selectedChip != 0;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -405,63 +399,62 @@ class _ServiceCard extends StatelessWidget {
       button: true,
       label: item.name,
       child: Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.08),
-      child: InkWell(
-        onTap: onTap,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 1,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(item.imageAsset, fit: BoxFit.cover),
+        elevation: 1,
+        shadowColor: Colors.black.withOpacity(0.08),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(item.imageAsset, fit: BoxFit.cover),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: ColorPalette.secondaryText,
-                        ),
-                      ),
-                      if (item.price > 0)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
                         Text(
-                          '₱${item.price}',
+                          item.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: FontPalette.primaryFontFamily,
                             fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: ColorPalette.primaryColorDark,
+                            fontSize: 14,
+                            color: ColorPalette.secondaryText,
                           ),
                         ),
-                    ],
+                        if (item.price > 0)
+                          Text(
+                            '₱${item.price}',
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: ColorPalette.primaryColorDark,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }
-

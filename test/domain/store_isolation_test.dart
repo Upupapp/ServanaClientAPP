@@ -16,7 +16,8 @@ Map<String, dynamic> _option(String name) => {
     };
 
 void main() {
-  group('store isolation — AirconBookingStore options survive auth transition', () {
+  group('store isolation — AirconBookingStore options survive auth transition',
+      () {
     late AirconBookingStore airconStore;
 
     setUp(() {
@@ -24,7 +25,8 @@ void main() {
     });
 
     test('options are NOT cleared by BookingDraftService lifecycle', () {
-      runInAction(() => airconStore.optionsWithAddons.add(_option('Aircon Clean')));
+      runInAction(
+          () => airconStore.optionsWithAddons.add(_option('Aircon Clean')));
       expect(airconStore.bookableOptions, hasLength(1));
 
       // Simulate the full draft restore cycle that fires on AuthenticationAuthenticated
@@ -43,7 +45,8 @@ void main() {
     });
 
     test('reset() is the only mechanism that clears bookableOptions', () {
-      runInAction(() => airconStore.optionsWithAddons.add(_option('Deep Clean')));
+      runInAction(
+          () => airconStore.optionsWithAddons.add(_option('Deep Clean')));
       expect(airconStore.bookableOptions, hasLength(1));
 
       // Verify the one path that IS expected to clear options
@@ -51,7 +54,8 @@ void main() {
       expect(airconStore.bookableOptions, isEmpty);
     });
 
-    test('options from multiple categories survive draft clear independently', () {
+    test('options from multiple categories survive draft clear independently',
+        () {
       runInAction(() {
         airconStore.optionsWithAddons
           ..add(_option('Window Type'))
@@ -59,7 +63,8 @@ void main() {
       });
       expect(airconStore.bookableOptions, hasLength(2));
 
-      BookingDraftService().clear(); // No-op on a fresh service — must not affect store
+      BookingDraftService()
+          .clear(); // No-op on a fresh service — must not affect store
 
       expect(airconStore.bookableOptions, hasLength(2));
     });

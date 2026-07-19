@@ -234,8 +234,7 @@ abstract class _BwBookingStore with Store {
     isLoading = true;
     errorMessage = null;
     try {
-      final res =
-          await api.getBeautyAndWellnessBranches(serviceId: serviceId);
+      final res = await api.getBeautyAndWellnessBranches(serviceId: serviceId);
       final data = _extractList(res);
       branches
         ..clear()
@@ -261,9 +260,8 @@ abstract class _BwBookingStore with Store {
     errorMessage = null;
     final requestId = ++_slotRequestId;
     try {
-      final branchId = _parseInt(
-              selectedBranch!['branchId'] ?? selectedBranch!['id']) ??
-          0;
+      final branchId =
+          _parseInt(selectedBranch!['branchId'] ?? selectedBranch!['id']) ?? 0;
       final res =
           await api.getBranchSlots(branchId: branchId, date: selectedDate!);
       // Discard if a newer request was fired while we were waiting.
@@ -419,8 +417,7 @@ abstract class _BwBookingStore with Store {
     isPaymentLoading = true;
     errorMessage = null;
     try {
-      final res =
-          await api.createPaymongoSession(bookingId: createdBookingId!);
+      final res = await api.createPaymongoSession(bookingId: createdBookingId!);
       final data = res['data'] ?? res;
       paymongoCheckoutUrl =
           data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();

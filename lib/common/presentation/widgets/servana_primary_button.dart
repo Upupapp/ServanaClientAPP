@@ -50,7 +50,8 @@ class ServanaPrimaryButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, color: ColorPalette.primaryButtonTextColor, size: 18),
+                    Icon(icon,
+                        color: ColorPalette.primaryButtonTextColor, size: 18),
                     const SizedBox(width: 8),
                   ],
                   Text(

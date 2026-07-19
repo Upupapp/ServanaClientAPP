@@ -451,12 +451,12 @@ class _TimeoutClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) =>
       _inner.send(request).timeout(
-        _timeout,
-        onTimeout: () => throw ServanaApiException(
-          statusCode: 408,
-          body: 'Request timed out after ${_timeout.inSeconds}s',
-        ),
-      );
+            _timeout,
+            onTimeout: () => throw ServanaApiException(
+              statusCode: 408,
+              body: 'Request timed out after ${_timeout.inSeconds}s',
+            ),
+          );
 
   @override
   void close() => _inner.close();

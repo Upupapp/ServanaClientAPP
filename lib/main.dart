@@ -36,8 +36,7 @@ Future<void> _bootstrap() async {
   );
 
   if (!kDebugMode) {
-    FlutterError.onError =
-        FirebaseCrashlytics.instance.recordFlutterFatalError;
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
   }
 
   final config = AppConfig.fromEnv();

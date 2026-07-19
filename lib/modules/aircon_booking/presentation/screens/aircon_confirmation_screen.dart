@@ -154,15 +154,12 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                       ),
                     ),
                   ],
-
                   const SizedBox(height: 20),
                   QrWorkerCodeDisplay(
                     bookingId: store.createdBookingId,
                     workerCode: store.workerCode,
                   ),
-
                   const SizedBox(height: 24),
-
                   _DetailCard(children: [
                     _DetailRow(
                       label: 'Service',
@@ -191,7 +188,6 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                     if (store.selectedHpKey != null)
                       _DetailRow(label: 'HP', value: store.selectedHpKey!),
                   ]),
-
                   if (isPaymongo && !_paymongoCompleted) ...[
                     const SizedBox(height: 24),
                     Container(
@@ -266,7 +262,6 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                       ),
                     ),
                   ],
-
                   if (isPaymongo && _paymongoCompleted) ...[
                     const SizedBox(height: 24),
                     Container(
@@ -295,7 +290,6 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                       ),
                     ),
                   ],
-
                   if (store.createdBookingId != null &&
                       (!isPaymongo || _paymongoCompleted)) ...[
                     const SizedBox(height: 16),
@@ -310,9 +304,7 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                           : null,
                     ),
                   ],
-
                   const SizedBox(height: 32),
-
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -330,7 +322,9 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
                         context.goNamed(HomeScreen.routeName);
                       },
                       child: Text(
-                        isPendingPayment ? 'Pay Later & Go Home' : 'Back to Home',
+                        isPendingPayment
+                            ? 'Pay Later & Go Home'
+                            : 'Back to Home',
                         style: TextStyle(
                           fontFamily: FontPalette.primaryFontFamily,
                           fontWeight: FontWeight.w800,
@@ -351,7 +345,10 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
   String _optionName() {
     final opt = store.selectedOption;
     if (opt == null) return 'Aircon Service';
-    return (opt['level_3'] ?? opt['name'] ?? opt['optionName'] ?? 'Aircon Service')
+    return (opt['level_3'] ??
+            opt['name'] ??
+            opt['optionName'] ??
+            'Aircon Service')
         .toString();
   }
 

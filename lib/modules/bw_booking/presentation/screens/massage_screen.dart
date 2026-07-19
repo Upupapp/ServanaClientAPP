@@ -48,7 +48,10 @@ class _MassageScreenState extends State<MassageScreen> {
                   .contains('massage'))
               .map((o) => ServiceCardModel(
                     raw: o,
-                    name: (o['level_3'] ?? o['name'] ?? o['optionName'] ?? 'Service')
+                    name: (o['level_3'] ??
+                            o['name'] ??
+                            o['optionName'] ??
+                            'Service')
                         .toString(),
                     categoryKey: (o['level_2'] ?? '').toString(),
                     price: ServiceCardModel.extractPrice(o),

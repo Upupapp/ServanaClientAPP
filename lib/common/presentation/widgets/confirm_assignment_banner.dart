@@ -23,6 +23,7 @@ class ConfirmAssignmentBanner extends StatelessWidget {
   final bool isPolling;
   final String? workerName;
   final String? bookingStatus;
+
   /// True when the polling window closed without finding an assignment.
   final bool timedOut;
 

@@ -44,8 +44,7 @@ class SearchScreenState extends State<SearchScreen> {
                         t.raw['optionName'] ??
                         'Service')
                     .toString(),
-                categoryKey:
-                    t.source == _Source.bw ? 'beauty' : 'aircon',
+                categoryKey: t.source == _Source.bw ? 'beauty' : 'aircon',
                 price: ServiceCardModel.extractPrice(t.raw),
               ))
           .toList();

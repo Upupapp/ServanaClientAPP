@@ -200,7 +200,8 @@ class _BwPaymongoScreenState extends State<BwPaymongoScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: ColorPalette.danger),
+              const Icon(Icons.error_outline,
+                  size: 48, color: ColorPalette.danger),
               const SizedBox(height: 12),
               Text(
                 'Payment URL is not available. Please go back and try again.',

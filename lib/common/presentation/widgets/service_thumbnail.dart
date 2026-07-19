@@ -3,9 +3,7 @@
 /// facial, foot massage before massage).
 String serviceImageAsset(String name) {
   final n = name.toLowerCase();
-  if (n.contains('manicure') ||
-      n.contains('pedicure') ||
-      n.contains('nail')) {
+  if (n.contains('manicure') || n.contains('pedicure') || n.contains('nail')) {
     return 'assets/images/services/manicure_image.png';
   }
   if (n.contains('hair')) {

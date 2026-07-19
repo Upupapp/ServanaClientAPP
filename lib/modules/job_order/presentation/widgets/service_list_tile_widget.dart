@@ -112,7 +112,7 @@ class ServiceListTile extends StatelessWidget {
                             },
                           );
                         },
-                        child: Icon(
+                        child: const Icon(
                           Icons.delete,
                           color: ColorPalette.danger,
                           size: 20,

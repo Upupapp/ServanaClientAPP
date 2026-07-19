@@ -472,12 +472,14 @@ class _ServiceCategoriesVisual extends StatelessWidget {
       runSpacing: 10,
       alignment: WrapAlignment.center,
       children: List.generate(_services.length, (i) {
-        final chip = _ServiceChip(icon: _services[i].$1, label: _services[i].$2);
+        final chip =
+            _ServiceChip(icon: _services[i].$1, label: _services[i].$2);
         if (reducedMotion) return chip;
         return chip
             .animate(delay: Duration(milliseconds: i * 55))
             .fadeIn(duration: 380.ms, curve: Curves.easeOut)
-            .slideY(begin: 0.14, end: 0, duration: 340.ms, curve: Curves.easeOut);
+            .slideY(
+                begin: 0.14, end: 0, duration: 340.ms, curve: Curves.easeOut);
       }),
     );
   }

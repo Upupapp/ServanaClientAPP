@@ -59,7 +59,7 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
+                  const Icon(Icons.error_outline,
                       size: 48, color: ColorPalette.danger),
                   const SizedBox(height: 12),
                   Text(
@@ -85,9 +85,8 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
         final options = store.optionsWithAddons;
 
         // Separate main options from add-ons using optionType field.
-        final mainOptions = options
-            .where((o) => o['optionType'] != 'ADD_ON')
-            .toList();
+        final mainOptions =
+            options.where((o) => o['optionType'] != 'ADD_ON').toList();
 
         // options-with-addons
         final grouped = <String, List<Map<String, dynamic>>>{};
@@ -116,13 +115,18 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
                 const SizedBox(height: 8),
                 ...entry.value.map((opt) {
                   final id = opt['id'];
-                  final name = opt['level_3'] ?? opt['name'] ?? opt['optionName'] ?? 'Option $id';
+                  final name = opt['level_3'] ??
+                      opt['name'] ??
+                      opt['optionName'] ??
+                      'Option $id';
                   final price = ServiceCardModel.extractPrice(opt);
                   final selectedId = store.selectedOption?['id'];
                   final isSelected = id == selectedId;
                   return _OptionTile(
                     title: name.toString(),
-                    subtitle: price != 0 ? '₱${ServiceCardModel.formatPrice(price)}' : '',
+                    subtitle: price != 0
+                        ? '₱${ServiceCardModel.formatPrice(price)}'
+                        : '',
                     selected: isSelected,
                     onTap: () => store.selectOption(opt),
                   );
@@ -132,7 +136,7 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
 
               if (displayAddons.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                _SectionTitle('Add-ons'),
+                const _SectionTitle('Add-ons'),
                 const SizedBox(height: 8),
                 ...displayAddons.map((addon) {
                   final id = addon['id'] ?? 0;
@@ -253,7 +257,6 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
     }
     context.pushNamed(BwBranchSlotScreen.routeName);
   }
-
 }
 
 class _SectionTitle extends StatelessWidget {

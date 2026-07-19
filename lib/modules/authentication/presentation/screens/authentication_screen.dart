@@ -67,7 +67,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   void _showMobileComingSoon() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Mobile number login is coming soon. Use your email for now.'),
+        content:
+            Text('Mobile number login is coming soon. Use your email for now.'),
         duration: Duration(seconds: 4),
       ),
     );
@@ -76,7 +77,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   void _showForgotPasswordInfo() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Password reset is coming soon. Contact support if needed.'),
+        content:
+            Text('Password reset is coming soon. Contact support if needed.'),
         duration: Duration(seconds: 4),
       ),
     );
@@ -126,7 +128,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) => SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 25),
                         child: IntrinsicHeight(
@@ -140,7 +143,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                       'Enter your email and password to sign in.',
                                       maxLines: 4,
                                       style: TextStyle(
-                                        fontFamily: FontPalette.primaryFontFamily,
+                                        fontFamily:
+                                            FontPalette.primaryFontFamily,
                                         color: ColorPalette.secondaryText,
                                         fontSize: 15,
                                       ),
@@ -174,9 +178,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         child: Text(
                                           'Mobile number login coming soon — please use your email.',
                                           style: TextStyle(
-                                            fontFamily: FontPalette.primaryFontFamily,
+                                            fontFamily:
+                                                FontPalette.primaryFontFamily,
                                             fontSize: 12,
-                                            color: ColorPalette.primaryColorDark,
+                                            color:
+                                                ColorPalette.primaryColorDark,
                                           ),
                                         ),
                                       ),
@@ -193,7 +199,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                 obscureText: !_isPassVisible,
                                 trailing: InkWell(
                                   onTap: () {
-                                    setState(() => _isPassVisible = !_isPassVisible);
+                                    setState(
+                                        () => _isPassVisible = !_isPassVisible);
                                   },
                                   child: _isPassVisible
                                       ? Icon(
@@ -222,7 +229,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                     child: Text(
                                       'Forgot password?',
                                       style: TextStyle(
-                                        fontFamily: FontPalette.primaryFontFamily,
+                                        fontFamily:
+                                            FontPalette.primaryFontFamily,
                                         fontSize: 13,
                                         color: ColorPalette.primaryColorDark,
                                         fontWeight: FontWeight.w500,
@@ -234,7 +242,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
                               const Spacer(),
 
-                              BlocConsumer<AuthenticationBloc, AuthenticationState>(
+                              BlocConsumer<AuthenticationBloc,
+                                  AuthenticationState>(
                                 listener: (context, state) {
                                   if (state is AuthenticationLoading) {
                                     context.loaderOverlay.show();
@@ -247,7 +256,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                     context.goNamed(HomeScreen.routeName);
                                   }
                                   if (state is AuthenticationUnauthenticated) {
-                                    final msg = (state.message ?? '').toLowerCase();
+                                    final msg =
+                                        (state.message ?? '').toLowerCase();
                                     final isUnverifiedEmail =
                                         msg.contains('verify') ||
                                             msg.contains('verified') ||
@@ -267,11 +277,14 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                             'Open it from your inbox, then come back to sign in.',
                                         btnOkText: 'Resend link',
                                         btnOkOnPress: () {
-                                          BlocProvider.of<RegistrationBloc>(context).add(
+                                          BlocProvider.of<RegistrationBloc>(
+                                                  context)
+                                              .add(
                                             ResendVerificationEmail(
                                                 email: _identifier),
                                           );
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             const SnackBar(
                                                 content: Text(
                                                     'Verification link sent. Check your inbox.')),
@@ -287,20 +300,21 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         headerAnimationLoop: false,
                                         dialogType: DialogType.error,
                                         title: 'Sign In Failed',
-                                        desc: state.message ?? 'The email or password is incorrect.',
+                                        desc: state.message ??
+                                            'The email or password is incorrect.',
                                         btnOkOnPress: () {},
                                       ).show();
                                     }
                                   }
                                 },
                                 builder: (context, state) {
-                                  final isLoading = state is AuthenticationLoading;
+                                  final isLoading =
+                                      state is AuthenticationLoading;
                                   return PrimaryButton(
                                     width: 250,
                                     text: 'Sign In',
-                                    onClick: isLoading
-                                        ? null
-                                        : () => _submit(bloc),
+                                    onClick:
+                                        isLoading ? null : () => _submit(bloc),
                                   );
                                 },
                               ),
@@ -308,8 +322,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
                               // Sign up link
                               GestureDetector(
-                                onTap: () =>
-                                    context.goNamed(CreateAccountScreen.routeName),
+                                onTap: () => context
+                                    .goNamed(CreateAccountScreen.routeName),
                                 behavior: HitTestBehavior.opaque,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -318,7 +332,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                     TextSpan(
                                       text: "Don't have an account? ",
                                       style: TextStyle(
-                                        fontFamily: FontPalette.primaryFontFamily,
+                                        fontFamily:
+                                            FontPalette.primaryFontFamily,
                                         color: ColorPalette.secondaryText,
                                         fontSize: 14,
                                       ),
@@ -328,7 +343,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                           style: TextStyle(
                                             fontFamily:
                                                 FontPalette.primaryFontFamily,
-                                            color: ColorPalette.primaryColorDark,
+                                            color:
+                                                ColorPalette.primaryColorDark,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),

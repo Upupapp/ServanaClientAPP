@@ -39,7 +39,7 @@ ThemeData buildAppTheme(AppBrand brand) {
     cardTheme: CardThemeData(
       color: ColorPalette.secondaryBackground,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+      shape: const RoundedRectangleBorder(borderRadius: borderRadius),
       margin: EdgeInsets.zero,
     ),
     inputDecorationTheme: InputDecorationTheme(

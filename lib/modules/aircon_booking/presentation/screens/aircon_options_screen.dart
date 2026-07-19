@@ -79,7 +79,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
+                  const Icon(Icons.error_outline,
                       size: 48, color: ColorPalette.danger),
                   const SizedBox(height: 12),
                   Text(
@@ -125,7 +125,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SectionTitle('Select Service'),
+              const _SectionTitle('Select Service'),
               const SizedBox(height: 8),
               ...displayOptions.map((opt) {
                 final id = opt['id'] ?? opt['optionId'];
@@ -139,14 +139,16 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
                 final isSelected = id == selectedId;
                 return _OptionTile(
                   title: name.toString(),
-                  subtitle: price != 0 ? '₱${ServiceCardModel.formatPrice(price)}' : '',
+                  subtitle: price != 0
+                      ? '₱${ServiceCardModel.formatPrice(price)}'
+                      : '',
                   selected: isSelected,
                   onTap: () => store.selectOption(opt),
                 );
               }),
 
               const SizedBox(height: 20),
-              _SectionTitle('Horsepower'),
+              const _SectionTitle('Horsepower'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -170,7 +172,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
               ),
 
               const SizedBox(height: 20),
-              _SectionTitle('Floor / Height'),
+              const _SectionTitle('Floor / Height'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -194,7 +196,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
               ),
 
               const SizedBox(height: 20),
-              _SectionTitle('Distance'),
+              const _SectionTitle('Distance'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -219,7 +221,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
 
               if (displayAddons.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                _SectionTitle('Add-ons'),
+                const _SectionTitle('Add-ons'),
                 const SizedBox(height: 8),
                 ...displayAddons.map((addon) {
                   final id = addon['id'] ?? addon['optionId'] ?? 0;

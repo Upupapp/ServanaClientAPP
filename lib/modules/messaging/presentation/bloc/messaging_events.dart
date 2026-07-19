@@ -15,4 +15,3 @@ class SendBookingMessageEvent extends MessagingEvent {
     required this.text,
   });
 }
-

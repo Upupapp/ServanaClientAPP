@@ -41,9 +41,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHeader(context)),
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
               child: _SectionLabel(label: 'My Account'),
             ),
           ),
@@ -55,22 +55,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _MenuItem(
                     icon: Icons.location_on_outlined,
                     label: 'Saved Addresses',
-                    onTap: () => context
-                        .pushNamed(SavedAddressesScreen.routeName),
+                    onTap: () =>
+                        context.pushNamed(SavedAddressesScreen.routeName),
                   ),
                   _MenuItem(
                     icon: Icons.language_rounded,
                     label: 'Language',
-                    onTap: () =>
-                        context.pushNamed(LanguageScreen.routeName),
+                    onTap: () => context.pushNamed(LanguageScreen.routeName),
                   ),
                 ],
               ),
             ),
           ),
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: _SectionLabel(label: 'Support'),
             ),
           ),
@@ -82,8 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _MenuItem(
                     icon: Icons.help_outline_rounded,
                     label: 'Help & Support',
-                    onTap: () =>
-                        context.pushNamed(HelpSupportScreen.routeName),
+                    onTap: () => context.pushNamed(HelpSupportScreen.routeName),
                   ),
                 ],
               ),
@@ -126,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   );
                                 },
                           child: isLoading
-                              ? SizedBox(
+                              ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
@@ -358,4 +356,3 @@ class _MenuItem extends StatelessWidget {
     );
   }
 }
-

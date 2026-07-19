@@ -296,7 +296,7 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
               const SizedBox(height: 24),
 
               // ──── Payment method ────
-              _SectionHeader(title: 'Payment Method'),
+              const _SectionHeader(title: 'Payment Method'),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -373,7 +373,10 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
   String _optionName() {
     final opt = store.selectedOption;
     if (opt == null) return 'Beauty & Wellness Service';
-    return (opt['level_3'] ?? opt['name'] ?? opt['optionName'] ?? 'Beauty & Wellness Service')
+    return (opt['level_3'] ??
+            opt['name'] ??
+            opt['optionName'] ??
+            'Beauty & Wellness Service')
         .toString();
   }
 
@@ -455,8 +458,7 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
         lon: (store.selectedAddress?['lon'] as num?)?.toDouble(),
         selectedDate: store.selectedDate,
         selectedSlot: (store.selectedSlot?['slotTime'] ?? '').toString(),
-        pricingSnapshot:
-            store.estimatedTotal > 0 ? store.estimatedTotal : null,
+        pricingSnapshot: store.estimatedTotal > 0 ? store.estimatedTotal : null,
       ));
       if (!mounted) return;
       context.goNamed(

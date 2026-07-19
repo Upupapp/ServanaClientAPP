@@ -49,8 +49,7 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
     // Announce category name for assistive tech immediately after frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final label =
-          widget.config.semanticAnnouncement ?? widget.config.title;
+      final label = widget.config.semanticAnnouncement ?? widget.config.title;
       SemanticsService.announce(label, TextDirection.ltr);
     });
 
@@ -126,8 +125,7 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
         _MassageContent(config: widget.config, minimal: minimal),
       ServiceCategoryId.aircon =>
         _AirconContent(config: widget.config, minimal: minimal),
-      ServiceCategoryId.generic =>
-        _GenericContent(config: widget.config),
+      ServiceCategoryId.generic => _GenericContent(config: widget.config),
     };
   }
 }
@@ -183,7 +181,9 @@ class _RevealSubtext extends StatelessWidget {
       ),
     );
     if (minimal) return t;
-    return t.animate(delay: 300.ms).fadeIn(duration: 380.ms, curve: Curves.easeOut);
+    return t
+        .animate(delay: 300.ms)
+        .fadeIn(duration: 380.ms, curve: Curves.easeOut);
   }
 }
 
@@ -256,7 +256,8 @@ class _BeautyContent extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _RevealHeadline(text: config.revealHeadline, minimal: minimal),
+                  _RevealHeadline(
+                      text: config.revealHeadline, minimal: minimal),
                   const SizedBox(height: 16),
                   _RevealSubtext(text: config.revealSubtext, minimal: minimal),
                 ],
@@ -483,7 +484,8 @@ class _AirconContent extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _RevealHeadline(text: config.revealHeadline, minimal: minimal),
+                  _RevealHeadline(
+                      text: config.revealHeadline, minimal: minimal),
                   const SizedBox(height: 16),
                   _RevealSubtext(text: config.revealSubtext, minimal: minimal),
                 ],

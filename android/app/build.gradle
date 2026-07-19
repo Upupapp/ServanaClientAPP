@@ -97,6 +97,5 @@ dependencies {
    implementation 'com.aheaditec.talsec.security:TalsecSecurity-Community-Flutter:6.4.0'
 }
 
-apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'

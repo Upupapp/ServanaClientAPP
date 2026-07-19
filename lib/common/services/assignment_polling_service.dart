@@ -17,7 +17,8 @@ class AssignmentPollResult {
   final String? workerName;
 
   bool get isAssigned =>
-      workerUid != null && workerUid!.isNotEmpty &&
+      workerUid != null &&
+      workerUid!.isNotEmpty &&
       (status == BookingStatus.assigned || status == BookingStatus.confirmed);
 }
 

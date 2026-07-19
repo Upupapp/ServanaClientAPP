@@ -130,7 +130,7 @@ class _BwAddOnsScreenState extends State<BwAddOnsScreen> {
               const SizedBox(height: 24),
 
               if (addons.isNotEmpty) ...[
-                _SectionTitle('Add to your service'),
+                const _SectionTitle('Add to your service'),
                 const SizedBox(height: 4),
                 Text(
                   'Optional — tap to include in this booking.',
@@ -252,7 +252,6 @@ class _BwAddOnsScreenState extends State<BwAddOnsScreen> {
       }),
     );
   }
-
 }
 
 class _SectionTitle extends StatelessWidget {

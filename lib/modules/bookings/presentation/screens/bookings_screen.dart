@@ -213,8 +213,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
               selectedSegment: _segment,
               onSelect: (s) => setState(() => _segment = s),
               countFor: (s) => Observer(
-                builder: (_) =>
-                    _countBadge(s, _countForSegment(store.bookings.toList(), s)),
+                builder: (_) => _countBadge(
+                    s, _countForSegment(store.bookings.toList(), s)),
               ),
             ),
             Expanded(
@@ -230,9 +230,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     ..sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
                   return RefreshIndicator(
                     onRefresh: _doLoad,
-                    child: filtered.isEmpty
-                        ? _buildEmpty()
-                        : _buildList(filtered),
+                    child:
+                        filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
                   );
                 },
               ),
@@ -489,8 +488,7 @@ class _GradientHeader extends StatelessWidget {
                 width: 44,
                 height: 44,
                 child: GestureDetector(
-                  onTap: () =>
-                      context.pushNamed(NotificationsScreen.routeName),
+                  onTap: () => context.pushNamed(NotificationsScreen.routeName),
                   behavior: HitTestBehavior.opaque,
                   child: const Center(
                     child: Icon(Icons.notifications_outlined,
@@ -561,19 +559,18 @@ class _SegmentChip extends StatelessWidget {
               Icon(
                 segment.icon,
                 size: 13,
-                color: isSelected ? ColorPalette.primaryColorDark : Colors.white,
+                color:
+                    isSelected ? ColorPalette.primaryColorDark : Colors.white,
               ),
               const SizedBox(width: 5),
               Text(
                 segment.label,
                 style: TextStyle(
                   fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 12,
-                  color: isSelected
-                      ? ColorPalette.primaryColorDark
-                      : Colors.white,
+                  color:
+                      isSelected ? ColorPalette.primaryColorDark : Colors.white,
                 ),
               ),
               countWidget,
@@ -628,8 +625,8 @@ class _BookingCard extends StatelessWidget {
                 children: [
                   // Booking number chip
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: ColorPalette.primaryColorDark.withOpacity(.1),
                       borderRadius: BorderRadius.circular(8),

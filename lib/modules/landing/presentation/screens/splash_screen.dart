@@ -49,14 +49,14 @@ class _SplashScreenState extends State<SplashScreen>
   // we push them ~250 dp further along their dominant direction so the fly-in
   // reads as a longer trajectory rather than a quick edge-pop.
   // (Original Figma values are kept in the comments for reference.)
-  static const Rect _v1Start = Rect.fromLTWH(-450, 214, 186, 175);   // was -189
-  static const Rect _v2Start = Rect.fromLTWH(700, -100, 186, 175);   // was 432, 23
-  static const Rect _v3Start = Rect.fromLTWH(60, -450, 186, 175);    // was -178
-  static const Rect _v4Start = Rect.fromLTWH(700, 571, 186, 175);    // was 430
-  static const Rect _v5Start = Rect.fromLTWH(115, 1250, 186, 175);   // was 933
-  static const Rect _v6Start = Rect.fromLTWH(-450, 746, 186, 175);   // was -186
-  static const Rect _v7Start = Rect.fromLTWH(216, 463, 4, 4);        // V7 stays
-
+  static const Rect _v1Start = Rect.fromLTWH(-450, 214, 186, 175); // was -189
+  static const Rect _v2Start =
+      Rect.fromLTWH(700, -100, 186, 175); // was 432, 23
+  static const Rect _v3Start = Rect.fromLTWH(60, -450, 186, 175); // was -178
+  static const Rect _v4Start = Rect.fromLTWH(700, 571, 186, 175); // was 430
+  static const Rect _v5Start = Rect.fromLTWH(115, 1250, 186, 175); // was 933
+  static const Rect _v6Start = Rect.fromLTWH(-450, 746, 186, 175); // was -186
+  static const Rect _v7Start = Rect.fromLTWH(216, 463, 4, 4); // V7 stays
 
   // Step 1 — settled logo (Figma node 128:31). The seven shapes form the
   // Servana blue mark inside the 169.6 × 169.3 bbox at (130, 381).
@@ -76,14 +76,16 @@ class _SplashScreenState extends State<SplashScreen>
   // petal bbox top of y=381 → render top = 316.31.
   static const double _blueLogoW = 169.6101837158203;
   static const double _blueLogoH = 169.6101837158203 * 33.0525 / 24.0; // 233.55
-  static const Rect _blueLogoRect = Rect.fromLTWH(130, 316.31, _blueLogoW, _blueLogoH);
+  static const Rect _blueLogoRect =
+      Rect.fromLTWH(130, 316.31, _blueLogoW, _blueLogoH);
 
   // Chevron drop — Figma nodes 154:69 (step 2, off-screen above) and 154:101
   // (step 3, settled). Chevron path occupies SVG-y 0 → 15.47, so the full SVG
   // is rendered at chevron width and the chevron top aligns with the SVG top.
   static const double _chevronW = 169.92066955566406;
   static const double _chevronH = 169.92066955566406 * 33.0525 / 24.0; // 234.04
-  static const Rect _chevronStart = Rect.fromLTWH(130, -110, _chevronW, _chevronH);
+  static const Rect _chevronStart =
+      Rect.fromLTWH(130, -110, _chevronW, _chevronH);
   static const Rect _chevronEnd = Rect.fromLTWH(129, 312, _chevronW, _chevronH);
 
   // Animation timeline (2200 ms total). All interval ratios are unchanged from
@@ -132,8 +134,8 @@ class _SplashScreenState extends State<SplashScreen>
       parent: _controller,
       curve: const Interval(0.650, 0.900, curve: Curves.easeInCubic),
     );
-    _chevron = RectTween(begin: _chevronStart, end: _chevronEnd)
-        .animate(chevronDrop);
+    _chevron =
+        RectTween(begin: _chevronStart, end: _chevronEnd).animate(chevronDrop);
     // Quick fade-in at the start of the drop so the chevron doesn't pop in
     // mid-flight on devices where the off-screen portion is visible.
     _chevronOpacity = CurvedAnimation(

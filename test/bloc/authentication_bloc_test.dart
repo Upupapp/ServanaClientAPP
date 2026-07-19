@@ -94,7 +94,8 @@ void main() {
         );
         await bloc.close();
       },
-      skip: 'Requires flutter_secure_storage platform channel — use integration_test',
+      skip:
+          'Requires flutter_secure_storage platform channel — use integration_test',
     );
 
     test(
@@ -109,7 +110,8 @@ void main() {
         );
         await bloc.close();
       },
-      skip: 'Requires flutter_secure_storage platform channel — use integration_test',
+      skip:
+          'Requires flutter_secure_storage platform channel — use integration_test',
     );
   });
 
@@ -137,15 +139,17 @@ void main() {
         );
         await bloc.close();
       },
-      skip: 'Requires flutter_secure_storage platform channel — use integration_test',
+      skip:
+          'Requires flutter_secure_storage platform channel — use integration_test',
     );
 
     test('emits Loading then Unauthenticated on failure', () async {
       when(() => repo.authenticate(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-            fcmToken: any(named: 'fcmToken'),
-          )).thenAnswer(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                fcmToken: any(named: 'fcmToken'),
+              ))
+          .thenAnswer(
               (_) async => (session: null, error: 'invalid credentials'));
 
       final bloc = AuthenticationBloc(repo: repo);
@@ -162,10 +166,11 @@ void main() {
 
     test('Unauthenticated carries a friendly mapped message', () async {
       when(() => repo.authenticate(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-            fcmToken: any(named: 'fcmToken'),
-          )).thenAnswer(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                fcmToken: any(named: 'fcmToken'),
+              ))
+          .thenAnswer(
               (_) async => (session: null, error: 'invalid credentials'));
 
       final bloc = AuthenticationBloc(repo: repo);

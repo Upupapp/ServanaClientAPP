@@ -98,7 +98,7 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
               Container(
                 decoration: BoxDecoration(
                   color: ColorPalette.secondaryBackground,
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),

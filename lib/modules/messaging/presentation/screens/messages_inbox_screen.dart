@@ -134,9 +134,8 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                 final filtered = _filtered(store.bookings.toList());
                 return RefreshIndicator(
                   onRefresh: () => store.loadBookings(),
-                  child: filtered.isEmpty
-                      ? _buildEmpty()
-                      : _buildList(filtered),
+                  child:
+                      filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
                 );
               },
             ),

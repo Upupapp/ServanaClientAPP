@@ -32,7 +32,8 @@ void main() {
 
   test('setStatus(completed) is read back correctly', () async {
     await OnboardingStateService.setStatus(OnboardingStatus.completed);
-    expect(await OnboardingStateService.getStatus(), OnboardingStatus.completed);
+    expect(
+        await OnboardingStateService.getStatus(), OnboardingStatus.completed);
   });
 
   test('setStatus(skippedToBrowse) is read back correctly', () async {
@@ -45,13 +46,15 @@ void main() {
 
   test('setStatus(inProgress) is read back correctly', () async {
     await OnboardingStateService.setStatus(OnboardingStatus.inProgress);
-    expect(await OnboardingStateService.getStatus(), OnboardingStatus.inProgress);
+    expect(
+        await OnboardingStateService.getStatus(), OnboardingStatus.inProgress);
   });
 
   test('status can be overwritten — last write wins', () async {
     await OnboardingStateService.setStatus(OnboardingStatus.inProgress);
     await OnboardingStateService.setStatus(OnboardingStatus.completed);
-    expect(await OnboardingStateService.getStatus(), OnboardingStatus.completed);
+    expect(
+        await OnboardingStateService.getStatus(), OnboardingStatus.completed);
   });
 
   // ── hasCompletedOrSkipped ─────────────────────────────────────────────────

@@ -120,7 +120,8 @@ class QuickBookSheet extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                   child: Row(
                     children: [
                       Icon(

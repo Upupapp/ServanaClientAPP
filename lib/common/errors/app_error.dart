@@ -5,4 +5,3 @@ class AppError implements Exception {
   @override
   String toString() => message;
 }
-

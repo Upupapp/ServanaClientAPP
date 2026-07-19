@@ -47,7 +47,10 @@ class _BeautyWellnessScreenState extends State<BeautyWellnessScreen> {
                   .contains((o['level_2'] ?? '').toString().toLowerCase()))
               .map((o) => ServiceCardModel(
                     raw: o,
-                    name: (o['level_3'] ?? o['name'] ?? o['optionName'] ?? 'Service')
+                    name: (o['level_3'] ??
+                            o['name'] ??
+                            o['optionName'] ??
+                            'Service')
                         .toString(),
                     categoryKey: (o['level_2'] ?? '').toString(),
                     price: ServiceCardModel.extractPrice(o),

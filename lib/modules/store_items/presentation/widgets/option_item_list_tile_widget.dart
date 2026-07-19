@@ -57,7 +57,7 @@ class OptionItemListTileWidget extends StatelessWidget {
                 },
               );
             },
-            child: Icon(
+            child: const Icon(
               Icons.delete,
               size: 25,
               color: ColorPalette.danger,

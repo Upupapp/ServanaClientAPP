@@ -60,11 +60,17 @@ class BookingPriceQuote {
     return BookingPriceQuote(
       currency: (q['currency'] ?? 'PHP').toString(),
       estimatedTotal: toDouble(
-        q['final'] ?? q['finalPrice'] ?? q['total'] ?? q['totalAmount'] ?? q['amount'],
+        q['final'] ??
+            q['finalPrice'] ??
+            q['total'] ??
+            q['totalAmount'] ??
+            q['amount'],
       ),
       basePrice: q.containsKey('base') ? toDouble(q['base']) : null,
-      addonTotal: q.containsKey('addonTotal') ? toDouble(q['addonTotal']) : null,
-      serviceFee: q.containsKey('serviceFee') ? toDouble(q['serviceFee']) : null,
+      addonTotal:
+          q.containsKey('addonTotal') ? toDouble(q['addonTotal']) : null,
+      serviceFee:
+          q.containsKey('serviceFee') ? toDouble(q['serviceFee']) : null,
       travelFee: q.containsKey('travelFee') ? toDouble(q['travelFee']) : null,
       tax: q.containsKey('tax') ? toDouble(q['tax']) : null,
       discount: q.containsKey('discount') ? toDouble(q['discount']) : null,

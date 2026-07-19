@@ -16,7 +16,8 @@ void main() {
     });
 
     test('draft created 25 hours ago is expired', () {
-      final old = _draft(createdAt: DateTime.now().subtract(const Duration(hours: 25)));
+      final old =
+          _draft(createdAt: DateTime.now().subtract(const Duration(hours: 25)));
       expect(old.isExpired, isTrue);
     });
 
@@ -64,7 +65,8 @@ void main() {
     });
 
     test('false when service + address but no date', () {
-      final d = _draft().copyWith(serviceId: 'svc-1', addressLine: '123 Main St');
+      final d =
+          _draft().copyWith(serviceId: 'svc-1', addressLine: '123 Main St');
       expect(d.isReadyForReview, isFalse);
     });
 
@@ -77,7 +79,9 @@ void main() {
       expect(d.isReadyForReview, isTrue);
     });
 
-    test('true when service + branch + date (no address needed for branch flow)', () {
+    test(
+        'true when service + branch + date (no address needed for branch flow)',
+        () {
       final d = _draft().copyWith(
         serviceId: 'svc-1',
         selectedBranchId: 'branch-1',
@@ -102,7 +106,8 @@ void main() {
     });
 
     test('preserves un-changed fields', () {
-      final d = _draft().copyWith(merchantId: 'merch-1', merchantName: 'Test Shop');
+      final d =
+          _draft().copyWith(merchantId: 'merch-1', merchantName: 'Test Shop');
       final d2 = d.copyWith(serviceId: 'svc-1');
       expect(d2.merchantId, equals('merch-1'));
       expect(d2.merchantName, equals('Test Shop'));

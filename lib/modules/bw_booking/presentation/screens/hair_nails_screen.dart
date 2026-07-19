@@ -44,11 +44,13 @@ class _HairNailsScreenState extends State<HairNailsScreen> {
       children: [
         Observer(builder: (context) {
           final items = store.bookableOptions
-              .where((o) =>
-                  _matcher.hasMatch((o['level_2'] ?? '').toString()))
+              .where((o) => _matcher.hasMatch((o['level_2'] ?? '').toString()))
               .map((o) => ServiceCardModel(
                     raw: o,
-                    name: (o['level_3'] ?? o['name'] ?? o['optionName'] ?? 'Service')
+                    name: (o['level_3'] ??
+                            o['name'] ??
+                            o['optionName'] ??
+                            'Service')
                         .toString(),
                     categoryKey: (o['level_2'] ?? '').toString(),
                     price: ServiceCardModel.extractPrice(o),
