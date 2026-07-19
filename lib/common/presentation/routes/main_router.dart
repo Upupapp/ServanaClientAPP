@@ -1,5 +1,6 @@
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/data/models/merchant_service.dart';
+import 'package:client/common/domain/auth/auth_return_intent.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
 import 'package:client/common/services/auth_state_service.dart';
@@ -481,7 +482,9 @@ class MainRouter {
           path: AuthenticationGateScreen.route,
           name: AuthenticationGateScreen.routeName,
           builder: (context, state) => AuthenticationGateScreen(
-            returnIntent: null,
+            returnIntent: state.extra is AuthReturnIntent
+                ? state.extra as AuthReturnIntent
+                : null,
           ),
         ),
       ],

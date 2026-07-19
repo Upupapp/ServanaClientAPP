@@ -5,6 +5,9 @@ import 'package:client/common/domain/services/service_category_config.dart';
 /// Resets on every cold start — the full reveal plays once per app launch per
 /// category, then uses the shorter repeat-view entrance on subsequent visits.
 ///
+/// Call [reset] on user logout so the next account on the device gets its own
+/// first-view reveals rather than inheriting the previous user's history.
+///
 /// All public methods are synchronous and constant-time.
 abstract final class CategoryExperienceHistory {
   static final _seen = <ServiceCategoryId>{};
@@ -16,6 +19,10 @@ abstract final class CategoryExperienceHistory {
   /// starting the overlay so accidental double-mounts don't replay it.
   static void markFirstViewSeen(ServiceCategoryId id) => _seen.add(id);
 
-  // For unit tests only — must not be called in production paths.
-  static void resetForTesting() => _seen.clear();
+  /// Clears all seen entries. Called from logout so the next user of the device
+  /// gets their own first-view reveals.
+  static void reset() => _seen.clear();
+
+  // Alias kept for test setUp clarity — delegates to [reset].
+  static void resetForTesting() => reset();
 }

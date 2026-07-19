@@ -1,6 +1,7 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/domain/auth/auth_return_intent.dart';
 import 'package:client/common/domain/booking/booking_draft.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
@@ -513,7 +514,10 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
         returnRouteName: AirconCheckoutScreen.routeName,
       ));
       if (!mounted) return;
-      context.goNamed(AuthenticationGateScreen.routeName);
+      context.goNamed(
+        AuthenticationGateScreen.routeName,
+        extra: const AuthReturnIntent(destination: ProtectedDestination.bookingConfirm),
+      );
       return;
     }
     // Block re-entry for the whole submit — including the window between the
