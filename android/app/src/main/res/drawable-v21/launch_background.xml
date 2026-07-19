@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
+    <!-- Hard-code white to match Flutter's SplashScreen backgroundColor so
+         dark-mode devices don't show a black flash before Flutter renders.
+         The Flutter scaffold takes over immediately after, so this white frame
+         is never visible for more than a frame or two. -->
+    <item android:drawable="@android:color/white" />
 
     <!-- You can insert your own image assets here -->
     <!-- <item>

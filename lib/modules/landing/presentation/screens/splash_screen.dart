@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
+import 'package:client/common/services/motion_tokens.dart';
+import 'package:client/common/services/onboarding_state_service.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
@@ -32,8 +34,11 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<Rect?> _chevron;
   late final Animation<double> _chevronOpacity;
 
+  bool _reducedMotion = false;
   bool _hasSession = false;
+  bool _skipWelcome = false;
   bool _sessionCheckDone = false;
+  bool _animDone = false;
   bool _navigated = false;
 
   // Figma "Log in" frame is 430 × 932; all rects below are in design pixels.
@@ -81,19 +86,19 @@ class _SplashScreenState extends State<SplashScreen>
   static const Rect _chevronStart = Rect.fromLTWH(130, -110, _chevronW, _chevronH);
   static const Rect _chevronEnd = Rect.fromLTWH(129, 312, _chevronW, _chevronH);
 
-  // Animation timeline (3000 ms total). Route-level cross-fade handles the
-  // hand-off to home/welcome, so this controller drives only the on-screen
-  // morph.
-  //   0    – 1500 : petals morph step 0 → step 1            (0.000 – 0.500)
-  //   1500 – 1700 : settle hold (textured collage)
-  //   1700 – 1950 : crossfade textured petals → flat blue   (0.567 – 0.650)
-  //   1950 – 2700 : chevron drops step 2 → step 3           (0.650 – 0.900)
-  //   2700 – 3000 : full-logo hold before navigating
-  static const Duration _totalDuration = Duration(milliseconds: 3000);
+  // Animation timeline (2200 ms total). All interval ratios are unchanged from
+  // the original Figma spec — only the total duration was shortened (was 3000ms).
+  //   0    – 1100 : petals morph step 0 → step 1            (0.000 – 0.500)
+  //   1100 – 1247 : settle hold (textured collage)
+  //   1247 – 1430 : crossfade textured petals → flat blue   (0.567 – 0.650)
+  //   1430 – 1980 : chevron drops step 2 → step 3           (0.650 – 0.900)
+  //   1980 – 2200 : full-logo hold before navigating
+  static const Duration _totalDuration = Duration(milliseconds: 2200);
 
   @override
   void initState() {
     super.initState();
+    _reducedMotion = AppMotionTokens.platformReducedMotion;
     _controller = AnimationController(vsync: this, duration: _totalDuration);
 
     final petalMorph = CurvedAnimation(
@@ -136,9 +141,26 @@ class _SplashScreenState extends State<SplashScreen>
       curve: const Interval(0.650, 0.700, curve: Curves.easeOut),
     );
 
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) _maybeNavigate();
-    });
+    if (_reducedMotion) {
+      // Snap to the fully assembled logo immediately — no petal fly-in, no
+      // chevron drop. Reduced-motion users still see the brand mark for a
+      // brief moment before navigating (COMMAND 04 §5).
+      _controller.value = 1.0;
+      Future.delayed(AppMotionTokens.splashReduced, () {
+        if (mounted) {
+          _animDone = true;
+          _maybeNavigate();
+        }
+      });
+    } else {
+      _controller.addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _animDone = true;
+          _maybeNavigate();
+        }
+      });
+      _controller.forward();
+    }
 
     // Sync the AuthenticationBloc state after the first frame so widgets that
     // listen to BLoC state see AuthenticationAuthenticated / AuthenticationGuest
@@ -150,14 +172,19 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     _checkSession();
-    _controller.forward();
   }
 
   Future<void> _checkSession() async {
     bool hasSession = false;
+    bool skipWelcome = false;
     try {
       final session = await SessionService.getSession();
       hasSession = session != null;
+      if (!hasSession) {
+        // Returning guests who already completed onboarding skip the welcome
+        // flow and land directly on the guest home feed (COMMAND 04 §3).
+        skipWelcome = await OnboardingStateService.hasCompletedOrSkipped();
+      }
     } catch (_) {
       // Hive / encryption / plugin init failure — fall through to Welcome.
     }
@@ -168,15 +195,17 @@ class _SplashScreenState extends State<SplashScreen>
       hasSession ? AuthStatus.authenticated : AuthStatus.guest,
     );
     _hasSession = hasSession;
+    _skipWelcome = skipWelcome;
     _sessionCheckDone = true;
     _maybeNavigate();
   }
 
   void _maybeNavigate() {
-    if (_navigated || !_sessionCheckDone) return;
-    if (_controller.status != AnimationStatus.completed) return;
+    if (_navigated || !_sessionCheckDone || !_animDone) return;
     _navigated = true;
-    if (_hasSession) {
+    if (_hasSession || _skipWelcome) {
+      // Authenticated users → home feed.
+      // Returning guests who already saw onboarding → home feed as guest.
       context.goNamed(HomeScreen.routeName);
     } else {
       context.goNamed(WelcomeScreen.routeName);
