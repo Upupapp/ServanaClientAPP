@@ -1,5 +1,6 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/common/presentation/responsive/servana_responsive.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/messaging/presentation/bloc/messaging_bloc.dart';
@@ -154,6 +155,11 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
                       }
                       final loaded = state as MessagingLoaded;
                       final messages = loaded.messages;
+                      // Compute once per rebuild — 78% of screen, clamped to
+                      // [240, 320] dp so narrow phones and wide tablets both
+                      // get readable bubbles (§80: responsive chat bubble width).
+                      final bubbleMax =
+                          ServanaResponsive.chatBubbleMaxWidth(context);
                       return ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
@@ -176,7 +182,7 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
-                              constraints: const BoxConstraints(maxWidth: 320),
+                              constraints: BoxConstraints(maxWidth: bubbleMax),
                               decoration: BoxDecoration(
                                 color: bubbleColor,
                                 borderRadius: BorderRadius.circular(14),

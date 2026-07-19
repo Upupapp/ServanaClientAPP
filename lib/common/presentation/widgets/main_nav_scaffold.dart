@@ -5,9 +5,9 @@ import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/shell/core_tab.dart';
 import 'package:client/common/presentation/shell/quick_book_sheet.dart';
+import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,9 +21,9 @@ class MainNavScaffold extends StatelessWidget {
   static const _strokeColor = Color(0xFFE7E9EF);
 
   void _onTap(BuildContext context, int index) {
-    // Only fire haptic when the tab actually changes.
+    // Only fire haptic when the tab actually changes (§64: centralised haptics).
     if (index != navigationShell.currentIndex) {
-      HapticFeedback.selectionClick();
+      AppHaptics.selection();
     }
     navigationShell.goBranch(
       index,

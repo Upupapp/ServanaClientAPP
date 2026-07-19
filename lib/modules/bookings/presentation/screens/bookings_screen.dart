@@ -484,12 +484,19 @@ class _GradientHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () =>
-                    context.pushNamed(NotificationsScreen.routeName),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 26),
+              // Wrap in a 44×44 target so the tap area meets §30 minimum.
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: GestureDetector(
+                  onTap: () =>
+                      context.pushNamed(NotificationsScreen.routeName),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Center(
+                    child: Icon(Icons.notifications_outlined,
+                        color: Colors.white, size: 26),
+                  ),
+                ),
               ),
             ],
           ),

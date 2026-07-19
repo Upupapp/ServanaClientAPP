@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/common/presentation/responsive/servana_responsive.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -774,34 +775,45 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final labelStyle = TextStyle(
+      fontFamily: FontPalette.primaryFontFamily,
+      color: ColorPalette.accentText,
+      fontWeight: FontWeight.w600,
+      fontSize: 13,
+    );
+    final valueStyle = TextStyle(
+      fontFamily: FontPalette.primaryFontFamily,
+      color: valueColor ?? ColorPalette.secondaryText,
+      fontWeight: FontWeight.w700,
+      fontSize: 13,
+    );
+
+    // On compact devices or large text, stack label above value so neither
+    // is truncated by a fixed-width column (§28: adaptive detail-row).
+    if (ServanaResponsive.useStackedDetailRow(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: labelStyle),
+            const SizedBox(height: 2),
+            Text(value, style: valueStyle),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                color: ColorPalette.accentText,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
+            width: 110,
+            child: Text(label, style: labelStyle),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                color: valueColor ?? ColorPalette.secondaryText,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-          ),
+          Expanded(child: Text(value, style: valueStyle)),
         ],
       ),
     );
