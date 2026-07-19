@@ -189,16 +189,6 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                           size: 18),
                     ),
                   ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: ColorPalette.primaryColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.tune,
-                      color: Colors.white, size: 20),
-                ),
               ],
             ),
           ),
@@ -330,7 +320,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.62,
+              childAspectRatio: 0.75,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, i) {
@@ -409,7 +399,6 @@ class _ServiceCard extends StatelessWidget {
   final ServiceCardModel item;
   final VoidCallback onTap;
 
-  // TODO: backend pending — reviews/hours/distance are static placeholders.
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -441,7 +430,7 @@ class _ServiceCard extends StatelessWidget {
                     children: [
                       Text(
                         item.name,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: FontPalette.primaryFontFamily,
@@ -450,31 +439,16 @@ class _ServiceCard extends StatelessWidget {
                           color: ColorPalette.secondaryText,
                         ),
                       ),
-                      const _ReviewsRow(),
-                      const _IconLine(
-                          icon: Icons.calendar_today_outlined,
-                          text: '24 hours open'),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Expanded(
-                            child: _IconLine(
-                              icon: Icons.location_on_outlined,
-                              text: '3km away',
-                            ),
+                      if (item.price > 0)
+                        Text(
+                          '₱${item.price}',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: ColorPalette.primaryColorDark,
                           ),
-                          if (item.price > 0)
-                            Text(
-                              '₱${item.price}',
-                              style: const TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                color: Colors.black,
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
                     ],
                   ),
                 ),
@@ -487,97 +461,3 @@ class _ServiceCard extends StatelessWidget {
   }
 }
 
-class _ReviewsRow extends StatelessWidget {
-  const _ReviewsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(
-          width: 52,
-          height: 22,
-          child: Stack(
-            children: [
-              _AvatarDot(letter: 'R', color: Color(0xFFF89040), left: 0),
-              _AvatarDot(letter: 'Q', color: Color(0xFFB7C9FF), left: 16),
-              _AvatarDot(letter: 'E', color: Color(0xFF3058C8), left: 32),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          '+200 reviews',
-          style: TextStyle(
-            fontFamily: FontPalette.primaryFontFamily,
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-            color: ColorPalette.primaryColorDark,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AvatarDot extends StatelessWidget {
-  const _AvatarDot(
-      {required this.letter, required this.color, required this.left});
-  final String letter;
-  final Color color;
-  final double left;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      top: 0,
-      child: Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          letter,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 10,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconLine extends StatelessWidget {
-  const _IconLine({required this.icon, required this.text});
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: ColorPalette.secondaryText.withOpacity(0.55)),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              fontSize: 11,
-              color: ColorPalette.secondaryText.withOpacity(0.6),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}

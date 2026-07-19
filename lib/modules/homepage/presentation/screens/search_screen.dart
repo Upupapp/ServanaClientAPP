@@ -44,7 +44,8 @@ class SearchScreenState extends State<SearchScreen> {
                         t.raw['optionName'] ??
                         'Service')
                     .toString(),
-                categoryKey: (t.raw['level_2'] ?? '').toString(),
+                categoryKey:
+                    t.source == _Source.bw ? 'beauty' : 'aircon',
                 price: ServiceCardModel.extractPrice(t.raw),
               ))
           .toList();
@@ -54,7 +55,7 @@ class SearchScreenState extends State<SearchScreen> {
 
       return ServiceCategoryListScreen(
         title: 'Search',
-        filterChips: const ['All'],
+        filterChips: const ['All', 'Aircon', 'Beauty'],
         items: items,
         isLoading: isLoading,
         errorMessage: errorMessage,

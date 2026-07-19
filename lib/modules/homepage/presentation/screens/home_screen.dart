@@ -4,32 +4,33 @@ import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
+import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
+import 'package:client/common/services/app_haptics.dart';
+import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
+import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
+import 'package:client/modules/aircon_booking/presentation/screens/aircon_repair_screen.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
-import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
-import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
-import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
-import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.dart';
-import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
-import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
-import 'package:client/modules/store_items/presentation/screens/store_items_screen.dart';
-import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
-import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
-import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
-import 'package:client/modules/aircon_booking/presentation/screens/aircon_repair_screen.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/bw_booking/presentation/screens/beauty_wellness_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
+import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
+import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
+import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.dart';
+import 'package:client/modules/job_order/data/enums/job_order_status.dart';
+import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   static String routeName = "HomeScreen";
@@ -46,37 +47,25 @@ class _HomeScreenState extends State<HomeScreen> {
   final airconStore = dpLocator<AirconBookingStore>();
   final _scaffoldKey = GlobalKey<ScaffoldState>(debugLabel: "scaffoldKey");
 
-  static const String _merchantId = 'servana';
   static const String _merchantName = 'Servana';
-
-  static const _blue = Color(0xFF1F44F2);
-  static const _darkBlue = Color(0xFF0926B0);
-  static const _orange = Color(0xFFF99343);
-  static const _darkOrange = Color(0xFFB65509);
-  static const _navyText = Color(0xFF02205B);
-  static const _greyBg = Color(0xFFF7F7F7);
-
-  final PageController _promoController = PageController(viewportFraction: 0.95);
-  int _promoIndex = 0;
 
   @override
   void initState() {
+    super.initState();
     store.loadBookings();
     bwStore.ensureOptionsLoaded(serviceId: 2);
     airconStore.ensureOptionsLoaded(serviceId: 1);
-    super.initState();
   }
 
-  @override
-  void dispose() {
-    _promoController.dispose();
-    super.dispose();
+  String _timeGreeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   @override
   Widget build(BuildContext context) {
-    // STITCH-007: reload bookings after re-login, resume any pending booking
-    // draft saved by the checkout screens (ACT-006).
     return BlocListener<AuthenticationBloc, AuthenticationState>(
       listener: (context, state) {
         if (state is AuthenticationAuthenticated) {
@@ -90,393 +79,573 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: _greyBg,
+        backgroundColor: ColorPalette.primaryBackground,
         key: _scaffoldKey,
         drawer: _buildDrawer(),
-        body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderSection(),
-            const SizedBox(height: 14),
-            _buildAvailableServices(),
-            const SizedBox(height: 14),
-            _buildPromoBanner(),
-            const SizedBox(height: 6),
-            _buildPromoIndicator(),
-            const SizedBox(height: 18),
-            _buildRecommendedHeader(),
-            const SizedBox(height: 8),
-            _buildRecommendedServices(),
-            const SizedBox(height: 24),
-          ],
+        body: RefreshIndicator(
+          color: ColorPalette.primaryColorDark,
+          onRefresh: () async {
+            store.loadBookings();
+            bwStore.loadOptionsWithAddons(serviceId: 2);
+            airconStore.loadOptionsWithAddons(serviceId: 1);
+            await Future.delayed(const Duration(milliseconds: 600));
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeaderSection()),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _buildAvailableServices(),
+                ),
+              ),
+              SliverToBoxAdapter(child: _buildActiveBookingSection()),
+              SliverToBoxAdapter(child: _buildFeaturedSection()),
+              SliverToBoxAdapter(child: _buildDiscoveryCard()),
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
+
+  // ── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeaderSection() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment(-0.7, -0.5),
-          end: Alignment(0.7, 1.0),
-          colors: [_blue, _darkBlue],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            ColorPalette.primaryColorDark,
+            ColorPalette.primaryGradientEnd(),
+          ],
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color(0x1A000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: SafeArea(
         bottom: false,
         child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 6),
-              child: Observer(builder: (context) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                      child: const Icon(Icons.menu, color: Colors.white, size: 28),
-                    ),
-                    GestureDetector(
-                      onTap: () =>
-                          context.pushNamed(NotificationsScreen.routeName),
-                      child: const Icon(Icons.notifications_outlined,
-                          color: Colors.white, size: 28),
-                    ),
-                  ],
-                );
-              }),
-            ),
-            const SizedBox(height: 10),
-            Observer(builder: (context) {
-              final fullName = store.session?.fullname ?? 'Guest';
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Hi, $fullName!',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Gothic A1',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Welcome Back',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Gothic A1',
-                        fontWeight: FontWeight.w400,
-                        fontSize: 16,
-                        color: Colors.white,
-                        letterSpacing: 0.24,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: GestureDetector(
-                onTap: () => context.pushNamed(SearchScreen.routeName),
-                child: Container(
-                  height: 51,
-                  padding: const EdgeInsets.symmetric(horizontal: 17),
-                  decoration: BoxDecoration(
-                    color: _greyBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.black.withOpacity(0.04),
-                      width: 0.8,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1A000000),
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      ),
-                      BoxShadow(
-                        color: Color(0x1A000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, color: Colors.grey.shade600, size: 24),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Search for services you need',
-                          style: TextStyle(
-                            fontFamily: 'Gothic A1',
-                            fontSize: 16,
-                            color: Colors.grey.shade500,
-                            letterSpacing: 0.24,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 32,
-                        height: 31,
-                        decoration: BoxDecoration(
-                          color: _orange,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.black.withOpacity(0.04),
-                            width: 0.8,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x1A000000),
-                              blurRadius: 3,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.tune, color: Colors.white, size: 18),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAvailableServices() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1A000000),
-              blurRadius: 3,
-              offset: Offset(0, 1),
-            ),
-            BoxShadow(
-              color: Color(0x1A000000),
-              blurRadius: 2,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 8, bottom: 12),
-              child: Text(
-                'Available Services',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                  fontSize: 16,
-                  color: _navyText,
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _ServiceCategoryTile(
-                  icon: Icons.spa_outlined,
-                  label: 'Beauty',
-                  onTap: () {
-                    context.pushNamed(BeautyWellnessScreen.routeName);
-                  },
-                ),
-                _ServiceCategoryTile(
-                  icon: Icons.content_cut_outlined,
-                  label: 'Hair &\nNails',
-                  onTap: () {
-                    context.pushNamed(HairNailsScreen.routeName);
-                  },
-                ),
-                _ServiceCategoryTile(
-                  icon: Icons.self_improvement_outlined,
-                  label: 'Massage',
-                  onTap: () {
-                    context.pushNamed(MassageScreen.routeName);
-                  },
-                ),
-                _ServiceCategoryTile(
-                  icon: Icons.ac_unit_rounded,
-                  label: 'Aircon\nRepair',
-                  onTap: () {
-                    context.pushNamed(AirconRepairScreen.routeName);
-                  },
-                ),
-              ],
-            ),
+            _buildTopBar(),
+            _buildGreeting(),
+            const SizedBox(height: 20),
+            _buildSearchBar(),
+            const SizedBox(height: 28),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPromoBanner() {
-    return SizedBox(
-      height: 178,
-      child: PageView(
-        controller: _promoController,
-        onPageChanged: (i) => setState(() => _promoIndex = i),
-        children: const [
-          _PromoBannerCard(
-            title: 'Book Massage\nServices Now!',
-            subtitle: 'Get 5% Cashback on all\ndining experience',
-            gradientColors: [_orange, _darkOrange],
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
-          _PromoBannerCard(
-            title: 'Book Massage\nServices Now!',
-            subtitle: 'Get 5% Cashback on all\ndining experience',
-            gradientColors: [_blue, _darkBlue],
+          IconButton(
+            onPressed: () =>
+                context.pushNamed(NotificationsScreen.routeName),
+            icon: const Icon(Icons.notifications_outlined,
+                color: Colors.white, size: 26),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPromoIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        2,
-        (i) => AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          height: 6,
-          width: _promoIndex == i ? 20 : 6,
+  Widget _buildGreeting() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Observer(builder: (ctx) {
+        final session = store.session;
+        if (session != null) {
+          final parts = session.fullname
+                .split(RegExp(r'\s+'))
+                .where((p) => p.isNotEmpty)
+                .toList();
+          final first = parts.isNotEmpty ? parts.first : _merchantName;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${_timeGreeting()},',
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.85),
+                ),
+              ),
+              Text(
+                first,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Find your next service',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Book a $_merchantName professional today',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GestureDetector(
+        onTap: () {
+          AppHaptics.selection();
+          context.pushNamed(SearchScreen.routeName);
+        },
+        child: Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color:
-                _promoIndex == i ? _blue : Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(999),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded,
+                  color: ColorPalette.primaryColorDark, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Search for services…',
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 14,
+                  color: ColorPalette.secondaryText.withOpacity(0.45),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildRecommendedHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: Row(
+  // ── Service categories ────────────────────────────────────────────────────
+
+  Widget _buildAvailableServices() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      decoration: BoxDecoration(
+        color: ColorPalette.secondaryBackground,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.shadow(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Recommended Services',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w400,
-              fontSize: 16,
-              color: _navyText,
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 14),
+            child: Text(
+              'Services',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: ColorPalette.secondaryText,
+              ),
             ),
           ),
-          const Spacer(),
-          TextButton(
-            onPressed: () async {
-              await context.pushNamed(
-                StoreItemsScreen.routeName,
-                extra: (
-                  merchantId: _merchantId,
-                  merchantName: _merchantName,
-                  categoryName: null,
-                ),
-              );
-            },
-            child: const Text('See All'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _ServiceCategoryTile(
+                icon: Icons.spa_outlined,
+                label: 'Beauty',
+                onTap: () {
+                  AppHaptics.selection();
+                  context.pushNamed(BeautyWellnessScreen.routeName);
+                },
+              ),
+              _ServiceCategoryTile(
+                icon: Icons.content_cut_outlined,
+                label: 'Hair &\nNails',
+                onTap: () {
+                  AppHaptics.selection();
+                  context.pushNamed(HairNailsScreen.routeName);
+                },
+              ),
+              _ServiceCategoryTile(
+                icon: Icons.self_improvement_outlined,
+                label: 'Massage',
+                onTap: () {
+                  AppHaptics.selection();
+                  context.pushNamed(MassageScreen.routeName);
+                },
+              ),
+              _ServiceCategoryTile(
+                icon: Icons.ac_unit_rounded,
+                label: 'Aircon\nRepair',
+                onTap: () {
+                  AppHaptics.selection();
+                  context.pushNamed(AirconRepairScreen.routeName);
+                },
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecommendedServices() {
-    return Observer(builder: (context) {
-      final bwItems = bwStore.bookableOptions
-          .map((o) => _RecommendedItem(raw: o, isAircon: false));
-      final airconItems = airconStore.bookableOptions
-          .map((o) => _RecommendedItem(raw: o, isAircon: true));
+  // ── Active booking card (auth + active booking only) ─────────────────────
 
-      final all = [...bwItems, ...airconItems];
-      final isLoading = bwStore.isLoading || airconStore.isLoading;
+  Widget _buildActiveBookingSection() {
+    return Observer(builder: (ctx) {
+      if (store.session == null) return const SizedBox.shrink();
+      final active = store.bookings
+          .where((b) =>
+              b.jobOrderStatus != JobOrderStatus.completed &&
+              b.jobOrderStatus != JobOrderStatus.cancelled &&
+              b.jobOrderStatus != JobOrderStatus.none)
+          .firstOrNull;
+      if (active == null) return const SizedBox.shrink();
 
-      if (all.isEmpty && isLoading) {
-        return const SizedBox(
-          height: 220,
-          child: Center(child: CircularProgressIndicator()),
-        );
-      }
-      if (all.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      final items = all.take(10).toList();
-      return SizedBox(
-        height: 300,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          scrollDirection: Axis.horizontal,
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (context, i) {
-            final item = items[i];
-            final name = (item.raw['level_3'] ??
-                    item.raw['name'] ??
-                    item.raw['optionName'] ??
-                    'Service')
-                .toString();
-            final price = ServiceCardModel.extractPrice(item.raw);
-            final imageAsset =
-                ServiceCardModel(raw: item.raw, name: name).imageAsset;
-            return _RecommendedServiceCard(
-              name: name,
-              price: price,
-              imageAsset: imageAsset,
-              onTap: () {
-                if (item.isAircon) {
-                  airconStore.selectOption(item.raw);
-                  context.pushNamed(AirconOptionsScreen.routeName);
-                } else {
-                  bwStore.selectOption(item.raw);
-                  context.pushNamed(BwAddOnsScreen.routeName);
-                }
-              },
-            );
-          },
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Semantics(
+          button: true,
+          label: 'Active booking: ${active.merchantServiceName}. Tap to view.',
+          child: GestureDetector(
+            onTap: () {
+              AppHaptics.selection();
+              context.goNamed(BookingsScreen.routeName);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ColorPalette.primaryColorDark,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorPalette.primaryColorDark.withOpacity(0.28),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.assignment_outlined,
+                        color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          active.merchantServiceName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${active.jobOrderStatusToString} · ${DateFormat('MMM d').format(active.scheduleDate)}',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Colors.white, size: 20),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     });
   }
+
+  // ── Featured services (real data, no fake metadata) ───────────────────────
+
+  Widget _buildFeaturedSection() {
+    return Observer(builder: (ctx) {
+      final bwItems = bwStore.bookableOptions
+          .map((o) => _FeaturedItem(raw: o, isAircon: false));
+      final airconItems = airconStore.bookableOptions
+          .map((o) => _FeaturedItem(raw: o, isAircon: true));
+      final all = [...bwItems, ...airconItems].take(12).toList();
+      final isLoading = bwStore.isLoading || airconStore.isLoading;
+
+      if (all.isEmpty && isLoading) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionHeader('Featured Services', onSeeAll: null),
+              const SizedBox(height: 12),
+              const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+          ),
+        );
+      }
+      if (all.isEmpty) return const SizedBox.shrink();
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _sectionHeader(
+                'Featured Services',
+                onSeeAll: () => context.pushNamed(SearchScreen.routeName),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 222,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: all.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (ctx, i) {
+                  final item = all[i];
+                  final name = (item.raw['level_3'] ??
+                          item.raw['name'] ??
+                          item.raw['optionName'] ??
+                          'Service')
+                      .toString();
+                  final price = ServiceCardModel.extractPrice(item.raw);
+                  final imageAsset =
+                      ServiceCardModel(raw: item.raw, name: name).imageAsset;
+                  return _FeaturedServiceCard(
+                    name: name,
+                    price: price,
+                    imageAsset: imageAsset,
+                    categoryLabel: item.isAircon ? 'Aircon' : 'Beauty & Wellness',
+                    onTap: () {
+                      AppHaptics.selection();
+                      if (item.isAircon) {
+                        airconStore.selectOption(item.raw);
+                        context.pushNamed(AirconOptionsScreen.routeName);
+                      } else {
+                        bwStore.selectOption(item.raw);
+                        context.pushNamed(BwAddOnsScreen.routeName);
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  // ── Educational discovery card ────────────────────────────────────────────
+
+  Widget _buildDiscoveryCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: ColorPalette.primaryColorLight,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: ColorPalette.primaryColorDark.withOpacity(0.12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: ColorPalette.primaryColorDark,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.lightbulb_outline_rounded,
+                      color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'How it works',
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: ColorPalette.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const _HowItWorksStep(
+              number: 1,
+              text: 'Choose your service from our categories',
+            ),
+            const SizedBox(height: 10),
+            const _HowItWorksStep(
+              number: 2,
+              text: 'Select a date and time that works for you',
+            ),
+            const SizedBox(height: 10),
+            const _HowItWorksStep(
+              number: 3,
+              text:
+                  'Confirm your booking and a professional will be on the way',
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () {
+                  AppHaptics.selection();
+                  context.pushNamed(SearchScreen.routeName);
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: ColorPalette.primaryColorDark,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'Browse Services',
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Section header helper ─────────────────────────────────────────────────
+
+  Widget _sectionHeader(String title, {VoidCallback? onSeeAll}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: ColorPalette.secondaryText,
+            ),
+          ),
+        ),
+        if (onSeeAll != null)
+          TextButton(
+            onPressed: onSeeAll,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: Text(
+              'See All',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: ColorPalette.primaryColorDark,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ── Drawer ────────────────────────────────────────────────────────────────
 
   Widget _buildDrawer() {
     return Drawer(
@@ -490,7 +659,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Stack(
                   children: [
                     Positioned(
-                      top: 200, left: 0, right: 0, bottom: 0,
+                      top: 200,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
                       child: Container(
                         decoration: BoxDecoration(
                           color: ColorPalette.secondaryBackground,
@@ -502,14 +674,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Positioned(
-                      top: 150, left: 0, right: 0,
+                      top: 150,
+                      left: 0,
+                      right: 0,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           SizedBox.square(
                             dimension: 100,
                             child: CircleAvatar(
-                              backgroundColor: ColorPalette.secondaryBackground,
+                              backgroundColor:
+                                  ColorPalette.secondaryBackground,
                               child: Text(
                                 _initials(store.session?.fullname),
                                 style: TextStyle(
@@ -538,7 +713,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Container(
-                decoration: BoxDecoration(color: ColorPalette.secondaryBackground),
+                decoration:
+                    BoxDecoration(color: ColorPalette.secondaryBackground),
                 child: Column(
                   children: [
                     const Gap(30),
@@ -650,12 +826,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     DrawerItemWidget(
                       title: "Logout",
                       onTap: () {
-                        // Close drawer before showing the dialog.
                         Navigator.of(context).pop();
                         LogoutDialog.showDialog(
                           context: context,
                           onConfirm: () {
-                            context.read<AuthenticationBloc>().add(AuthLogout());
+                            context
+                                .read<AuthenticationBloc>()
+                                .add(AuthLogout());
                           },
                         );
                       },
@@ -673,7 +850,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _initials(String? name) {
     final n = (name ?? '').trim();
     if (n.isEmpty) return '?';
-    final parts = n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts =
+        n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     final first = parts.isNotEmpty ? parts.first : n;
     final last = parts.length > 1 ? parts.last : '';
     final a = first.isNotEmpty ? first[0] : '?';
@@ -682,9 +860,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Service category tile (Beauty, Hair & Nails, Massage, Aircon Repair)
-// ---------------------------------------------------------------------------
+// ── Service category tile ────────────────────────────────────────────────────
+
 class _ServiceCategoryTile extends StatelessWidget {
   const _ServiceCategoryTile({
     required this.icon,
@@ -701,40 +878,36 @@ class _ServiceCategoryTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 68,
+        width: 70,
         child: Column(
           children: [
             Container(
               width: 58,
               height: 58,
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F7),
+                color: ColorPalette.primaryBackground,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x1A000000),
-                    blurRadius: 3,
-                    offset: Offset(0, 1),
-                  ),
-                  BoxShadow(
-                    color: Color(0x1A000000),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
+                    color: ColorPalette.shadow(0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Icon(icon, size: 24, color: const Color(0xFF02205B)),
+              child: Icon(icon, size: 24, color: ColorPalette.primaryColorDark),
             ),
             const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
-              style: const TextStyle(
-                fontFamily: 'Gothic A1',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
                 fontSize: 12,
-                color: Color(0xFF02205B),
+                color: ColorPalette.secondaryText,
                 height: 1.3,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -744,333 +917,166 @@ class _ServiceCategoryTile extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Promo banner card
-// ---------------------------------------------------------------------------
-class _PromoBannerCard extends StatelessWidget {
-  const _PromoBannerCard({
-    required this.title,
-    required this.subtitle,
-    required this.gradientColors,
-  });
+// ── Featured service card ────────────────────────────────────────────────────
 
-  final String title;
-  final String subtitle;
-  final List<Color> gradientColors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final cardWidth = constraints.maxWidth;
-          final imageWidth = cardWidth * 0.48;
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              gradient: LinearGradient(
-                begin: const Alignment(-0.6, -0.7),
-                end: const Alignment(0.6, 1.0),
-                colors: gradientColors,
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  right: 0,
-                  top: -2,
-                  bottom: -11,
-                  width: imageWidth,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                      bottomRight: Radius.circular(15),
-                    ),
-                    child: Image.asset(
-                      'assets/images/home/book_image.png',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  child: SizedBox(
-                    width: cardWidth - imageWidth - 8,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 26,
-                              color: Colors.white,
-                              height: 1.1,
-                              letterSpacing: -1.2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            fontFamily: 'Gothic A1',
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
-                            color: Colors.white,
-                            height: 1.3,
-                            letterSpacing: -0.64,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Recommended service card
-// ---------------------------------------------------------------------------
-class _RecommendedServiceCard extends StatelessWidget {
-  const _RecommendedServiceCard({
+class _FeaturedServiceCard extends StatelessWidget {
+  const _FeaturedServiceCard({
     required this.name,
     required this.price,
     required this.imageAsset,
+    required this.categoryLabel,
     this.onTap,
   });
 
   final String name;
   final int price;
   final String imageAsset;
+  final String categoryLabel;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(color: Color(0x0D333333), offset: Offset(0, 0)),
-            BoxShadow(
-                color: Color(0x0D333333),
-                offset: Offset(-1, 1),
-                blurRadius: 3),
-            BoxShadow(
-                color: Color(0x0A333333),
-                offset: Offset(-3, 3),
-                blurRadius: 5),
-            BoxShadow(
-                color: Color(0x08333333),
-                offset: Offset(-8, 7),
-                blurRadius: 6),
-            BoxShadow(
-                color: Color(0x03333333),
-                offset: Offset(-14, 12),
-                blurRadius: 7),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Color(0x801F44F2),
-                      ],
-                      stops: [0.4, 1.0],
-                    ).createShader(bounds),
-                    blendMode: BlendMode.srcATop,
-                    child: Image.asset(
-                      imageAsset,
-                      fit: BoxFit.cover,
-                      height: 140,
-                      width: double.infinity,
-                    ),
-                  ),
-                ),
-                // TODO: backend pending — restore promo badge once API exposes
-                // a real discount/originalPrice field. Showing a fabricated
-                // "Save 50%" without backing data is a soft trust risk.
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF99343),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.favorite_outline,
-                        color: Colors.white, size: 18),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: Color(0xFF333333),
+    return Semantics(
+      button: true,
+      label: '$name, $categoryLabel${price > 0 ? ", ₱$price" : ""}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 175,
+          decoration: BoxDecoration(
+            color: ColorPalette.secondaryBackground,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: ColorPalette.shadow(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-            ),
-            const SizedBox(height: 8),
-            _ReviewAvatars(reviewCount: '+200 reviews'),
-            const Spacer(),
-            Row(
-              children: [
-                Icon(Icons.calendar_today_outlined,
-                    size: 14, color: const Color(0xFF555555).withOpacity(0.71)),
-                const SizedBox(width: 6),
-                Text(
-                  '24 hours open',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    color: const Color(0xFF555555).withOpacity(0.71),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Image.asset(
+                  imageAsset,
+                  height: 130,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColorLight,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          categoryLabel,
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: ColorPalette.primaryColorDark,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: Text(
+                          name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: ColorPalette.secondaryText,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      if (price > 0)
+                        Text(
+                          '₱$price',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: ColorPalette.primaryColorDark,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.location_on_outlined,
-                    size: 14, color: const Color(0xFF555555).withOpacity(0.71)),
-                const SizedBox(width: 6),
-                Text(
-                  '3km away',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    color: const Color(0xFF555555).withOpacity(0.71),
-                  ),
-                ),
-                const Spacer(),
-                if (price > 0)
-                  Text(
-                    '₱$price',
-                    style: const TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Colors.black,
-                      letterSpacing: 0.28,
-                    ),
-                  ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Source-tagged option for the recommended carousel — distinguishes B&W vs.
-// aircon so the tap handler routes to the right next screen.
-class _RecommendedItem {
-  _RecommendedItem({required this.raw, required this.isAircon});
+// ── Source-tagged item for the featured carousel ─────────────────────────────
+
+class _FeaturedItem {
+  _FeaturedItem({required this.raw, required this.isAircon});
   final Map<String, dynamic> raw;
   final bool isAircon;
 }
 
-// ---------------------------------------------------------------------------
-// Overlapping review avatar circles
-// ---------------------------------------------------------------------------
-class _ReviewAvatars extends StatelessWidget {
-  const _ReviewAvatars({required this.reviewCount});
-  final String reviewCount;
+// ── How-it-works step ────────────────────────────────────────────────────────
+
+class _HowItWorksStep extends StatelessWidget {
+  const _HowItWorksStep({required this.number, required this.text});
+  final int number;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    const double size = 27;
-    const double overlap = 10;
-    const avatarColors = [Color(0xFFF99343), Color(0xFFCADBFF), Color(0xFF025BF7)];
-    const avatarLetters = ['R', 'Q', 'E'];
-
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: size + (avatarColors.length - 1) * (size - overlap),
-          height: size,
-          child: Stack(
-            children: List.generate(avatarColors.length, (i) {
-              return Positioned(
-                left: i * (size - overlap),
-                child: Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    color: avatarColors[i],
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Center(
-                    child: Text(
-                      avatarLetters[i],
-                      style: const TextStyle(
-                        fontFamily: 'Gothic A1',
-                        fontSize: 12,
-                        color: Color(0xFF02205B),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: ColorPalette.primaryColorDark,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$number',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
         ),
-        const SizedBox(width: 4),
-        Text(
-          reviewCount,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            color: Color(0xFF025BF7),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontSize: 13,
+                color: ColorPalette.secondaryText.withOpacity(0.8),
+                height: 1.4,
+              ),
+            ),
           ),
         ),
       ],
