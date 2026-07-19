@@ -169,6 +169,29 @@ abstract class _AirconBookingStore with Store {
     }
   }
 
+  /// Clears only the active booking-flow selections without touching the
+  /// cached service catalog. Use this when entering the Aircon screen so the
+  /// user starts a fresh booking while already-loaded options are reused.
+  @action
+  void clearSelectionOnly() {
+    selectedOption = null;
+    selectedHpKey = null;
+    selectedHeightKey = null;
+    selectedDistanceKey = null;
+    selectedAddonIds.clear();
+    selectedAddress = null;
+    selectedSchedule = null;
+    paymentMethod = 'CASH';
+    quoteResult = null;
+    quotedTotal = 0;
+    bookingResult = null;
+    createdBookingId = null;
+    workerCode = null;
+    paymongoCheckoutUrl = null;
+    errorMessage = null;
+    // optionsWithAddons — NOT touched.
+  }
+
   /// Triggers a load only if there's no cached data and no in-flight request.
   /// Used by hosts (home, search) that want fresh options without forcing
   /// a reload when the user is just navigating around.

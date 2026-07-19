@@ -110,8 +110,8 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                 child: Text(
                   widget.title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Gothic A1',
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
                     color: Colors.white,
@@ -154,7 +154,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                     textInputAction: TextInputAction.search,
                     cursorColor: ColorPalette.primaryColorDark,
                     style: TextStyle(
-                      fontFamily: 'Gothic A1',
+                      fontFamily: FontPalette.primaryFontFamily,
                       fontSize: 14,
                       color: ColorPalette.secondaryText,
                     ),
@@ -168,7 +168,7 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                       focusedErrorBorder: InputBorder.none,
                       hintText: 'Search for services you need',
                       hintStyle: TextStyle(
-                        fontFamily: 'Gothic A1',
+                        fontFamily: FontPalette.primaryFontFamily,
                         fontSize: 14,
                         color: ColorPalette.secondaryText.withOpacity(0.45),
                       ),
@@ -401,7 +401,10 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Semantics(
+      button: true,
+      label: item.name,
+      child: Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
       elevation: 1,
@@ -457,6 +460,7 @@ class _ServiceCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

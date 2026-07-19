@@ -151,6 +151,26 @@ abstract class _BwBookingStore with Store {
     isLoading = true;
   }
 
+  /// Clears only the active booking-flow selections without touching the
+  /// cached service catalog. Use this when entering a category screen so the
+  /// user starts a fresh booking while already-loaded options are reused.
+  @action
+  void clearSelectionOnly() {
+    selectedOption = null;
+    selectedAddonIds.clear();
+    selectedBranch = null;
+    selectedDate = null;
+    selectedSlot = null;
+    selectedAddress = null;
+    paymentMethod = 'CASH';
+    bookingResult = null;
+    createdBookingId = null;
+    workerCode = null;
+    paymongoCheckoutUrl = null;
+    errorMessage = null;
+    // optionsWithAddons, branches, slots, isLoading — NOT touched.
+  }
+
   /// Triggers a load only if there's no cached data and no in-flight request.
   /// Used by hosts (home, search) that want fresh options without forcing
   /// a reload when the user is just navigating around.

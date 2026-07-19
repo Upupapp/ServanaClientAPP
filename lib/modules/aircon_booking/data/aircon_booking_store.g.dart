@@ -433,6 +433,17 @@ mixin _$AirconBookingStore on _AirconBookingStore, Store {
   }
 
   @override
+  void clearSelectionOnly() {
+    final _$actionInfo = _$_AirconBookingStoreActionController.startAction(
+        name: '_AirconBookingStore.clearSelectionOnly');
+    try {
+      return super.clearSelectionOnly();
+    } finally {
+      _$_AirconBookingStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void ensureOptionsLoaded({int serviceId = 1}) {
     final _$actionInfo = _$_AirconBookingStoreActionController.startAction(
         name: '_AirconBookingStore.ensureOptionsLoaded');

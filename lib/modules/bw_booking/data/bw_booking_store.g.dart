@@ -389,6 +389,17 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   }
 
   @override
+  void clearSelectionOnly() {
+    final _$actionInfo = _$_BwBookingStoreActionController.startAction(
+        name: '_BwBookingStore.clearSelectionOnly');
+    try {
+      return super.clearSelectionOnly();
+    } finally {
+      _$_BwBookingStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void ensureOptionsLoaded({required int serviceId}) {
     final _$actionInfo = _$_BwBookingStoreActionController.startAction(
         name: '_BwBookingStore.ensureOptionsLoaded');

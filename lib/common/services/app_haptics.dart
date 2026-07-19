@@ -39,4 +39,21 @@ abstract final class AppHaptics {
       await HapticFeedback.vibrate();
     } catch (_) {}
   }
+
+  /// Restrained tap when the user enters a category — like a page turn.
+  /// Do NOT call on passive scrolling, filter chip selection, or keystrokes.
+  static Future<void> categoryEntry() async {
+    try {
+      await HapticFeedback.selectionClick();
+    } catch (_) {}
+  }
+
+  /// Gentle confirmation that the category reveal has settled.
+  /// Called once per session per category, on first-view only, never during
+  /// passive animations or reduced-motion sessions.
+  static Future<void> categoryRevealSettled() async {
+    try {
+      await HapticFeedback.lightImpact();
+    } catch (_) {}
+  }
 }
