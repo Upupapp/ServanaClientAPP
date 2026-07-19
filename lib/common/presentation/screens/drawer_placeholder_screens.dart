@@ -726,15 +726,233 @@ class _LanguageScreenState extends State<LanguageScreen> {
   }
 }
 
-class HelpSupportScreen extends StatelessWidget {
+class HelpSupportScreen extends StatefulWidget {
   static String routeName = "HelpSupport";
   static String route = "/HelpSupport";
   const HelpSupportScreen({super.key});
 
   @override
+  State<HelpSupportScreen> createState() => _HelpSupportScreenState();
+}
+
+class _HelpSupportScreenState extends State<HelpSupportScreen> {
+  int? _expanded;
+
+  static const _faqs = [
+    _Faq(
+      q: 'How do I cancel a booking?',
+      a: 'Open your booking from the Bookings tab and tap "Cancel Booking" at the bottom of the detail screen. '
+          'Cancellations must be made at least 2 hours before the scheduled time.',
+    ),
+    _Faq(
+      q: 'How is payment processed?',
+      a: 'Payments are handled securely via PayMongo. '
+          'You will be redirected to a payment page after your booking is confirmed. '
+          'Servana never stores your card details.',
+    ),
+    _Faq(
+      q: 'What happens if a provider does not show up?',
+      a: 'If your provider is more than 30 minutes late or does not arrive, '
+          'contact our support team immediately via the chat below. '
+          'We will rebook or refund you within 24 hours.',
+    ),
+    _Faq(
+      q: 'Can I reschedule a booking?',
+      a: 'Rescheduling is currently handled by our support team. '
+          'Please reach out via the Contact Support option and include your booking number.',
+    ),
+    _Faq(
+      q: 'How do I update my address?',
+      a: 'Go to Profile → Saved Addresses to add, edit, or remove addresses. '
+          'You can also set a default address for quicker checkout.',
+    ),
+    _Faq(
+      q: 'Is my personal information safe?',
+      a: 'Yes. Servana uses industry-standard encryption for all data in transit and at rest. '
+          'We do not sell or share your personal information with third parties.',
+    ),
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    return const _DrawerPlaceholderScreen(title: "Help & Support");
+    return Scaffold(
+      backgroundColor: ColorPalette.primaryBackground,
+      appBar: AppBar(
+        backgroundColor: ColorPalette.primaryBackground,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: ColorPalette.secondaryText,
+          ),
+        ),
+        title: Text(
+          'Help & Support',
+          style: TextStyle(
+            fontFamily: FontPalette.primaryFontFamily,
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+            color: ColorPalette.secondaryText,
+          ),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          Text(
+            'Frequently asked questions',
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: ColorPalette.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(_faqs.length, (i) {
+            final faq = _faqs[i];
+            final open = _expanded == i;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Material(
+                color: ColorPalette.secondaryBackground,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: () =>
+                      setState(() => _expanded = open ? null : i),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                faq.q,
+                                style: TextStyle(
+                                  fontFamily: FontPalette.primaryFontFamily,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: ColorPalette.secondaryText,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              open
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: ColorPalette.secondaryText
+                                  .withOpacity(.45),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                        if (open) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            faq.a,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontSize: 13,
+                              color: ColorPalette.secondaryText.withOpacity(.75),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+          Text(
+            'Still need help?',
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: ColorPalette.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Semantics(
+            button: true,
+            label: 'Contact Support via email',
+            child: Material(
+              color: ColorPalette.primaryColorDark.withOpacity(.07),
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                onTap: () {},
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColorDark,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.email_outlined,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Contact Support',
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: ColorPalette.secondaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'support@servana.com.ph',
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontSize: 12,
+                                color: ColorPalette.secondaryText
+                                    .withOpacity(.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: ColorPalette.secondaryText.withOpacity(.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+}
+
+class _Faq {
+  const _Faq({required this.q, required this.a});
+  final String q;
+  final String a;
 }
 
 class _DrawerPlaceholderScreen extends StatelessWidget {

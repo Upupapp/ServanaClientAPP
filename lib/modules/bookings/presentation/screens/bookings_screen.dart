@@ -5,10 +5,13 @@ import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -96,12 +99,24 @@ extension _SegmentProps on _BookingSegment {
 class _BookingsScreenState extends State<BookingsScreen> {
   final store = dpLocator<HomeStore>();
   final _dateFormat = DateFormat('MMMM d, yyyy');
-  _BookingSegment _segment = _BookingSegment.actionRequired;
+  // Default to Upcoming — most users have 0 action-required bookings and
+  // landing on an empty screen is a poor first impression. Action-Required
+  // badges on the chip draw the eye when something actually needs attention.
+  _BookingSegment _segment = _BookingSegment.upcoming;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => store.loadBookings());
+    _doLoad();
+  }
+
+  Future<void> _doLoad() async {
+    try {
+      await store.loadBookings();
+    } catch (e) {
+      if (mounted) setState(() => _loadError = e.toString());
+    }
   }
 
   /// Classify a booking into its lifecycle segment using the authoritative
@@ -116,6 +131,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
     }
 
     switch (status) {
+      // Payment in-flight — user already acted; show in Upcoming while processing.
+      case BookingStatus.paymentProcessing:
+      case BookingStatus.paymentPendingConfirmation:
       case BookingStatus.paid:
       case BookingStatus.awaitingAssignment:
       case BookingStatus.assigned:
@@ -140,6 +158,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
       case BookingStatus.refunded:
         return _BookingSegment.cancelled;
 
+      // Draft and unknown — silently exclude from visible segments via
+      // the JobOrderStatus fallback; draft bookings aren't server-persisted
+      // in a way the inbox would show, and unknown never means confirmed.
       default:
         break;
     }
@@ -175,36 +196,49 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ColorPalette.primaryBackground,
-      body: Column(
-        children: [
-          _GradientHeader(
-            selectedSegment: _segment,
-            onSelect: (s) => setState(() => _segment = s),
-            countFor: (s) => Observer(
-              builder: (_) =>
-                  _countBadge(s, _countForSegment(store.bookings.toList(), s)),
+    return BlocListener<AuthenticationBloc, AuthenticationState>(
+      // Reset segment and error to defaults whenever a new session starts,
+      // so a returning user never sees the previous user's tab state.
+      listenWhen: (_, next) =>
+          next is AuthenticationAuthenticated || next is AuthenticationGuest,
+      listener: (_, __) => setState(() {
+        _segment = _BookingSegment.upcoming;
+        _loadError = null;
+      }),
+      child: Scaffold(
+        backgroundColor: ColorPalette.primaryBackground,
+        body: Column(
+          children: [
+            _GradientHeader(
+              selectedSegment: _segment,
+              onSelect: (s) => setState(() => _segment = s),
+              countFor: (s) => Observer(
+                builder: (_) =>
+                    _countBadge(s, _countForSegment(store.bookings.toList(), s)),
+              ),
             ),
-          ),
-          Expanded(
-            child: Observer(
-              builder: (context) {
-                if (store.isLoading && store.bookings.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final filtered = _filterForSegment(store.bookings.toList())
-                  ..sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
-                return RefreshIndicator(
-                  onRefresh: () => store.loadBookings(),
-                  child: filtered.isEmpty
-                      ? _buildEmpty()
-                      : _buildList(filtered),
-                );
-              },
+            Expanded(
+              child: Observer(
+                builder: (context) {
+                  if (store.isLoading && store.bookings.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (_loadError != null && store.bookings.isEmpty) {
+                    return _buildLoadError();
+                  }
+                  final filtered = _filterForSegment(store.bookings.toList())
+                    ..sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
+                  return RefreshIndicator(
+                    onRefresh: _doLoad,
+                    child: filtered.isEmpty
+                        ? _buildEmpty()
+                        : _buildList(filtered),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -226,6 +260,50 @@ class _BookingsScreenState extends State<BookingsScreen> {
           fontWeight: FontWeight.w800,
         ),
       ),
+    );
+  }
+
+  Widget _buildLoadError() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 80),
+        Center(
+          child: Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: ColorPalette.secondaryText.withOpacity(.35),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            'Could not load bookings.',
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w600,
+              color: ColorPalette.secondaryText.withOpacity(.7),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton(
+            onPressed: () {
+              setState(() => _loadError = null);
+              _doLoad();
+            },
+            child: Text(
+              'Retry',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontWeight: FontWeight.w700,
+                color: ColorPalette.primaryColorDark,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -417,7 +495,7 @@ class _GradientHeader extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           SizedBox(
-            height: 36,
+            height: 44,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
@@ -465,7 +543,7 @@ class _SegmentChip extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: isSelected ? Colors.white : Colors.white.withOpacity(.18),
             borderRadius: BorderRadius.circular(24),

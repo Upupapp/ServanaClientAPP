@@ -30,6 +30,7 @@ class BookingChatScreen extends StatefulWidget {
 class _BookingChatScreenState extends State<BookingChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _inputFocusNode = FocusNode();
   final _timeFormat = DateFormat('h:mm a');
   bool _hasAssignedProvider = false;
   String _providerLabel = "Service Provider";
@@ -38,6 +39,16 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
   void initState() {
     super.initState();
     _loadAssignedProvider();
+    // Scroll to the latest message when the keyboard opens so the thread
+    // isn't obscured by the resized viewport (§94: no keyboard overlap in Chat).
+    _inputFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (_inputFocusNode.hasFocus) {
+      // Small delay lets the keyboard animation complete before measuring.
+      Future.delayed(const Duration(milliseconds: 300), _scrollToBottom);
+    }
   }
 
   Future<void> _loadAssignedProvider() async {
@@ -57,6 +68,8 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
 
   @override
   void dispose() {
+    _inputFocusNode.removeListener(_onFocusChange);
+    _inputFocusNode.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -231,6 +244,7 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
                         Expanded(
                           child: TextField(
                             controller: _controller,
+                            focusNode: _inputFocusNode,
                             minLines: 1,
                             maxLines: 4,
                             textInputAction: TextInputAction.newline,
