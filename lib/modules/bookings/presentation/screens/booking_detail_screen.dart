@@ -29,6 +29,7 @@ class BookingDetailScreen extends StatefulWidget {
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
   late JobOrder _booking;
   bool _isRefreshing = false;
+  String? _refreshError;
 
   // Worker assignment surfaced from the booking JSON. The JobOrder freezed
   // model predates the BE auto-assignment feature, so these live in screen
@@ -94,7 +95,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (bookingId == null) return;
 
     if (!_isRefreshing) {
-      setState(() => _isRefreshing = true);
+      setState(() {
+        _isRefreshing = true;
+        _refreshError = null;
+      });
     }
     try {
       final api = dpLocator<ServanaApiClient>();
@@ -165,7 +169,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _pollTimer = null;
       }
     } catch (_) {
-      // Silent fail — keep existing data
+      if (mounted) setState(() => _refreshError = 'Could not refresh. Tap ↻ to retry.');
     } finally {
       if (mounted) setState(() => _isRefreshing = false);
     }
@@ -248,6 +252,40 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_refreshError != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: ColorPalette.danger.withOpacity(.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: ColorPalette.danger.withOpacity(.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 18, color: ColorPalette.danger),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _refreshError!,
+                        style: const TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          fontSize: 13,
+                          color: ColorPalette.danger,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _refreshError = null),
+                      child: const Icon(Icons.close_rounded,
+                          size: 18, color: ColorPalette.danger),
+                    ),
+                  ],
+                ),
+              ),
             // QR + worker code — pinned to the top: it's the artefact the
             // technician needs at job start, and the customer should see it
             // first. The BE only populates `workerCode` once a technician

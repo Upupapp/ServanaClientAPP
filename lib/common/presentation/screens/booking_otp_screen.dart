@@ -247,8 +247,8 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'We sent a 6-digit code to confirm your booking. '
-                'Enter it below to continue.',
+                'We sent a 6-digit code to the phone number on your account. '
+                'Enter it below to confirm your booking.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: FontPalette.primaryFontFamily,

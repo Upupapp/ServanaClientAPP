@@ -360,6 +360,9 @@ class ServanaApiClient {
   }
 
   /// Triggers the BE to re-send the booking OTP for [bookingId].
+  // ALIGN-C07-001: POST /api/$bookingId/resend-otp must exist on the backend.
+  // Verify route is implemented in Upupapp/servana_api before releasing
+  // BookingOtpScreen to production — if missing, "Resend code" always fails.
   Future<Map<String, dynamic>> resendOtp({required int bookingId}) async {
     final uri = _uri('/api/$bookingId/resend-otp');
     final res = await _client.post(uri, headers: await _headers());

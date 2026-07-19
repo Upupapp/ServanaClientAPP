@@ -270,9 +270,39 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: () {
-              _stopPolling();
-              if (!_dismissed) {
+            style: TextButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(
+                    'Cancel payment?',
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  content: Text(
+                    'Your booking has been created. You can complete payment later from My Bookings.',
+                    style: TextStyle(fontFamily: FontPalette.primaryFontFamily),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Continue paying'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Leave'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true && mounted && !_dismissed) {
+                _stopPolling();
                 _dismissed = true;
                 Navigator.of(context).pop(false);
               }
