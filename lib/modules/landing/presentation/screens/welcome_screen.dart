@@ -28,6 +28,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _pageController = PageController();
   int _index = 0;
 
+  // Current fractional page offset — updated every scroll frame for smooth
+  // gradient interpolation (SWEEP-C04-001).
+  double _pageOffset = 0.0;
+
+  // True while an async Hive write is in-flight — prevents double-taps and
+  // shows a disabled state on the buttons (NOTIFY-003).
+  bool _busy = false;
+
   static const _pages = <_WelcomePage>[
     _WelcomePage(
       bg: 'assets/images/welcome/page_1_bg.png',
@@ -59,10 +67,43 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(_onPageScroll);
+  }
+
+  // Fires on every scroll frame so the gradient interpolates continuously
+  // rather than snapping on page-change (SWEEP-C04-001).
+  void _onPageScroll() {
+    if (_pageController.hasClients) {
+      setState(() => _pageOffset = _pageController.page ?? _index.toDouble());
+    }
+  }
+
+  @override
   void dispose() {
+    _pageController.removeListener(_onPageScroll);
     _pageController.dispose();
     super.dispose();
   }
+
+  // Interpolated gradient stops so the overlay fades continuously during a
+  // swipe rather than snapping when onPageChanged fires (SWEEP-C04-001).
+  List<double> _interpolatedStops() {
+    final fromIdx = _pageOffset.floor().clamp(0, _pages.length - 1);
+    final toIdx = _pageOffset.ceil().clamp(0, _pages.length - 1);
+    if (fromIdx == toIdx) return _pages[fromIdx].gradientStops;
+    final t = _pageOffset - fromIdx;
+    final a = _pages[fromIdx].gradientStops;
+    final b = _pages[toIdx].gradientStops;
+    return [
+      _lerp(a[0], b[0], t),
+      _lerp(a[1], b[1], t),
+      _lerp(a[2], b[2], t),
+    ];
+  }
+
+  static double _lerp(double a, double b, double t) => a + (b - a) * t;
 
   void _onPageChanged(int i) {
     AppHaptics.selection();
@@ -70,26 +111,44 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _browseAsGuest() async {
-    AppHaptics.medium();
-    await OnboardingStateService.setStatus(OnboardingStatus.skippedToBrowse);
-    if (!mounted) return;
-    BlocProvider.of<AuthenticationBloc>(context).add(AuthBrowseAsGuest());
-    context.goNamed(HomeScreen.routeName);
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      AppHaptics.medium();
+      await OnboardingStateService.setStatus(OnboardingStatus.skippedToBrowse);
+      if (!mounted) return;
+      BlocProvider.of<AuthenticationBloc>(context).add(AuthBrowseAsGuest());
+      context.goNamed(HomeScreen.routeName);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _goToSignIn() async {
-    AppHaptics.selection();
-    await OnboardingStateService.setStatus(OnboardingStatus.completed);
-    if (!mounted) return;
-    context.goNamed(AuthenticationScreen.routeName);
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      AppHaptics.selection();
+      await OnboardingStateService.setStatus(OnboardingStatus.completed);
+      if (!mounted) return;
+      context.goNamed(AuthenticationScreen.routeName);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _goToCreateAccount() async {
-    AppHaptics.selection();
-    await OnboardingStateService.setStatus(OnboardingStatus.completed);
-    if (!mounted) return;
-    // Route to the registration form, not the sign-in form (STITCH-008).
-    context.goNamed(CreateAccountScreen.routeName);
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      AppHaptics.selection();
+      await OnboardingStateService.setStatus(OnboardingStatus.completed);
+      if (!mounted) return;
+      // Route to the registration form, not the sign-in form (STITCH-008).
+      context.goNamed(CreateAccountScreen.routeName);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -123,8 +182,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
 
           // ── Gradient overlay ───────────────────────────────────────────
-          // Bottom-heavy navy gradient ensures white text is always legible
-          // regardless of the background photo's content.
+          // Interpolated stops so the gradient transitions continuously
+          // during swipe instead of snapping on page change (SWEEP-C04-001).
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -137,7 +196,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       Color(0x40001A66),
                       Color(0xCC001140),
                     ],
-                    stops: page.gradientStops,
+                    stops: _interpolatedStops(),
                   ),
                 ),
               ),
@@ -145,141 +204,152 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
 
           // ── UI content ─────────────────────────────────────────────────
+          // MOBILE-003: ConstrainedBox caps width on wide tablets while the
+          // background photo and gradient still fill the full screen.
           SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top bar ──────────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ServanaBanner(scale: 0.9, color: Colors.white),
-                      const Spacer(),
-                      Semantics(
-                        label: 'Sign in to your account',
-                        button: true,
-                        child: TextButton(
-                          onPressed: _goToSignIn,
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(44, 44),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Top bar ──────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          ServanaBanner(scale: 0.9, color: Colors.white),
+                          const Spacer(),
+                          Semantics(
+                            label: 'Sign in to your account',
+                            button: true,
+                            child: TextButton(
+                              onPressed: _busy ? null : _goToSignIn,
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(44, 44),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                              ),
+                              child: Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontFamily: FontPalette.primaryFontFamily,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
-                          child: Text(
-                            'Sign In',
-                            style: TextStyle(
-                              fontFamily: FontPalette.primaryFontFamily,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Colors.white,
-                            ),
-                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ── Service visual (middle) ───────────────────────────
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: reducedMotion
+                            ? Duration.zero
+                            : AppMotionTokens.emphasis,
+                        switchInCurve: AppMotionTokens.enterEase,
+                        switchOutCurve: AppMotionTokens.exitEase,
+                        child: _ServiceVisual(
+                          key: ValueKey('visual_$_index'),
+                          visual: page.visual,
+                          reducedMotion: reducedMotion,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                // ── Service visual (middle) ───────────────────────────────
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: reducedMotion
-                        ? Duration.zero
-                        : AppMotionTokens.emphasis,
-                    switchInCurve: AppMotionTokens.enterEase,
-                    switchOutCurve: AppMotionTokens.exitEase,
-                    child: _ServiceVisual(
-                      key: ValueKey('visual_$_index'),
-                      visual: page.visual,
-                      reducedMotion: reducedMotion,
                     ),
-                  ),
-                ),
 
-                // ── Headline + subtext ───────────────────────────────────
-                AnimatedSwitcher(
-                  duration: reducedMotion
-                      ? Duration.zero
-                      : AppMotionTokens.standard,
-                  transitionBuilder: (child, animation) {
-                    if (reducedMotion) return child;
-                    return FadeTransition(
-                      opacity: CurvedAnimation(
-                        parent: animation,
-                        curve: AppMotionTokens.enterEase,
+                    // ── Headline + subtext ───────────────────────────────
+                    AnimatedSwitcher(
+                      duration: reducedMotion
+                          ? Duration.zero
+                          : AppMotionTokens.standard,
+                      transitionBuilder: (child, animation) {
+                        if (reducedMotion) return child;
+                        return FadeTransition(
+                          opacity: CurvedAnimation(
+                            parent: animation,
+                            curve: AppMotionTokens.enterEase,
+                          ),
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.07),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: AppMotionTokens.enterEase,
+                            )),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _PageTextBlock(
+                        key: ValueKey('text_$_index'),
+                        page: page,
                       ),
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.07),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: AppMotionTokens.enterEase,
-                        )),
-                        child: child,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // ── Primary CTA: Browse Services ─────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Semantics(
+                        label: 'Browse services without signing in',
+                        button: true,
+                        child: ServanaPrimaryButton(
+                          label: 'Browse Services',
+                          onPressed: _busy ? null : _browseAsGuest,
+                        ),
                       ),
-                    );
-                  },
-                  child: _PageTextBlock(
-                    key: ValueKey('text_$_index'),
-                    page: page,
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // ── Primary CTA: Browse Services ─────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Semantics(
-                    label: 'Browse services without signing in',
-                    button: true,
-                    child: ServanaPrimaryButton(
-                      label: 'Browse Services',
-                      onPressed: _browseAsGuest,
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                // ── Secondary CTA: Create Account ────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Semantics(
-                    label: 'Create a new Servana account',
-                    button: true,
-                    child: ServanaOutlinedButton(
-                      label: 'Create Account',
-                      darkSurface: true,
-                      onPressed: _goToCreateAccount,
+                    // ── Secondary CTA: Create Account ────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Semantics(
+                        label: 'Create a new Servana account',
+                        button: true,
+                        child: ServanaOutlinedButton(
+                          label: 'Create Account',
+                          darkSurface: true,
+                          onPressed: _busy ? null : _goToCreateAccount,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                // ── Page indicator ───────────────────────────────────────
-                Semantics(
-                  label: 'Page ${_index + 1} of ${_pages.length}',
-                  child: Center(
-                    child: _PageIndicator(
-                      count: _pages.length,
-                      currentIndex: _index,
+                    // ── Page indicator ───────────────────────────────────
+                    // NOTIFY-004: excludeSemantics hides individual dot
+                    // containers from TalkBack; the group label is sufficient.
+                    Semantics(
+                      label:
+                          'Page indicator: ${_index + 1} of ${_pages.length}',
+                      excludeSemantics: true,
+                      child: Center(
+                        child: _PageIndicator(
+                          count: _pages.length,
+                          currentIndex: _index,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 20),
-              ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -472,6 +542,12 @@ class _BookingJourneyVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // MOBILE-002: shrink dots on narrow screens (< 360 dp) so the connector
+    // lines between them stay visible rather than near-invisible at ~16 dp.
+    final narrow = MediaQuery.sizeOf(context).width < 360;
+    final dotSize = narrow ? 40.0 : 52.0;
+    final iconSize = narrow ? 18.0 : 22.0;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -481,6 +557,8 @@ class _BookingJourneyVisual extends StatelessWidget {
             label: _steps[i].$2,
             delay: Duration(milliseconds: i * 75),
             reducedMotion: reducedMotion,
+            dotSize: dotSize,
+            iconSize: iconSize,
           ),
           if (i < _steps.length - 1)
             Expanded(
@@ -512,12 +590,16 @@ class _StepDot extends StatelessWidget {
     required this.label,
     required this.delay,
     required this.reducedMotion,
+    required this.dotSize,
+    required this.iconSize,
   });
 
   final IconData icon;
   final String label;
   final Duration delay;
   final bool reducedMotion;
+  final double dotSize;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -525,14 +607,14 @@ class _StepDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 52,
-          height: 52,
+          width: dotSize,
+          height: dotSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0x2BFFFFFF),
             border: Border.all(color: const Color(0x77FFFFFF), width: 1.5),
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(icon, color: Colors.white, size: iconSize),
         ),
         const SizedBox(height: 8),
         Text(

@@ -1,10 +1,14 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/domain/booking/booking_draft.dart';
+import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
+import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
 import 'package:client/common/presentation/screens/booking_otp_screen.dart';
+import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_confirmation_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
@@ -499,6 +503,19 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
   bool _submitting = false;
 
   Future<void> _onConfirmBooking() async {
+    // Gate: guest users are redirected to sign in; the draft preserves all
+    // form state so the flow resumes automatically after authentication.
+    if (!dpLocator<AuthStateService>().isAuthenticated) {
+      dpLocator<BookingDraftService>().save(BookingDraft(
+        id: 'aircon_${DateTime.now().millisecondsSinceEpoch}',
+        createdAt: DateTime.now(),
+        flowType: BookingFlowType.aircon,
+        returnRouteName: AirconCheckoutScreen.routeName,
+      ));
+      if (!mounted) return;
+      context.goNamed(AuthenticationGateScreen.routeName);
+      return;
+    }
     // Block re-entry for the whole submit — including the window between the
     // create completing and the navigation removing this screen, where a second
     // tap would otherwise create a duplicate booking.

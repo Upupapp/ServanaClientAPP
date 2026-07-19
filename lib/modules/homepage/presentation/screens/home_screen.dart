@@ -1,11 +1,15 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
+import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.dart';
@@ -22,6 +26,7 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.
 import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -70,11 +75,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _greyBg,
-      key: _scaffoldKey,
-      drawer: _buildDrawer(),
-      body: SingleChildScrollView(
+    // STITCH-007: reload bookings after re-login, resume any pending booking
+    // draft saved by the checkout screens (ACT-006).
+    return BlocListener<AuthenticationBloc, AuthenticationState>(
+      listener: (context, state) {
+        if (state is AuthenticationAuthenticated) {
+          store.loadBookings();
+          final draft = dpLocator<BookingDraftService>().restore();
+          if (draft?.returnRouteName != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) context.pushNamed(draft!.returnRouteName!);
+            });
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _greyBg,
+        key: _scaffoldKey,
+        drawer: _buildDrawer(),
+        body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -93,7 +112,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildHeaderSection() {
@@ -630,8 +650,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     DrawerItemWidget(
                       title: "Logout",
                       onTap: () {
-                        SessionService.deleteSession();
-                        context.goNamed(WelcomeScreen.routeName);
+                        // Close drawer before showing the dialog.
+                        Navigator.of(context).pop();
+                        LogoutDialog.showDialog(
+                          context: context,
+                          onConfirm: () {
+                            context.read<AuthenticationBloc>().add(AuthLogout());
+                          },
+                        );
                       },
                     ),
                   ],
