@@ -2,6 +2,7 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
@@ -55,6 +56,24 @@ class _HomeScreenState extends State<HomeScreen> {
     store.loadBookings();
     bwStore.ensureOptionsLoaded(serviceId: 2);
     airconStore.ensureOptionsLoaded(serviceId: 1);
+    _restoreDraftIfPending();
+  }
+
+  // STITCH-C05-001 / LEAK-C05-001: restores a pending BookingDraft after the
+  // guest→checkout→auth-gate→login path, where the BlocListener fires before
+  // this widget is first mounted and the state transition is therefore missed.
+  // Also called from BlocListener for the normal login path so auth guard and
+  // clear() are applied in both code paths from a single source.
+  void _restoreDraftIfPending() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!dpLocator<AuthStateService>().isAuthenticated) return;
+      final draft = dpLocator<BookingDraftService>().restore();
+      if (draft?.returnRouteName != null) {
+        context.pushNamed(draft!.returnRouteName!);
+        dpLocator<BookingDraftService>().clear();
+      }
+    });
   }
 
   String _timeGreeting() {
@@ -70,12 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       listener: (context, state) {
         if (state is AuthenticationAuthenticated) {
           store.loadBookings();
-          final draft = dpLocator<BookingDraftService>().restore();
-          if (draft?.returnRouteName != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) context.pushNamed(draft!.returnRouteName!);
-            });
-          }
+          _restoreDraftIfPending();
         }
       },
       child: Scaffold(

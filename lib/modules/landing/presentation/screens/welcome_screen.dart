@@ -222,7 +222,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          ServanaBanner(scale: 0.9, color: Colors.white),
+                          const ServanaBanner(scale: 0.9, color: Colors.white),
                           const Spacer(),
                           Semantics(
                             label: 'Sign in to your account',
@@ -305,7 +305,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Semantics(
                         label: 'Browse services without signing in',
-                        button: true,
                         child: ServanaPrimaryButton(
                           label: 'Browse Services',
                           onPressed: _busy ? null : _browseAsGuest,
@@ -320,7 +319,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Semantics(
                         label: 'Create a new Servana account',
-                        button: true,
                         child: ServanaOutlinedButton(
                           label: 'Create Account',
                           darkSurface: true,
@@ -473,23 +471,14 @@ class _ServiceCategoriesVisual extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       alignment: WrapAlignment.center,
-      children: [
-        for (var i = 0; i < _services.length; i++)
-          reducedMotion
-              ? _ServiceChip(
-                  icon: _services[i].$1,
-                  label: _services[i].$2,
-                )
-              : _ServiceChip(
-                  icon: _services[i].$1,
-                  label: _services[i].$2,
-                )
-                  .animate(
-                    delay: Duration(milliseconds: i * 55),
-                  )
-                  .fadeIn(duration: 380.ms, curve: Curves.easeOut)
-                  .slideY(begin: 0.14, end: 0, duration: 340.ms, curve: Curves.easeOut),
-      ],
+      children: List.generate(_services.length, (i) {
+        final chip = _ServiceChip(icon: _services[i].$1, label: _services[i].$2);
+        if (reducedMotion) return chip;
+        return chip
+            .animate(delay: Duration(milliseconds: i * 55))
+            .fadeIn(duration: 380.ms, curve: Curves.easeOut)
+            .slideY(begin: 0.14, end: 0, duration: 340.ms, curve: Curves.easeOut);
+      }),
     );
   }
 }
@@ -562,21 +551,18 @@ class _BookingJourneyVisual extends StatelessWidget {
           ),
           if (i < _steps.length - 1)
             Expanded(
-              child: reducedMotion
-                  ? Container(
-                      height: 1.5,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      color: const Color(0x55FFFFFF),
-                    )
-                  : Container(
-                      height: 1.5,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      color: const Color(0x55FFFFFF),
-                    )
-                      .animate(
-                        delay: Duration(milliseconds: i * 75 + 110),
-                      )
-                      .fadeIn(duration: 280.ms),
+              child: (() {
+                final line = Container(
+                  height: 1.5,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  color: const Color(0x55FFFFFF),
+                );
+                return reducedMotion
+                    ? line
+                    : line
+                        .animate(delay: Duration(milliseconds: i * 75 + 110))
+                        .fadeIn(duration: 280.ms);
+              })(),
             ),
         ],
       ],

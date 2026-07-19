@@ -106,4 +106,43 @@ void main() {
       expect(() => service.clear(), returnsNormally);
     });
   });
+
+  group('returnRouteName round-trip', () {
+    test('returnRouteName is preserved through save → restore', () {
+      final draft = BookingDraft(
+        id: 'rt-1',
+        createdAt: DateTime.now(),
+        returnRouteName: 'AirconOptionsScreen',
+      );
+      service.save(draft);
+      final restored = service.restore();
+      expect(restored?.returnRouteName, equals('AirconOptionsScreen'));
+    });
+
+    test('restore returns null after clear, discarding returnRouteName', () {
+      final draft = BookingDraft(
+        id: 'rt-2',
+        createdAt: DateTime.now(),
+        returnRouteName: 'BwAddOnsScreen',
+      );
+      service.save(draft);
+      service.restore();
+      service.clear();
+      expect(service.restore(), isNull);
+    });
+
+    test('restore after clear does not yield stale returnRouteName', () {
+      final draft = BookingDraft(
+        id: 'rt-3',
+        createdAt: DateTime.now(),
+        returnRouteName: 'AirconOptionsScreen',
+      );
+      service.save(draft);
+      service.restore();
+      service.clear();
+      // A second login must not re-navigate with the stale route
+      expect(service.restore(), isNull);
+      expect(service.hasDraft, isFalse);
+    });
+  });
 }
