@@ -1,14 +1,15 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/data/models/user_session.dart';
+import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
 import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
-import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatefulWidget {
   static String routeName = "Profile";
@@ -20,149 +21,94 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final store = dpLocator<HomeStore>();
+  UserSession? _session;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => store.loadBookings());
+    _loadSession();
+  }
+
+  Future<void> _loadSession() async {
+    final s = await SessionService.getSession();
+    if (mounted) setState(() => _session = s);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorPalette.primaryBackground,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Observer(
-            builder: (context) {
-              final session = store.session;
-              final name = session?.fullname ?? 'Guest';
-              final email = session?.emailAddress ?? '—';
-              final phone = session?.mobileNumber ?? '—';
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeader(context)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: _SectionLabel(label: 'My Account'),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _MenuGroup(
+                items: [
+                  _MenuItem(
+                    icon: Icons.location_on_outlined,
+                    label: 'Saved Addresses',
+                    onTap: () => context
+                        .pushNamed(SavedAddressesScreen.routeName),
+                  ),
+                  _MenuItem(
+                    icon: Icons.language_rounded,
+                    label: 'Language',
+                    onTap: () =>
+                        context.pushNamed(LanguageScreen.routeName),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: _SectionLabel(label: 'Support'),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _MenuGroup(
+                items: [
+                  _MenuItem(
+                    icon: Icons.help_outline_rounded,
+                    label: 'Help & Support',
+                    onTap: () =>
+                        context.pushNamed(HelpSupportScreen.routeName),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Sign out at bottom with spacer
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    "Profile",
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 22,
-                      color: ColorPalette.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: ColorPalette.secondaryBackground,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: ColorPalette.border(.55)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor:
-                              ColorPalette.primaryColor.withOpacity(.12),
-                          child: Icon(Icons.person_rounded,
-                              color: ColorPalette.primaryColorDark, size: 30),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: FontPalette.primaryFontFamily,
-                                  fontWeight: FontWeight.w800,
-                                  color: ColorPalette.secondaryText,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                email,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: FontPalette.primaryFontFamily,
-                                  color: ColorPalette.secondaryText
-                                      .withOpacity(.7),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                phone,
-                                style: TextStyle(
-                                  fontFamily: FontPalette.primaryFontFamily,
-                                  color: ColorPalette.secondaryText
-                                      .withOpacity(.7),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: ColorPalette.secondaryBackground,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: ColorPalette.border(.55)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.history_rounded,
-                            color: ColorPalette.primaryColorDark),
-                        const SizedBox(width: 10),
-                        Text(
-                          "Total bookings",
-                          style: TextStyle(
-                            fontFamily: FontPalette.primaryFontFamily,
-                            color: ColorPalette.secondaryText,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          store.bookings.length.toString(),
-                          style: TextStyle(
-                            fontFamily: FontPalette.primaryFontFamily,
-                            color: ColorPalette.primaryColorDark,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  // MOBILE-001: confirmation dialog before logout.
-                  // NOTIFY-002: button is disabled while the BLoC processes logout.
                   BlocBuilder<AuthenticationBloc, AuthenticationState>(
                     builder: (context, state) {
                       final isLoading = state is AuthenticationLoading;
                       return SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ColorPalette.primaryColor,
-                            disabledBackgroundColor:
-                                ColorPalette.primaryColor.withOpacity(.55),
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ColorPalette.danger,
+                            side: BorderSide(
+                                color: ColorPalette.danger.withOpacity(.5)),
+                            disabledForegroundColor:
+                                ColorPalette.danger.withOpacity(.4),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),
@@ -173,10 +119,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   LogoutDialog.showDialog(
                                     context: context,
                                     onConfirm: () {
-                                      // Route through AuthenticationBloc so it
-                                      // clears all private singletons and
-                                      // updates AuthStateService before the
-                                      // router redirects (LEAKSHIELD §2, §5).
                                       context
                                           .read<AuthenticationBloc>()
                                           .add(AuthLogout());
@@ -184,20 +126,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   );
                                 },
                           child: isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: ColorPalette.danger,
                                   ),
                                 )
                               : Text(
-                                  "Logout",
+                                  'Sign Out',
                                   style: TextStyle(
                                     fontFamily: FontPalette.primaryFontFamily,
-                                    fontWeight: FontWeight.w800,
-                                    color: ColorPalette.primaryButtonTextColor,
+                                    fontWeight: FontWeight.w700,
+                                    color: ColorPalette.danger,
                                   ),
                                 ),
                         ),
@@ -205,11 +147,215 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                 ],
-              );
-            },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final name = _session?.fullname ?? '';
+    final email = _session?.emailAddress ?? '';
+    final phone = _session?.mobileNumber ?? '';
+    final initials = _initials(name);
+
+    return Container(
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 24,
+        left: 20,
+        right: 20,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ColorPalette.primaryColorDark,
+            ColorPalette.primaryGradientEnd(),
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(.20),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(.5), width: 2),
+            ),
+            child: Center(
+              child: Text(
+                initials,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (name.isNotEmpty)
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(.75),
+                    ),
+                  ),
+                ],
+                if (phone.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    phone,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(.75),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _initials(String name) {
+    if (name.trim().isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    return parts.first[0].toUpperCase();
+  }
+}
+
+// ── Section components ────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontFamily: FontPalette.primaryFontFamily,
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+        color: ColorPalette.secondaryText.withOpacity(.55),
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+class _MenuGroup extends StatelessWidget {
+  const _MenuGroup({required this.items});
+  final List<_MenuItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: ColorPalette.secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.border(.45)),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < items.length; i++) ...[
+            items[i],
+            if (i < items.length - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 52,
+                color: ColorPalette.border(.35),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: ColorPalette.primaryColorDark),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    color: ColorPalette.secondaryText,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: ColorPalette.secondaryText.withOpacity(.4),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
+

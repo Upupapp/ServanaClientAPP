@@ -271,7 +271,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     Expanded(
                       child: Text(
                         _refreshError!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: FontPalette.primaryFontFamily,
                           fontSize: 13,
                           color: ColorPalette.danger,

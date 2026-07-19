@@ -7,24 +7,36 @@ enum BookingStatus {
   // ── Pre-creation ───────────────────────────────────────────────────────────
   draft,
 
-  // ── Created, awaiting action ───────────────────────────────────────────────
+  // ── Action required — user must act before service can proceed ─────────────
   pendingOtp,
   otpVerified,
   pendingPayment,
   paymentProcessing,
   paymentPendingConfirmation,
 
-  // ── Operational ────────────────────────────────────────────────────────────
+  // ── Upcoming — booking confirmed, service not yet started ─────────────────
   paid,
   awaitingAssignment,
   assigned,
   confirmed,
 
-  // ── Terminal ───────────────────────────────────────────────────────────────
+  // ── Active — service is underway ───────────────────────────────────────────
+  enRoute,
+  arrived,
+  inProgress,
+  awaitingCompletion,
+
+  // ── Completed — service finished successfully ─────────────────────────────
   completed,
+  reviewed,
+
+  // ── Cancelled — terminal failure states ────────────────────────────────────
   cancelled,
+  cancelledByProvider,
+  cancelledByAdmin,
   expired,
   failed,
+  refunded,
 
   // ── Safety net — never treat as confirmed ─────────────────────────────────
   unknown,
@@ -67,16 +79,44 @@ abstract final class BookingStatusMapper {
         return BookingStatus.assigned;
       case 'CONFIRMED':
         return BookingStatus.confirmed;
+      case 'EN_ROUTE':
+      case 'ENROUTE':
+      case 'IN_TRANSIT':
+      case 'INTRANSIT':
+      case 'WORKER_ASSIGNED':
+        return BookingStatus.enRoute;
+      case 'ARRIVED':
+      case 'AT_LOCATION':
+        return BookingStatus.arrived;
+      case 'IN_PROGRESS':
+      case 'INPROGRESS':
+      case 'STARTED':
+        return BookingStatus.inProgress;
+      case 'AWAITING_COMPLETION':
+      case 'FOR_COMPLETION':
+      case 'AWAITING_REVIEW':
+        return BookingStatus.awaitingCompletion;
       case 'COMPLETED':
       case 'DONE':
         return BookingStatus.completed;
+      case 'REVIEWED':
+      case 'RATING_SUBMITTED':
+        return BookingStatus.reviewed;
       case 'CANCELLED':
       case 'CANCELED':
         return BookingStatus.cancelled;
+      case 'CANCELLED_BY_PROVIDER':
+      case 'PROVIDER_CANCELLED':
+        return BookingStatus.cancelledByProvider;
+      case 'CANCELLED_BY_ADMIN':
+      case 'ADMIN_CANCELLED':
+        return BookingStatus.cancelledByAdmin;
       case 'EXPIRED':
         return BookingStatus.expired;
       case 'FAILED':
         return BookingStatus.failed;
+      case 'REFUNDED':
+        return BookingStatus.refunded;
       default:
         return BookingStatus.unknown;
     }
@@ -99,14 +139,30 @@ abstract final class BookingStatusMapper {
         return 'Service Professional Assigned';
       case BookingStatus.confirmed:
         return 'Booking Confirmed';
+      case BookingStatus.enRoute:
+        return 'Provider En Route';
+      case BookingStatus.arrived:
+        return 'Provider Arrived';
+      case BookingStatus.inProgress:
+        return 'Service In Progress';
+      case BookingStatus.awaitingCompletion:
+        return 'Awaiting Completion';
       case BookingStatus.completed:
         return 'Service Completed';
+      case BookingStatus.reviewed:
+        return 'Service Reviewed';
       case BookingStatus.cancelled:
         return 'Booking Cancelled';
+      case BookingStatus.cancelledByProvider:
+        return 'Cancelled by Provider';
+      case BookingStatus.cancelledByAdmin:
+        return 'Cancelled by Admin';
       case BookingStatus.expired:
         return 'Booking Expired';
       case BookingStatus.failed:
         return 'Booking Failed';
+      case BookingStatus.refunded:
+        return 'Booking Refunded';
       case BookingStatus.otpVerified:
       case BookingStatus.draft:
       case BookingStatus.unknown:
@@ -131,14 +187,30 @@ abstract final class BookingStatusMapper {
         return 'A service professional has been assigned to your booking.';
       case BookingStatus.confirmed:
         return "We're preparing your service professional for your appointment.";
+      case BookingStatus.enRoute:
+        return 'Your service professional is on the way.';
+      case BookingStatus.arrived:
+        return 'Your service professional has arrived.';
+      case BookingStatus.inProgress:
+        return 'Your service is currently being performed.';
+      case BookingStatus.awaitingCompletion:
+        return 'Your service is nearly done.';
       case BookingStatus.completed:
         return 'Thank you for using Servana.';
+      case BookingStatus.reviewed:
+        return 'Your review has been submitted.';
       case BookingStatus.cancelled:
         return 'This booking has been cancelled.';
+      case BookingStatus.cancelledByProvider:
+        return 'The service provider cancelled this booking.';
+      case BookingStatus.cancelledByAdmin:
+        return 'This booking was cancelled by support.';
       case BookingStatus.expired:
         return 'This booking has expired. Please create a new booking.';
       case BookingStatus.failed:
         return 'This booking could not be completed. Please try again.';
+      case BookingStatus.refunded:
+        return 'Your payment has been refunded.';
       case BookingStatus.otpVerified:
       case BookingStatus.draft:
       case BookingStatus.unknown:

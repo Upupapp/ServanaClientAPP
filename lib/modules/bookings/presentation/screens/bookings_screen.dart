@@ -1,6 +1,7 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/models/job_order_model.dart';
+import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
@@ -21,45 +22,73 @@ class BookingsScreen extends StatefulWidget {
   State<BookingsScreen> createState() => _BookingsScreenState();
 }
 
-enum _BookingsTab { paid, scheduled, done, review }
+/// Booking lifecycle segments shown as horizontal filter chips.
+enum _BookingSegment {
+  actionRequired,
+  upcoming,
+  active,
+  completed,
+  cancelled,
+}
 
-extension _BookingsTabLabel on _BookingsTab {
+extension _SegmentProps on _BookingSegment {
   String get label {
     switch (this) {
-      case _BookingsTab.paid:
-        return 'Paid';
-      case _BookingsTab.scheduled:
-        return 'Scheduled';
-      case _BookingsTab.done:
-        return 'Done';
-      case _BookingsTab.review:
-        return 'Review';
+      case _BookingSegment.actionRequired:
+        return 'Action Required';
+      case _BookingSegment.upcoming:
+        return 'Upcoming';
+      case _BookingSegment.active:
+        return 'Active';
+      case _BookingSegment.completed:
+        return 'Completed';
+      case _BookingSegment.cancelled:
+        return 'Cancelled';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case _BookingsTab.paid:
-        return Icons.payments_outlined;
-      case _BookingsTab.scheduled:
+      case _BookingSegment.actionRequired:
+        return Icons.warning_amber_rounded;
+      case _BookingSegment.upcoming:
         return Icons.event_available_outlined;
-      case _BookingsTab.done:
+      case _BookingSegment.active:
+        return Icons.play_circle_outline_rounded;
+      case _BookingSegment.completed:
         return Icons.check_circle_outline;
-      case _BookingsTab.review:
-        return Icons.star_outline_rounded;
+      case _BookingSegment.cancelled:
+        return Icons.cancel_outlined;
     }
   }
 
   String get emptyText {
     switch (this) {
-      case _BookingsTab.paid:
-        return 'No paid bookings yet.';
-      case _BookingsTab.scheduled:
-        return 'Nothing scheduled.';
-      case _BookingsTab.done:
-        return 'No completed bookings.';
-      case _BookingsTab.review:
-        return 'No bookings to review.';
+      case _BookingSegment.actionRequired:
+        return 'No action required.';
+      case _BookingSegment.upcoming:
+        return 'No upcoming bookings.';
+      case _BookingSegment.active:
+        return 'No active bookings right now.';
+      case _BookingSegment.completed:
+        return 'No completed bookings yet.';
+      case _BookingSegment.cancelled:
+        return 'No cancelled bookings.';
+    }
+  }
+
+  Color get chipColor {
+    switch (this) {
+      case _BookingSegment.actionRequired:
+        return const Color(0xFFF5A623);
+      case _BookingSegment.upcoming:
+        return const Color(0xFF2D78F5);
+      case _BookingSegment.active:
+        return const Color(0xFF2DBBA7);
+      case _BookingSegment.completed:
+        return const Color(0xFF6D717F);
+      case _BookingSegment.cancelled:
+        return const Color(0xFFE05B5B);
     }
   }
 }
@@ -67,7 +96,7 @@ extension _BookingsTabLabel on _BookingsTab {
 class _BookingsScreenState extends State<BookingsScreen> {
   final store = dpLocator<HomeStore>();
   final _dateFormat = DateFormat('MMMM d, yyyy');
-  _BookingsTab _tab = _BookingsTab.scheduled;
+  _BookingSegment _segment = _BookingSegment.actionRequired;
 
   @override
   void initState() {
@@ -75,40 +104,73 @@ class _BookingsScreenState extends State<BookingsScreen> {
     Future.microtask(() => store.loadBookings());
   }
 
-  // Status checks use the typed enum rather than locale-bound label strings —
-  // see http_backend._mapApiBookingToJobOrder for how API status maps to enum.
-  bool _needsPayment(JobOrder b) =>
-      b.jobOrderStatus == JobOrderStatus.forReview;
+  /// Classify a booking into its lifecycle segment using the authoritative
+  /// status string from the backend. Falls back to the old [JobOrderStatus]
+  /// enum for bookings whose status string predates the canonical mapper.
+  _BookingSegment _classify(JobOrder b) {
+    final status = BookingStatusMapper.fromString(b.jobOrderStatusToString);
 
-  bool _isCompleted(JobOrder b) =>
-      b.jobOrderStatus == JobOrderStatus.completed;
-
-  bool _isCancelled(JobOrder b) =>
-      b.jobOrderStatus == JobOrderStatus.cancelled;
-
-  bool _isAbandoned(JobOrder b) =>
-      b.jobOrderStatus == JobOrderStatus.none;
-
-  List<JobOrder> _filterForTab(List<JobOrder> all) {
-    final visible = all
-        .where((b) => !_isAbandoned(b) && !_isCancelled(b))
-        .toList();
-    switch (_tab) {
-      case _BookingsTab.paid:
-        // Money has changed hands but service hasn't completed yet.
-        return visible
-            .where((b) => b.paymentStatus == 'PAID' && !_isCompleted(b))
-            .toList();
-      case _BookingsTab.scheduled:
-        // Anything not yet completed — covers upcoming, in-progress, and any
-        // late-running bookings whose scheduleDate is past but not closed out.
-        return visible.where((b) => !_isCompleted(b)).toList();
-      case _BookingsTab.done:
-        return visible.where(_isCompleted).toList();
-      case _BookingsTab.review:
-        // No review system yet; this tab stays empty by design.
-        return const [];
+    if (BookingStatusMapper.requiresOtp(status) ||
+        BookingStatusMapper.requiresPayment(status)) {
+      return _BookingSegment.actionRequired;
     }
+
+    switch (status) {
+      case BookingStatus.paid:
+      case BookingStatus.awaitingAssignment:
+      case BookingStatus.assigned:
+      case BookingStatus.confirmed:
+        return _BookingSegment.upcoming;
+
+      case BookingStatus.enRoute:
+      case BookingStatus.arrived:
+      case BookingStatus.inProgress:
+      case BookingStatus.awaitingCompletion:
+        return _BookingSegment.active;
+
+      case BookingStatus.completed:
+      case BookingStatus.reviewed:
+        return _BookingSegment.completed;
+
+      case BookingStatus.cancelled:
+      case BookingStatus.cancelledByProvider:
+      case BookingStatus.cancelledByAdmin:
+      case BookingStatus.expired:
+      case BookingStatus.failed:
+      case BookingStatus.refunded:
+        return _BookingSegment.cancelled;
+
+      default:
+        break;
+    }
+
+    // Fallback: old JobOrderStatus enum for legacy or unrecognised status strings.
+    switch (b.jobOrderStatus) {
+      case JobOrderStatus.none:
+        return _BookingSegment.cancelled;
+      case JobOrderStatus.forReview:
+        // FOR_REVIEW is handled by BookingStatusMapper → awaitingAssignment,
+        // but map the enum value directly too as belt-and-suspenders.
+        return _BookingSegment.upcoming;
+      case JobOrderStatus.accepted:
+        return _BookingSegment.upcoming;
+      case JobOrderStatus.inTransit:
+        return _BookingSegment.active;
+      case JobOrderStatus.inProgress:
+        return _BookingSegment.active;
+      case JobOrderStatus.completed:
+        return _BookingSegment.completed;
+      case JobOrderStatus.cancelled:
+        return _BookingSegment.cancelled;
+    }
+  }
+
+  List<JobOrder> _filterForSegment(List<JobOrder> all) {
+    return all.where((b) => _classify(b) == _segment).toList();
+  }
+
+  int _countForSegment(List<JobOrder> all, _BookingSegment seg) {
+    return all.where((b) => _classify(b) == seg).length;
   }
 
   @override
@@ -118,8 +180,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
       body: Column(
         children: [
           _GradientHeader(
-            selectedTab: _tab,
-            onSelectTab: (t) => setState(() => _tab = t),
+            selectedSegment: _segment,
+            onSelect: (s) => setState(() => _segment = s),
+            countFor: (s) => Observer(
+              builder: (_) =>
+                  _countBadge(s, _countForSegment(store.bookings.toList(), s)),
+            ),
           ),
           Expanded(
             child: Observer(
@@ -127,7 +193,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 if (store.isLoading && store.bookings.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final filtered = _filterForTab(store.bookings.toList());
+                final filtered = _filterForSegment(store.bookings.toList())
+                  ..sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
                 return RefreshIndicator(
                   onRefresh: () => store.loadBookings(),
                   child: filtered.isEmpty
@@ -142,8 +209,27 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
+  Widget _countBadge(_BookingSegment seg, int count) {
+    if (count == 0) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: seg.chipColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmpty() {
-    // Wrap in a scrollable so RefreshIndicator works on empty state too.
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
@@ -158,7 +244,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
         const SizedBox(height: 16),
         Center(
           child: Text(
-            _tab.emptyText,
+            _segment.emptyText,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: FontPalette.primaryFontFamily,
@@ -172,29 +258,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   Widget _buildList(List<JobOrder> bookings) {
     final groups = _groupByDateProximity(bookings);
-
     final slivers = <Widget>[];
 
-    // Action Required section appears at top of Scheduled tab when applicable.
-    if (_tab == _BookingsTab.scheduled) {
-      final actionRequired = bookings.where(_needsPayment).toList()
-        ..sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
-      if (actionRequired.isNotEmpty) {
-        slivers
-          ..add(_sectionHeader('Action Required', actionRequired.length))
-          ..add(_cardSliver(actionRequired));
-      }
-    }
-
     for (final entry in groups.entries) {
-      // Skip Action Required bookings already rendered up top.
-      final items = _tab == _BookingsTab.scheduled
-          ? entry.value.where((b) => !_needsPayment(b)).toList()
-          : entry.value;
-      if (items.isEmpty) continue;
+      if (entry.value.isEmpty) continue;
       slivers
-        ..add(_sectionHeader(entry.key, items.length))
-        ..add(_cardSliver(items));
+        ..add(_sectionHeader(entry.key, entry.value.length))
+        ..add(_cardSliver(entry.value));
     }
 
     slivers.add(SliverToBoxAdapter(
@@ -217,22 +287,20 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   Map<String, List<JobOrder>> _groupByDateProximity(List<JobOrder> bookings) {
-    // TODO(timezone): scheduleDate is parsed in the device's local zone. PH is
-    // UTC+8 with no DST so domestic users are fine, but a traveler with phone
-    // clock on a different zone will see week boundaries shift by the offset.
-    // Pin a UTC contract on the backend before localising bucket math.
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    // ISO week: weekday is 1=Mon..7=Sun.
     final weekStart = today.subtract(Duration(days: today.weekday - 1));
-    final weekEnd = weekStart.add(const Duration(days: 7)); // exclusive
+    final weekEnd = weekStart.add(const Duration(days: 7));
 
-    final catchallLabel =
-        _tab == _BookingsTab.scheduled ? 'Later' : 'Earlier';
+    final catchall = (_segment == _BookingSegment.upcoming ||
+            _segment == _BookingSegment.active)
+        ? 'Later'
+        : 'Earlier';
+
     final groups = <String, List<JobOrder>>{
       'This Week': [],
       'This Month': [],
-      catchallLabel: [],
+      catchall: [],
     };
 
     for (final b in bookings) {
@@ -242,14 +310,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
       } else if (d.year == now.year && d.month == now.month) {
         groups['This Month']!.add(b);
       } else {
-        groups[catchallLabel]!.add(b);
+        groups[catchall]!.add(b);
       }
-    }
-
-    // Newest first within each group (works for both past + future since the
-    // user mostly cares about closest to "now" first).
-    for (final list in groups.values) {
-      list.sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
     }
     return groups;
   }
@@ -280,9 +342,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
             padding: const EdgeInsets.only(bottom: 10),
             child: _BookingCard(
               booking: items[i],
+              segment: _classify(items[i]),
               dateFormat: _dateFormat,
-              needsPayment: _needsPayment(items[i]),
-              onTap: () => _onBookingTap(items[i]),
+              onTap: () => context.pushNamed(
+                BookingDetailScreen.routeName,
+                extra: items[i],
+              ),
             ),
           ),
           childCount: items.length,
@@ -290,24 +355,20 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ),
     );
   }
-
-  void _onBookingTap(JobOrder booking) {
-    context.pushNamed(BookingDetailScreen.routeName, extra: booking);
-  }
 }
 
-/// Gradient header that wraps the title row + the icon-card chip strip.
-/// Wrapping both inside the gradient gives it visual presence and lets the
-/// inactive chip labels (white text) sit on the dark blue background where
-/// they read.
+// ── Header ──────────────────────────────────────────────────────────────────
+
 class _GradientHeader extends StatelessWidget {
   const _GradientHeader({
-    required this.selectedTab,
-    required this.onSelectTab,
+    required this.selectedSegment,
+    required this.onSelect,
+    required this.countFor,
   });
 
-  final _BookingsTab selectedTab;
-  final ValueChanged<_BookingsTab> onSelectTab;
+  final _BookingSegment selectedSegment;
+  final ValueChanged<_BookingSegment> onSelect;
+  final Widget Function(_BookingSegment) countFor;
 
   @override
   Widget build(BuildContext context) {
@@ -332,13 +393,13 @@ class _GradientHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              const SizedBox(width: 26), // balance bell for centered title
-              const Expanded(
+              const SizedBox(width: 26),
+              Expanded(
                 child: Text(
                   'My Bookings',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Gothic A1',
+                    fontFamily: FontPalette.primaryFontFamily,
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
                     color: Colors.white,
@@ -354,17 +415,24 @@ class _GradientHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (final tab in _BookingsTab.values)
-                _IconChip(
-                  tab: tab,
-                  isSelected: tab == selectedTab,
-                  onTap: () => onSelectTab(tab),
-                ),
-            ],
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final seg in _BookingSegment.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _SegmentChip(
+                      segment: seg,
+                      isSelected: seg == selectedSegment,
+                      countWidget: countFor(seg),
+                      onTap: () => onSelect(seg),
+                    ),
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 4),
         ],
@@ -373,85 +441,78 @@ class _GradientHeader extends StatelessWidget {
   }
 }
 
-class _IconChip extends StatelessWidget {
-  const _IconChip({
-    required this.tab,
+class _SegmentChip extends StatelessWidget {
+  const _SegmentChip({
+    required this.segment,
     required this.isSelected,
+    required this.countWidget,
     required this.onTap,
   });
 
-  final _BookingsTab tab;
+  final _BookingSegment segment;
   final bool isSelected;
+  final Widget countWidget;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 63,
-            height: 58,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? ColorPalette.primaryColor
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: isSelected
-                  ? Border.all(color: Colors.white, width: 1)
-                  : null,
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: segment.label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.white.withOpacity(.18),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                segment.icon,
+                size: 13,
+                color: isSelected ? ColorPalette.primaryColorDark : Colors.white,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                segment.label,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight:
+                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 12,
+                  color: isSelected
+                      ? ColorPalette.primaryColorDark
+                      : Colors.white,
                 ),
-              ],
-            ),
-            child: Icon(
-              tab.icon,
-              size: 24,
-              color: isSelected
-                  ? Colors.white
-                  : ColorPalette.primaryColorDark,
-            ),
+              ),
+              countWidget,
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            tab.label,
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              fontSize: 12,
-              // Active label uses a brighter peach than Figma's #FFB67D so it
-              // hits WCAG AA on the dark-blue gradient (4.5:1+); inactive is
-              // pure white and reads at ~8:1.
-              color: isSelected
-                  ? const Color(0xFFFFD2A8)
-                  : Colors.white,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
+// ── Booking Card ─────────────────────────────────────────────────────────────
+
 class _BookingCard extends StatelessWidget {
   const _BookingCard({
     required this.booking,
+    required this.segment,
     required this.dateFormat,
-    required this.needsPayment,
     required this.onTap,
   });
 
   final JobOrder booking;
+  final _BookingSegment segment;
   final DateFormat dateFormat;
-  final bool needsPayment;
   final VoidCallback onTap;
 
   @override
@@ -480,6 +541,7 @@ class _BookingCard extends StatelessWidget {
                 runSpacing: 6,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
+                  // Booking number chip
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
@@ -500,24 +562,8 @@ class _BookingCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (needsPayment)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: ColorPalette.primaryColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Payment Required',
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 10,
-                          color: ColorPalette.primaryText,
-                        ),
-                      ),
-                    ),
+                  // Status chip reflecting actual lifecycle segment
+                  _StatusChip(segment: segment),
                 ],
               ),
               const SizedBox(height: 10),
@@ -565,6 +611,39 @@ class _BookingCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.segment});
+  final _BookingSegment segment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: segment.chipColor.withOpacity(.13),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: segment.chipColor.withOpacity(.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(segment.icon, size: 10, color: segment.chipColor),
+          const SizedBox(width: 4),
+          Text(
+            segment.label,
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              color: segment.chipColor,
+            ),
+          ),
+        ],
       ),
     );
   }
