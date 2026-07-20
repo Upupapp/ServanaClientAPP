@@ -30,6 +30,8 @@ abstract final class AppMotionTokens {
   // Splash-specific
   static const Duration splashFull = Duration(milliseconds: 2200);
   static const Duration splashReduced = Duration(milliseconds: 500);
+  // Portal transition: ClipOval expansion from logo center → Scene 1 background.
+  static const Duration splashPortal = Duration(milliseconds: 600);
 
   // ── Curves ─────────────────────────────────────────────────────────────────
 

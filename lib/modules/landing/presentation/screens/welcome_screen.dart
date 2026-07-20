@@ -1,4 +1,3 @@
-import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/presentation/widgets/servana_banner.dart';
 import 'package:client/common/presentation/widgets/servana_primary_button.dart';
 import 'package:client/common/services/app_haptics.dart';
@@ -6,8 +5,13 @@ import 'package:client/common/services/motion_tokens.dart';
 import 'package:client/common/services/onboarding_state_service.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
-import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
+import 'package:client/modules/landing/domain/welcome_motion_mode.dart';
+import 'package:client/modules/landing/domain/welcome_scene_spec.dart';
+import 'package:client/modules/landing/presentation/controllers/welcome_experience_controller.dart';
+import 'package:client/modules/landing/presentation/widgets/welcome_page_indicator.dart';
+import 'package:client/modules/landing/presentation/widgets/welcome_parallax_layer.dart';
+import 'package:client/modules/landing/presentation/widgets/welcome_traveling_overlay.dart';
 import 'package:client/modules/registration/presentation/screens/create_account_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -25,94 +29,54 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  final _pageController = PageController();
-  int _index = 0;
+  late final WelcomeExperienceController _ctrl;
 
-  // Current fractional page offset — updated every scroll frame for smooth
-  // gradient interpolation (SWEEP-C04-001).
-  double _pageOffset = 0.0;
+  static const _scenes = WelcomeSceneSpec.scenes;
 
-  // True while an async Hive write is in-flight — prevents double-taps and
-  // shows a disabled state on the buttons (NOTIFY-003).
-  bool _busy = false;
-
-  static const _pages = <_WelcomePage>[
-    _WelcomePage(
-      bg: 'assets/images/welcome/page_1_bg.png',
-      gradientStops: [0.058, 0.607, 0.738],
-      headline: 'Every service\nyou need.',
-      subtext:
-          'Discover and book trusted home and personal services, whenever you need them.',
-      semanticLabel: 'Page 1 of 3: Discover Servana services',
-      visual: _WelcomeVisual.serviceCategories,
-    ),
-    _WelcomePage(
-      bg: 'assets/images/welcome/page_2_bg.png',
-      gradientStops: [0.058, 0.552, 0.854],
-      headline: 'Find the right\nservice, fast.',
-      subtext:
-          'Aircon care, beauty and wellness, cleaning, plumbing, repairs — all on Servana.',
-      semanticLabel: 'Page 2 of 3: Browse service categories',
-      visual: _WelcomeVisual.bookingJourney,
-    ),
-    _WelcomePage(
-      bg: 'assets/images/welcome/page_3_bg.png',
-      gradientStops: [0.058, 0.552, 0.854],
-      headline: 'Simple booking.\nClear updates.',
-      subtext:
-          'Choose your schedule, confirm your booking, and track your provider in real time.',
-      semanticLabel: 'Page 3 of 3: How booking works',
-      visual: _WelcomeVisual.benefits,
-    ),
+  // Maps each scene index to its visual treatment.
+  static const _sceneVisuals = [
+    WelcomeSceneVisual.serviceCategories, // Scene 0: service chip grid
+    WelcomeSceneVisual.serviceCards, // Scene 1: 4-step booking journey
+    WelcomeSceneVisual.bookingJourney, // Scene 2: confirmed-booking benefits
   ];
 
   @override
   void initState() {
     super.initState();
-    _pageController.addListener(_onPageScroll);
-  }
-
-  // Fires on every scroll frame so the gradient interpolates continuously
-  // rather than snapping on page-change (SWEEP-C04-001).
-  void _onPageScroll() {
-    if (_pageController.hasClients) {
-      setState(() => _pageOffset = _pageController.page ?? _index.toDouble());
-    }
+    final mode = AppMotionTokens.platformReducedMotion
+        ? WelcomeMotionMode.staticMode
+        : WelcomeMotionMode.full;
+    _ctrl = WelcomeExperienceController(motionMode: mode);
   }
 
   @override
   void dispose() {
-    _pageController.removeListener(_onPageScroll);
-    _pageController.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
-  // Interpolated gradient stops so the overlay fades continuously during a
-  // swipe rather than snapping when onPageChanged fires (SWEEP-C04-001).
-  List<double> _interpolatedStops() {
-    final fromIdx = _pageOffset.floor().clamp(0, _pages.length - 1);
-    final toIdx = _pageOffset.ceil().clamp(0, _pages.length - 1);
-    if (fromIdx == toIdx) return _pages[fromIdx].gradientStops;
-    final t = _pageOffset - fromIdx;
-    final a = _pages[fromIdx].gradientStops;
-    final b = _pages[toIdx].gradientStops;
+  // ── Gradient stops interpolated continuously during swipe ──────────────────
+
+  List<double> _stops() {
+    final off = _ctrl.pageProgress;
+    final lo = off.floor().clamp(0, _scenes.length - 1);
+    final hi = off.ceil().clamp(0, _scenes.length - 1);
+    if (lo == hi) return _scenes[lo].gradientStops;
+    final t = off - lo;
+    final a = _scenes[lo].gradientStops;
+    final b = _scenes[hi].gradientStops;
     return [
-      _lerp(a[0], b[0], t),
-      _lerp(a[1], b[1], t),
-      _lerp(a[2], b[2], t),
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+      a[2] + (b[2] - a[2]) * t,
     ];
   }
 
-  static double _lerp(double a, double b, double t) => a + (b - a) * t;
-
-  void _onPageChanged(int i) {
-    AppHaptics.selection();
-    setState(() => _index = i);
-  }
+  // ── Navigation actions ─────────────────────────────────────────────────────
 
   Future<void> _browseAsGuest() async {
-    if (_busy) return;
-    setState(() => _busy = true);
+    if (_ctrl.navigationLocked) return;
+    _ctrl.lock();
     try {
       AppHaptics.medium();
       await OnboardingStateService.setStatus(OnboardingStatus.skippedToBrowse);
@@ -120,269 +84,245 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       BlocProvider.of<AuthenticationBloc>(context).add(AuthBrowseAsGuest());
       context.goNamed(HomeScreen.routeName);
     } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _goToSignIn() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    try {
-      AppHaptics.selection();
-      await OnboardingStateService.setStatus(OnboardingStatus.completed);
-      if (!mounted) return;
-      context.goNamed(AuthenticationScreen.routeName);
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) _ctrl.unlock();
     }
   }
 
   Future<void> _goToCreateAccount() async {
-    if (_busy) return;
-    setState(() => _busy = true);
+    if (_ctrl.navigationLocked) return;
+    _ctrl.lock();
     try {
       AppHaptics.selection();
       await OnboardingStateService.setStatus(OnboardingStatus.completed);
       if (!mounted) return;
-      // Route to the registration form, not the sign-in form (STITCH-008).
       context.goNamed(CreateAccountScreen.routeName);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) _ctrl.unlock();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final reducedMotion = AppMotionTokens.reducedMotion(context);
-    final page = _pages[_index];
+    final isStatic = _ctrl.motionMode.isStatic;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // ── Sliding background photos ──────────────────────────────────
-          // Photos provide the mood; they slide on horizontal swipe while the
-          // gradient overlay and UI content stay fixed.
-          PageView.builder(
-            controller: _pageController,
-            itemCount: _pages.length,
-            onPageChanged: _onPageChanged,
-            physics: const BouncingScrollPhysics(),
-            itemBuilder: (_, i) => Semantics(
-              label: _pages[i].semanticLabel,
-              image: true,
-              child: Image.asset(
-                _pages[i].bg,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const ColoredBox(color: Color(0xFF001140)),
-              ),
-            ),
-          ),
+      body: ListenableBuilder(
+        listenable: _ctrl,
+        builder: (context, _) {
+          final page = _ctrl.currentPage;
+          final locked = _ctrl.navigationLocked;
+          final stops = _stops();
 
-          // ── Gradient overlay ───────────────────────────────────────────
-          // Interpolated stops so the gradient transitions continuously
-          // during swipe instead of snapping on page change (SWEEP-C04-001).
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: const [
-                      Color(0x00000000),
-                      Color(0x40001A66),
-                      Color(0xCC001140),
-                    ],
-                    stops: _interpolatedStops(),
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Background photos ──────────────────────────────────────
+              // Each photo is wrapped in WelcomeParallaxLayer so it shifts
+              // slightly against the scroll direction, creating depth.
+              PageView.builder(
+                controller: _ctrl.pageController,
+                itemCount: _scenes.length,
+                onPageChanged: _ctrl.onPageChanged,
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (_, i) {
+                  final img = Semantics(
+                    label: _scenes[i].semanticDescription,
+                    image: true,
+                    child: SizedBox.expand(
+                      child: Image.asset(
+                        _scenes[i].backgroundAsset,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const ColoredBox(color: Color(0xFF001140)),
+                      ),
+                    ),
+                  );
+                  if (isStatic) return img;
+                  return WelcomeParallaxLayer(
+                    controller: _ctrl,
+                    pageIndex: i,
+                    parallaxFactor: 0.15,
+                    verticalFactor: 0.02,
+                    child: img,
+                  );
+                },
+              ),
+
+              // ── Gradient overlay ───────────────────────────────────────
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: const [
+                          Color(0x00000000),
+                          Color(0x40001A66),
+                          Color(0xCC001140),
+                        ],
+                        stops: stops,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // ── UI content ─────────────────────────────────────────────────
-          // MOBILE-003: ConstrainedBox caps width on wide tablets while the
-          // background photo and gradient still fill the full screen.
-          SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ── Top bar ──────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const ServanaBanner(scale: 0.9, color: Colors.white),
-                          const Spacer(),
-                          Semantics(
-                            label: 'Sign in to your account',
-                            button: true,
-                            child: TextButton(
-                              onPressed: _busy ? null : _goToSignIn,
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(44, 44),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
+              // ── Traveling overlay: ribbon + blue petal + service chips ─
+              if (!isStatic) WelcomeTravelingOverlay(controller: _ctrl),
+
+              // ── UI layer ───────────────────────────────────────────────
+              SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ── Top bar ──────────────────────────────────────
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const ServanaBanner(
+                                  scale: 0.9, color: Colors.white),
+                              const Spacer(),
+                              // Skip → Browse Services (§70: never Sign In)
+                              Semantics(
+                                label: 'Skip onboarding and browse services',
+                                button: true,
+                                child: TextButton(
+                                  onPressed: locked ? null : _browseAsGuest,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(44, 44),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 10),
+                                  ),
+                                  child: const Text(
+                                    'Skip',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  fontFamily: FontPalette.primaryFontFamily,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            ],
+                          ),
+                        ),
+
+                        // ── Scene-specific visual (middle) ────────────────
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: isStatic
+                                ? Duration.zero
+                                : AppMotionTokens.emphasis,
+                            switchInCurve: AppMotionTokens.enterEase,
+                            switchOutCurve: AppMotionTokens.exitEase,
+                            child: _SceneVisual(
+                              key: ValueKey('visual_$page'),
+                              visual: _sceneVisuals[page],
+                              isStatic: isStatic,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                    // ── Service visual (middle) ───────────────────────────
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: reducedMotion
-                            ? Duration.zero
-                            : AppMotionTokens.emphasis,
-                        switchInCurve: AppMotionTokens.enterEase,
-                        switchOutCurve: AppMotionTokens.exitEase,
-                        child: _ServiceVisual(
-                          key: ValueKey('visual_$_index'),
-                          visual: page.visual,
-                          reducedMotion: reducedMotion,
                         ),
-                      ),
-                    ),
 
-                    // ── Headline + subtext ───────────────────────────────
-                    AnimatedSwitcher(
-                      duration: reducedMotion
-                          ? Duration.zero
-                          : AppMotionTokens.standard,
-                      transitionBuilder: (child, animation) {
-                        if (reducedMotion) return child;
-                        return FadeTransition(
-                          opacity: CurvedAnimation(
-                            parent: animation,
-                            curve: AppMotionTokens.enterEase,
+                        // ── Headline + subtext ────────────────────────────
+                        AnimatedSwitcher(
+                          duration: isStatic
+                              ? Duration.zero
+                              : AppMotionTokens.standard,
+                          transitionBuilder: (child, animation) {
+                            if (isStatic) return child;
+                            return FadeTransition(
+                              opacity: CurvedAnimation(
+                                parent: animation,
+                                curve: AppMotionTokens.enterEase,
+                              ),
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.07),
+                                  end: Offset.zero,
+                                ).animate(CurvedAnimation(
+                                  parent: animation,
+                                  curve: AppMotionTokens.enterEase,
+                                )),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _TextBlock(
+                            key: ValueKey('text_$page'),
+                            scene: _scenes[page],
                           ),
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.07),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                              parent: animation,
-                              curve: AppMotionTokens.enterEase,
-                            )),
-                            child: child,
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // ── Primary CTA: Browse Services ──────────────────
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 24),
+                          child: Semantics(
+                            label: 'Browse services without signing in',
+                            child: ServanaPrimaryButton(
+                              label: 'Browse Services',
+                              onPressed: locked ? null : _browseAsGuest,
+                            ),
                           ),
-                        );
-                      },
-                      child: _PageTextBlock(
-                        key: ValueKey('text_$_index'),
-                        page: page,
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // ── Primary CTA: Browse Services ─────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Semantics(
-                        label: 'Browse services without signing in',
-                        child: ServanaPrimaryButton(
-                          label: 'Browse Services',
-                          onPressed: _busy ? null : _browseAsGuest,
                         ),
-                      ),
-                    ),
 
-                    const SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
-                    // ── Secondary CTA: Create Account ────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Semantics(
-                        label: 'Create a new Servana account',
-                        child: ServanaOutlinedButton(
-                          label: 'Create Account',
-                          darkSurface: true,
-                          onPressed: _busy ? null : _goToCreateAccount,
+                        // ── Secondary CTA: Create Account ─────────────────
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 24),
+                          child: Semantics(
+                            label: 'Create a new Servana account',
+                            child: ServanaOutlinedButton(
+                              label: 'Create Account',
+                              darkSurface: true,
+                              onPressed: locked ? null : _goToCreateAccount,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
 
-                    const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                    // ── Page indicator ───────────────────────────────────
-                    // NOTIFY-004: excludeSemantics hides individual dot
-                    // containers from TalkBack; the group label is sufficient.
-                    Semantics(
-                      label:
-                          'Page indicator: ${_index + 1} of ${_pages.length}',
-                      excludeSemantics: true,
-                      child: Center(
-                        child: _PageIndicator(
-                          count: _pages.length,
-                          currentIndex: _index,
+                        // ── Page indicator ────────────────────────────────
+                        Center(
+                          child: WelcomePageIndicator(
+                            controller: _ctrl,
+                            pageCount: _scenes.length,
+                          ),
                         ),
-                      ),
-                    ),
 
-                    const SizedBox(height: 20),
-                  ],
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-// ── Data model ───────────────────────────────────────────────────────────────
-
-class _WelcomePage {
-  final String bg;
-  final List<double> gradientStops;
-  final String headline;
-  final String subtext;
-  final String semanticLabel;
-  final _WelcomeVisual visual;
-
-  const _WelcomePage({
-    required this.bg,
-    required this.gradientStops,
-    required this.headline,
-    required this.subtext,
-    required this.semanticLabel,
-    required this.visual,
-  });
-}
-
-enum _WelcomeVisual { serviceCategories, bookingJourney, benefits }
-
 // ── Text block ────────────────────────────────────────────────────────────────
 
-class _PageTextBlock extends StatelessWidget {
-  const _PageTextBlock({super.key, required this.page});
-  final _WelcomePage page;
+class _TextBlock extends StatelessWidget {
+  const _TextBlock({super.key, required this.scene});
+  final WelcomeSceneSpec scene;
 
   @override
   Widget build(BuildContext context) {
@@ -393,7 +333,7 @@ class _PageTextBlock extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            page.headline,
+            scene.headline,
             style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 34,
@@ -405,7 +345,7 @@ class _PageTextBlock extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            page.subtext,
+            scene.subtext,
             style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
@@ -420,17 +360,17 @@ class _PageTextBlock extends StatelessWidget {
   }
 }
 
-// ── Service visuals ───────────────────────────────────────────────────────────
+// ── Scene visual dispatch ─────────────────────────────────────────────────────
 
-class _ServiceVisual extends StatelessWidget {
-  const _ServiceVisual({
+class _SceneVisual extends StatelessWidget {
+  const _SceneVisual({
     super.key,
     required this.visual,
-    required this.reducedMotion,
+    required this.isStatic,
   });
 
-  final _WelcomeVisual visual;
-  final bool reducedMotion;
+  final WelcomeSceneVisual visual;
+  final bool isStatic;
 
   @override
   Widget build(BuildContext context) {
@@ -439,22 +379,23 @@ class _ServiceVisual extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: switch (visual) {
-          _WelcomeVisual.serviceCategories =>
-            _ServiceCategoriesVisual(reducedMotion: reducedMotion),
-          _WelcomeVisual.bookingJourney =>
-            _BookingJourneyVisual(reducedMotion: reducedMotion),
-          _WelcomeVisual.benefits =>
-            _BenefitsVisual(reducedMotion: reducedMotion),
+          WelcomeSceneVisual.serviceCategories =>
+            _ServiceCategoriesVisual(isStatic: isStatic),
+          WelcomeSceneVisual.serviceCards =>
+            _BookingJourneyVisual(isStatic: isStatic),
+          WelcomeSceneVisual.bookingJourney =>
+            _BenefitsVisual(isStatic: isStatic),
         },
       ),
     );
   }
 }
 
-// Page 1 — Service category chips
+// ── Scene 0: service category chips ──────────────────────────────────────────
+
 class _ServiceCategoriesVisual extends StatelessWidget {
-  const _ServiceCategoriesVisual({required this.reducedMotion});
-  final bool reducedMotion;
+  const _ServiceCategoriesVisual({required this.isStatic});
+  final bool isStatic;
 
   static const _services = [
     (Icons.ac_unit_rounded, 'Aircon'),
@@ -472,9 +413,9 @@ class _ServiceCategoriesVisual extends StatelessWidget {
       runSpacing: 10,
       alignment: WrapAlignment.center,
       children: List.generate(_services.length, (i) {
-        final chip =
-            _ServiceChip(icon: _services[i].$1, label: _services[i].$2);
-        if (reducedMotion) return chip;
+        final chip = _ServiceChip(
+            icon: _services[i].$1, label: _services[i].$2);
+        if (isStatic) return chip;
         return chip
             .animate(delay: Duration(milliseconds: i * 55))
             .fadeIn(duration: 380.ms, curve: Curves.easeOut)
@@ -519,10 +460,11 @@ class _ServiceChip extends StatelessWidget {
   }
 }
 
-// Page 2 — 4-step booking journey
+// ── Scene 1: 4-step booking journey ──────────────────────────────────────────
+
 class _BookingJourneyVisual extends StatelessWidget {
-  const _BookingJourneyVisual({required this.reducedMotion});
-  final bool reducedMotion;
+  const _BookingJourneyVisual({required this.isStatic});
+  final bool isStatic;
 
   static const _steps = [
     (Icons.search_rounded, 'Find'),
@@ -533,8 +475,6 @@ class _BookingJourneyVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MOBILE-002: shrink dots on narrow screens (< 360 dp) so the connector
-    // lines between them stay visible rather than near-invisible at ~16 dp.
     final narrow = MediaQuery.sizeOf(context).width < 360;
     final dotSize = narrow ? 40.0 : 52.0;
     final iconSize = narrow ? 18.0 : 22.0;
@@ -547,7 +487,7 @@ class _BookingJourneyVisual extends StatelessWidget {
             icon: _steps[i].$1,
             label: _steps[i].$2,
             delay: Duration(milliseconds: i * 75),
-            reducedMotion: reducedMotion,
+            isStatic: isStatic,
             dotSize: dotSize,
             iconSize: iconSize,
           ),
@@ -559,7 +499,7 @@ class _BookingJourneyVisual extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 20),
                   color: const Color(0x55FFFFFF),
                 );
-                return reducedMotion
+                return isStatic
                     ? line
                     : line
                         .animate(delay: Duration(milliseconds: i * 75 + 110))
@@ -577,7 +517,7 @@ class _StepDot extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.delay,
-    required this.reducedMotion,
+    required this.isStatic,
     required this.dotSize,
     required this.iconSize,
   });
@@ -585,7 +525,7 @@ class _StepDot extends StatelessWidget {
   final IconData icon;
   final String label;
   final Duration delay;
-  final bool reducedMotion;
+  final bool isStatic;
   final double dotSize;
   final double iconSize;
 
@@ -617,8 +557,7 @@ class _StepDot extends StatelessWidget {
       ],
     );
 
-    if (reducedMotion) return child;
-
+    if (isStatic) return child;
     return child
         .animate(delay: delay)
         .fadeIn(duration: 380.ms, curve: Curves.easeOut)
@@ -626,10 +565,11 @@ class _StepDot extends StatelessWidget {
   }
 }
 
-// Page 3 — Benefit highlights
+// ── Scene 2: benefit rows ─────────────────────────────────────────────────────
+
 class _BenefitsVisual extends StatelessWidget {
-  const _BenefitsVisual({required this.reducedMotion});
-  final bool reducedMotion;
+  const _BenefitsVisual({required this.isStatic});
+  final bool isStatic;
 
   static const _benefits = [
     (Icons.verified_user_rounded, 'Verified professionals'),
@@ -647,7 +587,7 @@ class _BenefitsVisual extends StatelessWidget {
             icon: _benefits[i].$1,
             label: _benefits[i].$2,
             delay: Duration(milliseconds: i * 80),
-            reducedMotion: reducedMotion,
+            isStatic: isStatic,
           ),
       ],
     );
@@ -659,13 +599,13 @@ class _BenefitRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.delay,
-    required this.reducedMotion,
+    required this.isStatic,
   });
 
   final IconData icon;
   final String label;
   final Duration delay;
-  final bool reducedMotion;
+  final bool isStatic;
 
   @override
   Widget build(BuildContext context) {
@@ -697,41 +637,10 @@ class _BenefitRow extends StatelessWidget {
       ),
     );
 
-    if (reducedMotion) return child;
-
+    if (isStatic) return child;
     return child
         .animate(delay: delay)
         .fadeIn(duration: 380.ms, curve: Curves.easeOut)
         .slideX(begin: -0.08, end: 0, duration: 340.ms, curve: Curves.easeOut);
-  }
-}
-
-// ── Page indicator ────────────────────────────────────────────────────────────
-
-class _PageIndicator extends StatelessWidget {
-  const _PageIndicator({required this.count, required this.currentIndex});
-
-  final int count;
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(count, (i) {
-        final isActive = i == currentIndex;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOut,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: isActive ? 28.0 : 8.0,
-          height: 6.0,
-          decoration: BoxDecoration(
-            color: isActive ? Colors.white : const Color(0x66FFFFFF),
-            borderRadius: BorderRadius.circular(isActive ? 4.0 : 8.0),
-          ),
-        );
-      }),
-    );
   }
 }

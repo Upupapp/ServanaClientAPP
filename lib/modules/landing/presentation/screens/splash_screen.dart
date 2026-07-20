@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/services/app_haptics.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/common/services/motion_tokens.dart';
 import 'package:client/common/services/onboarding_state_service.dart';
@@ -15,8 +16,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
 class SplashScreen extends StatefulWidget {
-  static const String routeName = "Splash";
-  static const String route = "/splash";
+  static const String routeName = 'Splash';
+  static const String route = '/splash';
 
   const SplashScreen({super.key});
 
@@ -27,153 +28,82 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _controller;
-
-  late final Animation<Rect?> _v1, _v2, _v3, _v4, _v5, _v6, _v7;
-  late final Animation<double> _v7Opacity;
-  late final Animation<double> _blueOpacity;
-  late final Animation<Rect?> _chevron;
-  late final Animation<double> _chevronOpacity;
+  late final AnimationController _portalController;
+  late final Animation<double> _portalProgress;
 
   bool _reducedMotion = false;
   bool _hasSession = false;
   bool _skipWelcome = false;
   bool _sessionCheckDone = false;
-  bool _animDone = false;
+  bool _logoDone = false;
+  bool _portalDone = false;
   bool _navigated = false;
+  bool _showPortal = false;
+  bool _chevronHapticFired = false;
 
-  // Figma "Log in" frame is 430 × 932; all rects below are in design pixels.
-  static const double _designW = 430.0;
-  static const double _designH = 932.0;
-
-  // Step 0 — scattered start. Figma positions petals just barely off-frame;
-  // we push them ~250 dp further along their dominant direction so the fly-in
-  // reads as a longer trajectory rather than a quick edge-pop.
-  // (Original Figma values are kept in the comments for reference.)
-  static const Rect _v1Start = Rect.fromLTWH(-450, 214, 186, 175); // was -189
-  static const Rect _v2Start =
-      Rect.fromLTWH(700, -100, 186, 175); // was 432, 23
-  static const Rect _v3Start = Rect.fromLTWH(60, -450, 186, 175); // was -178
-  static const Rect _v4Start = Rect.fromLTWH(700, 571, 186, 175); // was 430
-  static const Rect _v5Start = Rect.fromLTWH(115, 1250, 186, 175); // was 933
-  static const Rect _v6Start = Rect.fromLTWH(-450, 746, 186, 175); // was -186
-  static const Rect _v7Start = Rect.fromLTWH(216, 463, 4, 4); // V7 stays
-
-  // Step 1 — settled logo (Figma node 128:31). The seven shapes form the
-  // Servana blue mark inside the 169.6 × 169.3 bbox at (130, 381).
-  static const Rect _v1End = Rect.fromLTWH(130, 432.2529, 85, 90);
-  static const Rect _v2End = Rect.fromLTWH(186, 381, 51.5552, 47.4109);
-  static const Rect _v3End = Rect.fromLTWH(156, 404.1108, 56.3418, 54.3076);
-  static const Rect _v4End = Rect.fromLTWH(217, 410, 82.2350, 85.9252);
-  static const Rect _v5End = Rect.fromLTWH(220.5, 468.1943, 54.0817, 58.3057);
-  static const Rect _v6End = Rect.fromLTWH(192.2952, 500.7471, 52.5, 49.2625);
-  static const Rect _v7End = Rect.fromLTWH(189.5, 438, 56.4937, 54.4514);
-
-  // logo_blue.svg / logo_orange.svg share a 24 × 33.0525 viewBox covering the
-  // full Servana mark (chevron + petals). To position either piece in design
-  // coordinates without distortion, render the full SVG at the petal width
-  // (169.6) and let the empty portion render transparent. The blue path
-  // occupies SVG-y 9.156 → 33.05, so its render top sits 64.69 dp above the
-  // petal bbox top of y=381 → render top = 316.31.
-  static const double _blueLogoW = 169.6101837158203;
-  static const double _blueLogoH = 169.6101837158203 * 33.0525 / 24.0; // 233.55
-  static const Rect _blueLogoRect =
-      Rect.fromLTWH(130, 316.31, _blueLogoW, _blueLogoH);
-
-  // Chevron drop — Figma nodes 154:69 (step 2, off-screen above) and 154:101
-  // (step 3, settled). Chevron path occupies SVG-y 0 → 15.47, so the full SVG
-  // is rendered at chevron width and the chevron top aligns with the SVG top.
-  static const double _chevronW = 169.92066955566406;
-  static const double _chevronH = 169.92066955566406 * 33.0525 / 24.0; // 234.04
-  static const Rect _chevronStart =
-      Rect.fromLTWH(130, -110, _chevronW, _chevronH);
-  static const Rect _chevronEnd = Rect.fromLTWH(129, 312, _chevronW, _chevronH);
-
-  // Animation timeline (2200 ms total). All interval ratios are unchanged from
-  // the original Figma spec — only the total duration was shortened (was 3000ms).
-  //   0    – 1100 : petals morph step 0 → step 1            (0.000 – 0.500)
-  //   1100 – 1247 : settle hold (textured collage)
-  //   1247 – 1430 : crossfade textured petals → flat blue   (0.567 – 0.650)
-  //   1430 – 1980 : chevron drops step 2 → step 3           (0.650 – 0.900)
-  //   1980 – 2200 : full-logo hold before navigating
-  static const Duration _totalDuration = Duration(milliseconds: 2200);
+  // Animation timeline (2200 ms total):
+  //   0.000 – 0.500 : petals fly in from off-screen and assemble  (easeOutCubic)
+  //   0.100 – 0.400 : v7 central diagonal fades in                (easeOut)
+  //   0.567 – 0.650 : textured petals cross-fade to flat blue     (easeInOut)
+  //   0.650 – 0.900 : chevron drops in from above                 (easeInCubic)
+  //   0.650 – 0.700 : chevron opacity fade-in                     (easeOut)
+  static const Duration _totalDuration = AppMotionTokens.splashFull;
 
   @override
   void initState() {
     super.initState();
     _reducedMotion = AppMotionTokens.platformReducedMotion;
+
     _controller = AnimationController(vsync: this, duration: _totalDuration);
-
-    final petalMorph = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.500, curve: Curves.easeOutCubic),
+    _portalController = AnimationController(
+      vsync: this,
+      duration: AppMotionTokens.splashPortal,
+    );
+    _portalProgress = CurvedAnimation(
+      parent: _portalController,
+      curve: Curves.easeInCubic,
     );
 
-    _v1 = RectTween(begin: _v1Start, end: _v1End).animate(petalMorph);
-    _v2 = RectTween(begin: _v2Start, end: _v2End).animate(petalMorph);
-    _v3 = RectTween(begin: _v3Start, end: _v3End).animate(petalMorph);
-    _v4 = RectTween(begin: _v4Start, end: _v4End).animate(petalMorph);
-    _v5 = RectTween(begin: _v5Start, end: _v5End).animate(petalMorph);
-    _v6 = RectTween(begin: _v6Start, end: _v6End).animate(petalMorph);
-    _v7 = RectTween(begin: _v7Start, end: _v7End).animate(petalMorph);
-
-    // V7 begins invisible (Figma opacity 0) and fades in as it grows from the
-    // 4×4 dot to the central diagonal box.
-    _v7Opacity = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.10, 0.40, curve: Curves.easeOut),
-    );
-
-    // Solid blue logo fades over the textured petals — step 1's collage fill
-    // gives way to step 2's flat #2D56CC mark before the chevron drops.
-    _blueOpacity = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.567, 0.650, curve: Curves.easeInOut),
-    );
-
-    final chevronDrop = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.650, 0.900, curve: Curves.easeInCubic),
-    );
-    _chevron =
-        RectTween(begin: _chevronStart, end: _chevronEnd).animate(chevronDrop);
-    // Quick fade-in at the start of the drop so the chevron doesn't pop in
-    // mid-flight on devices where the off-screen portion is visible.
-    _chevronOpacity = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.650, 0.700, curve: Curves.easeOut),
-    );
+    _portalController.addStatusListener((s) {
+      if (s == AnimationStatus.completed) {
+        _portalDone = true;
+        _maybeNavigate();
+      }
+    });
 
     if (_reducedMotion) {
-      // Snap to the fully assembled logo immediately — no petal fly-in, no
-      // chevron drop. Reduced-motion users still see the brand mark for a
-      // brief moment before navigating (COMMAND 04 §5).
       _controller.value = 1.0;
       Future.delayed(AppMotionTokens.splashReduced, () {
         if (mounted) {
-          _animDone = true;
+          _logoDone = true;
           _maybeNavigate();
         }
       });
     } else {
-      _controller.addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _animDone = true;
+      _controller.addListener(_onAnimProgress);
+      _controller.addStatusListener((s) {
+        if (s == AnimationStatus.completed) {
+          _logoDone = true;
           _maybeNavigate();
         }
       });
       _controller.forward();
     }
 
-    // Sync the AuthenticationBloc state after the first frame so widgets that
-    // listen to BLoC state see AuthenticationAuthenticated / AuthenticationGuest
-    // rather than the initial AuthenticationUninitialized on cold start.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         BlocProvider.of<AuthenticationBloc>(context).add(AuthCheckSession());
       }
     });
-
     _checkSession();
+  }
+
+  // Fire a light haptic exactly once when the chevron locks in at t=0.900.
+  void _onAnimProgress() {
+    if (!_chevronHapticFired && _controller.value >= 0.900) {
+      _chevronHapticFired = true;
+      AppHaptics.light();
+    }
   }
 
   Future<void> _checkSession() async {
@@ -183,16 +113,10 @@ class _SplashScreenState extends State<SplashScreen>
       final session = await SessionService.getSession();
       hasSession = session != null;
       if (!hasSession) {
-        // Returning guests who already completed onboarding skip the welcome
-        // flow and land directly on the guest home feed (COMMAND 04 §3).
         skipWelcome = await OnboardingStateService.hasCompletedOrSkipped();
       }
-    } catch (_) {
-      // Hive / encryption / plugin init failure — fall through to Welcome.
-    }
+    } catch (_) {}
     if (!mounted) return;
-    // Inform the router guard of the auth status so protected routes can
-    // redirect correctly even before the BLoC's AuthCheckSession is fired.
     dpLocator<AuthStateService>().update(
       hasSession ? AuthStatus.authenticated : AuthStatus.guest,
     );
@@ -203,121 +127,274 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _maybeNavigate() {
-    if (_navigated || !_sessionCheckDone || !_animDone) return;
-    _navigated = true;
+    if (_navigated || !_sessionCheckDone || !_logoDone) return;
+
     if (_hasSession || _skipWelcome) {
-      // Authenticated users → home feed.
-      // Returning guests who already saw onboarding → home feed as guest.
-      context.goNamed(HomeScreen.routeName);
-    } else {
-      context.goNamed(WelcomeScreen.routeName);
+      // Authenticated or returning guest → skip welcome, go home.
+      _navigated = true;
+      if (mounted) context.goNamed(HomeScreen.routeName);
+      return;
     }
+
+    // First-launch path: open portal then navigate to WelcomeScreen.
+    if (!_reducedMotion) {
+      if (!_showPortal && mounted) {
+        setState(() => _showPortal = true);
+        _portalController.forward();
+      }
+      if (!_portalDone) return;
+    }
+
+    _navigated = true;
+    if (mounted) context.goNamed(WelcomeScreen.routeName);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onAnimProgress);
     _controller.dispose();
+    _portalController.dispose();
     super.dispose();
   }
+
+  // ── Animation math helpers ──────────────────────────────────────────────────
+
+  // Evaluate a curve over the sub-interval [t0, t1] of [0, 1].
+  static double _it(double p, double t0, double t1, Curve c) =>
+      c.transform(((p - t0) / (t1 - t0)).clamp(0.0, 1.0));
+
+  static Rect _lerpRect(Rect a, Rect b, double t) => Rect.fromLTWH(
+        a.left + (b.left - a.left) * t,
+        a.top + (b.top - a.top) * t,
+        a.width + (b.width - a.width) * t,
+        a.height + (b.height - a.height) * t,
+      );
+
+  // ── Responsive rect helpers ─────────────────────────────────────────────────
+
+  // End rect: center = logoCenter + (dx*lh, dy*lh), size = (w*ls, h*ls).
+  // dx, dy are fractions of logoHalf; w, h are fractions of logoSize (=2*lh).
+  static Rect _endRect(double lcx, double lcy, double lh,
+      double dx, double dy, double w, double h) {
+    final ls = lh * 2;
+    return Rect.fromCenter(
+      center: Offset(lcx + dx * lh, lcy + dy * lh),
+      width: w * ls,
+      height: h * ls,
+    );
+  }
+
+  // Start rect: center = (fx*sw, fy*sh), size = (ws*ls, hs*ls).
+  static Rect _startRect(double sw, double sh, double ls,
+      double fx, double fy, double ws, double hs) {
+    return Rect.fromCenter(
+      center: Offset(fx * sw, fy * sh),
+      width: ws * ls,
+      height: hs * ls,
+    );
+  }
+
+  // ── Petal normalized data ───────────────────────────────────────────────────
+  //
+  // _petalEnd: [dx, dy, w, h]
+  //   dx, dy — center offset from logoCenter as fraction of logoHalf
+  //   w,  h  — petal size as fraction of logoSize (= logoHalf × 2)
+  //   Derived from Figma "Log in" node 128:31, canvas 430×932,
+  //   logo bbox 169.6×169.3 at (130, 381), center (214.8, 465.65).
+  //
+  // _petalStartCenter: [fx, fy]
+  //   Center of the start position as fraction of (screenWidth, screenHeight).
+  //   Values < 0 or > 1 place the petal off-screen in that axis.
+  //
+  // _petalStartSize: [ws, hs]
+  //   Start size as fraction of logoSize.
+  //   v1–v6: ≈1.0 (full design petal size 186×175 / 169.6).
+  //   v7: 0.047 (starts as a nearly-invisible 4 × 4 dp dot at logo center).
+
+  static const _petalEnd = [
+    [-0.499, 0.137, 0.501, 0.531], // v1: lower-left large petal
+    [-0.036, -0.719, 0.304, 0.280], // v2: upper-center small
+    [-0.361, -0.406, 0.332, 0.320], // v3: upper-left small
+    [0.511, -0.150, 0.485, 0.507], // v4: right large
+    [0.386, 0.374, 0.319, 0.344], // v5: lower-right medium
+    [0.044, 0.705, 0.310, 0.291], // v6: lower-center medium
+    [0.035, -0.005, 0.333, 0.321], // v7: central diagonal (near center)
+  ];
+
+  static const _petalStartCenter = [
+    [-0.830, 0.323], // v1: far off-screen left
+    [1.844, -0.013], // v2: far off-screen right-top
+    [0.356, -0.389], // v3: off-screen top
+    [1.844, 0.707], // v4: far off-screen right-bottom
+    [0.484, 1.435], // v5: off-screen bottom
+    [-0.830, 0.894], // v6: far off-screen left-bottom
+    [0.500, 0.500], // v7: screen center (grows from dot)
+  ];
+
+  static const _petalStartSize = [
+    [1.097, 1.032], // v1: 186×175 / 169.6
+    [1.097, 1.032], // v2
+    [1.097, 1.032], // v3
+    [1.097, 1.032], // v4
+    [1.097, 1.032], // v5
+    [1.097, 1.032], // v6
+    [0.047, 0.047], // v7: 4 × 4 dp dot / 169.6
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Scale the 430×932 design canvas to fit the device. `min` of both
-          // axes keeps the canvas inside the viewport on every aspect — phones
-          // (taller than 9:19.5) hit the width axis as before, while older
-          // 16:9 phones, tablets, and Flutter web hit the height axis and get
-          // a clean letterbox instead of clipping the bottom of the canvas.
-          final scale = math.min(
-            constraints.maxWidth / _designW,
-            constraints.maxHeight / _designH,
-          );
-          return Center(
-            child: ClipRect(
-              child: SizedBox(
-                width: _designW * scale,
-                height: _designH * scale,
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) {
-                    return Stack(
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        _vector('vector_1.png', _v1.value!, scale, 1.0),
-                        _vector('vector_2.png', _v2.value!, scale, 1.0),
-                        _vector('vector_3.png', _v3.value!, scale, 1.0),
-                        _vector('vector_4.png', _v4.value!, scale, 1.0),
-                        _vector('vector_5.png', _v5.value!, scale, 1.0),
-                        _vector('vector_6.png', _v6.value!, scale, 1.0),
-                        _vector(
-                          'vector_7.png',
-                          _v7.value!,
-                          scale,
-                          _v7Opacity.value,
+        builder: (_, cst) {
+          final sw = cst.maxWidth;
+          final sh = cst.maxHeight;
+          // logoHalf = half the logo diameter, proportional to shortest screen edge.
+          // At 430 × 932 (Figma canvas) this matches the original 84.8 dp exactly.
+          final lh = math.min(sw, sh) * 0.197;
+          final ls = lh * 2; // logoSize
+          final lcx = sw * 0.50; // logo center x
+          final lcy = sh * 0.50; // logo center y
+
+          return AnimatedBuilder(
+            animation: Listenable.merge([_controller, _portalController]),
+            builder: (_, __) {
+              final p = _controller.value;
+
+              final petalT = _it(p, 0.000, 0.500, Curves.easeOutCubic);
+              final v7OpT = _it(p, 0.100, 0.400, Curves.easeOut);
+              final blueT = _it(p, 0.567, 0.650, Curves.easeInOut);
+              final chevronT = _it(p, 0.650, 0.900, Curves.easeInCubic);
+              final chevronOpT = _it(p, 0.650, 0.700, Curves.easeOut);
+
+              // Petal interpolated rects.
+              final petalRects = List<Rect>.generate(7, (i) {
+                final end = _endRect(lcx, lcy, lh,
+                    _petalEnd[i][0], _petalEnd[i][1],
+                    _petalEnd[i][2], _petalEnd[i][3]);
+                final start = _startRect(sw, sh, ls,
+                    _petalStartCenter[i][0], _petalStartCenter[i][1],
+                    _petalStartSize[i][0], _petalStartSize[i][1]);
+                return _lerpRect(start, end, petalT);
+              });
+
+              // Blue logo: full SVG width, taller due to 24 × 33.05 viewBox.
+              final blueLogo = Rect.fromLTWH(
+                  lcx - lh, lcy - 1.761 * lh, ls, lh * 2.754);
+
+              // Chevron SVG shares the same viewBox dimensions as the blue logo.
+              final chevronEnd =
+                  Rect.fromLTWH(lcx - lh, lcy - 1.812 * lh, ls, lh * 2.754);
+              // Start well above the screen so the drop reads as a long fall.
+              final chevronStart = Rect.fromLTWH(
+                  lcx - lh, lcy - 1.812 * lh - sh * 0.55, ls, lh * 2.754);
+              final chevronRect =
+                  _lerpRect(chevronStart, chevronEnd, chevronT);
+
+              // Portal radius: expands from logo center to the farthest screen corner.
+              final portalRadius = _showPortal
+                  ? [
+                      math.sqrt(lcx * lcx + lcy * lcy),
+                      math.sqrt((sw - lcx) * (sw - lcx) + lcy * lcy),
+                      math.sqrt(lcx * lcx + (sh - lcy) * (sh - lcy)),
+                      math.sqrt(
+                          (sw - lcx) * (sw - lcx) + (sh - lcy) * (sh - lcy)),
+                    ].reduce(math.max) *
+                      1.05 *
+                      _portalProgress.value
+                  : 0.0;
+
+              return Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  // ── Portal: Scene 1 background expands from logo center ──────
+                  if (_showPortal && portalRadius > 0)
+                    ClipOval(
+                      clipper: _CircleClipper(
+                        center: Offset(lcx, lcy),
+                        radius: portalRadius,
+                      ),
+                      child: const SizedBox.expand(
+                        child: Image(
+                          image: AssetImage(
+                              'assets/images/welcome/page_1_bg.png'),
+                          fit: BoxFit.cover,
                         ),
-                        if (_blueOpacity.value > 0) _buildBlueLogo(scale),
-                        if (_chevronOpacity.value > 0) _buildChevron(scale),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
+                      ),
+                    ),
+
+                  // ── Petals v1–v7 ────────────────────────────────────────────
+                  for (var i = 0; i < 7; i++)
+                    Positioned(
+                      left: petalRects[i].left,
+                      top: petalRects[i].top,
+                      width: petalRects[i].width,
+                      height: petalRects[i].height,
+                      child: Opacity(
+                        opacity: i == 6 ? v7OpT : 1.0,
+                        child: Image.asset(
+                          'assets/images/splash/vector_${i + 1}.png',
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                    ),
+
+                  // ── Flat blue logo overlay (crossfade over textured petals) ──
+                  if (blueT > 0)
+                    Positioned(
+                      left: blueLogo.left,
+                      top: blueLogo.top,
+                      width: blueLogo.width,
+                      height: blueLogo.height,
+                      child: Opacity(
+                        opacity: blueT,
+                        child: SvgPicture.asset(
+                          'assets/images/splash/logo_blue.svg',
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                    ),
+
+                  // ── Orange chevron (drops from above after petals settle) ────
+                  if (chevronOpT > 0)
+                    Positioned(
+                      left: chevronRect.left,
+                      top: chevronRect.top,
+                      width: chevronRect.width,
+                      height: chevronRect.height,
+                      child: Opacity(
+                        opacity: chevronOpT,
+                        child: SvgPicture.asset(
+                          'assets/images/splash/logo_orange.svg',
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           );
         },
       ),
     );
   }
+}
 
-  Widget _vector(String asset, Rect rect, double scale, double opacity) {
-    return Positioned(
-      left: rect.left * scale,
-      top: rect.top * scale,
-      width: rect.width * scale,
-      height: rect.height * scale,
-      child: Opacity(
-        opacity: opacity,
-        child: Image.asset(
-          'assets/images/splash/$asset',
-          fit: BoxFit.fill,
-        ),
-      ),
-    );
-  }
+// ── Circle clip ───────────────────────────────────────────────────────────────
 
-  Widget _buildBlueLogo(double scale) {
-    return Positioned(
-      left: _blueLogoRect.left * scale,
-      top: _blueLogoRect.top * scale,
-      width: _blueLogoRect.width * scale,
-      height: _blueLogoRect.height * scale,
-      child: Opacity(
-        opacity: _blueOpacity.value,
-        child: SvgPicture.asset(
-          'assets/images/splash/logo_blue.svg',
-          fit: BoxFit.fill,
-        ),
-      ),
-    );
-  }
+/// Clips to a circle of [radius] centered at [center].
+/// Used by the portal transition to reveal the welcome background.
+class _CircleClipper extends CustomClipper<Rect> {
+  const _CircleClipper({required this.center, required this.radius});
 
-  Widget _buildChevron(double scale) {
-    final rect = _chevron.value!;
-    return Positioned(
-      left: rect.left * scale,
-      top: rect.top * scale,
-      width: rect.width * scale,
-      height: rect.height * scale,
-      child: Opacity(
-        opacity: _chevronOpacity.value,
-        child: SvgPicture.asset(
-          'assets/images/splash/logo_orange.svg',
-          fit: BoxFit.fill,
-        ),
-      ),
-    );
-  }
+  final Offset center;
+  final double radius;
+
+  @override
+  Rect getClip(Size size) => Rect.fromCircle(center: center, radius: radius);
+
+  @override
+  bool shouldReclip(_CircleClipper old) =>
+      old.center != center || old.radius != radius;
 }

@@ -56,4 +56,12 @@ abstract final class AppHaptics {
       await HapticFeedback.lightImpact();
     } catch (_) {}
   }
+
+  /// Precise light impact — use for the orange chevron lock-in during the
+  /// Servana logo animation and for single element arrivals in onboarding.
+  static Future<void> light() async {
+    try {
+      await HapticFeedback.lightImpact();
+    } catch (_) {}
+  }
 }
