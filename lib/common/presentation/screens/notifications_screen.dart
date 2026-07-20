@@ -31,106 +31,40 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          _NotificationTile(
-            title: "Booking confirmed",
-            subtitle: "Signature Facial • Today 2:30 PM",
-            isNew: true,
-          ),
-          _NotificationTile(
-            title: "Promo reminder",
-            subtitle: "30% off on selected services",
-            isNew: true,
-          ),
-          _NotificationTile(
-            title: "Booking completed",
-            subtitle: "Body Massage • Jan 28",
-            isNew: false,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({
-    required this.title,
-    required this.subtitle,
-    required this.isNew,
-  });
-
-  final String title;
-  final String subtitle;
-  final bool isNew;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: ColorPalette.secondaryBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ColorPalette.border(.55)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: (isNew
-                        ? ColorPalette.primaryColorDark
-                        : ColorPalette.primaryColor)
-                    .withOpacity(.12),
-                borderRadius: BorderRadius.circular(14),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.notifications_none_rounded,
+                size: 56,
+                color: ColorPalette.secondaryText.withOpacity(.3),
               ),
-              child: Icon(
-                isNew
-                    ? Icons.notifications_active_rounded
-                    : Icons.notifications_none_rounded,
-                color: ColorPalette.primaryColorDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w700,
-                      color: ColorPalette.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontSize: 12,
-                      color: ColorPalette.secondaryText.withOpacity(.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isNew)
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: ColorPalette.primaryColorDark,
-                  borderRadius: BorderRadius.circular(999),
+              const SizedBox(height: 14),
+              Text(
+                "No notifications yet",
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: ColorPalette.secondaryText,
                 ),
               ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                "Booking updates, reminders, and service alerts will appear here.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 13,
+                  color: ColorPalette.secondaryText.withOpacity(.6),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

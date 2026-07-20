@@ -1,54 +1,21 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
-import 'package:client/common/data/models/merchant_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart'
     show LatLong;
-import 'package:client/common/presentation/widgets/app_image.dart';
-import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
-import 'package:client/modules/store_items/presentation/bloc/store_items_events.dart';
-import 'package:client/modules/store_items/presentation/bloc/store_items_states.dart';
-import 'package:client/modules/store_items/presentation/screens/store_items_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class RewardsScreen extends StatefulWidget {
+class RewardsScreen extends StatelessWidget {
   static String routeName = "Rewards";
   static String route = "/Rewards";
   const RewardsScreen({super.key});
 
   @override
-  State<RewardsScreen> createState() => _RewardsScreenState();
-}
-
-class _RewardsScreenState extends State<RewardsScreen> {
-  int _points = 1240;
-  final List<_RewardItem> _items = [
-    const _RewardItem(
-      title: '₱100 Service Voucher',
-      description: 'Valid on any service',
-      cost: 500,
-    ),
-    const _RewardItem(
-      title: 'Free Transport Fee',
-      description: 'Waive base transportation fee',
-      cost: 750,
-    ),
-    const _RewardItem(
-      title: '₱250 Service Voucher',
-      description: 'Valid on bookings above ₱1500',
-      cost: 1200,
-    ),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    final progress = (_points / 2000).clamp(0.0, 1.0);
     return Scaffold(
       backgroundColor: ColorPalette.primaryBackground,
       appBar: AppBar(
@@ -71,65 +38,49 @@ class _RewardsScreenState extends State<RewardsScreen> {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _RewardsBalanceCard(points: _points, progress: progress),
-          const SizedBox(height: 16),
-          Text(
-            "Redeem",
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: ColorPalette.secondaryText,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ..._items.map((item) {
-            final canRedeem = _points >= item.cost;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _RewardItemCard(
-                item: item,
-                canRedeem: canRedeem,
-                onRedeem: canRedeem
-                    ? () {
-                        setState(() {
-                          _points -= item.cost;
-                        });
-                      }
-                    : null,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColorDark.withOpacity(.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.stars_rounded,
+                  size: 36,
+                  color: ColorPalette.primaryColorDark,
+                ),
               ),
-            );
-          }),
-          const SizedBox(height: 8),
-          Text(
-            "Recent activity",
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: ColorPalette.secondaryText,
-            ),
+              const SizedBox(height: 16),
+              Text(
+                "Rewards coming soon",
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: ColorPalette.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Earn points on every completed booking and redeem them for service vouchers and discounts. We're setting it up now.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 13,
+                  color: ColorPalette.secondaryText.withOpacity(.65),
+                  height: 1.6,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          const _RewardHistoryTile(
-            title: "Booking completed",
-            subtitle: "Signature Facial • Jan 26",
-            points: 120,
-          ),
-          const _RewardHistoryTile(
-            title: "Redeemed voucher",
-            subtitle: "₱100 Service Voucher • Jan 20",
-            points: -500,
-          ),
-          const _RewardHistoryTile(
-            title: "Booking completed",
-            subtitle: "Body Massage • Jan 18",
-            points: 90,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -145,22 +96,6 @@ class FavouritesScreen extends StatefulWidget {
 }
 
 class _FavouritesScreenState extends State<FavouritesScreen> {
-  static const String _merchantId = 'servana';
-  static const String _merchantName = 'Servana';
-
-  final Set<int> _favoriteIds = {};
-  bool _seededFavorites = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {
-      if (!mounted) return;
-      BlocProvider.of<StoreItemsBloc>(context)
-          .add(const StoreItemLoadEvent(_merchantId));
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,105 +120,41 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
           ),
         ),
       ),
-      body: BlocBuilder<StoreItemsBloc, StoreItemsState>(
-        builder: (context, state) {
-          final bloc = BlocProvider.of<StoreItemsBloc>(context);
-          final services =
-              bloc.storeItemCategories.expand((c) => c.services).toList();
-
-          if (!_seededFavorites && services.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              setState(() {
-                _seededFavorites = true;
-                for (final s in services.take(6)) {
-                  _favoriteIds.add(s.merchantServiceID);
-                }
-              });
-            });
-          }
-
-          final favorites = services
-              .where((s) => _favoriteIds.contains(s.merchantServiceID))
-              .toList();
-
-          if (state is StoreItemLoadingState && services.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (favorites.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.favorite_border_rounded,
-                      color: ColorPalette.secondaryText.withOpacity(.5),
-                      size: 48,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      "No favourites yet",
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        fontWeight: FontWeight.w700,
-                        color: ColorPalette.secondaryText,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Browse services and tap the heart to save them here.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        color: ColorPalette.secondaryText.withOpacity(.7),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    OutlinedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        context.pushNamed(
-                          StoreItemsScreen.routeName,
-                          extra: (
-                            merchantId: _merchantId,
-                            merchantName: _merchantName,
-                            categoryName: null,
-                          ),
-                        );
-                      },
-                      child: const Text("Browse Services"),
-                    ),
-                  ],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.favorite_border_rounded,
+                color: ColorPalette.secondaryText.withOpacity(.3),
+                size: 56,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                "No favourites yet",
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w700,
+                  color: ColorPalette.secondaryText,
+                  fontSize: 16,
                 ),
               ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: favorites.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final s = favorites[i];
-              return _FavouriteCard(
-                service: s,
-                onToggle: () {
-                  setState(() {
-                    if (_favoriteIds.contains(s.merchantServiceID)) {
-                      _favoriteIds.remove(s.merchantServiceID);
-                    } else {
-                      _favoriteIds.add(s.merchantServiceID);
-                    }
-                  });
-                },
-              );
-            },
-          );
-        },
+              const SizedBox(height: 8),
+              Text(
+                "Browse services and tap the heart icon to save them here.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 13,
+                  color: ColorPalette.secondaryText.withOpacity(.6),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -310,6 +181,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   }
 
   Future<void> _loadAddresses() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final res = await _api.getAllUserAddresses();
@@ -1009,277 +881,6 @@ class _LanguageOption {
   final String code;
 }
 
-class _RewardItem {
-  const _RewardItem({
-    required this.title,
-    required this.description,
-    required this.cost,
-  });
-
-  final String title;
-  final String description;
-  final int cost;
-}
-
-class _RewardsBalanceCard extends StatelessWidget {
-  const _RewardsBalanceCard({
-    required this.points,
-    required this.progress,
-  });
-
-  final int points;
-  final double progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColorPalette.primaryColorDark,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: ColorPalette.shadow(.12),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Total Points",
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              color: ColorPalette.primaryText.withOpacity(.8),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "$points",
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              color: ColorPalette.primaryText,
-              fontWeight: FontWeight.w800,
-              fontSize: 30,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: ColorPalette.primaryText.withOpacity(.15),
-              valueColor: AlwaysStoppedAnimation(
-                  ColorPalette.primaryColor.withOpacity(.9)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Next tier in ${(2000 - points).clamp(0, 2000)} pts",
-            style: TextStyle(
-              fontFamily: FontPalette.primaryFontFamily,
-              color: ColorPalette.primaryText.withOpacity(.8),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RewardItemCard extends StatelessWidget {
-  const _RewardItemCard({
-    required this.item,
-    required this.canRedeem,
-    required this.onRedeem,
-  });
-
-  final _RewardItem item;
-  final bool canRedeem;
-  final VoidCallback? onRedeem;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ColorPalette.secondaryBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorPalette.border(.55)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: ColorPalette.primaryColor.withOpacity(.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              Icons.card_giftcard_rounded,
-              color: ColorPalette.primaryColorDark,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w700,
-                    color: ColorPalette.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.description,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontSize: 12,
-                    color: ColorPalette.secondaryText.withOpacity(.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "${item.cost} pts",
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w700,
-                  color: ColorPalette.primaryColorDark,
-                ),
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 32,
-                child: ElevatedButton(
-                  onPressed: onRedeem,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: canRedeem
-                        ? ColorPalette.primaryColorDark
-                        : ColorPalette.primaryColorDark.withOpacity(.35),
-                    foregroundColor: ColorPalette.primaryButtonTextColor,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    "Redeem",
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RewardHistoryTile extends StatelessWidget {
-  const _RewardHistoryTile({
-    required this.title,
-    required this.subtitle,
-    required this.points,
-  });
-
-  final String title;
-  final String subtitle;
-  final int points;
-
-  @override
-  Widget build(BuildContext context) {
-    final isEarned = points >= 0;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: ColorPalette.secondaryBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ColorPalette.border(.55)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: (isEarned
-                        ? ColorPalette.primaryColor
-                        : ColorPalette.accentText)
-                    .withOpacity(.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                isEarned ? Icons.stars_rounded : Icons.redeem_rounded,
-                color: ColorPalette.primaryColorDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w700,
-                      color: ColorPalette.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontSize: 12,
-                      color: ColorPalette.secondaryText.withOpacity(.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              "${isEarned ? '+' : ''}$points",
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontWeight: FontWeight.w700,
-                color: isEarned
-                    ? ColorPalette.primaryColorDark
-                    : ColorPalette.danger,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SavedAddress {
   const _SavedAddress({
     this.id = '',
@@ -1418,86 +1019,6 @@ class _SavedAddressCard extends StatelessWidget {
                   ],
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FavouriteCard extends StatelessWidget {
-  const _FavouriteCard({
-    required this.service,
-    required this.onToggle,
-  });
-
-  final MerchantServiceModel service;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: ColorPalette.secondaryBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorPalette.border(.55)),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AppImage(
-              url: service.merchantServicePictureURL,
-              height: 56,
-              width: 56,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  service.merchantServiceName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w700,
-                    color: ColorPalette.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  service.merchantServiceDescription,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontSize: 12,
-                    color: ColorPalette.secondaryText.withOpacity(.65),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "₱${service.amount}",
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w700,
-                    color: ColorPalette.primaryColorDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: onToggle,
-            icon: Icon(
-              Icons.favorite_rounded,
-              color: ColorPalette.primaryColor,
             ),
           ),
         ],
