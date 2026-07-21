@@ -97,6 +97,7 @@ dependencies:
   webview_flutter: ^4.13.1
   url_launcher: ^6.2.5
   qr_flutter: ^4.1.0
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

@@ -20,10 +20,20 @@ import 'package:client/modules/bw_booking/presentation/screens/beauty_wellness_s
 import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
+import 'package:client/modules/homepage/data/home_promotion_repository.dart';
+import 'package:client/modules/homepage/domain/home_promotion.dart';
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
 import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_atmosphere.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_benefit_section.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_campaign_spotlight.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_category_grid.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_header.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_promotion_banner.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_search.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final airconStore = dpLocator<AirconBookingStore>();
   final _scaffoldKey = GlobalKey<ScaffoldState>(debugLabel: "scaffoldKey");
 
-  static const String _merchantName = 'Servana';
+  final _campaignCtrl = HomeCampaignController();
+  final _promoRepo = HomePromotionRepository();
 
   @override
   void initState() {
@@ -57,13 +68,12 @@ class _HomeScreenState extends State<HomeScreen> {
     bwStore.ensureOptionsLoaded(serviceId: 2);
     airconStore.ensureOptionsLoaded(serviceId: 1);
     _restoreDraftIfPending();
+    _scheduleSpotlight();
   }
 
   // STITCH-C05-001 / LEAK-C05-001: restores a pending BookingDraft after the
   // guest→checkout→auth-gate→login path, where the BlocListener fires before
   // this widget is first mounted and the state transition is therefore missed.
-  // Also called from BlocListener for the normal login path so auth guard and
-  // clear() are applied in both code paths from a single source.
   void _restoreDraftIfPending() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -76,11 +86,66 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  String _timeGreeting() {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+  void _scheduleSpotlight() {
+    Future.delayed(const Duration(seconds: 1), () async {
+      if (!mounted) return;
+      final hasCritical = store.bookings.any(
+        (b) =>
+            b.jobOrderStatus != JobOrderStatus.completed &&
+            b.jobOrderStatus != JobOrderStatus.cancelled &&
+            b.jobOrderStatus != JobOrderStatus.none,
+      );
+      final eligible = await _campaignCtrl.isSpotlightEligible(
+        campaign: HomePromotionRepository.defaultSpotlight,
+        hasCriticalBooking: hasCritical,
+      );
+      if (!mounted || !eligible) return;
+      await _campaignCtrl.markSeen(HomePromotionRepository.defaultSpotlight);
+      if (!mounted) return;
+      showCampaignSpotlight(
+        context: context,
+        campaign: HomePromotionRepository.defaultSpotlight,
+        onDismiss: () => _campaignCtrl.markDismissed(
+          HomePromotionRepository.defaultSpotlight,
+        ),
+        onCtaTap: () {
+          _campaignCtrl.markCtaCompleted(
+            HomePromotionRepository.defaultSpotlight,
+          );
+          _handlePromotionTap(
+            HomePromotionRepository.defaultSpotlight.ctaTarget,
+          );
+        },
+      );
+    });
+  }
+
+  void _handlePromotionTap(HomePromotionTarget target) {
+    switch (target) {
+      case HomeTargetSearch():
+        context.pushNamed(SearchScreen.routeName);
+      case HomeTargetCategory(categoryKey: final key):
+        _handleCategoryTap(key);
+      case HomeTargetInformational():
+        break; // not wired yet
+      case HomeTargetNoNavigation():
+        break;
+    }
+  }
+
+  void _handleCategoryTap(String key) {
+    switch (key) {
+      case 'beauty_wellness':
+        context.pushNamed(BeautyWellnessScreen.routeName);
+      case 'hair_nails':
+        context.pushNamed(HairNailsScreen.routeName);
+      case 'massage':
+        context.pushNamed(MassageScreen.routeName);
+      case 'aircon':
+        context.pushNamed(AirconRepairScreen.routeName);
+      default:
+        context.pushNamed(SearchScreen.routeName);
+    }
   }
 
   @override
@@ -106,17 +171,103 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           child: CustomScrollView(
             slivers: [
+              // ── Header: atmosphere + greeting + search ──────────────────
               SliverToBoxAdapter(child: _buildHeaderSection()),
+
+              // ── Category grid ────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _buildAvailableServices(),
+                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20, bottom: 12),
+                        child: Text(
+                          'Services',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: ColorPalette.secondaryText,
+                          ),
+                        ),
+                      ),
+                      Observer(builder: (ctx) {
+                        final isAuth = store.session != null;
+                        final bannerA =
+                            _promoRepo.getBannerA(isAuthenticated: isAuth);
+                        return Column(
+                          children: [
+                            ServanaHomeCategoryGrid(
+                              animate: true,
+                              onCategoryTap: _handleCategoryTap,
+                            ),
+                            if (bannerA != null) ...[
+                              const SizedBox(height: 20),
+                              ServanaPromotionBanner(
+                                promotion: bannerA,
+                                onCtaTap: () =>
+                                    _handlePromotionTap(bannerA.target),
+                              ),
+                            ],
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ),
+
+              // ── Active booking card (auth + active booking only) ─────────
               SliverToBoxAdapter(child: _buildActiveBookingSection()),
+
+              // ── Featured services (real data) ────────────────────────────
               SliverToBoxAdapter(child: _buildFeaturedSection()),
-              SliverToBoxAdapter(child: _buildDiscoveryCard()),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+              // ── Banner B: category spotlight ─────────────────────────────
+              SliverToBoxAdapter(
+                child: Observer(builder: (ctx) {
+                  final isAuth = store.session != null;
+                  final bannerB =
+                      _promoRepo.getBannerB(isAuthenticated: isAuth);
+                  if (bannerB == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: ServanaPromotionBanner(
+                      promotion: bannerB,
+                      onCtaTap: () => _handlePromotionTap(bannerB.target),
+                    ),
+                  );
+                }),
+              ),
+
+              // ── Benefit section (replaces discovery card) ────────────────
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 20),
+                  child: ServanaBenefitSection(),
+                ),
+              ),
+
+              // ── Banner C: reengagement ───────────────────────────────────
+              SliverToBoxAdapter(
+                child: Observer(builder: (ctx) {
+                  final isAuth = store.session != null;
+                  final bannerC =
+                      _promoRepo.getBannerC(isAuthenticated: isAuth);
+                  if (bannerC == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: ServanaPromotionBanner(
+                      promotion: bannerC,
+                      onCtaTap: () => _handlePromotionTap(bannerC.target),
+                    ),
+                  );
+                }),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 40)),
             ],
           ),
         ),
@@ -127,240 +278,55 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeaderSection() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            ColorPalette.primaryColorDark,
-            ColorPalette.primaryGradientEnd(),
-          ],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Builder(builder: (ctx) {
+      final topPad = MediaQuery.paddingOf(ctx).top;
+      // Content height below status bar:
+      //   ServanaHomeHeader inner padding: 16 top + 40 row + 20 bottom = 76
+      //   ServanaHomeSearch: 52 + 28 bottom spacing = 80
+      const contentH = 76.0 + 80.0;
+      final totalH = topPad + contentH;
+
+      return SizedBox(
+        height: totalH,
+        child: Stack(
           children: [
-            _buildTopBar(),
-            _buildGreeting(),
-            const SizedBox(height: 20),
-            _buildSearchBar(),
-            const SizedBox(height: 28),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          IconButton(
-            onPressed: () => context.pushNamed(NotificationsScreen.routeName),
-            icon: const Icon(Icons.notifications_outlined,
-                color: Colors.white, size: 26),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGreeting() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Observer(builder: (ctx) {
-        final session = store.session;
-        if (session != null) {
-          final parts = session.fullname
-              .split(RegExp(r'\s+'))
-              .where((p) => p.isNotEmpty)
-              .toList();
-          final first = parts.isNotEmpty ? parts.first : _merchantName;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${_timeGreeting()},',
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withOpacity(0.85),
-                ),
-              ),
-              Text(
-                first,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  height: 1.1,
-                ),
-              ),
-            ],
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Find your next service',
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Book a $_merchantName professional today',
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontSize: 13,
-                color: Colors.white.withOpacity(0.8),
-              ),
+            ServanaHomeAtmosphere(height: totalH),
+            SafeArea(
+              bottom: false,
+              child: Observer(builder: (obsCtx) {
+                final s = store.session;
+                final parts = (s?.fullname ?? '')
+                    .split(RegExp(r'\s+'))
+                    .where((p) => p.isNotEmpty)
+                    .toList();
+                final first = parts.isNotEmpty ? parts.first : null;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ServanaHomeHeader(
+                      firstName: first,
+                      isAuthenticated: s != null,
+                      animate: true,
+                      onMenuTap: () =>
+                          _scaffoldKey.currentState?.openDrawer(),
+                      onNotificationTap: () =>
+                          context.pushNamed(NotificationsScreen.routeName),
+                    ),
+                    ServanaHomeSearch(
+                      onTap: () =>
+                          context.pushNamed(SearchScreen.routeName),
+                      animate: true,
+                      animationDelay: const Duration(milliseconds: 160),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+                );
+              }),
             ),
           ],
-        );
-      }),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GestureDetector(
-        onTap: () {
-          AppHaptics.selection();
-          context.pushNamed(SearchScreen.routeName);
-        },
-        child: Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A000000),
-                blurRadius: 6,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search_rounded,
-                  color: ColorPalette.primaryColorDark, size: 22),
-              const SizedBox(width: 10),
-              Text(
-                'Search for services…',
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 14,
-                  color: ColorPalette.secondaryText.withOpacity(0.45),
-                ),
-              ),
-            ],
-          ),
         ),
-      ),
-    );
-  }
-
-  // ── Service categories ────────────────────────────────────────────────────
-
-  Widget _buildAvailableServices() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      decoration: BoxDecoration(
-        color: ColorPalette.secondaryBackground,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: ColorPalette.shadow(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 14),
-            child: Text(
-              'Services',
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: ColorPalette.secondaryText,
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ServiceCategoryTile(
-                icon: Icons.spa_outlined,
-                label: 'Beauty',
-                onTap: () {
-                  AppHaptics.selection();
-                  context.pushNamed(BeautyWellnessScreen.routeName);
-                },
-              ),
-              _ServiceCategoryTile(
-                icon: Icons.content_cut_outlined,
-                label: 'Hair &\nNails',
-                onTap: () {
-                  AppHaptics.selection();
-                  context.pushNamed(HairNailsScreen.routeName);
-                },
-              ),
-              _ServiceCategoryTile(
-                icon: Icons.self_improvement_outlined,
-                label: 'Massage',
-                onTap: () {
-                  AppHaptics.selection();
-                  context.pushNamed(MassageScreen.routeName);
-                },
-              ),
-              _ServiceCategoryTile(
-                icon: Icons.ac_unit_rounded,
-                label: 'Aircon\nRepair',
-                onTap: () {
-                  AppHaptics.selection();
-                  context.pushNamed(AirconRepairScreen.routeName);
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+      );
+    });
   }
 
   // ── Active booking card (auth + active booking only) ─────────────────────
@@ -369,10 +335,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Observer(builder: (ctx) {
       if (store.session == null) return const SizedBox.shrink();
       final active = store.bookings
-          .where((b) =>
-              b.jobOrderStatus != JobOrderStatus.completed &&
-              b.jobOrderStatus != JobOrderStatus.cancelled &&
-              b.jobOrderStatus != JobOrderStatus.none)
+          .where(
+            (b) =>
+                b.jobOrderStatus != JobOrderStatus.completed &&
+                b.jobOrderStatus != JobOrderStatus.cancelled &&
+                b.jobOrderStatus != JobOrderStatus.none,
+          )
           .firstOrNull;
       if (active == null) return const SizedBox.shrink();
 
@@ -408,8 +376,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.assignment_outlined,
-                        color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.assignment_outlined,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -439,8 +410,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded,
-                      color: Colors.white, size: 20),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ],
               ),
             ),
@@ -454,8 +428,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFeaturedSection() {
     return Observer(builder: (ctx) {
-      final bwItems = bwStore.bookableOptions
-          .map((o) => _FeaturedItem(raw: o, isAircon: false));
+      final bwItems =
+          bwStore.bookableOptions.map((o) => _FeaturedItem(raw: o, isAircon: false));
       final airconItems = airconStore.bookableOptions
           .map((o) => _FeaturedItem(raw: o, isAircon: true));
       final all = [...bwItems, ...airconItems].take(12).toList();
@@ -533,94 +507,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     });
-  }
-
-  // ── Educational discovery card ────────────────────────────────────────────
-
-  Widget _buildDiscoveryCard() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: ColorPalette.primaryColorLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: ColorPalette.primaryColorDark.withOpacity(0.12)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: ColorPalette.primaryColorDark,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.lightbulb_outline_rounded,
-                      color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'How it works',
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: ColorPalette.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const _HowItWorksStep(
-              number: 1,
-              text: 'Choose your service from our categories',
-            ),
-            const SizedBox(height: 10),
-            const _HowItWorksStep(
-              number: 2,
-              text: 'Select a date and time that works for you',
-            ),
-            const SizedBox(height: 10),
-            const _HowItWorksStep(
-              number: 3,
-              text:
-                  'Confirm your booking and a professional will be on the way',
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () {
-                  AppHaptics.selection();
-                  context.pushNamed(SearchScreen.routeName);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: ColorPalette.primaryColorDark,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'Browse Services',
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // ── Section header helper ─────────────────────────────────────────────────
@@ -872,63 +758,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Service category tile ────────────────────────────────────────────────────
-
-class _ServiceCategoryTile extends StatelessWidget {
-  const _ServiceCategoryTile({
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 70,
-        child: Column(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: ColorPalette.primaryBackground,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: ColorPalette.shadow(0.08),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(icon, size: 24, color: ColorPalette.primaryColorDark),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontSize: 12,
-                color: ColorPalette.secondaryText,
-                height: 1.3,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── Featured service card ────────────────────────────────────────────────────
 
 class _FeaturedServiceCard extends StatelessWidget {
@@ -987,7 +816,9 @@ class _FeaturedServiceCard extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: ColorPalette.primaryColorLight,
                           borderRadius: BorderRadius.circular(6),
@@ -1045,53 +876,4 @@ class _FeaturedItem {
   _FeaturedItem({required this.raw, required this.isAircon});
   final Map<String, dynamic> raw;
   final bool isAircon;
-}
-
-// ── How-it-works step ────────────────────────────────────────────────────────
-
-class _HowItWorksStep extends StatelessWidget {
-  const _HowItWorksStep({required this.number, required this.text});
-  final int number;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: ColorPalette.primaryColorDark,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '$number',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 3),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontSize: 13,
-                color: ColorPalette.secondaryText.withOpacity(0.8),
-                height: 1.4,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
