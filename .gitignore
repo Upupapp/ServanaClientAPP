@@ -46,3 +46,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local machine config — never commit Windows/Mac absolute paths
+/android/local.properties
+/android/key.properties
