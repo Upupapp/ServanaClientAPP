@@ -10,7 +10,7 @@ import 'package:client/modules/bw_booking/presentation/screens/massage_screen.da
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/domain/search_result.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide SearchController;
 import 'package:go_router/go_router.dart';
 
 class _ChipData {
@@ -224,17 +224,12 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildBody() {
-    switch (_ctrl.state) {
-      case SearchLoadState.idle:
-      case SearchLoadState.loading:
-        return _buildLoading();
-      case SearchLoadState.error:
-        return _buildError();
-      case SearchLoadState.ready:
-        return _ctrl.hasQuery ? _buildResults() : _buildDiscovery();
-    }
-  }
+  Widget _buildBody() => switch (_ctrl.state) {
+    SearchLoadState.idle || SearchLoadState.loading => _buildLoading(),
+    SearchLoadState.error => _buildError(),
+    SearchLoadState.ready =>
+      _ctrl.hasQuery ? _buildResults() : _buildDiscovery(),
+  };
 
   Widget _buildLoading() {
     return const Center(child: CircularProgressIndicator());
