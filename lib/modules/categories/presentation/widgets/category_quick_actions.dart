@@ -1,11 +1,18 @@
 import 'package:client/modules/categories/domain/category_experience.dart';
 import 'package:flutter/material.dart';
 
+/// Callback carrying both the display [label] and the API-level [level2Value].
+/// Both are null when the user taps the active chip (deselect = show all).
+typedef ChipSelectedCallback = void Function({
+  String? label,
+  String? level2Value,
+});
+
 class CategoryQuickActionsSliver extends StatelessWidget {
   final List<CategoryFilterChip> chips;
   final String? selectedLabel;
   final Color accentColor;
-  final ValueChanged<String?> onChipSelected;
+  final ChipSelectedCallback onChipSelected;
 
   const CategoryQuickActionsSliver({
     super.key,
@@ -35,7 +42,7 @@ class _ChipBarDelegate extends SliverPersistentHeaderDelegate {
   final List<CategoryFilterChip> chips;
   final String? selectedLabel;
   final Color accentColor;
-  final ValueChanged<String?> onChipSelected;
+  final ChipSelectedCallback onChipSelected;
 
   const _ChipBarDelegate({
     required this.chips,
@@ -62,14 +69,16 @@ class _ChipBarDelegate extends SliverPersistentHeaderDelegate {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           final chip = chips[i];
-          final selected =
-              (selectedLabel ?? 'All') == chip.label;
+          final selected = (selectedLabel ?? 'All') == chip.label;
           return Semantics(
             button: true,
             selected: selected,
             label: chip.label,
             child: GestureDetector(
-              onTap: () => onChipSelected(selected ? null : chip.label),
+              onTap: () => selected
+                  ? onChipSelected(label: null, level2Value: null)
+                  : onChipSelected(
+                      label: chip.label, level2Value: chip.level2Value),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,

@@ -33,7 +33,7 @@ class CategoryExperienceRepository {
     String? pattern,
   ) {
     if (allowList == null && pattern == null) return true;
-    final level2 = (option['level_2'] ?? '').toString().toLowerCase();
+    final level2 = (option['level2'] ?? '').toString().toLowerCase();
     if (level2.isEmpty) return true; // include options with no category tag
     if (allowList != null) return allowList.contains(level2);
     if (pattern != null) return RegExp(pattern, caseSensitive: false).hasMatch(level2);

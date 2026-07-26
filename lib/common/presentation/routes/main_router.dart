@@ -57,12 +57,12 @@ class MainRouter {
   /// 700 ms with `easeInOut` lingers around the 50% mark — both pages share
   /// the screen briefly, which reads as a deliberate dissolve rather than a
   /// quick swap. Same curve on both halves keeps the blend symmetric.
-  static ServiceCategoryId _categoryIdFromKey(String key) => switch (key) {
+  static ServiceCategoryId? _categoryIdFromKey(String key) => switch (key) {
         'beauty_wellness' => ServiceCategoryId.beautyWellness,
         'hair_nails' => ServiceCategoryId.hairAndNails,
         'massage' => ServiceCategoryId.massage,
         'aircon' => ServiceCategoryId.aircon,
-        _ => ServiceCategoryId.generic,
+        _ => null,
       };
 
   static CustomTransitionPage<T> _fadePage<T>(
@@ -264,6 +264,12 @@ class MainRouter {
                       builder: (context, state) {
                         final key = state.pathParameters['categoryKey'] ?? '';
                         final id = _categoryIdFromKey(key);
+                        if (id == null) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => context.goNamed(HomeScreen.routeName),
+                          );
+                          return const Scaffold();
+                        }
                         return CategoryExperienceScreen(categoryId: id);
                       },
                     ),

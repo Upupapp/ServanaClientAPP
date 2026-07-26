@@ -20,15 +20,19 @@ class CategoryExperienceController extends ChangeNotifier {
   List<ServiceOptionSummary> _allOptions = [];
   List<ServiceOptionSummary> get allOptions => List.unmodifiable(_allOptions);
 
+  /// Display label of the active chip (e.g. 'Drip', 'All'). Used by the UI to
+  /// render the selected state. Null = 'All'.
   String? _selectedChipLabel;
   String? get selectedChipLabel => _selectedChipLabel;
 
+  /// API-level level_2 value to filter by (e.g. 'drip', 'facial'). Null = show all.
+  String? _selectedLevel2Value;
+
   List<ServiceOptionSummary> get visibleOptions {
-    if (_selectedChipLabel == null || _selectedChipLabel == 'All') {
-      return List.unmodifiable(_allOptions);
-    }
+    if (_selectedLevel2Value == null) return List.unmodifiable(_allOptions);
+    final needle = _selectedLevel2Value!.toLowerCase();
     return _allOptions
-        .where((o) => o.categoryKey == _selectedChipLabel)
+        .where((o) => o.categoryKey.toLowerCase() == needle)
         .toList();
   }
 
@@ -68,16 +72,19 @@ class CategoryExperienceController extends ChangeNotifier {
       if (_revealDecision != RevealDecision.skipReveal) {
         CategoryRevealPolicy.markSeen(categoryId);
       }
-    } catch (e) {
-      _error = e.toString();
+    } catch (_) {
+      _error = 'Unable to load services.';
       _status = CategoryExperienceStatus.failure;
     }
 
     notifyListeners();
   }
 
-  void selectChip(String? label) {
+  /// [label] is the display label (shown in chip UI); [level2Value] is the
+  /// API-level filter value (e.g. 'drip'). Pass both null to reset to 'All'.
+  void selectChip({String? label, String? level2Value}) {
     _selectedChipLabel = label;
+    _selectedLevel2Value = level2Value;
     notifyListeners();
   }
 
@@ -96,5 +103,4 @@ class CategoryExperienceController extends ChangeNotifier {
     _status = CategoryExperienceStatus.idle;
     load(categoryId: categoryId, config: config, reducedMotion: reducedMotion);
   }
-
 }

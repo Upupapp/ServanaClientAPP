@@ -1,5 +1,7 @@
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
+import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/categories/application/category_experience_controller.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
@@ -38,6 +40,22 @@ class _CategoryExperienceScreenState extends State<CategoryExperienceScreen> {
     _controller = CategoryExperienceController(
       dpLocator<CategoryExperienceRepository>(),
     );
+    _clearStoreSelection();
+  }
+
+  /// Flush stale selection so the downstream booking screen doesn't resume a
+  /// previously abandoned booking. Preserves the option catalog so
+  /// home-screen pre-warming is not discarded.
+  void _clearStoreSelection() {
+    final flowType = ServiceBookingEntryResolver.resolve(widget.categoryId);
+    switch (flowType) {
+      case BookingFlowType.bwAddOns:
+        dpLocator<BwBookingStore>().clearSelectionOnly();
+      case BookingFlowType.airconOptions:
+        dpLocator<AirconBookingStore>().clearSelectionOnly();
+      case BookingFlowType.generic:
+        break;
+    }
   }
 
   @override
@@ -61,6 +79,20 @@ class _CategoryExperienceScreenState extends State<CategoryExperienceScreen> {
 
   void _onOptionTapped(ServiceOptionSummary option) {
     final flowType = ServiceBookingEntryResolver.resolve(widget.categoryId);
+    if (option.rawData is! Map<String, dynamic>) return;
+    final rawMap = option.rawData as Map<String, dynamic>;
+
+    // Populate the booking store before navigating — downstream screens read
+    // their store's selectedOption in initState.
+    switch (flowType) {
+      case BookingFlowType.bwAddOns:
+        dpLocator<BwBookingStore>().selectOption(rawMap);
+      case BookingFlowType.airconOptions:
+        dpLocator<AirconBookingStore>().selectOption(rawMap);
+      case BookingFlowType.generic:
+        break;
+    }
+
     final extra = ServiceBookingEntryResolver.extraFor(
       flowType: flowType,
       option: option,
@@ -107,7 +139,8 @@ class _CategoryExperienceScreenState extends State<CategoryExperienceScreen> {
           chips: _config.filterChips,
           selectedLabel: _controller.selectedChipLabel,
           accentColor: _config.theme.primaryAccent,
-          onChipSelected: _controller.selectChip,
+          onChipSelected: ({String? label, String? level2Value}) =>
+              _controller.selectChip(label: label, level2Value: level2Value),
         ),
         ..._buildBody(context),
       ],

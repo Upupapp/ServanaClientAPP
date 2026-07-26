@@ -64,10 +64,21 @@ void main() {
       expect(summary.hasAddons, isFalse);
     });
 
-    test('reads level_2 as categoryKey', () {
-      final o = <String, dynamic>{'id': '7', 'name': 'Drip', 'level_2': 'drip'};
+    test('reads level2 (camelCase) as categoryKey', () {
+      final o = <String, dynamic>{'id': '7', 'name': 'Drip', 'level2': 'drip'};
       final summary = ServiceOptionSummaryMapper.fromMap(o);
       expect(summary.categoryKey, 'drip');
+    });
+
+    test('reads level3 as primary name, ignoring name field', () {
+      final o = <String, dynamic>{
+        'id': '11',
+        'level3': 'IV Drip Premium',
+        'name': 'Should be ignored',
+        'level2': 'drip',
+      };
+      final summary = ServiceOptionSummaryMapper.fromMap(o);
+      expect(summary.name, 'IV Drip Premium');
     });
 
     test('preserves rawData reference', () {

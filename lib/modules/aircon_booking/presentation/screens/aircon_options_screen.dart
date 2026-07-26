@@ -1,4 +1,5 @@
 import 'package:client/common/constants/color_palette.dart';
+import 'package:client/modules/categories/data/category_addon_filter.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
@@ -105,12 +106,8 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
 
         // MAIN options live at the top level; ADD_ONs are nested under each
         // main option's `addons[]` array (see /api/{serviceId}/options-with-addons).
-        final displayOptions = options
-            .where((o) =>
-                o['optionType'] != 'ADD_ON' &&
-                o['isAddon'] != true &&
-                o['is_addon'] != true)
-            .toList();
+        final displayOptions =
+            options.where(CategoryAddonFilter.isNotAddon).toList();
 
         final displayAddons = <Map<String, dynamic>>[];
         if (store.selectedOption != null) {

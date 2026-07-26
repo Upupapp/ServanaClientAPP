@@ -155,7 +155,10 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  _DismissButton(onDismiss: widget.onDismiss),
+                  _DismissButton(
+                    onDismiss: widget.onDismiss,
+                    tapProtected: _tapProtected,
+                  ),
                   const SizedBox(height: 12),
                 ],
               ),
@@ -169,14 +172,15 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
 
 class _DismissButton extends StatelessWidget {
   final VoidCallback onDismiss;
-  const _DismissButton({required this.onDismiss});
+  final bool tapProtected;
+  const _DismissButton({required this.onDismiss, required this.tapProtected});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: TextButton(
-        onPressed: onDismiss,
+        onPressed: tapProtected ? null : onDismiss,
         style: TextButton.styleFrom(
           foregroundColor: Colors.white,
           backgroundColor: Colors.white.withOpacity(0.18),

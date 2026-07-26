@@ -88,11 +88,11 @@ abstract final class ServiceOptionSummaryMapper {
   static ServiceOptionSummary fromMap(Map<String, dynamic> o) {
     final id =
         (o['serviceOptionId'] ?? o['id'] ?? o['optionId'] ?? '').toString();
-    final name = (o['name'] ?? '').toString();
+    final name = (o['level3'] ?? o['name'] ?? o['optionName'] ?? 'Service').toString();
     final description = o['shortDescription']?.toString() ??
         o['description']?.toString();
     final price = _extractPrice(o);
-    final level2 = (o['level_2'] ?? '').toString();
+    final level2 = (o['level2'] ?? '').toString();
     final addons = o['addons'];
     final hasAddons = addons is List && addons.isNotEmpty;
 

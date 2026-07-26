@@ -1,4 +1,5 @@
 import 'package:client/common/constants/color_palette.dart';
+import 'package:client/modules/categories/data/category_addon_filter.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
@@ -84,9 +85,8 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
 
         final options = store.optionsWithAddons;
 
-        // Separate main options from add-ons using optionType field.
         final mainOptions =
-            options.where((o) => o['optionType'] != 'ADD_ON').toList();
+            options.where(CategoryAddonFilter.isNotAddon).toList();
 
         // options-with-addons
         final grouped = <String, List<Map<String, dynamic>>>{};
