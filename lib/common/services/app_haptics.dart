@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Centralised haptic feedback for Servana.
@@ -15,6 +16,10 @@ abstract final class AppHaptics {
   /// Called by [SettingsController] when the user toggles the haptics preference.
   /// OS accessibility feedback is never affected — only app-initiated calls.
   static void setEnabled(bool enabled) => _enabled = enabled;
+
+  /// Exposed for testing only — do not use in production code.
+  @visibleForTesting
+  static bool get isEnabled => _enabled;
   /// Light tap — use for low-stakes selections (toggle, option pick, tab).
   static Future<void> selection() async {
     if (!_enabled) return;

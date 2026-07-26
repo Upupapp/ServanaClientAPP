@@ -2,7 +2,6 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/modules/settings/presentation/widgets/settings_tile.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
 class PermissionsScreen extends StatefulWidget {
@@ -60,12 +59,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   }
 
   Future<void> _openSystemSettings() async {
-    try {
-      await SystemChannels.platform
-          .invokeMethod<void>('SystemNavigator.openAppSettings');
-    } catch (_) {
-      await Geolocator.openAppSettings();
-    }
+    await Geolocator.openAppSettings();
   }
 
   @override

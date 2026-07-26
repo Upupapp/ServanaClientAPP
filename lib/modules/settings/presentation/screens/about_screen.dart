@@ -110,6 +110,12 @@ class _AboutScreenState extends State<AboutScreen> {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the link.')),
+        );
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   static const String routeName = 'SettingsProfileEdit';
@@ -43,13 +44,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Future<void> _loadSession() async {
     final s = await SessionService.getSession();
     if (!mounted) return;
+    if (s == null) {
+      // Session unavailable — go back rather than showing a submittable empty form.
+      context.pop();
+      return;
+    }
     setState(() {
-      _nameCtrl.text = s?.fullname ?? '';
-      _email = s?.emailAddress ?? '';
-      _phoneCtrl.text = s?.mobileNumber ?? '';
+      _nameCtrl.text = s.fullname ?? '';
+      _email = s.emailAddress ?? '';
+      _phoneCtrl.text = s.mobileNumber ?? '';
       _loading = false;
     });
   }
+
+  static final _phoneRx = RegExp(r'^(\+63|0)9\d{9}$');
 
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
@@ -58,29 +66,41 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() => _error = 'Full name cannot be empty.');
       return;
     }
+    if (name.length > 100) {
+      setState(() => _error = 'Name cannot exceed 100 characters.');
+      return;
+    }
+    if (phone.isNotEmpty && !_phoneRx.hasMatch(phone)) {
+      setState(() => _error = 'Enter a valid Philippine mobile number (e.g. +63 917 123 4567).');
+      return;
+    }
     setState(() { _saving = true; _error = null; _saved = false; });
     try {
       await _api.updateProfile(payload: {
         'fullname': name,
-        'mobileNumber': phone,
+        if (phone.isNotEmpty) 'mobileNumber': phone,
       });
       // Patch the local session so the profile header reflects the change.
       final session = await SessionService.getSession();
       if (session != null) {
         await SessionService.saveSession(
-          session.copyWith(fullname: name, mobileNumber: phone),
+          session.copyWith(
+            fullname: name,
+            mobileNumber: phone.isNotEmpty ? phone : session.mobileNumber,
+          ),
         );
       }
       if (!mounted) return;
       setState(() { _saving = false; _saved = true; });
-      // Brief success delay, then pop back.
       await Future.delayed(const Duration(milliseconds: 900));
-      if (mounted) Navigator.of(context).pop();
-    } catch (_) {
+      if (mounted) context.pop();
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = 'Failed to save. Please try again.';
+        _error = e.toString().contains('401')
+            ? 'Session expired. Please sign in again.'
+            : 'Failed to save. Please try again.';
       });
     }
   }

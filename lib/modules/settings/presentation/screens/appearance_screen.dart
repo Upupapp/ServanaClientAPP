@@ -14,10 +14,10 @@ class AppearanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = dpLocator<SettingsController>();
     return ListenableBuilder(
-      listenable: dpLocator<SettingsController>(),
+      listenable: ctrl,
       builder: (context, _) {
-        final ctrl = dpLocator<SettingsController>();
         return Scaffold(
           backgroundColor: ColorPalette.primaryBackground,
           appBar: AppBar(

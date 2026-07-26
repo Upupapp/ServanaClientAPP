@@ -112,6 +112,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, _) => MaterialApp.router(
             title: widget.config.brand.appName,
             theme: buildAppTheme(widget.config.brand),
+            darkTheme: buildDarkAppTheme(widget.config.brand),
             themeMode: _settingsCtrl.themeMode,
             routeInformationParser: _router.routeInformationParser,
             routeInformationProvider: _router.routeInformationProvider,

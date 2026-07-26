@@ -1,3 +1,4 @@
+import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:client/modules/settings/data/settings_local_data_source.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,11 @@ void main() {
       expect(await SettingsLocalDataSource.loadThemeMode(), ThemeMode.system);
     });
 
+    test('saveThemeMode + loadThemeMode round-trip dark', () async {
+      await SettingsLocalDataSource.saveThemeMode(ThemeMode.dark);
+      expect(await SettingsLocalDataSource.loadThemeMode(), ThemeMode.dark);
+    });
+
     test('loadHapticsEnabled returns true by default', () async {
       expect(await SettingsLocalDataSource.loadHapticsEnabled(), isTrue);
     });
@@ -47,6 +53,7 @@ void main() {
   // ── SettingsController ─────────────────────────────────────────────────────
 
   group('SettingsController', () {
+    tearDown(() => AppHaptics.setEnabled(true)); // restore static state after each test
     test('themeMode defaults to system before load()', () {
       expect(SettingsController().themeMode, ThemeMode.system);
     });
@@ -119,6 +126,38 @@ void main() {
       ctrl.addListener(() => notifyCount++);
       await ctrl.setHapticsEnabled(true); // same as default
       expect(notifyCount, 0);
+    });
+
+    // GAP-001: dispose race guard
+    test('load() completes without throw when controller disposed before awaits resolve', () async {
+      final ctrl = SettingsController();
+      ctrl.dispose();
+      await expectLater(ctrl.load(), completes);
+    });
+
+    // GAP-004: AppHaptics wiring
+    test('setHapticsEnabled(false) wires through to AppHaptics', () async {
+      AppHaptics.setEnabled(true);
+      final ctrl = SettingsController();
+      await ctrl.setHapticsEnabled(false);
+      expect(AppHaptics.isEnabled, isFalse);
+    });
+
+    test('load() with haptics=false wires AppHaptics on startup', () async {
+      SharedPreferences.setMockInitialValues({'settings_haptics_enabled': false});
+      AppHaptics.setEnabled(true);
+      final ctrl = SettingsController();
+      await ctrl.load();
+      expect(AppHaptics.isEnabled, isFalse);
+    });
+
+    // GAP-006: concurrent load() idempotency
+    test('concurrent load() calls fire notifyListeners exactly once', () async {
+      final ctrl = SettingsController();
+      var notifyCount = 0;
+      ctrl.addListener(() => notifyCount++);
+      await Future.wait([ctrl.load(), ctrl.load()]);
+      expect(notifyCount, 1);
     });
   });
 }
