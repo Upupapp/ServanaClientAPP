@@ -18,6 +18,34 @@ class _FakeSearchRepository extends Fake implements SearchRepository {
   void clearCache() {}
 }
 
+class _ThrowingSearchRepository extends Fake implements SearchRepository {
+  @override
+  Future<List<SearchResult>> fetchCatalog({bool forceRefresh = false}) async =>
+      throw Exception('network error');
+
+  @override
+  void clearCache() {}
+}
+
+class _CountingSearchRepository extends Fake implements SearchRepository {
+  int callCount = 0;
+  List<SearchResult> catalog;
+  bool _cleared = false;
+
+  _CountingSearchRepository(this.catalog);
+
+  @override
+  Future<List<SearchResult>> fetchCatalog({bool forceRefresh = false}) async {
+    if (!forceRefresh && !_cleared && callCount > 0) return catalog;
+    callCount++;
+    _cleared = false;
+    return catalog;
+  }
+
+  @override
+  void clearCache() => _cleared = true;
+}
+
 const _kAircon = SearchResult(
   serviceId: 1,
   serviceName: 'Aircon Services',
@@ -204,6 +232,24 @@ void main() {
       expect(prefs.getStringList('search_recent_terms'), isNull);
     });
 
+    test('init() transitions to error state when repository throws', () async {
+      final ctrl = SearchController(
+          repository: _ThrowingSearchRepository());
+      await ctrl.init();
+      expect(ctrl.state, SearchLoadState.error);
+      expect(ctrl.error, isNotNull);
+      expect(ctrl.results, isEmpty);
+    });
+
+    test('refresh() re-fetches even when state is already ready', () async {
+      final repo = _CountingSearchRepository([_kAircon]);
+      final ctrl = SearchController(repository: repo);
+      await ctrl.init();
+      expect(repo.callCount, 1);
+      await ctrl.refresh();
+      expect(repo.callCount, 2);
+    });
+
     test('SearchResult.priceDisplay formats correctly', () {
       expect(
         const SearchResult(
@@ -243,6 +289,43 @@ void main() {
           categoryLabel: 'Aircon',
         ).priceDisplay,
         'Get a quote',
+      );
+    });
+  });
+
+  group('categoryIdFromService — name-fallback', () {
+    test('maps unknown serviceId via name: aircon', () {
+      expect(
+        categoryIdFromService(serviceId: 99, name: 'Aircon Maintenance'),
+        ServiceCategoryId.aircon,
+      );
+    });
+
+    test('maps unknown serviceId via name: massage', () {
+      expect(
+        categoryIdFromService(serviceId: 99, name: 'Spa & Massage Therapy'),
+        ServiceCategoryId.massage,
+      );
+    });
+
+    test('maps unknown serviceId via name: hair & nails', () {
+      expect(
+        categoryIdFromService(serviceId: 99, name: 'Hair Coloring'),
+        ServiceCategoryId.hairAndNails,
+      );
+    });
+
+    test('maps unknown serviceId via name: beauty & wellness', () {
+      expect(
+        categoryIdFromService(serviceId: 99, name: 'Facial Treatment'),
+        ServiceCategoryId.beautyWellness,
+      );
+    });
+
+    test('returns null for completely unrecognized name and id', () {
+      expect(
+        categoryIdFromService(serviceId: 99, name: 'Plumbing Services'),
+        isNull,
       );
     });
   });
