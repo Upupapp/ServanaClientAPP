@@ -60,17 +60,21 @@ android {
 
     signingConfigs {
         release {
-          if (System.getenv()["CM_KEYSTORE_PATH"]) { // Codemagic sets this; GitHub Actions does not
+            if (System.getenv()["CM_KEYSTORE_PATH"]) {
+                // Codemagic CI: keystore injected via env vars
                 storeFile file(System.getenv()["CM_KEYSTORE_PATH"])
                 storePassword System.getenv()["CM_KEYSTORE_PASSWORD"]
                 keyAlias System.getenv()["CM_KEY_ALIAS"]
                 keyPassword System.getenv()["CM_KEY_PASSWORD"]
-            } else {
+            } else if (keystorePropertiesFile.exists()) {
+                // Local release build: key.properties present
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
-                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
             }
+            // GitHub Actions / dev CI: no signing config set —
+            // release buildType uses signingConfigs.debug anyway
         }
     }
 
