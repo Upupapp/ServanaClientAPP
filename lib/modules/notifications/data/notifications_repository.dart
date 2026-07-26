@@ -1,6 +1,7 @@
 import 'package:client/modules/notifications/data/notification_mapper.dart';
 import 'package:client/modules/notifications/data/notifications_local_data_source.dart';
 import 'package:client/modules/notifications/data/notifications_remote_data_source.dart';
+import 'package:client/modules/notifications/domain/notification_target.dart';
 import 'package:client/modules/notifications/domain/servana_notification.dart';
 
 class NotificationsRepository {
@@ -63,7 +64,7 @@ class NotificationsRepository {
         'title': n.title,
         'safeBody': n.safeBody,
         'safeContextLabel': n.safeContextLabel,
-        'route': null,
+        'route': _targetToRoute(n.target),
         'canMarkRead': n.canMarkRead,
         'canDismiss': n.canDismiss,
         'canOpenDetail': n.canOpenDetail,
@@ -71,4 +72,16 @@ class NotificationsRepository {
         'expiresAt': n.expiresAt?.toIso8601String(),
         'readAt': n.readAt?.toIso8601String(),
       };
+
+  static Map<String, dynamic>? _targetToRoute(NotificationTarget? target) {
+    if (target == null) return null;
+    return switch (target) {
+      BookingTarget t => {'routeKey': 'BOOKING_DETAILS', 'resourceId': t.bookingId},
+      PaymentTarget t => {'routeKey': 'PAYMENT_DETAILS', 'resourceId': t.bookingId},
+      ConversationTarget t => {'routeKey': 'CONVERSATION', 'resourceId': t.conversationId},
+      CategoryTarget t => {'routeKey': 'CATEGORY', 'resourceId': t.categoryKey},
+      SettingsTarget() => {'routeKey': 'NOTIFICATION_SETTINGS', 'resourceId': ''},
+      UnknownTarget t => {'routeKey': t.routeKey, 'resourceId': ''},
+    };
+  }
 }

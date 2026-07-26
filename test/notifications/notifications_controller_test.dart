@@ -143,6 +143,48 @@ void main() {
     });
   });
 
+  group('markAllRead', () {
+    test('rolls back on backend failure', () async {
+      when(() => mockRepo.fetchNotifications(uid: any(named: 'uid')))
+          .thenAnswer((_) async => [notif('n1'), notif('n2')]);
+      when(() => mockRepo.fetchUnreadCount(any())).thenAnswer((_) async => 2);
+      when(() => mockRepo.markAllRead()).thenThrow(Exception('fail'));
+
+      await ctrl.init('uid-123');
+      await ctrl.markAllRead();
+
+      expect(ctrl.notifications.every((n) => !n.isRead), isTrue);
+      expect(ctrl.unreadCount, 2);
+    });
+  });
+
+  group('refresh', () {
+    test('transitions back to ready on success', () async {
+      when(() => mockRepo.fetchNotifications(uid: any(named: 'uid')))
+          .thenAnswer((_) async => [notif('n1')]);
+      when(() => mockRepo.fetchUnreadCount(any())).thenAnswer((_) async => 1);
+
+      await ctrl.init('uid-123');
+      await ctrl.refresh();
+
+      expect(ctrl.state, NotificationsLoadState.ready);
+      expect(ctrl.notifications.length, 1);
+    });
+
+    test('shows offline state when init backend fetch fails but cache was loaded', () async {
+      when(() => mockRepo.loadCached(any())).thenAnswer((_) async => [notif('n1')]);
+      when(() => mockRepo.loadCachedUnreadCount(any())).thenAnswer((_) async => 1);
+      when(() => mockRepo.fetchNotifications(uid: any(named: 'uid')))
+          .thenThrow(Exception('Network'));
+      when(() => mockRepo.fetchUnreadCount(any())).thenThrow(Exception('Network'));
+
+      await ctrl.init('uid-123');
+
+      expect(ctrl.state, NotificationsLoadState.offline);
+      expect(ctrl.notifications.length, 1);
+    });
+  });
+
   group('clearOnLogout', () {
     test('resets all state', () async {
       when(() => mockRepo.fetchNotifications(uid: any(named: 'uid')))
