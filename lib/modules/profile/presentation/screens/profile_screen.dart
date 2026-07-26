@@ -2,7 +2,7 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
-import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
+import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart' show LanguageScreen, SavedAddressesScreen, SettingsScreen, HelpSupportScreen;
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
@@ -52,6 +52,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _MenuGroup(
                 items: [
+                  _MenuItem(
+                    icon: Icons.settings_outlined,
+                    label: 'Settings',
+                    onTap: () => context.pushNamed(SettingsScreen.routeName),
+                  ),
                   _MenuItem(
                     icon: Icons.location_on_outlined,
                     label: 'Saved Addresses',

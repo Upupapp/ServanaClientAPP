@@ -4,9 +4,18 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
+import 'package:client/common/services/app_haptics.dart';
+import 'package:client/modules/settings/presentation/screens/about_screen.dart';
+import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
+import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
+import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
+import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
+import 'package:client/modules/settings/presentation/screens/security_screen.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart'
     show LatLong;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RewardsScreen extends StatelessWidget {
@@ -458,7 +467,233 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _DrawerPlaceholderScreen(title: "Settings");
+    return Scaffold(
+      backgroundColor: ColorPalette.primaryBackground,
+      appBar: AppBar(
+        backgroundColor: ColorPalette.primaryColorDark,
+        title: Text(
+          'Settings',
+          style: TextStyle(
+            fontFamily: FontPalette.primaryFontFamily,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: ListView(
+        children: [
+          const SizedBox(height: 8),
+
+          _SettingsSectionLabel('Account'),
+          _SettingsGroup(children: [
+            _SettingsNavItem(
+              icon: Icons.person_outline_rounded,
+              label: 'Edit Profile',
+              subtitle: 'Update your name and phone number',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(ProfileEditScreen.routeName);
+              },
+            ),
+          ]),
+
+          _SettingsSectionLabel('Preferences'),
+          _SettingsGroup(children: [
+            _SettingsNavItem(
+              icon: Icons.palette_outlined,
+              label: 'Appearance',
+              subtitle: 'Theme and haptic feedback',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(AppearanceScreen.routeName);
+              },
+            ),
+            _SettingsNavItem(
+              icon: Icons.language_rounded,
+              label: 'Language',
+              subtitle: 'English',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(LanguageScreen.routeName);
+              },
+            ),
+          ]),
+
+          _SettingsSectionLabel('Permissions'),
+          _SettingsGroup(children: [
+            _SettingsNavItem(
+              icon: Icons.tune_rounded,
+              label: 'App Permissions',
+              subtitle: 'Location, notifications, camera',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(PermissionsScreen.routeName);
+              },
+            ),
+          ]),
+
+          _SettingsSectionLabel('Security'),
+          _SettingsGroup(children: [
+            _SettingsNavItem(
+              icon: Icons.lock_outline_rounded,
+              label: 'Password & Security',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(SecurityScreen.routeName);
+              },
+            ),
+          ]),
+
+          _SettingsSectionLabel('Legal & Info'),
+          _SettingsGroup(children: [
+            _SettingsNavItem(
+              icon: Icons.privacy_tip_outlined,
+              label: 'Privacy & Legal',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(PrivacyLegalScreen.routeName);
+              },
+            ),
+            _SettingsNavItem(
+              icon: Icons.info_outline_rounded,
+              label: 'About Servana',
+              onTap: () {
+                AppHaptics.selection();
+                context.pushNamed(AboutScreen.routeName);
+              },
+            ),
+          ]),
+
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Settings local layout helpers (used only here) ────────────────────────────
+
+class _SettingsSectionLabel extends StatelessWidget {
+  const _SettingsSectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontFamily: FontPalette.primaryFontFamily,
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+          color: ColorPalette.accentText,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: ColorPalette.secondaryBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: ColorPalette.border(.45)),
+        ),
+        child: Column(
+          children: [
+            for (int i = 0; i < children.length; i++) ...[
+              children[i],
+              if (i < children.length - 1)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: 52,
+                  color: ColorPalette.border(.3),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsNavItem extends StatelessWidget {
+  const _SettingsNavItem({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: ColorPalette.primaryColorDark),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: ColorPalette.secondaryText,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          fontSize: 12,
+                          color: ColorPalette.accentText,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: ColorPalette.secondaryText.withOpacity(.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -472,43 +707,55 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
+  static const _prefKey = 'settings_language';
   String _selected = 'English';
 
-  final List<_LanguageOption> _options = const [
-    _LanguageOption('English', 'EN'),
-    _LanguageOption('Filipino', 'FIL'),
-    _LanguageOption('Cebuano', 'CEB'),
+  static const _options = [
+    _LanguageOption('English', 'EN', available: true),
+    _LanguageOption('Filipino', 'FIL', available: false),
+    _LanguageOption('Cebuano', 'CEB', available: false),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_prefKey) ?? 'English';
+    if (mounted) setState(() => _selected = saved);
+  }
+
+  Future<void> _select(String name) async {
+    setState(() => _selected = name);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, name);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorPalette.primaryBackground,
       appBar: AppBar(
-        backgroundColor: ColorPalette.primaryBackground,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: ColorPalette.secondaryText,
-          ),
-        ),
+        backgroundColor: ColorPalette.primaryColorDark,
         title: Text(
-          "Language",
+          'Language',
           style: TextStyle(
             fontFamily: FontPalette.primaryFontFamily,
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-            color: ColorPalette.secondaryText,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           Text(
-            "Choose your preferred language",
+            'Choose your preferred language',
             style: TextStyle(
               fontFamily: FontPalette.primaryFontFamily,
               color: ColorPalette.secondaryText.withOpacity(.7),
@@ -517,69 +764,92 @@ class _LanguageScreenState extends State<LanguageScreen> {
           ),
           const SizedBox(height: 12),
           ..._options.map((option) {
-            final isSelected = option.name == _selected;
+            final isSelected = option.name == _selected && option.available;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _selected = option.name;
-                  });
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: ColorPalette.secondaryBackground,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected
-                          ? ColorPalette.primaryColorDark
-                          : ColorPalette.border(.55),
+              child: Opacity(
+                opacity: option.available ? 1.0 : 0.55,
+                child: InkWell(
+                  onTap: option.available
+                      ? () {
+                          AppHaptics.selection();
+                          _select(option.name);
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.secondaryBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? ColorPalette.primaryColorDark
+                            : ColorPalette.border(.55),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? ColorPalette.primaryColorDark.withOpacity(.15)
-                              : ColorPalette.primaryColor.withOpacity(.12),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Center(
-                          child: Text(
-                            option.code,
-                            style: TextStyle(
-                              fontFamily: FontPalette.primaryFontFamily,
-                              fontWeight: FontWeight.w700,
-                              color: ColorPalette.primaryColorDark,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? ColorPalette.primaryColorDark.withOpacity(.15)
+                                : ColorPalette.primaryColor.withOpacity(.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Center(
+                            child: Text(
+                              option.code,
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontWeight: FontWeight.w700,
+                                color: ColorPalette.primaryColorDark,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          option.name,
-                          style: TextStyle(
-                            fontFamily: FontPalette.primaryFontFamily,
-                            fontWeight: FontWeight.w700,
-                            color: ColorPalette.secondaryText,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            option.name,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontWeight: FontWeight.w700,
+                              color: ColorPalette.secondaryText,
+                            ),
                           ),
                         ),
-                      ),
-                      Icon(
-                        isSelected
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_off_rounded,
-                        color: isSelected
-                            ? ColorPalette.primaryColorDark
-                            : ColorPalette.secondaryText.withOpacity(.4),
-                      ),
-                    ],
+                        if (!option.available)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: ColorPalette.accentText.withOpacity(.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Soon',
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: ColorPalette.accentText,
+                              ),
+                            ),
+                          )
+                        else
+                          Icon(
+                            isSelected
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_off_rounded,
+                            color: isSelected
+                                ? ColorPalette.primaryColorDark
+                                : ColorPalette.secondaryText.withOpacity(.4),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -587,7 +857,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
           }),
           const SizedBox(height: 8),
           Text(
-            "Language changes will take effect the next time you open the app.",
+            'Additional languages are being added in a future update.',
             style: TextStyle(
               fontFamily: FontPalette.primaryFontFamily,
               color: ColorPalette.secondaryText.withOpacity(.6),
@@ -832,53 +1102,11 @@ class _Faq {
   final String a;
 }
 
-class _DrawerPlaceholderScreen extends StatelessWidget {
-  const _DrawerPlaceholderScreen({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ColorPalette.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.primaryBackground,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: ColorPalette.secondaryText,
-          ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontFamily: FontPalette.primaryFontFamily,
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-            color: ColorPalette.secondaryText,
-          ),
-        ),
-      ),
-      body: Center(
-        child: Text(
-          "$title screen",
-          style: TextStyle(
-            fontFamily: FontPalette.primaryFontFamily,
-            color: ColorPalette.secondaryText.withOpacity(.7),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _LanguageOption {
-  const _LanguageOption(this.name, this.code);
+  const _LanguageOption(this.name, this.code, {required this.available});
   final String name;
   final String code;
+  final bool available;
 }
 
 class _SavedAddress {

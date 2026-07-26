@@ -46,6 +46,12 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_s
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
+import 'package:client/modules/settings/presentation/screens/about_screen.dart';
+import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
+import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
+import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
+import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
+import 'package:client/modules/settings/presentation/screens/security_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class MainRouter {
@@ -523,6 +529,42 @@ class MainRouter {
           path: LanguageScreen.route,
           name: LanguageScreen.routeName,
           builder: (context, state) => const LanguageScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: ProfileEditScreen.route,
+          name: ProfileEditScreen.routeName,
+          builder: (context, state) => const ProfileEditScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: AppearanceScreen.route,
+          name: AppearanceScreen.routeName,
+          builder: (context, state) => const AppearanceScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: AboutScreen.route,
+          name: AboutScreen.routeName,
+          builder: (context, state) => const AboutScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: SecurityScreen.route,
+          name: SecurityScreen.routeName,
+          builder: (context, state) => const SecurityScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: PrivacyLegalScreen.route,
+          name: PrivacyLegalScreen.routeName,
+          builder: (context, state) => const PrivacyLegalScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: PermissionsScreen.route,
+          name: PermissionsScreen.routeName,
+          builder: (context, state) => const PermissionsScreen(),
         ),
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,

@@ -19,6 +19,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:client/common/domain/helpers/hive_repo.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/routes/main_router.dart';
+import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:toastification/toastification.dart';
 
 void main() {
@@ -70,6 +71,14 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _router = MainRouter.router();
+  late final SettingsController _settingsCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _settingsCtrl = dpLocator<SettingsController>();
+    _settingsCtrl.load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,12 +107,16 @@ class _MyAppState extends State<MyApp> {
         ),
       ],
       child: ToastificationWrapper(
-        child: MaterialApp.router(
-          title: widget.config.brand.appName,
-          theme: buildAppTheme(widget.config.brand),
-          routeInformationParser: _router.routeInformationParser,
-          routeInformationProvider: _router.routeInformationProvider,
-          routerDelegate: _router.routerDelegate,
+        child: ListenableBuilder(
+          listenable: _settingsCtrl,
+          builder: (context, _) => MaterialApp.router(
+            title: widget.config.brand.appName,
+            theme: buildAppTheme(widget.config.brand),
+            themeMode: _settingsCtrl.themeMode,
+            routeInformationParser: _router.routeInformationParser,
+            routeInformationProvider: _router.routeInformationProvider,
+            routerDelegate: _router.routerDelegate,
+          ),
         ),
       ),
     );
