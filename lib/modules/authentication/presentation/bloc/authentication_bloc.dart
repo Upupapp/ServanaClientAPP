@@ -2,7 +2,7 @@ import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
-import 'package:client/common/services/category_experience_history.dart';
+import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:client/common/services/error_message_mapper.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
@@ -89,7 +89,7 @@ class AuthenticationBloc
       dpLocator<AirconBookingStore>().reset();
       dpLocator<BwBookingStore>().reset();
       dpLocator<BookingDraftService>().clear();
-      CategoryExperienceHistory.reset();
+      CategoryRevealPolicy.reset();
     } catch (_) {}
     _notify(AuthStatus.guest);
     emit(AuthenticationLoggedOut());

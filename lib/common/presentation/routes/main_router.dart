@@ -44,6 +44,8 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_branch_slot_sc
 import 'package:client/modules/bw_booking/presentation/screens/bw_checkout_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
+import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class MainRouter {
@@ -55,6 +57,14 @@ class MainRouter {
   /// 700 ms with `easeInOut` lingers around the 50% mark — both pages share
   /// the screen briefly, which reads as a deliberate dissolve rather than a
   /// quick swap. Same curve on both halves keeps the blend symmetric.
+  static ServiceCategoryId _categoryIdFromKey(String key) => switch (key) {
+        'beauty_wellness' => ServiceCategoryId.beautyWellness,
+        'hair_nails' => ServiceCategoryId.hairAndNails,
+        'massage' => ServiceCategoryId.massage,
+        'aircon' => ServiceCategoryId.aircon,
+        _ => ServiceCategoryId.generic,
+      };
+
   static CustomTransitionPage<T> _fadePage<T>(
     GoRouterState state,
     Widget child,
@@ -218,25 +228,44 @@ class MainRouter {
                       parentNavigatorKey: rootNavigatorKey,
                       path: AirconRepairScreen.route,
                       name: AirconRepairScreen.routeName,
-                      builder: (context, state) => const AirconRepairScreen(),
+                      builder: (context, state) =>
+                          const CategoryExperienceScreen(
+                            categoryId: ServiceCategoryId.aircon),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
                       path: BeautyWellnessScreen.route,
                       name: BeautyWellnessScreen.routeName,
-                      builder: (context, state) => const BeautyWellnessScreen(),
+                      builder: (context, state) =>
+                          const CategoryExperienceScreen(
+                            categoryId: ServiceCategoryId.beautyWellness),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
                       path: HairNailsScreen.route,
                       name: HairNailsScreen.routeName,
-                      builder: (context, state) => const HairNailsScreen(),
+                      builder: (context, state) =>
+                          const CategoryExperienceScreen(
+                            categoryId: ServiceCategoryId.hairAndNails),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
                       path: MassageScreen.route,
                       name: MassageScreen.routeName,
-                      builder: (context, state) => const MassageScreen(),
+                      builder: (context, state) =>
+                          const CategoryExperienceScreen(
+                            categoryId: ServiceCategoryId.massage),
+                    ),
+                    // Deep-link path route: /category/:categoryKey
+                    GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: 'category/:categoryKey',
+                      name: 'CategoryExperience',
+                      builder: (context, state) {
+                        final key = state.pathParameters['categoryKey'] ?? '';
+                        final id = _categoryIdFromKey(key);
+                        return CategoryExperienceScreen(categoryId: id);
+                      },
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,

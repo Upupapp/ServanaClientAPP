@@ -32,6 +32,7 @@ import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/registration/domain/repositories/registration_repository.dart';
 import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
+import 'package:client/modules/categories/data/category_experience_repository.dart';
 
 final dpLocator = GetIt.instance;
 
@@ -118,6 +119,10 @@ void initInjector(AppConfig config) {
 
   dpLocator.registerLazySingleton(
     () => BwBookingStore(api: dpLocator()),
+  );
+
+  dpLocator.registerLazySingleton(
+    () => CategoryExperienceRepository(dpLocator()),
   );
   dpLocator.registerLazySingleton(
       () => GetStoreOptionsUseCase(storeOptionsRepository: dpLocator()));
