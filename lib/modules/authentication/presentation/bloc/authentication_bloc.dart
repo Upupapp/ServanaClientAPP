@@ -8,6 +8,7 @@ import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/modules/search/application/search_controller.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'authentication_event.dart';
 import 'authentication_state.dart';
@@ -90,6 +91,7 @@ class AuthenticationBloc
       dpLocator<BwBookingStore>().reset();
       dpLocator<BookingDraftService>().clear();
       CategoryRevealPolicy.reset();
+      SearchController.clearHistoryOnLogout().ignore();
     } catch (_) {}
     _notify(AuthStatus.guest);
     emit(AuthenticationLoggedOut());

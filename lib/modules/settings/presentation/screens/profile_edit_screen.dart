@@ -50,9 +50,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       return;
     }
     setState(() {
-      _nameCtrl.text = s.fullname ?? '';
+      _nameCtrl.text = s.fullname;
       _email = s.emailAddress ?? '';
-      _phoneCtrl.text = s.mobileNumber ?? '';
+      _phoneCtrl.text = s.mobileNumber;
       _loading = false;
     });
   }

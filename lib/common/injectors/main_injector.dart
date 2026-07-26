@@ -33,6 +33,8 @@ import 'package:client/modules/registration/domain/repositories/registration_rep
 import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
+import 'package:client/modules/search/application/search_controller.dart';
+import 'package:client/modules/search/data/search_repository.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
 
 final dpLocator = GetIt.instance;
@@ -139,4 +141,11 @@ void initInjector(AppConfig config) {
   // dpLocator.registerLazySingleton(() => AuthenticateUserUsecase());
 
   dpLocator.registerLazySingleton(() => SettingsController());
+
+  dpLocator.registerLazySingleton(
+    () => SearchRepository(api: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => SearchController(repository: dpLocator()),
+  );
 }

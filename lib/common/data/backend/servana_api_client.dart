@@ -234,6 +234,12 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  Future<Map<String, dynamic>> listFullCatalog() async {
+    final uri = _uri('/api/services/full');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getBeautyAndWellnessBranches({
     required int serviceId,
   }) async {

@@ -1,0 +1,166 @@
+import 'dart:async';
+
+import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/modules/search/application/search_sort.dart';
+import 'package:client/modules/search/data/search_local_data_source.dart';
+import 'package:client/modules/search/data/search_repository.dart';
+import 'package:client/modules/search/domain/search_result.dart';
+import 'package:flutter/foundation.dart';
+
+enum SearchLoadState { idle, loading, ready, error }
+
+class SearchController extends ChangeNotifier {
+  SearchController({required SearchRepository repository})
+      : _repository = repository;
+
+  final SearchRepository _repository;
+
+  String _query = '';
+  SearchLoadState _state = SearchLoadState.idle;
+  List<SearchResult> _allResults = [];
+  List<SearchResult> _filteredResults = [];
+  List<String> _history = [];
+  ServiceCategoryId? _categoryFilter;
+  SearchSort _sort = SearchSort.recommended;
+  String? _error;
+  bool _disposed = false;
+  Timer? _debounce;
+
+  String get query => _query;
+  SearchLoadState get state => _state;
+  List<SearchResult> get results => List.unmodifiable(_filteredResults);
+  List<String> get history => List.unmodifiable(_history);
+  ServiceCategoryId? get categoryFilter => _categoryFilter;
+  SearchSort get sort => _sort;
+  String? get error => _error;
+  bool get hasQuery => _query.trim().isNotEmpty;
+  bool get isEmpty =>
+      _state == SearchLoadState.ready && _filteredResults.isEmpty;
+
+  /// Called from SearchScreen.initState(). Resets session state, reloads
+  /// history, and fetches the catalog (from cache if already loaded).
+  Future<void> init() async {
+    _query = '';
+    _categoryFilter = null;
+    _sort = SearchSort.recommended;
+    _filteredResults = [];
+    _history = await SearchLocalDataSource.loadHistory();
+    if (!_disposed) notifyListeners();
+    if (_state == SearchLoadState.ready) {
+      _applyFilters();
+      return;
+    }
+    await _loadCatalog();
+  }
+
+  Future<void> _loadCatalog({bool forceRefresh = false}) async {
+    _state = SearchLoadState.loading;
+    _error = null;
+    if (!_disposed) notifyListeners();
+    try {
+      _allResults = await _repository.fetchCatalog(forceRefresh: forceRefresh);
+      _state = SearchLoadState.ready;
+      _applyFilters();
+    } on Exception catch (e) {
+      _state = SearchLoadState.error;
+      _error = e.toString();
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  void onQueryChanged(String query) {
+    _query = query;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      if (!_disposed) _applyFilters();
+    });
+    if (!_disposed) notifyListeners();
+  }
+
+  void onQuerySubmitted(String query) {
+    _debounce?.cancel();
+    _query = query;
+    final term = query.trim();
+    if (term.isNotEmpty) _addToHistory(term);
+    _applyFilters();
+  }
+
+  void clearQuery() {
+    _debounce?.cancel();
+    _query = '';
+    _categoryFilter = null;
+    _applyFilters();
+  }
+
+  void setCategoryFilter(ServiceCategoryId? id) {
+    _categoryFilter = (_categoryFilter == id) ? null : id;
+    _applyFilters();
+  }
+
+  void setSort(SearchSort sort) {
+    _sort = sort;
+    _applyFilters();
+  }
+
+  void selectHistory(String term) {
+    _query = term;
+    _addToHistory(term);
+    _applyFilters();
+  }
+
+  void removeHistory(String term) {
+    _history.remove(term);
+    SearchLocalDataSource.removeTerm(term);
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> refresh() => _loadCatalog(forceRefresh: true);
+
+  static Future<void> clearHistoryOnLogout() =>
+      SearchLocalDataSource.clearHistory();
+
+  void _applyFilters() {
+    if (_state != SearchLoadState.ready) return;
+    final q = _query.trim().toLowerCase();
+    Iterable<SearchResult> filtered = _allResults;
+    if (_categoryFilter != null) {
+      filtered = filtered.where((r) => r.categoryId == _categoryFilter);
+    }
+    if (q.isNotEmpty) {
+      filtered = filtered.where((r) =>
+          r.level2.toLowerCase().contains(q) ||
+          r.serviceName.toLowerCase().contains(q) ||
+          r.categoryLabel.toLowerCase().contains(q));
+    }
+    _filteredResults = _sortResults(filtered.toList());
+    if (!_disposed) notifyListeners();
+  }
+
+  List<SearchResult> _sortResults(List<SearchResult> results) {
+    switch (_sort) {
+      case SearchSort.recommended:
+        return results;
+      case SearchSort.priceLowHigh:
+        final sorted = List<SearchResult>.from(results);
+        sorted.sort((a, b) => a.minPricePesos.compareTo(b.minPricePesos));
+        return sorted;
+      case SearchSort.priceHighLow:
+        final sorted = List<SearchResult>.from(results);
+        sorted.sort((a, b) => b.minPricePesos.compareTo(a.minPricePesos));
+        return sorted;
+    }
+  }
+
+  void _addToHistory(String term) {
+    _history =
+        [term, ..._history.where((t) => t != term)].take(10).toList();
+    SearchLocalDataSource.addTerm(term);
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _debounce?.cancel();
+    super.dispose();
+  }
+}
