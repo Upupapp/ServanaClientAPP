@@ -85,6 +85,7 @@ dependencies:
   mobx: ^2.3.3+2
   flutter_mobx: ^2.2.1+1
   firebase_analytics: ^11.3.2
+  firebase_messaging: ^15.1.0
   phone_numbers_parser: ^9.0.0
   toastification: ^2.3.0
   pull_to_refresh: ^2.0.0

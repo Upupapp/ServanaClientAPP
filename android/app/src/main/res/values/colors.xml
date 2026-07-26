@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Servana brand primary blue used as FCM notification accent color -->
+    <color name="notification_color">#3058C8</color>
+</resources>

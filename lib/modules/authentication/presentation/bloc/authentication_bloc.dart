@@ -8,6 +8,8 @@ import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/modules/notifications/application/fcm_coordinator.dart';
+import 'package:client/modules/notifications/application/notifications_controller.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,6 +44,7 @@ class AuthenticationBloc
 
     if (result.session != null) {
       await SessionService.saveSession(result.session!);
+      _notifyFcmLogin(result.session!.customerID);
       _notify(AuthStatus.authenticated);
       emit(AuthenticationAuthenticated());
     } else {
@@ -63,6 +66,7 @@ class AuthenticationBloc
     try {
       final session = await SessionService.getSession();
       if (session != null && session.token.isNotEmpty) {
+        _notifyFcmLogin(session.customerID);
         _notify(AuthStatus.authenticated);
         emit(AuthenticationAuthenticated());
       } else {
@@ -95,6 +99,11 @@ class AuthenticationBloc
       SearchController.clearHistoryOnLogout().ignore();
       dpLocator<SearchRepository>().clearCache();
     } catch (_) {}
+    // FCM + notification cleanup (non-blocking; deactivates device token).
+    try {
+      dpLocator<NotificationsController>().clearOnLogout();
+      await dpLocator<FcmCoordinator>().deactivateOnLogout();
+    } catch (_) {}
     _notify(AuthStatus.guest);
     emit(AuthenticationLoggedOut());
   }
@@ -110,6 +119,13 @@ class AuthenticationBloc
   void _notify(AuthStatus status) {
     try {
       dpLocator<AuthStateService>().update(status);
+    } catch (_) {}
+  }
+
+  void _notifyFcmLogin(String uid) {
+    try {
+      dpLocator<NotificationsController>().init(uid).ignore();
+      dpLocator<FcmCoordinator>().registerForAccount(uid).ignore();
     } catch (_) {}
   }
 }

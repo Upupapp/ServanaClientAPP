@@ -5,6 +5,7 @@ import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
+import 'package:client/modules/notifications/application/notifications_controller.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
@@ -56,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final store = dpLocator<HomeStore>();
   final bwStore = dpLocator<BwBookingStore>();
   final airconStore = dpLocator<AirconBookingStore>();
+  final _notifCtrl = dpLocator<NotificationsController>();
   final _scaffoldKey = GlobalKey<ScaffoldState>(debugLabel: "scaffoldKey");
 
   final _campaignCtrl = HomeCampaignController();
@@ -303,14 +305,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ServanaHomeHeader(
-                      firstName: first,
-                      isAuthenticated: s != null,
-                      animate: true,
-                      onMenuTap: () =>
-                          _scaffoldKey.currentState?.openDrawer(),
-                      onNotificationTap: () =>
-                          context.pushNamed(NotificationsScreen.routeName),
+                    ListenableBuilder(
+                      listenable: _notifCtrl,
+                      builder: (_, __) => ServanaHomeHeader(
+                        firstName: first,
+                        isAuthenticated: s != null,
+                        animate: true,
+                        notificationCount: _notifCtrl.unreadCount,
+                        onMenuTap: () =>
+                            _scaffoldKey.currentState?.openDrawer(),
+                        onNotificationTap: () =>
+                            context.pushNamed(NotificationsScreen.routeName),
+                      ),
                     ),
                     ServanaHomeSearch(
                       onTap: () =>

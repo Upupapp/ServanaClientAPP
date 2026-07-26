@@ -6,12 +6,16 @@ import 'package:client/common/config/app_theme.dart';
 import 'package:client/firebase_options.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
+import 'package:client/modules/notifications/application/fcm_coordinator.dart';
+import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
+import 'package:client/modules/notifications/presentation/foreground_notification_banner.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_options_events.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +25,18 @@ import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/routes/main_router.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:toastification/toastification.dart';
+
+/// Background/terminated-state FCM handler.
+/// Must be a top-level function annotated with @pragma('vm:entry-point').
+/// Runs in an isolate — no BuildContext, no GetIt singletons.
+/// Only safe to use: Firebase services + SharedPreferences.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Firebase must be initialized before any Firebase call in a background isolate.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Notification display is handled by the OS (FCM data+notification payload).
+  // No additional work needed here beyond ensuring Firebase is initialised.
+}
 
 void main() {
   runZonedGuarded(_bootstrap, _onZoneError);
@@ -36,6 +52,8 @@ Future<void> _bootstrap() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    FcmCoordinator.initHandlers();
     if (!kDebugMode) {
       FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     }
@@ -72,12 +90,16 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _router = MainRouter.router();
   late final SettingsController _settingsCtrl;
+  late final FcmCoordinator _fcmCoord;
+  late final NotificationNavigationCoordinator _navCoord;
 
   @override
   void initState() {
     super.initState();
     _settingsCtrl = dpLocator<SettingsController>();
     _settingsCtrl.load();
+    _fcmCoord = dpLocator<FcmCoordinator>();
+    _navCoord = dpLocator<NotificationNavigationCoordinator>();
   }
 
   @override
@@ -117,6 +139,11 @@ class _MyAppState extends State<MyApp> {
             routeInformationParser: _router.routeInformationParser,
             routeInformationProvider: _router.routeInformationProvider,
             routerDelegate: _router.routerDelegate,
+            builder: (context, child) => ForegroundNotificationBanner(
+              fcmCoordinator: _fcmCoord,
+              navigationCoordinator: _navCoord,
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

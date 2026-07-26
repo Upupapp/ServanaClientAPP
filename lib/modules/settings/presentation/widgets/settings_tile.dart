@@ -402,6 +402,7 @@ class SettingsPermissionTile extends StatelessWidget {
   final String? purpose;
   final PermissionStatus status;
   final VoidCallback? onOpenSettings;
+  final VoidCallback? onRequest;
 
   const SettingsPermissionTile({
     super.key,
@@ -410,6 +411,7 @@ class SettingsPermissionTile extends StatelessWidget {
     this.purpose,
     required this.status,
     this.onOpenSettings,
+    this.onRequest,
   });
 
   @override
@@ -424,12 +426,19 @@ class SettingsPermissionTile extends StatelessWidget {
     final canOpenSettings =
         (status == PermissionStatus.denied || status == PermissionStatus.restricted) &&
             onOpenSettings != null;
+    final canRequest =
+        status == PermissionStatus.notDetermined && onRequest != null;
+    final effectiveTap = canOpenSettings
+        ? onOpenSettings
+        : canRequest
+            ? onRequest
+            : null;
 
     return Semantics(
       label: '$title — $label',
-      button: canOpenSettings,
+      button: effectiveTap != null,
       child: InkWell(
-        onTap: canOpenSettings ? onOpenSettings : null,
+        onTap: effectiveTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),

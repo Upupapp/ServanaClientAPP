@@ -1,5 +1,8 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
+import 'package:client/modules/notifications/domain/notification_permission_state.dart';
 import 'package:client/modules/settings/presentation/widgets/settings_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -17,12 +20,16 @@ class PermissionsScreen extends StatefulWidget {
 class _PermissionsScreenState extends State<PermissionsScreen>
     with WidgetsBindingObserver {
   PermissionStatus _locationStatus = PermissionStatus.notDetermined;
+  PermissionStatus _notificationStatus = PermissionStatus.notDetermined;
+  late final NotificationPermissionCoordinator _notifPermCoord;
 
   @override
   void initState() {
     super.initState();
+    _notifPermCoord = dpLocator<NotificationPermissionCoordinator>();
     WidgetsBinding.instance.addObserver(this);
     _checkLocationPermission();
+    _checkNotificationPermission();
   }
 
   @override
@@ -36,6 +43,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     // Refresh after the user returns from system settings.
     if (state == AppLifecycleState.resumed) {
       _checkLocationPermission();
+      _checkNotificationPermission();
     }
   }
 
@@ -56,6 +64,40 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     } catch (_) {
       if (mounted) setState(() => _locationStatus = PermissionStatus.unavailable);
     }
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    final state = await _notifPermCoord.currentState();
+    if (!mounted) return;
+    setState(() {
+      _notificationStatus = switch (state) {
+        NotificationPermissionState.authorized ||
+        NotificationPermissionState.provisional =>
+          PermissionStatus.allowed,
+        NotificationPermissionState.denied ||
+        NotificationPermissionState.restricted =>
+          PermissionStatus.denied,
+        NotificationPermissionState.notDetermined =>
+          PermissionStatus.notDetermined,
+      };
+    });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final state = await _notifPermCoord.requestPermission();
+    if (!mounted) return;
+    setState(() {
+      _notificationStatus = switch (state) {
+        NotificationPermissionState.authorized ||
+        NotificationPermissionState.provisional =>
+          PermissionStatus.allowed,
+        NotificationPermissionState.denied ||
+        NotificationPermissionState.restricted =>
+          PermissionStatus.denied,
+        NotificationPermissionState.notDetermined =>
+          PermissionStatus.notDetermined,
+      };
+    });
   }
 
   Future<void> _openSystemSettings() async {
@@ -119,22 +161,29 @@ class _PermissionsScreenState extends State<PermissionsScreen>
               icon: Icons.notifications_outlined,
               title: 'Push Notifications',
               purpose: 'Booking updates, provider assignments',
-              status: PermissionStatus.unavailable,
+              status: _notificationStatus,
+              onOpenSettings: _notificationStatus == PermissionStatus.denied
+                  ? _openSystemSettings
+                  : null,
+              onRequest: _notificationStatus == PermissionStatus.notDetermined
+                  ? _requestNotificationPermission
+                  : null,
             ),
           ]),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Text(
-              'Push notifications are being configured. '
-              'You will be prompted to allow them in a future update.',
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontSize: 12,
-                color: ColorPalette.accentText.withOpacity(.7),
-                height: 1.5,
+          if (_notificationStatus == PermissionStatus.denied)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Text(
+                'Notifications are permanently denied. '
+                'Open Settings → Servana → Notifications to re-enable.',
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 12,
+                  color: ColorPalette.accentText.withOpacity(.7),
+                  height: 1.5,
+                ),
               ),
             ),
-          ),
 
           SettingsSectionHeader('Camera & Photos'),
           SettingsGroup(children: [

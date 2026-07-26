@@ -418,7 +418,59 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
-  // ───────────────────── Admin ─────────────────────
+  // ���──────────────────── FCM Token ───────��─────────────
+
+  Future<Map<String, dynamic>> registerFcmToken(String token) async {
+    final uri = _uri('/api/user/fcm-token');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'token': token}),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> clearFcmToken() async {
+    final uri = _uri('/api/user/fcm-token');
+    final res = await _client.delete(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  // ���──────────────────── Customer Notifications ─────────────────────
+
+  Future<Map<String, dynamic>> listNotifications({String? filter}) async {
+    final query = <String, dynamic>{};
+    if (filter != null) query['filter'] = filter;
+    final uri = _uri('/api/user/notifications', query.isEmpty ? null : query);
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getNotificationsUnreadCount() async {
+    final uri = _uri('/api/user/notifications/unread-count');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> markNotificationRead(String key) async {
+    final uri = _uri('/api/user/notifications/$key/read');
+    final res = await _client.patch(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> markAllNotificationsRead() async {
+    final uri = _uri('/api/user/notifications/mark-all-read');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> deleteNotification(String key) async {
+    final uri = _uri('/api/user/notifications/$key');
+    final res = await _client.delete(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  // ─────���─────────────── Admin ─────────────────────
 
   Future<Map<String, dynamic>> createBranchSlot(
       Map<String, dynamic> payload) async {

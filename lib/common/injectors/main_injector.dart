@@ -33,9 +33,17 @@ import 'package:client/modules/registration/domain/repositories/registration_rep
 import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
+import 'package:client/modules/notifications/application/fcm_coordinator.dart';
+import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
+import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
+import 'package:client/modules/notifications/application/notifications_controller.dart';
+import 'package:client/modules/notifications/data/notifications_local_data_source.dart';
+import 'package:client/modules/notifications/data/notifications_remote_data_source.dart';
+import 'package:client/modules/notifications/data/notifications_repository.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final dpLocator = GetIt.instance;
 
@@ -147,5 +155,38 @@ void initInjector(AppConfig config) {
   );
   dpLocator.registerLazySingleton(
     () => SearchController(repository: dpLocator()),
+  );
+
+  // Notifications
+  dpLocator.registerLazySingleton(
+    () => NotificationsRemoteDataSource(dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => NotificationsLocalDataSource(),
+  );
+  dpLocator.registerLazySingleton(
+    () => NotificationsRepository(
+      remote: dpLocator(),
+      local: dpLocator(),
+    ),
+  );
+  dpLocator.registerLazySingleton(
+    () => NotificationsController(repository: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => NotificationPermissionCoordinator(),
+  );
+  dpLocator.registerLazySingleton(
+    () => NotificationNavigationCoordinator(),
+  );
+  dpLocator.registerLazySingleton(
+    () => const FlutterSecureStorage(),
+  );
+  dpLocator.registerLazySingleton(
+    () => FcmCoordinator(
+      repository: dpLocator(),
+      notificationsController: dpLocator(),
+      secureStorage: dpLocator(),
+    ),
   );
 }
