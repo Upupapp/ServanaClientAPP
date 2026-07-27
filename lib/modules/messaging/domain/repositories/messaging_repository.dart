@@ -13,10 +13,8 @@ class MessagingRepository {
 
   Future<List<ConversationModel>> listConversations() async {
     final json = await _api.listConversations();
-    final data = json['data'];
-    final List<dynamic> raw = data is List
-        ? data
-        : (data is Map ? (data['conversations'] as List<dynamic>? ?? []) : []);
+    // Backend returns: {success: true, conversations: [...]}
+    final raw = json['conversations'] as List<dynamic>? ?? [];
     return raw
         .cast<Map<String, dynamic>>()
         .map(ConversationMapper.fromJson)
@@ -28,9 +26,9 @@ class MessagingRepository {
   Future<ConversationModel?> resolveForBooking(String bookingId) async {
     try {
       final json = await _api.getBookingConversation(bookingId: bookingId);
-      final data = json['data'] is Map<String, dynamic>
-          ? json['data'] as Map<String, dynamic>
-          : json;
+      // Backend returns: {success: true, conversation: {...}}
+      final data =
+          (json['conversation'] as Map<String, dynamic>?) ?? json;
       return ConversationMapper.fromJson(data);
     } on ServanaApiException catch (e) {
       if (e.statusCode == 404) return null;
@@ -50,10 +48,8 @@ class MessagingRepository {
       limit: limit,
       before: before,
     );
-    final data = json['data'];
-    final List<dynamic> raw = data is List
-        ? data
-        : (data is Map ? (data['messages'] as List<dynamic>? ?? []) : []);
+    // Backend returns: {success: true, messages: [...], nextCursor: id|null}
+    final raw = json['messages'] as List<dynamic>? ?? [];
     return raw
         .cast<Map<String, dynamic>>()
         .map((m) => MessageMapper.fromJson(m, conversationId: conversationId))
@@ -72,9 +68,9 @@ class MessagingRepository {
       body: body,
       clientMsgId: clientMsgId,
     );
-    final data = json['data'] is Map<String, dynamic>
-        ? json['data'] as Map<String, dynamic>
-        : json;
+    // Backend returns: {success: true, message: {...}}
+    final data =
+        (json['message'] as Map<String, dynamic>?) ?? json;
     return MessageMapper.fromJson(data, conversationId: conversationId);
   }
 
