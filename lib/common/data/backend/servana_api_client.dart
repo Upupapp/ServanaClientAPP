@@ -429,21 +429,14 @@ class ServanaApiClient {
 
   /// Cancel a booking on behalf of the customer.
   ///
-  // BACKEND_GAP-C15-001: No customer-facing cancel endpoint exists in
-  // booking.routes.ts.  The only cancel route is admin-only:
-  //   POST /api/admin/bookings/:id/cancel
-  //   Requires: verifyAuth + verifyRoles([1]) + requirePermission('bookings.cancel')
-  // Mobile/customer callers will receive HTTP 403 until a customer cancel route
-  // is added to the backend.  Priority: HIGH — customers cannot self-cancel.
-  // Temporary behaviour: throws [ServanaApiException] with statusCode 403.
+  /// POST /api/bookings/:id/cancel — customer-facing route (GAP-C15-001 closed).
+  /// verifyAuthOptional: passes a Firebase token if present for ownership check.
   Future<Map<String, dynamic>> cancelBooking({
     required int bookingId,
     required String reason,
     String? reasonCode,
   }) async {
-    // Intentionally targets the only existing cancel endpoint.  Will 403 for
-    // non-admin tokens.  Replace path once a customer route is available.
-    final uri = _uri('/api/admin/bookings/$bookingId/cancel');
+    final uri = _uri('/api/bookings/$bookingId/cancel');
     final res = await _client.post(
       uri,
       headers: await _headers(),
