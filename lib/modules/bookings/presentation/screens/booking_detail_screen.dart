@@ -10,25 +10,32 @@ import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
+import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   static const String routeName = 'BookingDetail';
-  static const String route = '/BookingDetail';
+  // Path-param route: replaces the old extra-based /BookingDetail.
+  // Navigated to via context.go('/bookings/<id>') or context.push('/bookings/<id>').
+  static const String route = '/bookings/:bookingId';
 
-  final JobOrder booking;
+  final String bookingId;
 
-  const BookingDetailScreen({super.key, required this.booking});
+  const BookingDetailScreen({super.key, required this.bookingId});
 
   @override
   State<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
-  late JobOrder _booking;
+  // Nullable until the first API response; the build() shows a spinner until
+  // populated.
+  JobOrder? _booking;
+  String _bookingId = '';
   bool _isRefreshing = false;
   String? _refreshError;
 
@@ -54,9 +61,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _booking = widget.booking;
-    // Always pull fresh state on open — the JobOrder we received from the list
-    // can be stale (no workerUid yet) and the user expects to see assignment.
+    _bookingId = widget.bookingId;
+    // Always pull fresh state on open — no JobOrder is passed in anymore;
+    // everything comes from the API.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshBooking();
     });
@@ -69,8 +76,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   bool get _needsPayment =>
-      _booking.paymentStatus == 'PENDING' &&
-      _booking.paymentMethodUsed == 'PAYMONGO';
+      _booking?.paymentStatus == 'PENDING' &&
+      _booking?.paymentMethodUsed == 'PAYMONGO';
 
   /// A freshly-created booking sits in PENDING_OTP (or FOR_OTP alias) until the
   /// customer verifies the code; the BE assigns a technician only after that.
@@ -79,19 +86,31 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   bool get _isAssigned => _workerUid != null && _workerUid!.isNotEmpty;
 
+  /// Allow cancellation only for pre-service states where the booking can still
+  /// be cleanly voided.  In-progress and terminal states are excluded.
+  bool get _isCancellable {
+    if (_bookingStatus == null) return false;
+    final s = BookingStatusMapper.fromString(_bookingStatus);
+    return s == BookingStatus.pendingOtp ||
+        s == BookingStatus.otpVerified ||
+        s == BookingStatus.pendingPayment ||
+        s == BookingStatus.paid ||
+        s == BookingStatus.awaitingAssignment ||
+        s == BookingStatus.assigned ||
+        s == BookingStatus.confirmed;
+  }
+
   bool get _shouldPoll {
     if (_isAssigned) return false;
     if (_needsPayment) return false; // assignment only happens after payment
-    if (_needsOtp) {
-      return false; // BE assigns a technician only after OTP confirm
-    }
+    if (_needsOtp) return false; // BE assigns only after OTP confirm
     final s = _bookingStatus?.toUpperCase();
     return s == null || s == 'CONFIRMED' || s == 'PAID' || s == 'PENDING';
   }
 
   /// Re-fetch this booking from the API and update state.
   Future<void> _refreshBooking() async {
-    final bookingId = int.tryParse(_booking.jobOrderID);
+    final bookingId = int.tryParse(_bookingId);
     if (bookingId == null) return;
 
     if (!_isRefreshing) {
@@ -109,13 +128,22 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
       final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
       final status = (b['status'] ?? '').toString().toUpperCase();
-      final workerUid = b['workerUid']?.toString();
+      final workerUid =
+          b['workerUid']?.toString() ?? b['providerUid']?.toString();
       final eta = b['etaMinutes'];
       final assignedAtRaw = b['assignedAt']?.toString();
       final workerCode = b['workerCode']?.toString();
-      final paymentMethod = (b['paymentMethod'] ?? '').toString().toUpperCase();
+      final paymentMethod = (b['paymentMethod'] ?? b['paymentMethodUsed'] ?? '')
+          .toString()
+          .toUpperCase();
 
-      // Update local booking with fresh payment info
+      // Parse scheduled datetime from any of the backend's canonical aliases.
+      final scheduleRaw = b['scheduledAt']?.toString() ??
+          b['scheduleAt']?.toString() ??
+          b['schedule']?.toString();
+      final scheduleDate =
+          scheduleRaw != null ? DateTime.tryParse(scheduleRaw) : null;
+
       String statusLabel;
       if (status == 'WORKER_ASSIGNED') {
         statusLabel = 'Worker Assigned';
@@ -124,20 +152,58 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       } else if (status == 'CONFIRMED' && paymentStatus == 'PENDING') {
         statusLabel = 'Payment Required';
       } else {
-        statusLabel = _booking.jobOrderStatusToString;
+        statusLabel = b['statusLower']?.toString() ?? status;
       }
 
       setState(() {
-        _booking = _booking.copyWith(
-          paymentStatus: paymentStatus,
-          jobOrderStatusToString: statusLabel,
-          // Keep the payment method authoritative from the API so an
-          // optimistically-built JobOrder (which may lack it) still triggers
-          // PayMongo "Continue Payment" once the booking leaves PENDING_OTP.
-          paymentMethodUsed: paymentMethod.isEmpty
-              ? _booking.paymentMethodUsed
-              : paymentMethod,
-        );
+        if (_booking == null) {
+          // First load — construct JobOrder from API map.
+          final now = DateTime.now();
+          final createdAtRaw = b['createdAt']?.toString();
+          _booking = JobOrder(
+            jobOrderID: _bookingId,
+            jobOrderNumber: b['bookingCode']?.toString() ??
+                b['bookingNumber']?.toString() ??
+                _bookingId,
+            scheduleDate: scheduleDate ?? now,
+            merchantServiceName: b['serviceName']?.toString() ??
+                (b['service'] is Map
+                    ? (b['service'] as Map)['name']?.toString()
+                    : null) ??
+                '',
+            merchantName: b['merchantName']?.toString() ??
+                b['providerName']?.toString() ??
+                '',
+            merchantServicePhoto: b['servicePhotoUrl']?.toString() ??
+                b['servicePhoto']?.toString() ??
+                '',
+            address:
+                b['addressLine']?.toString() ?? b['address']?.toString() ?? '',
+            latitude: (b['latitude'] as num?)?.toDouble() ?? 0,
+            longitude: (b['longitude'] as num?)?.toDouble() ?? 0,
+            totalAmount: (b['totalAmount'] as num?)?.toDouble() ?? 0,
+            downPayment: (b['downPayment'] as num?)?.toDouble() ?? 0,
+            numberOfPersonnel: (b['numberOfPersonnel'] as num?)?.toInt() ?? 0,
+            distanceFromOffice: 0,
+            paymentType: 0,
+            createdDate: createdAtRaw != null
+                ? (DateTime.tryParse(createdAtRaw) ?? now)
+                : now,
+            paymentStatus: paymentStatus.isEmpty ? null : paymentStatus,
+            paymentMethodUsed: paymentMethod.isEmpty ? null : paymentMethod,
+            jobOrderStatusToString: statusLabel,
+          );
+        } else {
+          // Subsequent refresh — update only the fields that change.
+          _booking = _booking!.copyWith(
+            paymentStatus: paymentStatus,
+            jobOrderStatusToString: statusLabel,
+            paymentMethodUsed: paymentMethod.isEmpty
+                ? _booking!.paymentMethodUsed
+                : paymentMethod,
+          );
+        }
+
         _bookingStatus = status.isEmpty ? _bookingStatus : status;
         if (workerUid != null && workerUid.isNotEmpty) {
           _workerUid = workerUid;
@@ -156,11 +222,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         unawaited(_loadWorkerProfile(_workerUid!));
       }
 
-      // Also refresh the bookings list so the Bookings tab updates
+      // Also refresh the bookings list so the Bookings tab updates.
       dpLocator<HomeStore>().loadBookings();
 
-      // Drive the assignment poll: start it lazily once we know we need it,
-      // and cancel it as soon as we don't.
       if (_shouldPoll) {
         _startPollingIfNeeded();
       } else {
@@ -215,13 +279,98 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     });
   }
 
+  /// Open the booking's chat conversation via C14 MessagingStore.
+  Future<void> _openMessaging() async {
+    try {
+      final msgStore = dpLocator<MessagingStore>();
+      await msgStore.openConversation(_bookingId);
+    } catch (_) {
+      // If openConversation fails (e.g. first time, no conversation yet),
+      // navigate anyway — BookingChatScreen creates the conversation on send.
+    }
+    if (mounted) context.go('/bookings/$_bookingId/messages');
+  }
+
+  void _showCancellationSheet() {
+    BookingCancellationSheet.show(
+      context,
+      bookingId: _bookingId,
+      onCancelled: () {
+        // Refresh to surface the CANCELLED status.
+        _refreshBooking();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Lightweight scaffold + spinner until the first API response arrives.
+    if (_booking == null) {
+      return Scaffold(
+        backgroundColor: ColorPalette.primaryBackground,
+        appBar: AppBar(
+          title: Text(
+            'Booking #$_bookingId',
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          backgroundColor: ColorPalette.primaryColorDark,
+          foregroundColor: ColorPalette.primaryText,
+          elevation: 0,
+          actions: [
+            if (_isRefreshing)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                ),
+              ),
+          ],
+        ),
+        body: _refreshError != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off_rounded,
+                          size: 48, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        _refreshError!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          color: ColorPalette.danger,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: _refreshBooking,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Full detail view — _booking is guaranteed non-null below this point.
+    final booking = _booking!;
+
     return Scaffold(
       backgroundColor: ColorPalette.primaryBackground,
       appBar: AppBar(
         title: Text(
-          'Booking #${_booking.jobOrderNumber}',
+          'Booking #${booking.jobOrderNumber}',
           style: TextStyle(
             fontFamily: FontPalette.primaryFontFamily,
             fontWeight: FontWeight.w700,
@@ -287,14 +436,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ],
                 ),
               ),
-            // QR + worker code — pinned to the top: it's the artefact the
-            // technician needs at job start, and the customer should see it
-            // first. The BE only populates `workerCode` once a technician
-            // accepts the booking, so until then the card renders a "pending"
-            // placeholder. Payment-pending state is folded into the pending
-            // subtitle so the customer sees one consolidated next-step.
+
+            // QR + worker code
             QrWorkerCodeDisplay(
-              bookingId: int.tryParse(_booking.jobOrderID),
+              bookingId: int.tryParse(_bookingId),
               workerCode: _workerCode,
               subtitle:
                   'Show this QR to your technician to start the service. They can also type the code.',
@@ -308,7 +453,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
             // Status banner
             _StatusBanner(
-              booking: _booking,
+              booking: booking,
               needsOtp: _needsOtp,
               needsPayment: _needsPayment,
             ),
@@ -317,13 +462,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
             // Service info
             _Section(title: 'Service', children: [
-              _InfoRow(label: 'Service', value: _booking.merchantServiceName),
-              _InfoRow(label: 'Brand', value: _booking.merchantName),
+              _InfoRow(label: 'Service', value: booking.merchantServiceName),
+              _InfoRow(label: 'Brand', value: booking.merchantName),
             ]),
 
             const SizedBox(height: 16),
 
-            // Technician assignment — populated when BE auto-assigns
+            // Technician assignment
             _AssignmentCard(
               isAssigned: _isAssigned,
               isPolling: _pollTimer?.isActive == true,
@@ -341,14 +486,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               _InfoRow(
                 label: 'Date',
                 value: DateFormat('EEEE, MMMM d, yyyy')
-                    .format(_booking.scheduleDate),
+                    .format(booking.scheduleDate),
               ),
               _InfoRow(
                 label: 'Time',
-                value: DateFormat('h:mm a').format(_booking.scheduleDate),
+                value: DateFormat('h:mm a').format(booking.scheduleDate),
               ),
-              if (_booking.address.isNotEmpty)
-                _InfoRow(label: 'Address', value: _booking.address),
+              if (booking.address.isNotEmpty)
+                _InfoRow(label: 'Address', value: booking.address),
             ]),
 
             const SizedBox(height: 16),
@@ -357,16 +502,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             _Section(title: 'Payment', children: [
               _InfoRow(
                 label: 'Amount',
-                value: '₱${_booking.totalAmount.toStringAsFixed(2)}',
+                value: '₱${booking.totalAmount.toStringAsFixed(2)}',
                 valueColor: ColorPalette.primaryColorDark,
               ),
               _InfoRow(
                 label: 'Method',
-                value: _paymentMethodLabel(),
+                value: _paymentMethodLabel(booking),
               ),
               _InfoRow(
                 label: 'Status',
-                value: _paymentStatusLabel(),
+                value: _paymentStatusLabel(booking),
                 valueColor: _needsPayment ? Colors.orange : Colors.green,
               ),
             ]),
@@ -375,24 +520,22 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
             // Booking meta
             _Section(title: 'Details', children: [
-              _InfoRow(label: 'Booking ID', value: _booking.jobOrderID),
-              _InfoRow(label: 'Reference', value: _booking.jobOrderNumber),
+              _InfoRow(label: 'Booking ID', value: _bookingId),
+              _InfoRow(label: 'Reference', value: booking.jobOrderNumber),
               _InfoRow(
                 label: 'Created',
                 value: DateFormat('MMM d, yyyy · h:mm a')
-                    .format(_booking.createdDate),
+                    .format(booking.createdDate),
               ),
               _InfoRow(
                 label: 'Booking Status',
-                value: _booking.jobOrderStatusToString,
+                value: booking.jobOrderStatusToString,
               ),
             ]),
 
             const SizedBox(height: 24),
 
-            // Confirm OTP — a freshly-created booking stays in PENDING_OTP until
-            // the customer verifies the code; the BE assigns a technician only
-            // after this succeeds, so it's the clear next step.
+            // Confirm OTP
             if (_needsOtp)
               SizedBox(
                 width: double.infinity,
@@ -417,8 +560,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ),
 
-            // Continue Payment button — only after OTP is confirmed (payment
-            // follows OTP in the flow).
+            // Continue Payment — only after OTP is confirmed.
             if (_needsPayment && !_needsOtp)
               SizedBox(
                 width: double.infinity,
@@ -443,6 +585,48 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ),
 
+            // Message Provider — available once a technician is assigned.
+            if (_isAssigned) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _openMessaging,
+                  icon: const Icon(Icons.chat_outlined),
+                  label: Text(
+                    'Message Provider',
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ColorPalette.primaryColorDark,
+                    side: BorderSide(
+                        color: ColorPalette.primaryColorDark.withOpacity(.6)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            // Cancel Booking — only for pre-service states.
+            if (_isCancellable) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: _showCancellationSheet,
+                  child: const Text(
+                    'Cancel Booking',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 24),
           ],
         ),
@@ -450,8 +634,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  String _paymentMethodLabel() {
-    switch (_booking.paymentMethodUsed) {
+  String _paymentMethodLabel(JobOrder booking) {
+    switch (booking.paymentMethodUsed) {
       case 'PAYMONGO':
         return 'Online Payment (PayMongo)';
       case 'CASH':
@@ -459,19 +643,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       case 'GCASH':
         return 'GCash';
       default:
-        return _booking.paymentMethodUsed ?? 'Unknown';
+        return booking.paymentMethodUsed ?? 'Unknown';
     }
   }
 
-  String _paymentStatusLabel() {
+  String _paymentStatusLabel(JobOrder booking) {
     if (_needsPayment) return 'Awaiting Payment';
-    if (_booking.paymentStatus == 'PAID') return 'Paid';
-    if (_booking.paymentMethodUsed == 'CASH') return 'Pay on Service';
-    return _booking.paymentStatus ?? 'Unknown';
+    if (booking.paymentStatus == 'PAID') return 'Paid';
+    if (booking.paymentMethodUsed == 'CASH') return 'Pay on Service';
+    return booking.paymentStatus ?? 'Unknown';
   }
 
   Future<void> _confirmBookingOtp() async {
-    final bookingId = int.tryParse(_booking.jobOrderID);
+    final bookingId = int.tryParse(_bookingId);
     if (bookingId == null) return;
     final ok = await context.pushNamed<bool>(
       BookingOtpScreen.routeName,
@@ -480,13 +664,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         flow: BookingOtpFlow.resume,
       ),
     );
-    // On success the booking left PENDING_OTP — refresh to surface the new
-    // state (assignment polling for CASH, or "Continue Payment" for PayMongo).
     if (ok == true && mounted) await _refreshBooking();
   }
 
   Future<void> _continuePayment() async {
-    final bookingId = int.tryParse(_booking.jobOrderID);
+    final bookingId = int.tryParse(_bookingId);
     if (bookingId == null) return;
 
     setState(() => _isRefreshing = true);
@@ -789,8 +971,6 @@ class _InfoRow extends StatelessWidget {
       fontSize: 13,
     );
 
-    // On compact devices or large text, stack label above value so neither
-    // is truncated by a fixed-width column (§28: adaptive detail-row).
     if (ServanaResponsive.useStackedDetailRow(context)) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),

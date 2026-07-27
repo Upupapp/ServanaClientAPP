@@ -1,4 +1,3 @@
-import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/data/models/merchant_service.dart';
 import 'package:client/common/domain/auth/auth_return_intent.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -14,7 +13,6 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
-import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/job_order/presentation/screens/add_additional_item_menu_screen.dart';
 import 'package:client/modules/job_order/presentation/screens/job_order_screen.dart';
@@ -115,7 +113,8 @@ class MainRouter {
 
         // Protected routes require a signed-in session.
         final isProtected = loc.startsWith('/settings') ||
-            loc.startsWith(BookingsScreen.route) ||
+            loc.startsWith(BookingsScreen.route) || // "/Bookings" tab
+            loc.startsWith('/bookings') || // "/bookings/:id" detail routes
             loc.startsWith(MessagesInboxScreen.route) ||
             loc.startsWith(ProfileScreen.route);
 
@@ -443,57 +442,35 @@ class MainRouter {
             id: state.pathParameters["id"] ?? '',
           ),
         ),
+        // Path-param detail route — replaces the old extra-based /BookingDetail.
+        // Navigated to via context.go('/bookings/<id>') from the bookings list
+        // and via the legacy /booking/:id alias below.
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,
-          path: BookingDetailScreen.route,
-          name: BookingDetailScreen.routeName,
-          builder: (context, state) {
-            final extra = state.extra;
-            if (extra is! JobOrder) {
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => context.goNamed(HomeScreen.routeName),
-              );
-              return const Scaffold();
-            }
-            return BookingDetailScreen(booking: extra);
-          },
+          path: BookingDetailScreen.route, // '/bookings/:bookingId'
+          name: BookingDetailScreen.routeName, // 'BookingDetail'
+          builder: (context, state) => BookingDetailScreen(
+            bookingId: state.pathParameters['bookingId'] ?? '',
+          ),
         ),
-        // ID-based route — safe for deep links and process death.
-        // Looks up the booking in the in-memory list first, then creates a
-        // minimal placeholder whose _refreshBooking() populates everything.
+        // Booking chat — reached via _openMessaging() in BookingDetailScreen.
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: '/bookings/:bookingId/messages',
+          name: 'BookingMessages',
+          builder: (context, state) => BookingChatScreen(
+            jobOrderId: state.pathParameters['bookingId'] ?? '',
+            title: 'Booking Chat',
+          ),
+        ),
+        // Legacy alias — keeps old push('/booking/:id') deep links working.
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,
           path: '/booking/:id',
           name: 'BookingDetailById',
-          builder: (context, state) {
-            final idStr = state.pathParameters['id'] ?? '';
-            final store = dpLocator<HomeStore>();
-            JobOrder? found;
-            try {
-              found = store.bookings.firstWhere((b) => b.jobOrderID == idStr);
-            } catch (_) {}
-            if (found != null) return BookingDetailScreen(booking: found);
-            // Cold start / deep link — placeholder triggers _refreshBooking().
-            final now = DateTime.now();
-            return BookingDetailScreen(
-              booking: JobOrder(
-                jobOrderID: idStr,
-                jobOrderNumber: idStr,
-                scheduleDate: now,
-                address: '',
-                numberOfPersonnel: 0,
-                distanceFromOffice: 0,
-                merchantServiceName: '',
-                latitude: 0,
-                longitude: 0,
-                downPayment: 0,
-                totalAmount: 0,
-                paymentType: 0,
-                createdDate: now,
-                jobOrderStatusToString: '',
-              ),
-            );
-          },
+          builder: (context, state) => BookingDetailScreen(
+            bookingId: state.pathParameters['id'] ?? '',
+          ),
         ),
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,

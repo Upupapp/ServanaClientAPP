@@ -2,6 +2,7 @@ import 'package:client/modules/authentication/presentation/bloc/authentication_b
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
+import 'package:client/modules/bookings/data/booking_repository.dart';
 import 'package:client/modules/messaging/domain/repositories/messaging_repository.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:client/modules/registration/domain/use_cases/load_registration_from_local.dart';
@@ -90,6 +91,9 @@ void initInjector(AppConfig config) {
   );
   dpLocator
       .registerLazySingleton(() => JonOrderRepository(backend: dpLocator()));
+  dpLocator.registerLazySingleton(
+    () => BookingRepository(dpLocator()),
+  );
   dpLocator.registerLazySingleton(
     () => MessagingRepository(api: dpLocator()),
   );

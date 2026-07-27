@@ -7,7 +7,7 @@ import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
-import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
+import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +32,7 @@ enum _BookingSegment {
   active,
   completed,
   cancelled,
+  needsAttention,
 }
 
 extension _SegmentProps on _BookingSegment {
@@ -47,6 +48,8 @@ extension _SegmentProps on _BookingSegment {
         return 'Completed';
       case _BookingSegment.cancelled:
         return 'Cancelled';
+      case _BookingSegment.needsAttention:
+        return 'Needs Attention';
     }
   }
 
@@ -62,6 +65,8 @@ extension _SegmentProps on _BookingSegment {
         return Icons.check_circle_outline;
       case _BookingSegment.cancelled:
         return Icons.cancel_outlined;
+      case _BookingSegment.needsAttention:
+        return Icons.error_outline_rounded;
     }
   }
 
@@ -77,6 +82,8 @@ extension _SegmentProps on _BookingSegment {
         return 'No completed bookings yet.';
       case _BookingSegment.cancelled:
         return 'No cancelled bookings.';
+      case _BookingSegment.needsAttention:
+        return 'No bookings need attention right now.';
     }
   }
 
@@ -92,6 +99,8 @@ extension _SegmentProps on _BookingSegment {
         return const Color(0xFF6D717F);
       case _BookingSegment.cancelled:
         return const Color(0xFFE05B5B);
+      case _BookingSegment.needsAttention:
+        return const Color(0xFF9C27B0);
     }
   }
 }
@@ -154,13 +163,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
       case BookingStatus.cancelledByProvider:
       case BookingStatus.cancelledByAdmin:
       case BookingStatus.expired:
-      case BookingStatus.failed:
       case BookingStatus.refunded:
         return _BookingSegment.cancelled;
 
-      // Draft and unknown — silently exclude from visible segments via
-      // the JobOrderStatus fallback; draft bookings aren't server-persisted
-      // in a way the inbox would show, and unknown never means confirmed.
+      // Failed and unknown statuses surface in "Needs Attention" so the
+      // customer is not left wondering why a booking appears nowhere.
+      case BookingStatus.failed:
+      case BookingStatus.unknown:
+        return _BookingSegment.needsAttention;
+
+      // Draft bookings are not server-persisted in a visible way;
+      // fall through to the legacy JobOrderStatus fallback.
       default:
         break;
     }
@@ -225,6 +238,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   }
                   if (_loadError != null && store.bookings.isEmpty) {
                     return _buildLoadError();
+                  }
+                  // True empty state — customer has no bookings at all.
+                  if (store.bookings.isEmpty) {
+                    return RefreshIndicator(
+                      onRefresh: _doLoad,
+                      child: _buildGlobalEmpty(),
+                    );
                   }
                   final filtered = _filterForSegment(store.bookings.toList())
                     ..sort((a, b) => b.scheduleDate.compareTo(a.scheduleDate));
@@ -329,6 +349,98 @@ class _BookingsScreenState extends State<BookingsScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () =>
+                  setState(() => _segment = _BookingSegment.upcoming),
+              child: Text(
+                'View All Bookings',
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w600,
+                  color: ColorPalette.primaryColorDark,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            TextButton(
+              onPressed: () => context.pushNamed(SearchScreen.routeName),
+              child: Text(
+                'Browse Services',
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w600,
+                  color: ColorPalette.primaryColorDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// True empty state — customer has zero bookings at all (not a filter result).
+  Widget _buildGlobalEmpty() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 60),
+        Center(
+          child: Image.asset(
+            'assets/images/states/end_of_list.png',
+            width: 200,
+            fit: BoxFit.contain,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Center(
+          child: Text(
+            'No bookings yet',
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              color: ColorPalette.secondaryText,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            'Your upcoming and past Servana bookings will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              color: ColorPalette.secondaryText.withOpacity(0.6),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: ElevatedButton(
+            onPressed: () => context.pushNamed(SearchScreen.routeName),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColorPalette.primaryColorDark,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text(
+              'Browse Services',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryFontFamily,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -415,18 +527,28 @@ class _BookingsScreenState extends State<BookingsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
-          (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _BookingCard(
-              booking: items[i],
-              segment: _classify(items[i]),
-              dateFormat: _dateFormat,
-              onTap: () => context.pushNamed(
-                BookingDetailScreen.routeName,
-                extra: items[i],
+          (context, i) {
+            final b = items[i];
+            final seg = _classify(b);
+            final displayName = b.merchantServiceName.isNotEmpty
+                ? b.merchantServiceName
+                : b.merchantName;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Semantics(
+                label: '$displayName, ${seg.label}, '
+                    '${_dateFormat.format(b.scheduleDate)}',
+                hint: 'Opens booking detail',
+                button: true,
+                child: _BookingCard(
+                  booking: b,
+                  segment: seg,
+                  dateFormat: _dateFormat,
+                  onTap: () => context.go('/bookings/${b.jobOrderID}'),
+                ),
               ),
-            ),
-          ),
+            );
+          },
           childCount: items.length,
         ),
       ),

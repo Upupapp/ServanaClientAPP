@@ -418,6 +418,57 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Convenience alias for [getBooking] using a string booking ID.
+  ///
+  /// The correct customer/mobile detail path is GET /api/<id> (bare numeric ID,
+  /// no "bookings" segment).  The path /api/bookings/<id> does NOT exist on the
+  /// backend.  This alias accepts a String so call-sites do not need to parse.
+  Future<Map<String, dynamic>> getBookingDetail(String bookingId) {
+    return getBooking(int.parse(bookingId));
+  }
+
+  /// Cancel a booking on behalf of the customer.
+  ///
+  // BACKEND_GAP-C15-001: No customer-facing cancel endpoint exists in
+  // booking.routes.ts.  The only cancel route is admin-only:
+  //   POST /api/admin/bookings/:id/cancel
+  //   Requires: verifyAuth + verifyRoles([1]) + requirePermission('bookings.cancel')
+  // Mobile/customer callers will receive HTTP 403 until a customer cancel route
+  // is added to the backend.  Priority: HIGH — customers cannot self-cancel.
+  // Temporary behaviour: throws [ServanaApiException] with statusCode 403.
+  Future<Map<String, dynamic>> cancelBooking({
+    required int bookingId,
+    required String reason,
+    String? reasonCode,
+  }) async {
+    // Intentionally targets the only existing cancel endpoint.  Will 403 for
+    // non-admin tokens.  Replace path once a customer route is available.
+    final uri = _uri('/api/admin/bookings/$bookingId/cancel');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'reason': reason,
+        if (reasonCode != null) 'reasonCode': reasonCode,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  /// Returns booking timeline events for a given booking.
+  ///
+  // BACKEND_GAP-C15-002: The full timeline endpoint is admin-only:
+  //   GET /api/admin/bookings/:id/timeline
+  //   Requires: verifyAuth + verifyRoles([1]) + requirePermission('bookings.timeline.view')
+  // The customer-facing equivalent is GET /api/:id/tracking (already wired as
+  // [getBookingTracking]).  This method delegates to tracking so the repository
+  // has a uniform surface — replace the path once a customer timeline route is
+  // available.  Priority: MEDIUM — tracking rows cover the essential use-case.
+  Future<Map<String, dynamic>> getBookingTimeline(int bookingId) {
+    // Falls back to the customer tracking endpoint (same data, different shape).
+    return getBookingTracking(bookingId);
+  }
+
   // ���──────────────────── FCM Token ───────��─────────────
 
   Future<Map<String, dynamic>> registerFcmToken(String token) async {
