@@ -11,7 +11,6 @@ import 'package:client/common/data/models/user_session.dart';
 import 'package:client/modules/homepage/data/models/search_service_result.dart';
 import 'package:client/modules/job_order/data/models/jo_details.dart';
 import 'package:client/modules/job_order/data/models/merchant_user.dart';
-import 'package:client/modules/messaging/data/models/chat_message.dart';
 import 'package:client/modules/registration/data/models/registration_form_model.dart';
 import 'package:client/modules/store_items/data/models/store_option_items.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -75,16 +74,6 @@ abstract interface class Backend {
   });
 
   Future<bool> markAsCompleted({required String id});
-
-  /// Messaging (per booking/job order)
-  Future<List<ChatMessage>> getJobOrderMessages({required String jobOrderId});
-
-  Future<ChatMessage> sendJobOrderMessage({
-    required String jobOrderId,
-    required String text,
-    required bool fromCustomer,
-    String? customerId,
-  });
 
   Future<({bool isSuccess, String? message})> addUserAddress(
       UserAddressModel address);

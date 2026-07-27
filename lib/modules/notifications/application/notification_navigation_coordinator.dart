@@ -1,4 +1,5 @@
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
+import 'package:client/modules/messaging/presentation/screens/booking_chat_screen.dart';
 import 'package:client/modules/messaging/presentation/screens/messages_inbox_screen.dart';
 import 'package:client/modules/notifications/domain/notification_target.dart';
 import 'package:client/modules/notifications/domain/servana_notification.dart';
@@ -16,17 +17,48 @@ class NotificationNavigationCoordinator {
     switch (target) {
       case BookingTarget():
         context.pushNamed(BookingsScreen.routeName);
+
       case PaymentTarget():
         context.pushNamed(BookingsScreen.routeName);
-      case ConversationTarget():
-        context.pushNamed(MessagesInboxScreen.routeName);
+
+      case ConversationTarget(:final conversationId):
+        // Deep-link to a specific booking conversation by resolving the
+        // conversationId → bookingId lookup. For now we navigate to the inbox
+        // with the conversationId stored as extra so the inbox can surface it.
+        // When the backend returns bookingId alongside the FCM payload,
+        // we can push directly to BookingChatScreen.
+        if (conversationId.isNotEmpty) {
+          context.pushNamed(
+            MessagesInboxScreen.routeName,
+            extra: {'highlightConversationId': conversationId},
+          );
+        } else {
+          context.pushNamed(MessagesInboxScreen.routeName);
+        }
+
       case CategoryTarget():
-        // Navigate home — category tap is handled by the user on the home screen.
         context.go('/HomeScreen');
+
       case SettingsTarget():
         context.go('/HomeScreen');
+
       case UnknownTarget():
         break;
     }
+  }
+
+  /// Navigate directly to a booking's chat screen.
+  /// Used when FCM payload contains both bookingId and conversationId.
+  void navigateToBookingChat(
+    BuildContext context, {
+    required String bookingId,
+    String? title,
+  }) {
+    if (!context.mounted) return;
+    context.pushNamed(
+      BookingChatScreen.routeName,
+      pathParameters: {'jobOrderId': bookingId},
+      extra: title,
+    );
   }
 }

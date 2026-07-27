@@ -1,8 +1,9 @@
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
+import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
 import 'package:client/modules/messaging/domain/repositories/messaging_repository.dart';
-import 'package:client/modules/messaging/presentation/bloc/messaging_bloc.dart';
+import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:client/modules/registration/domain/use_cases/load_registration_from_local.dart';
 import 'package:client/modules/registration/domain/use_cases/save_registration_to_local.dart';
 import 'package:client/modules/registration/domain/use_cases/validate_registration_step1.dart';
@@ -89,8 +90,18 @@ void initInjector(AppConfig config) {
   );
   dpLocator
       .registerLazySingleton(() => JonOrderRepository(backend: dpLocator()));
-  dpLocator
-      .registerLazySingleton(() => MessagingRepository(backend: dpLocator()));
+  dpLocator.registerLazySingleton(
+    () => MessagingRepository(api: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => ChatSocketService(baseUrl: config.baseUrl),
+  );
+  dpLocator.registerLazySingleton(
+    () => MessagingStore(
+      repository: dpLocator(),
+      socketService: dpLocator(),
+    ),
+  );
   dpLocator
       .registerLazySingleton(() => StoreItemsReporsitory(backend: dpLocator()));
   dpLocator.registerLazySingleton(
@@ -104,7 +115,6 @@ void initInjector(AppConfig config) {
       getStoreItemsUseCase: dpLocator(), storeItemsRepo: dpLocator()));
 
   dpLocator.registerFactory(() => JobOrderBloc(repo: dpLocator()));
-  dpLocator.registerFactory(() => MessagingBloc(repo: dpLocator()));
   dpLocator.registerFactory(
     () => RegistrationBloc(
       saveRegistrationToLocalUseCase: dpLocator(),

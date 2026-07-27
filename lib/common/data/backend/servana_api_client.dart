@@ -436,6 +436,92 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  // ─────────────────────── Chat / Messaging ──────────────────────────────────
+
+  /// Resolve or create the conversation for a booking.
+  /// Returns the ConversationModel JSON with id, booking_id, unread_count, etc.
+  Future<Map<String, dynamic>> getBookingConversation({
+    required String bookingId,
+  }) async {
+    final uri = _uri('/api/bookings/$bookingId/conversation');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// List all conversations for the authenticated user with unread counts.
+  Future<Map<String, dynamic>> listConversations() async {
+    final uri = _uri('/api/chat/conversations');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// Fetch a page of messages for a conversation.
+  /// [before] is the oldest message id seen (keyset pagination).
+  Future<Map<String, dynamic>> getMessages({
+    required int conversationId,
+    int limit = 40,
+    int? before,
+  }) async {
+    final query = <String, dynamic>{'limit': limit};
+    if (before != null) query['before'] = before;
+    final uri = _uri('/api/chat/conversations/$conversationId/messages', query);
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// Send a text message. [clientMsgId] is the idempotency key.
+  Future<Map<String, dynamic>> sendChatMessage({
+    required int conversationId,
+    required String body,
+    required String clientMsgId,
+    String type = 'text',
+  }) async {
+    final uri = _uri('/api/chat/conversations/$conversationId/messages');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'type': type,
+        'body': body,
+        'clientMsgId': clientMsgId,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  /// Mark all messages up to [lastReadMessageId] as read.
+  Future<Map<String, dynamic>> markConversationRead({
+    required int conversationId,
+    required int lastReadMessageId,
+  }) async {
+    final uri = _uri('/api/chat/conversations/$conversationId/read');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'lastReadMessageId': lastReadMessageId}),
+    );
+    return _decodeJson(res);
+  }
+
+  /// Report a message for moderation.
+  Future<Map<String, dynamic>> reportChatMessage({
+    required int conversationId,
+    required int messageId,
+    required String category,
+    String? description,
+  }) async {
+    final uri = _uri('/api/chat/conversations/$conversationId/messages/$messageId/report');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'category': category,
+        if (description != null) 'description': description,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
   // ���──────────────────── Customer Notifications ─────────────────────
 
   Future<Map<String, dynamic>> listNotifications({String? filter}) async {

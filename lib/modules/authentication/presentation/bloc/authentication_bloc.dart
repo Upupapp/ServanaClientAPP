@@ -8,6 +8,7 @@ import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notifications_controller.dart';
 import 'package:client/modules/search/application/search_controller.dart';
@@ -92,6 +93,7 @@ class AuthenticationBloc
     // leaks to the next user of the device (LEAKSHIELD §5).
     try {
       dpLocator<HomeStore>().resetPrivateData();
+      dpLocator<MessagingStore>().resetPrivateData();
       dpLocator<AirconBookingStore>().reset();
       dpLocator<BwBookingStore>().reset();
       dpLocator<BookingDraftService>().clear();
@@ -126,6 +128,7 @@ class AuthenticationBloc
     try {
       dpLocator<NotificationsController>().init(uid).ignore();
       dpLocator<FcmCoordinator>().registerForAccount(uid).ignore();
+      dpLocator<MessagingStore>().initForSession().ignore();
     } catch (_) {}
   }
 }

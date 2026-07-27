@@ -7,6 +7,7 @@ import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/messaging/presentation/screens/booking_chat_screen.dart';
+import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
@@ -22,14 +23,18 @@ class MessagesInboxScreen extends StatefulWidget {
 }
 
 class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
-  final store = dpLocator<HomeStore>();
+  final _homeStore = dpLocator<HomeStore>();
+  final _msgStore = dpLocator<MessagingStore>();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => store.loadBookings());
+    Future.microtask(() async {
+      await _homeStore.loadBookings();
+      await _msgStore.loadConversations();
+    });
   }
 
   @override
@@ -38,9 +43,6 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
     super.dispose();
   }
 
-  /// Only show bookings where a provider is or was assigned — those are the
-  /// bookings that have an active chat thread. Pre-assignment and terminal
-  /// states where nobody was ever assigned have no chat partner to show.
   bool _hasActiveChat(JobOrder b) {
     final status = BookingStatusMapper.fromString(b.jobOrderStatusToString);
     switch (status) {
@@ -56,14 +58,12 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
       default:
         break;
     }
-    // Fallback for legacy JobOrderStatus values.
     return b.jobOrderStatus == JobOrderStatus.accepted ||
         b.jobOrderStatus == JobOrderStatus.inTransit ||
         b.jobOrderStatus == JobOrderStatus.inProgress ||
         b.jobOrderStatus == JobOrderStatus.completed;
   }
 
-  /// Lower number = higher priority in the list.
   int _chatPriority(JobOrder b) {
     final status = BookingStatusMapper.fromString(b.jobOrderStatusToString);
     switch (status) {
@@ -71,12 +71,12 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
       case BookingStatus.arrived:
       case BookingStatus.inProgress:
       case BookingStatus.awaitingCompletion:
-        return 0; // Active — show first
+        return 0;
       case BookingStatus.assigned:
       case BookingStatus.confirmed:
-        return 1; // Upcoming
+        return 1;
       default:
-        return 2; // Completed / other
+        return 2;
     }
   }
 
@@ -131,11 +131,13 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
           Expanded(
             child: Observer(
               builder: (context) {
-                final filtered = _filtered(store.bookings.toList());
+                final filtered = _filtered(_homeStore.bookings.toList());
                 return RefreshIndicator(
-                  onRefresh: () => store.loadBookings(),
-                  child:
-                      filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
+                  onRefresh: () async {
+                    await _homeStore.loadBookings();
+                    await _msgStore.loadConversations();
+                  },
+                  child: filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
                 );
               },
             ),
@@ -299,18 +301,27 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final b = bookings[i];
-        // Use service name as the conversation title; fall back to booking number.
         final chatTitle = b.merchantServiceName.trim().isNotEmpty
             ? b.merchantServiceName.trim()
             : 'Booking #${b.jobOrderNumber}';
-        return _ConversationTile(
-          booking: b,
-          statusLabel: _statusLabel(b),
-          onTap: () => context.pushNamed(
-            BookingChatScreen.routeName,
-            pathParameters: {'jobOrderId': b.jobOrderID},
-            extra: chatTitle,
-          ),
+        // Live unread count from the messaging store.
+        final conv = _msgStore.convsByBookingId[b.jobOrderID];
+        return Observer(
+          builder: (_) {
+            final unread =
+                _msgStore.convsByBookingId[b.jobOrderID]?.unreadCount ?? 0;
+            return _ConversationTile(
+              booking: b,
+              statusLabel: _statusLabel(b),
+              unreadCount: unread,
+              conversationId: conv?.id,
+              onTap: () => context.pushNamed(
+                BookingChatScreen.routeName,
+                pathParameters: {'jobOrderId': b.jobOrderID},
+                extra: chatTitle,
+              ),
+            );
+          },
         );
       },
     );
@@ -323,11 +334,15 @@ class _ConversationTile extends StatelessWidget {
   const _ConversationTile({
     required this.booking,
     required this.statusLabel,
+    required this.unreadCount,
     required this.onTap,
+    this.conversationId,
   });
 
   final JobOrder booking;
   final String statusLabel;
+  final int unreadCount;
+  final int? conversationId;
   final VoidCallback onTap;
 
   @override
@@ -336,81 +351,102 @@ class _ConversationTile extends StatelessWidget {
         ? booking.merchantServiceName.trim()
         : booking.merchantName;
 
-    return Material(
-      color: ColorPalette.secondaryBackground,
-      borderRadius: BorderRadius.circular(15),
-      elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.10),
-      child: InkWell(
-        onTap: onTap,
+    return Semantics(
+      label: '$title, $statusLabel'
+          '${unreadCount > 0 ? ", $unreadCount unread message${unreadCount > 1 ? 's' : ''}" : ""}',
+      button: true,
+      child: Material(
+        color: ColorPalette.secondaryBackground,
         borderRadius: BorderRadius.circular(15),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              _InitialsAvatar(name: title),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+        elevation: 1,
+        shadowColor: Colors.black.withOpacity(0.10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                _InitialsAvatar(name: title),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: ColorPalette.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          color: ColorPalette.secondaryText.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      _smartDate(booking.scheduleDate),
                       style: TextStyle(
                         fontFamily: FontPalette.primaryFontFamily,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: ColorPalette.secondaryText,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                        color: ColorPalette.secondaryText.withOpacity(0.55),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      statusLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        color: ColorPalette.secondaryText.withOpacity(0.6),
+                    const SizedBox(height: 6),
+                    if (unreadCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      )
+                    else
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: ColorPalette.secondaryText.withOpacity(0.35),
                       ),
-                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _smartDate(booking.scheduleDate),
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 11,
-                      color: ColorPalette.secondaryText.withOpacity(0.55),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: ColorPalette.secondaryText.withOpacity(0.35),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// Shows the scheduled service date as the conversation timestamp — this is
-  /// when the service happens, which is more meaningful than booking creation.
   static String _smartDate(DateTime d) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

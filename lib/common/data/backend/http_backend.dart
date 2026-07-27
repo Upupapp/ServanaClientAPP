@@ -17,7 +17,6 @@ import 'package:client/common/data/models/user_session.dart';
 import 'package:client/modules/homepage/data/models/search_service_result.dart';
 import 'package:client/modules/job_order/data/models/jo_details.dart';
 import 'package:client/modules/job_order/data/models/merchant_user.dart';
-import 'package:client/modules/messaging/data/models/chat_message.dart';
 import 'package:client/modules/registration/data/models/registration_form_model.dart';
 import 'package:client/modules/store_items/data/models/store_option_items.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -555,20 +554,6 @@ class HttpBackend implements Backend {
     throw UnimplementedError('markAsCompleted is not yet integrated');
   }
 
-  @override
-  Future<List<ChatMessage>> getJobOrderMessages({required String jobOrderId}) {
-    throw UnimplementedError('getJobOrderMessages is not yet integrated');
-  }
-
-  @override
-  Future<ChatMessage> sendJobOrderMessage({
-    required String jobOrderId,
-    required String text,
-    required bool fromCustomer,
-    String? customerId,
-  }) {
-    throw UnimplementedError('sendJobOrderMessage is not yet integrated');
-  }
 }
 
 /// Wraps every outgoing request with a [Duration] timeout.

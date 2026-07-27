@@ -16,7 +16,6 @@ import 'package:client/modules/homepage/data/models/search_service_result.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/job_order/data/models/jo_details.dart';
 import 'package:client/modules/job_order/data/models/merchant_user.dart';
-import 'package:client/modules/messaging/data/models/chat_message.dart';
 import 'package:client/modules/registration/data/models/registration_form_model.dart';
 import 'package:client/modules/store_items/data/models/store_option_items.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -28,7 +27,6 @@ class MockBackend implements Backend {
   }
 
   final _rng = Random(42);
-  final Map<String, List<ChatMessage>> _messagesByJobOrderId = {};
 
   final List<MerchantLight> _merchants = [
     const MerchantLight(
@@ -1368,50 +1366,6 @@ class MockBackend implements Backend {
       dateEnd: DateTime.now(),
     );
     return true;
-  }
-
-  List<ChatMessage> _ensureThread(String jobOrderId) {
-    return _messagesByJobOrderId.putIfAbsent(jobOrderId, () {
-      final now = DateTime.now();
-      return [
-        ChatMessage(
-          id: 'msg-${_rng.nextInt(900000) + 100000}',
-          jobOrderId: jobOrderId,
-          sender: ChatSender.provider,
-          text: "Hi! How can we help with your booking?",
-          createdAt: now.subtract(const Duration(minutes: 10)),
-        ),
-      ];
-    });
-  }
-
-  @override
-  Future<List<ChatMessage>> getJobOrderMessages(
-      {required String jobOrderId}) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    final thread = _ensureThread(jobOrderId).toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    return List<ChatMessage>.unmodifiable(thread);
-  }
-
-  @override
-  Future<ChatMessage> sendJobOrderMessage({
-    required String jobOrderId,
-    required String text,
-    required bool fromCustomer,
-    String? customerId,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    final trimmed = text.trim();
-    final msg = ChatMessage(
-      id: 'msg-${_rng.nextInt(900000) + 100000}',
-      jobOrderId: jobOrderId,
-      sender: fromCustomer ? ChatSender.customer : ChatSender.provider,
-      text: trimmed,
-      createdAt: DateTime.now(),
-    );
-    _ensureThread(jobOrderId).add(msg);
-    return msg;
   }
 
   @override

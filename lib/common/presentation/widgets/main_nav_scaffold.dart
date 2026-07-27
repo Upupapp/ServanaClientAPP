@@ -7,6 +7,7 @@ import 'package:client/common/presentation/shell/core_tab.dart';
 import 'package:client/common/presentation/shell/quick_book_sheet.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
@@ -44,14 +45,16 @@ class MainNavScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = dpLocator<HomeStore>();
+    final homeStore = dpLocator<HomeStore>();
+    final msgStore = dpLocator<MessagingStore>();
     final current = navigationShell.currentIndex;
 
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: Observer(
         builder: (_) {
-          final badge = _actionCount(store.bookings.toList());
+          final bookingBadge = _actionCount(homeStore.bookings.toList());
+          final msgBadge = msgStore.totalUnread;
           return Container(
             decoration: const BoxDecoration(
               color: Colors.white,
@@ -74,7 +77,7 @@ class MainNavScaffold extends StatelessWidget {
                     _NavItem(
                       tab: CoreTab.bookings,
                       current: current,
-                      badge: badge,
+                      badge: bookingBadge,
                       onTap: () => _onTap(context, CoreTab.bookings.index),
                     ),
                     // Central Book action — not a navigation branch.
@@ -108,7 +111,7 @@ class MainNavScaffold extends StatelessWidget {
                     _NavItem(
                       tab: CoreTab.messages,
                       current: current,
-                      badge: 0,
+                      badge: msgBadge,
                       onTap: () => _onTap(context, CoreTab.messages.index),
                     ),
                     _NavItem(
