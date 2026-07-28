@@ -50,6 +50,8 @@ import 'package:client/modules/settings/presentation/screens/permissions_screen.
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
+import 'package:client/modules/tracking/domain/tracking_args.dart';
+import 'package:client/modules/tracking/presentation/screens/live_tracking_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class MainRouter {
@@ -461,6 +463,18 @@ class MainRouter {
           builder: (context, state) => BookingChatScreen(
             jobOrderId: state.pathParameters['bookingId'] ?? '',
             title: 'Booking Chat',
+          ),
+        ),
+        // Live tracking — reached via BookingDetailScreen "Track Provider" button.
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: '/bookings/:bookingId/track',
+          name: LiveTrackingScreen.routeName,
+          builder: (context, state) => LiveTrackingScreen(
+            bookingId: state.pathParameters['bookingId'] ?? '',
+            args: state.extra is TrackingArgs
+                ? state.extra as TrackingArgs
+                : null,
           ),
         ),
         // Legacy alias — keeps old push('/booking/:id') deep links working.

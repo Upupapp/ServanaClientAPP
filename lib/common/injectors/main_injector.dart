@@ -1,4 +1,7 @@
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/tracking/application/tracking_controller.dart';
+import 'package:client/modules/tracking/data/tracking_data_source.dart';
+import 'package:client/modules/tracking/data/tracking_repository.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
@@ -202,5 +205,17 @@ void initInjector(AppConfig config) {
       notificationsController: dpLocator(),
       secureStorage: dpLocator(),
     ),
+  );
+
+  // ── Tracking (C16 LIVETRACK+) ─────────────────────────────────────────────
+  dpLocator.registerLazySingleton(
+    () => TrackingDataSource(dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => TrackingRepository(dpLocator()),
+  );
+  // Factory so each LiveTrackingScreen gets its own controller instance.
+  dpLocator.registerFactory(
+    () => TrackingController(repository: dpLocator()),
   );
 }

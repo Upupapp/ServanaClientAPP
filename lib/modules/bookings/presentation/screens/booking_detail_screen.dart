@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/modules/tracking/domain/tracking_args.dart';
 import 'package:client/common/presentation/responsive/servana_responsive.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
@@ -85,6 +86,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       BookingStatusMapper.fromString(_bookingStatus));
 
   bool get _isAssigned => _workerUid != null && _workerUid!.isNotEmpty;
+
+  /// Whether the "Track Provider" button should be shown.
+  ///
+  /// Tracking is available when the booking is active (en route / arrived /
+  /// in progress) and a worker has been assigned.
+  bool get _isTrackable {
+    if (!_isAssigned) return false;
+    final s = BookingStatusMapper.fromString(_bookingStatus);
+    return s == BookingStatus.enRoute ||
+        s == BookingStatus.arrived ||
+        s == BookingStatus.inProgress ||
+        s == BookingStatus.awaitingCompletion;
+  }
 
   /// Allow cancellation only for pre-service states where the booking can still
   /// be cleanly voided.  In-progress and terminal states are excluded.
@@ -277,6 +291,22 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       }
       _refreshBooking();
     });
+  }
+
+  /// Navigate to the live tracking screen for this booking.
+  void _openTracking() {
+    context.push(
+      '/bookings/$_bookingId/track',
+      extra: TrackingArgs(
+        bookingId: _bookingId,
+        workerUid: _workerUid ?? '',
+        workerName: _workerName,
+        workerPhone: _workerPhone,
+        serviceAddress: _booking?.address,
+        serviceLatitude: _booking?.latitude,
+        serviceLongitude: _booking?.longitude,
+      ),
+    );
   }
 
   /// Open the booking's chat conversation via C14 MessagingStore.
@@ -584,6 +614,33 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                 ),
               ),
+
+            // Track Provider — available when booking is active (enRoute/arrived/inProgress).
+            if (_isTrackable) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _openTracking,
+                  icon: const Icon(Icons.location_on_rounded),
+                  label: Text(
+                    'Track Provider',
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorPalette.primaryColorDark,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
 
             // Message Provider — available once a technician is assigned.
             if (_isAssigned) ...[
