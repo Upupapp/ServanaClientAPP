@@ -43,7 +43,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>REPLACE_WITH_REVERSED_CLIENT_ID</string>
+				<string>com.googleusercontent.apps.320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj</string>
 			</array>
 		</dict>
 		<!-- Facebook Sign-In: Replace FB_APP_ID with your Facebook App ID

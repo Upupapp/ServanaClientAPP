@@ -2,18 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCxDjegqSQdO6S7Nb7meaiSzeCImQ2FLdQ</string>
+	<string>AIzaSyCd71czCcCyUGosSDOBECj2l_vsiilXx5k</string>
 	<key>GCM_SENDER_ID</key>
-	<string>306195353425</string>
+	<string>320379709991</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.servana.serviceclient</string>
+	<string>com.servana.worker</string>
 	<key>PROJECT_ID</key>
-	<string>servana-1d13b</string>
+	<string>servana-59bee</string>
 	<key>STORAGE_BUCKET</key>
-	<string>servana-1d13b.appspot.com</string>
+	<string>servana-59bee.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:306195353425:ios:c02f7454484ff9c0f38d70</string>
+	<string>1:320379709991:ios:ae2e2cf854d71afa1bfc02</string>
 </dict>
 </plist>
