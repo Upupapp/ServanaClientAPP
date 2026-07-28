@@ -229,7 +229,7 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> listOptionsWithAddons({
     required int serviceId,
   }) async {
-    final uri = _uri('/api/$serviceId/options-with-addons');
+    final uri = _uri('/api/services/$serviceId/options-with-addons');
     final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }

@@ -28,6 +28,15 @@ class AuthCheckSession extends AuthenticationEvent {}
 /// Log the current user out: clear session, reset state, return to guest.
 class AuthLogout extends AuthenticationEvent {}
 
+/// Sign in with Google. The bloc handles the Google Sign-In flow and
+/// exchanges the Firebase ID token with the Servana backend.
+class AuthGoogleSignIn extends AuthenticationEvent {}
+
+/// Sign in with Facebook. The bloc handles the Facebook Login flow,
+/// exchanges the access token for a Firebase credential, then exchanges
+/// the Firebase ID token with the Servana backend.
+class AuthFacebookSignIn extends AuthenticationEvent {}
+
 /// Previously used but not yet wired — kept for backward compatibility.
 class LoggedIn extends AuthenticationEvent {}
 

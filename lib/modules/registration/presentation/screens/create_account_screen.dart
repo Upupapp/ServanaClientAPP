@@ -11,6 +11,7 @@ import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/custom_text_field.dart';
 import 'package:client/common/presentation/widgets/primary_button.dart';
+import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_events.dart';
@@ -368,6 +369,39 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             const SizedBox(
                               height: 20,
                             ),
+                            GestureDetector(
+                              onTap: () => context
+                                  .goNamed(AuthenticationScreen.routeName),
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 4),
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: 'Already have an account? ',
+                                    style: TextStyle(
+                                      fontFamily:
+                                          FontPalette.primaryFontFamily,
+                                      color: ColorPalette.secondaryText,
+                                      fontSize: 14,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Sign in',
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          color: ColorPalette.primaryColorDark,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                             Container(
                               margin:
                                   const EdgeInsets.symmetric(horizontal: 20),

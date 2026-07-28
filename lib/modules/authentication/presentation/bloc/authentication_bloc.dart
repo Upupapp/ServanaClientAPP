@@ -1,3 +1,5 @@
+import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -13,7 +15,11 @@ import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notifications_controller.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'authentication_event.dart';
 import 'authentication_state.dart';
 
@@ -22,6 +28,8 @@ class AuthenticationBloc
   AuthenticationBloc({required this.repo})
       : super(AuthenticationUninitialized()) {
     on<AuthenticationInit>(_onLogin);
+    on<AuthGoogleSignIn>(_onGoogleSignIn);
+    on<AuthFacebookSignIn>(_onFacebookSignIn);
     on<AuthBrowseAsGuest>(_onBrowseAsGuest);
     on<AuthCheckSession>(_onCheckSession);
     on<AuthLogout>(_onLogout);
@@ -52,6 +60,106 @@ class AuthenticationBloc
       final friendly = ErrorMessageMapper.forLogin(result.error);
       emit(AuthenticationUnauthenticated(message: friendly));
     }
+  }
+
+  Future<void> _onGoogleSignIn(
+      AuthGoogleSignIn event, Emitter<AuthenticationState> emit) async {
+    emit(AuthenticationLoading());
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        // User dismissed the picker — return to idle without an error message.
+        emit(AuthenticationUnauthenticated());
+        return;
+      }
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+      if (accessToken == null || idToken == null) {
+        emit(AuthenticationUnauthenticated(
+            message: 'Google sign-in failed. Please try again.'));
+        return;
+      }
+      // Exchange for a Firebase ID token.
+      final credential = GoogleAuthProvider.credential(
+          accessToken: accessToken, idToken: idToken);
+      final userCred =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final firebaseIdToken = await userCred.user?.getIdToken();
+      if (firebaseIdToken == null) {
+        emit(AuthenticationUnauthenticated(
+            message: 'Google sign-in failed. Please try again.'));
+        return;
+      }
+      await _loginWithFirebaseToken(
+          firebaseIdToken, googleUser.email, emit);
+    } catch (e) {
+      debugPrint('[AuthBloc] Google sign-in error: $e');
+      emit(AuthenticationUnauthenticated(
+          message: 'Google sign-in failed. Please try again.'));
+    }
+  }
+
+  Future<void> _onFacebookSignIn(
+      AuthFacebookSignIn event, Emitter<AuthenticationState> emit) async {
+    emit(AuthenticationLoading());
+    try {
+      final result = await FacebookAuth.instance.login();
+      if (result.status != LoginStatus.success || result.accessToken == null) {
+        emit(AuthenticationUnauthenticated(
+            message: result.status == LoginStatus.cancelled
+                ? null
+                : 'Facebook sign-in failed. Please try again.'));
+        return;
+      }
+      final facebookToken = result.accessToken!.tokenString;
+      final credential = FacebookAuthProvider.credential(facebookToken);
+      final userCred =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final firebaseIdToken = await userCred.user?.getIdToken();
+      final email = userCred.user?.email ?? '';
+      if (firebaseIdToken == null) {
+        emit(AuthenticationUnauthenticated(
+            message: 'Facebook sign-in failed. Please try again.'));
+        return;
+      }
+      await _loginWithFirebaseToken(firebaseIdToken, email, emit);
+    } catch (e) {
+      debugPrint('[AuthBloc] Facebook sign-in error: $e');
+      emit(AuthenticationUnauthenticated(
+          message: 'Facebook sign-in failed. Please try again.'));
+    }
+  }
+
+  /// Shared tail: exchange a Firebase ID token for a Servana session.
+  Future<void> _loginWithFirebaseToken(
+    String idToken,
+    String fallbackEmail,
+    Emitter<AuthenticationState> emit,
+  ) async {
+    final api = dpLocator<ServanaApiClient>();
+    final body = await api.firebaseLogin(idToken: idToken);
+    final data = body['data'] as Map<String, dynamic>? ?? body;
+    final token = (data['token'] ?? '').toString();
+    if (token.isEmpty) {
+      final msg =
+          body['message']?.toString() ?? 'Sign-in failed. Please try again.';
+      emit(AuthenticationUnauthenticated(message: msg));
+      return;
+    }
+    final session = UserSession(
+      customerID: (data['id'] ?? data['customerID'] ?? '').toString(),
+      mobileNumber:
+          (data['phoneNumber'] ?? data['mobileNumber'] ?? '').toString(),
+      fullname: (data['fullname'] ?? '').toString(),
+      emailAddress:
+          (data['email'] ?? data['emailAddress'] ?? fallbackEmail).toString(),
+      token: token,
+    );
+    await SessionService.saveSession(session);
+    _notifyFcmLogin(session.customerID);
+    _notify(AuthStatus.authenticated);
+    emit(AuthenticationAuthenticated());
   }
 
   Future<void> _onBrowseAsGuest(

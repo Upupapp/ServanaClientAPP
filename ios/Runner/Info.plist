@@ -31,6 +31,43 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GMSApiKey</key>
 	<string>AIzaSyBl1ZmjZpUJ683IJak5S7ny5xj6iShBjP0</string>
+	<!-- Google Sign-In: Replace REVERSED_CLIENT_ID with value from GoogleService-Info.plist
+	     after enabling Google Sign-In in Firebase Console > Authentication > Sign-in method -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>REPLACE_WITH_REVERSED_CLIENT_ID</string>
+			</array>
+		</dict>
+		<!-- Facebook Sign-In: Replace FB_APP_ID with your Facebook App ID
+		     from developers.facebook.com after creating a Facebook App -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fbREPLACE_WITH_FB_APP_ID</string>
+			</array>
+		</dict>
+	</array>
+	<key>FacebookAppID</key>
+	<string>REPLACE_WITH_FB_APP_ID</string>
+	<key>FacebookClientToken</key>
+	<string>REPLACE_WITH_FB_CLIENT_TOKEN</string>
+	<key>FacebookDisplayName</key>
+	<string>Servana</string>
+	<!-- Allow Facebook SDK to query installed apps -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
