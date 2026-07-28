@@ -143,7 +143,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
       final status = (b['status'] ?? '').toString().toUpperCase();
       final workerUid =
-          b['workerUid']?.toString() ?? b['providerUid']?.toString();
+          b['workerUid']?.toString() ?? b['worker_uid']?.toString() ?? b['providerUid']?.toString();
       final eta = b['etaMinutes'];
       final assignedAtRaw = b['assignedAt']?.toString();
       final workerCode = b['workerCode']?.toString();

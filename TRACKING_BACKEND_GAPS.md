@@ -122,6 +122,25 @@ Requires customer socket room join authorization (see TRACK-GAP-001 note).
 
 ---
 
+## TRACK-GAP-008 — P0 (Backend) — `GET /api/:id` has no auth and no ownership check
+
+**Finding:** `booking.routes.ts` line 23: `router.get("/:id", bookingController.getBooking)` — no `verifyAuth` middleware and no customer ownership check in the controller.
+
+**Impact (IDOR):** Any HTTP caller who knows a numeric booking ID can fetch the full booking detail including `workerPhone`, `workerUid`, `eta_minutes`, `latitude`, `longitude`, and `addressLine`. C16 polls this endpoint every 30 seconds.
+
+**Resolution needed:** Add `verifyAuth` middleware and an ownership check in `bookingController.getBooking`:
+```typescript
+if (req.user.uid !== booking.customerUid && req.user.role !== 'admin') {
+  return res.status(403).json({ success: false, message: 'Forbidden' });
+}
+```
+
+**Note:** The mobile app (`ServanaClient`) sends a Bearer token. Adding auth middleware will not break the mobile app — the Flutter `ServanaApiClient` already attaches `Authorization: Bearer <token>` via `_headers()`. This is a backend-only fix with no mobile contract change needed.
+
+**Current workaround:** UI-only gating — the Flutter app only calls this route from the booking detail and tracking screens, which require a logged-in user to have created the booking. API-level IDOR is not mitigated.
+
+---
+
 ## Summary
 
 | ID | Priority | Gap | Workaround |
@@ -133,3 +152,4 @@ Requires customer socket room join authorization (see TRACK-GAP-001 note).
 | TRACK-GAP-005 | P2 | No accuracy/heading/speed | Single pin, no precision circle |
 | TRACK-GAP-006 | P2 | Unauthenticated location read | UI-only gating |
 | TRACK-GAP-007 | P2 | No customer socket rooms | All polling, no push |
+| TRACK-GAP-008 | P0 | `GET /api/:id` no auth/ownership check (IDOR) | UI-only gating |

@@ -1,5 +1,7 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -376,6 +378,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       style: TextStyle(
                                         color: ColorPalette.primaryColorDark,
                                       ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () => launchUrl(
+                                              Uri.parse(
+                                                  'https://servana.com.ph/terms'),
+                                            ),
                                     ),
                                     const TextSpan(text: " and "),
                                     TextSpan(
@@ -383,6 +390,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       style: TextStyle(
                                         color: ColorPalette.primaryColorDark,
                                       ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () => launchUrl(
+                                              Uri.parse(
+                                                  'https://servana.com.ph/privacy'),
+                                            ),
                                     ),
                                   ],
                                 ),

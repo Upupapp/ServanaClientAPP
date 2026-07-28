@@ -1,5 +1,7 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:client/common/domain/auth/auth_identifier.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -374,6 +376,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         style: TextStyle(
                                           color: ColorPalette.primaryColorDark,
                                         ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () => launchUrl(
+                                                Uri.parse(
+                                                    'https://servana.com.ph/terms'),
+                                              ),
                                       ),
                                       const TextSpan(text: ' and '),
                                       TextSpan(
@@ -381,6 +388,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         style: TextStyle(
                                           color: ColorPalette.primaryColorDark,
                                         ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () => launchUrl(
+                                                Uri.parse(
+                                                    'https://servana.com.ph/privacy'),
+                                              ),
                                       ),
                                     ],
                                   ),

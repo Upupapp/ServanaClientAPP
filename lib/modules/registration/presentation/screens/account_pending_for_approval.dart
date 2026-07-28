@@ -1,5 +1,7 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
@@ -108,6 +110,10 @@ class _AccountPendingForApprovalScreenState
                       style: TextStyle(
                         color: ColorPalette.primaryColorDark,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => launchUrl(
+                              Uri.parse('https://servana.com.ph/terms'),
+                            ),
                     ),
                     const TextSpan(text: " and "),
                     TextSpan(
@@ -115,6 +121,10 @@ class _AccountPendingForApprovalScreenState
                       style: TextStyle(
                         color: ColorPalette.primaryColorDark,
                       ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => launchUrl(
+                              Uri.parse('https://servana.com.ph/privacy'),
+                            ),
                     ),
                   ],
                 ),
