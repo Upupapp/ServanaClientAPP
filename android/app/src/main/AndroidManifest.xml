@@ -54,6 +54,40 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="servana_default" />
 
+        <!-- Facebook Sign-In: replace string resource values in res/values/strings.xml
+             after creating a Facebook App at developers.facebook.com and enabling
+             Facebook in Firebase Console > Authentication > Sign-in method -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id"/>
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token"/>
+
+        <!-- Facebook SDK: required activities and content provider for Android login redirect -->
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
+
+        <!-- Replace REPLACE_WITH_FB_APP_ID below with the numeric Facebook App ID
+             from developers.facebook.com (must match facebook_app_id in strings.xml) -->
+        <provider
+            android:name="com.facebook.FacebookContentProvider"
+            android:authorities="com.facebook.app.FacebookContentProviderREPLACE_WITH_FB_APP_ID"
+            android:exported="true" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

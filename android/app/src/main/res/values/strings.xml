@@ -2,7 +2,15 @@
 <resources>
     <!-- White-label: override these per flavor/build variant -->
     <string name="app_name">Servana</string>
-    <!-- Default key for existing build; override per flavor/build variant -->
-    <string name="google_maps_key">AIzaSyBl1ZmjZpUJ683IJak5S7ny5xj6iShBjP0</string>
+    <!-- Google Maps: inject GOOGLE_MAPS_API_KEY via CI secret or a local
+         secrets.properties file (gitignored) consumed by app/build.gradle.
+         Never commit the real key here. -->
+    <string name="google_maps_key">REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
+    <!-- Facebook Sign-In: Replace with values from developers.facebook.com after
+         enabling Facebook in Firebase Console > Authentication > Sign-in method -->
+    <string name="facebook_app_id">REPLACE_WITH_FB_APP_ID</string>
+    <string name="facebook_client_token">REPLACE_WITH_FB_CLIENT_TOKEN</string>
+    <!-- Login redirect scheme: must be "fb" followed by the numeric App ID, e.g. fb1234567890 -->
+    <string name="fb_login_protocol_scheme">fbREPLACE_WITH_FB_APP_ID</string>
 </resources>
 

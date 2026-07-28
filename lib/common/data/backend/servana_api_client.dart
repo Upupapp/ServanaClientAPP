@@ -106,15 +106,14 @@ class ServanaApiClient {
     required String idToken,
     String? fcmToken,
   }) async {
-    final uri = _uri('/api/auth/firebase-login');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (fcmToken != null && fcmToken.isNotEmpty) 'fcmToken': fcmToken,
-    };
+    final uri = _uri('/api/auth/customer-firebase-login');
     final res = await _client.post(
       uri,
-      headers: headers,
-      body: jsonEncode({'idToken': idToken}),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'idToken': idToken,
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcmToken': fcmToken,
+      }),
     );
     return _decodeJson(res);
   }
