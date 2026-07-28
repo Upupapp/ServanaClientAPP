@@ -8,9 +8,9 @@
     <string name="google_maps_key">REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
     <!-- Facebook Sign-In: Replace with values from developers.facebook.com after
          enabling Facebook in Firebase Console > Authentication > Sign-in method -->
-    <string name="facebook_app_id">REPLACE_WITH_FB_APP_ID</string>
-    <string name="facebook_client_token">REPLACE_WITH_FB_CLIENT_TOKEN</string>
+    <string name="facebook_app_id">2048115409245680</string>
+    <string name="facebook_client_token">85785ea054884504017e00d1907ea9b5</string>
     <!-- Login redirect scheme: must be "fb" followed by the numeric App ID, e.g. fb1234567890 -->
-    <string name="fb_login_protocol_scheme">fbREPLACE_WITH_FB_APP_ID</string>
+    <string name="fb_login_protocol_scheme">fb2048115409245680</string>
 </resources>
 

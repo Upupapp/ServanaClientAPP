@@ -53,14 +53,14 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fbREPLACE_WITH_FB_APP_ID</string>
+				<string>fb2048115409245680</string>
 			</array>
 		</dict>
 	</array>
 	<key>FacebookAppID</key>
-	<string>REPLACE_WITH_FB_APP_ID</string>
+	<string>2048115409245680</string>
 	<key>FacebookClientToken</key>
-	<string>REPLACE_WITH_FB_CLIENT_TOKEN</string>
+	<string>85785ea054884504017e00d1907ea9b5</string>
 	<key>FacebookDisplayName</key>
 	<string>Servana</string>
 	<!-- Allow Facebook SDK to query installed apps -->

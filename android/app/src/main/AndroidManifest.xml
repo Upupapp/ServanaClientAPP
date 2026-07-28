@@ -85,7 +85,7 @@
              from developers.facebook.com (must match facebook_app_id in strings.xml) -->
         <provider
             android:name="com.facebook.FacebookContentProvider"
-            android:authorities="com.facebook.app.FacebookContentProviderREPLACE_WITH_FB_APP_ID"
+            android:authorities="com.facebook.app.FacebookContentProvider2048115409245680"
             android:exported="true" />
 
         <!-- Don't delete the meta-data below.
