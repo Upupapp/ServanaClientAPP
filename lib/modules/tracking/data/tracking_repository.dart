@@ -56,6 +56,7 @@ class TrackingRepository {
 
     final workerUid = b['workerUid']?.toString() ??
         b['worker_uid']?.toString() ??
+        b['providerUid']?.toString() ??
         knownWorkerUid;
 
     // If we now know the uid but didn't before, fire a fresh location fetch.

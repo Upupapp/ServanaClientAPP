@@ -300,4 +300,44 @@ void main() {
       expect(state.bookingId, '99');
     });
   });
+
+  group('TrackingRepository.fetchSnapshot — phone alias and fallback', () {
+    test('reads worker phone from snake_case worker_phone', () async {
+      final ds = _FakeDataSource()
+        ..bookingResponse = {
+          'status': 'ENROUTE',
+          'workerUid': 'uid-001',
+          'worker_phone': '+639171234567',
+        };
+
+      final repo = TrackingRepository(ds);
+      final state = await repo.fetchSnapshot(bookingId: '42');
+
+      expect(state.providerPhone, '+639171234567');
+    });
+
+    test('seed phone used when booking response omits worker phone', () async {
+      final ds = _FakeDataSource()
+        ..bookingResponse = {'status': 'ENROUTE', 'workerUid': 'uid-001'};
+
+      final repo = TrackingRepository(ds);
+      final state = await repo.fetchSnapshot(
+          bookingId: '42', seedPhone: '+639179999999');
+
+      expect(state.providerPhone, '+639179999999');
+    });
+
+    test('knownWorkerUid surfaces as providerUid in output state when body omits uid',
+        () async {
+      final ds = _FakeDataSource()
+        ..bookingResponse = {'status': 'ENROUTE'} // no uid in body
+        ..locationResponse = makeLocation();
+
+      final repo = TrackingRepository(ds);
+      final state =
+          await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: 'seed-uid');
+
+      expect(state.providerUid, 'seed-uid');
+    });
+  });
 }

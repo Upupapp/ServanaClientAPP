@@ -32,11 +32,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   late TooltipController _toolTipController;
   String _firstName = '';
   String _lastName = '';
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
 
   @override
   void initState() {
     final bloc = BlocProvider.of<RegistrationBloc>(context);
     _toolTipController = TooltipController();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
 
     final existing = (bloc.registration.ownerName ?? '').trim();
     if (existing.isNotEmpty) {
@@ -65,6 +71,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final bloc = dpLocator<RegistrationBloc>();
     bloc.add(const ValidationReset());
     _toolTipController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -378,11 +386,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       style: TextStyle(
                                         color: ColorPalette.primaryColorDark,
                                       ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () => launchUrl(
-                                              Uri.parse(
-                                                  'https://servana.com.ph/terms'),
-                                            ),
+                                      recognizer: _termsRecognizer,
                                     ),
                                     const TextSpan(text: " and "),
                                     TextSpan(
@@ -390,11 +394,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       style: TextStyle(
                                         color: ColorPalette.primaryColorDark,
                                       ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () => launchUrl(
-                                              Uri.parse(
-                                                  'https://servana.com.ph/privacy'),
-                                            ),
+                                      recognizer: _privacyRecognizer,
                                     ),
                                   ],
                                 ),

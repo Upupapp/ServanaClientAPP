@@ -19,6 +19,25 @@ class AccountPendingForApprovalScreen extends StatefulWidget {
 
 class _AccountPendingForApprovalScreenState
     extends State<AccountPendingForApprovalScreen> {
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,10 +129,7 @@ class _AccountPendingForApprovalScreenState
                       style: TextStyle(
                         color: ColorPalette.primaryColorDark,
                       ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () => launchUrl(
-                              Uri.parse('https://servana.com.ph/terms'),
-                            ),
+                      recognizer: _termsRecognizer,
                     ),
                     const TextSpan(text: " and "),
                     TextSpan(
@@ -121,10 +137,7 @@ class _AccountPendingForApprovalScreenState
                       style: TextStyle(
                         color: ColorPalette.primaryColorDark,
                       ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () => launchUrl(
-                              Uri.parse('https://servana.com.ph/privacy'),
-                            ),
+                      recognizer: _privacyRecognizer,
                     ),
                   ],
                 ),

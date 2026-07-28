@@ -40,6 +40,25 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   // Whether the current identifier input looks like a mobile number.
   bool _isMobileInput = false;
 
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
+
   void _onIdentifierChanged(String value) {
     setState(() {
       _identifier = value;
@@ -376,11 +395,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         style: TextStyle(
                                           color: ColorPalette.primaryColorDark,
                                         ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () => launchUrl(
-                                                Uri.parse(
-                                                    'https://servana.com.ph/terms'),
-                                              ),
+                                        recognizer: _termsRecognizer,
                                       ),
                                       const TextSpan(text: ' and '),
                                       TextSpan(
@@ -388,11 +403,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         style: TextStyle(
                                           color: ColorPalette.primaryColorDark,
                                         ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () => launchUrl(
-                                                Uri.parse(
-                                                    'https://servana.com.ph/privacy'),
-                                              ),
+                                        recognizer: _privacyRecognizer,
                                       ),
                                     ],
                                   ),
