@@ -1,5 +1,6 @@
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/user_session.dart';
+import 'package:client/common/domain/auth/auth_token_exchanger.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -16,6 +17,7 @@ import 'package:client/modules/notifications/application/notifications_controlle
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
@@ -25,8 +27,13 @@ import 'authentication_state.dart';
 
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationState> {
-  AuthenticationBloc({required this.repo})
-      : super(AuthenticationUninitialized()) {
+  AuthenticationBloc({
+    required this.repo,
+    GoogleSignIn? googleSignIn,
+    FacebookAuth? facebookAuth,
+  })  : _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _facebookAuth = facebookAuth ?? FacebookAuth.instance,
+        super(AuthenticationUninitialized()) {
     on<AuthenticationInit>(_onLogin);
     on<AuthGoogleSignIn>(_onGoogleSignIn);
     on<AuthFacebookSignIn>(_onFacebookSignIn);
@@ -38,6 +45,11 @@ class AuthenticationBloc
   }
 
   final AuthenticationRepository repo;
+  final GoogleSignIn _googleSignIn;
+
+  // Injectable override — defaults to FacebookAuth.instance so all existing
+  // call-sites that omit the parameter are unaffected.
+  final FacebookAuth _facebookAuth;
 
   // ───────────────── event handlers ─────────────────
 
@@ -66,7 +78,7 @@ class AuthenticationBloc
       AuthGoogleSignIn event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
     try {
-      final googleUser = await GoogleSignIn().signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // User dismissed the picker — return to idle without an error message.
         emit(AuthenticationUnauthenticated());
@@ -104,7 +116,7 @@ class AuthenticationBloc
       AuthFacebookSignIn event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
     try {
-      final result = await FacebookAuth.instance.login();
+      final result = await _facebookAuth.login();
       if (result.status != LoginStatus.success || result.accessToken == null) {
         emit(AuthenticationUnauthenticated(
             message: result.status == LoginStatus.cancelled
@@ -132,34 +144,32 @@ class AuthenticationBloc
   }
 
   /// Shared tail: exchange a Firebase ID token for a Servana session.
+  ///
+  /// Token-exchange logic lives in [AuthTokenExchanger] so it can be
+  /// unit-tested without platform channels.
   Future<void> _loginWithFirebaseToken(
     String idToken,
     String fallbackEmail,
     Emitter<AuthenticationState> emit,
   ) async {
     final api = dpLocator<ServanaApiClient>();
-    final body = await api.firebaseLogin(idToken: idToken);
-    final data = body['data'] as Map<String, dynamic>? ?? body;
-    final token = (data['token'] ?? '').toString();
-    if (token.isEmpty) {
-      final msg =
-          body['message']?.toString() ?? 'Sign-in failed. Please try again.';
-      emit(AuthenticationUnauthenticated(message: msg));
-      return;
-    }
-    final session = UserSession(
-      customerID: (data['id'] ?? data['customerID'] ?? '').toString(),
-      mobileNumber:
-          (data['phoneNumber'] ?? data['mobileNumber'] ?? '').toString(),
-      fullname: (data['fullname'] ?? '').toString(),
-      emailAddress:
-          (data['email'] ?? data['emailAddress'] ?? fallbackEmail).toString(),
-      token: token,
+    String? fcmToken;
+    try {
+      fcmToken = await FirebaseMessaging.instance.getToken();
+    } catch (_) {}
+    final result = await AuthTokenExchanger(api).exchange(
+      idToken,
+      fallbackEmail,
+      fcmToken: fcmToken,
     );
-    await SessionService.saveSession(session);
-    _notifyFcmLogin(session.customerID);
-    _notify(AuthStatus.authenticated);
-    emit(AuthenticationAuthenticated());
+    if (result.session != null) {
+      await SessionService.saveSession(result.session!);
+      _notifyFcmLogin(result.session!.customerID);
+      _notify(AuthStatus.authenticated);
+      emit(AuthenticationAuthenticated());
+    } else {
+      emit(AuthenticationUnauthenticated(message: result.error));
+    }
   }
 
   Future<void> _onBrowseAsGuest(

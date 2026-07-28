@@ -29,8 +29,11 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- Google Maps: inject GOOGLE_MAPS_API_KEY via CI secret or local
+	     build environment (e.g. Flutter --dart-define or a pre-build script
+	     that writes RunnerConfig/Secrets.xcconfig). Never commit the real key. -->
 	<key>GMSApiKey</key>
-	<string>AIzaSyBl1ZmjZpUJ683IJak5S7ny5xj6iShBjP0</string>
+	<string>REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
 	<!-- Google Sign-In: Replace REVERSED_CLIENT_ID with value from GoogleService-Info.plist
 	     after enabling Google Sign-In in Firebase Console > Authentication > Sign-in method -->
 	<key>CFBundleURLTypes</key>

@@ -331,136 +331,148 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                 builder: (context, state) {
                                   final isLoading =
                                       state is AuthenticationLoading;
-                                  return PrimaryButton(
-                                    width: 250,
-                                    text: 'Sign In',
-                                    onClick:
-                                        isLoading ? null : () => _submit(bloc),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Social sign-in divider
-                              Row(
-                                children: [
-                                  const Expanded(child: Divider()),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
-                                    child: Text(
-                                      'or continue with',
-                                      style: TextStyle(
-                                        fontFamily:
-                                            FontPalette.primaryFontFamily,
-                                        color: ColorPalette.secondaryText,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                  const Expanded(child: Divider()),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Google sign-in button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 50,
-                                child: OutlinedButton(
-                                  onPressed: () =>
-                                      bloc.add(AuthGoogleSignIn()),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                        color: Colors.grey.shade400),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(25),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
-                                      // Google "G" logo
-                                      Container(
-                                        width: 22,
-                                        height: 22,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF4285F4),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: const Text(
-                                          'G',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            height: 1,
+                                      PrimaryButton(
+                                        width: 250,
+                                        text: 'Sign In',
+                                        onClick: isLoading
+                                            ? null
+                                            : () => _submit(bloc),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // Social sign-in divider
+                                      Row(
+                                        children: [
+                                          const Expanded(child: Divider()),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12),
+                                            child: Text(
+                                              'or continue with',
+                                              style: TextStyle(
+                                                fontFamily:
+                                                    FontPalette.primaryFontFamily,
+                                                color: ColorPalette.secondaryText,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                          const Expanded(child: Divider()),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Google sign-in button — disabled during loading
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 50,
+                                        child: OutlinedButton(
+                                          onPressed: isLoading
+                                              ? null
+                                              : () =>
+                                                  bloc.add(AuthGoogleSignIn()),
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(
+                                                color: Colors.grey.shade400),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // Google "G" logo
+                                              Container(
+                                                width: 22,
+                                                height: 22,
+                                                alignment: Alignment.center,
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xFF4285F4),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: const Text(
+                                                  'G',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    height: 1,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                'Continue with Google',
+                                                style: TextStyle(
+                                                  fontFamily:
+                                                      FontPalette.primaryFontFamily,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Continue with Google',
-                                        style: TextStyle(
-                                          fontFamily:
-                                              FontPalette.primaryFontFamily,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
+                                      const SizedBox(height: 10),
 
-                              // Facebook sign-in button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 50,
-                                child: OutlinedButton(
-                                  onPressed: () =>
-                                      bloc.add(AuthFacebookSignIn()),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                        color: Colors.grey.shade400),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(25),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.facebook,
-                                          color: Color(0xFF1877F2),
-                                          size: 24),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        'Continue with Facebook',
-                                        style: TextStyle(
-                                          fontFamily:
-                                              FontPalette.primaryFontFamily,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                      // Facebook sign-in button — disabled during loading
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 50,
+                                        child: OutlinedButton(
+                                          onPressed: isLoading
+                                              ? null
+                                              : () => bloc
+                                                  .add(AuthFacebookSignIn()),
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(
+                                                color: Colors.grey.shade400),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(Icons.facebook,
+                                                  color: Color(0xFF1877F2),
+                                                  size: 24),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                'Continue with Facebook',
+                                                style: TextStyle(
+                                                  fontFamily:
+                                                      FontPalette.primaryFontFamily,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
+                                      const SizedBox(height: 16),
                                     ],
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 16),
 
                               // Sign up link
                               GestureDetector(
