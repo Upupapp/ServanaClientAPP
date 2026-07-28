@@ -19,6 +19,11 @@ allprojects {
         mavenCentral()
         // maven { url "${project(':background_fetch').projectDir}/libs" }
     }
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = '11'
+        }
+    }
 }
 
 rootProject.buildDir = '../build'
