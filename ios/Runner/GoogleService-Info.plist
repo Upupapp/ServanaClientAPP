@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj.apps.googleusercontent.com</string>
+	<string>320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj</string>
+	<string>com.googleusercontent.apps.320379709991-7npea534t292ocslpmonotq3ac9s85do</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCd71czCcCyUGosSDOBECj2l_vsiilXx5k</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.servana.worker</string>
+	<string>com.servana.client</string>
 	<key>PROJECT_ID</key>
 	<string>servana-59bee</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:320379709991:ios:ae2e2cf854d71afa1bfc02</string>
+	<string>1:320379709991:ios:1bf2a384b926d3901bfc02</string>
 </dict>
 </plist>

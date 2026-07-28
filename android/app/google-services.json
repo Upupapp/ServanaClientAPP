@@ -7,6 +7,42 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:320379709991:android:c3ec0648a70fb5081bfc02",
+        "android_client_info": {
+          "package_name": "com.servana.serviceclient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJhIszBqlum-DhCLdH2uA_EZFKnQhOkrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.servana.worker"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:320379709991:android:80f91ea87a1d1f0b1bfc02",
         "android_client_info": {
           "package_name": "com.servana.worker"
