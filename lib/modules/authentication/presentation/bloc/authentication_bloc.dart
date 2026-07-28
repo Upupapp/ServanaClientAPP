@@ -1,5 +1,4 @@
 import 'package:client/common/data/backend/servana_api_client.dart';
-import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/auth/auth_token_exchanger.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
