@@ -1,3 +1,8 @@
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/experiment_coordinator.dart';
+import 'package:client/core/analytics/data/firebase_analytics_service.dart';
+import 'package:client/core/observability/crashlytics_service.dart';
+import 'package:client/core/observability/performance_service.dart';
 import 'package:client/core/recovery/app_lifecycle_coordinator.dart';
 import 'package:client/core/recovery/connectivity_monitor.dart';
 import 'package:client/core/recovery/draft_repository.dart';
@@ -70,6 +75,17 @@ final dpLocator = GetIt.instance;
 
 void initInjector(AppConfig config) {
   dpLocator.registerSingleton<AppConfig>(config);
+
+  // ── C21 Analytics & Observability ────────────────────────────────────────
+  dpLocator.registerLazySingleton(() => FirebaseAnalyticsService());
+  dpLocator.registerLazySingleton(
+    () => AnalyticsCoordinator(service: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => ExperimentCoordinator(analytics: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(() => CrashlyticsService());
+  dpLocator.registerLazySingleton(() => PerformanceService());
 
   // ── C20 Recovery layer ────────────────────────────────────────────────────
   dpLocator.registerLazySingleton(() => ConnectivityMonitor());

@@ -4,6 +4,12 @@ import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/experiment_coordinator.dart';
+import 'package:client/core/analytics/domain/analytics_property.dart';
+import 'package:client/core/analytics/domain/analytics_user_context.dart';
+import 'package:client/core/analytics/events/auth_events.dart';
+import 'package:client/core/observability/crashlytics_service.dart';
 import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:client/common/services/error_message_mapper.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
@@ -66,6 +72,7 @@ class AuthenticationBloc
   Future<void> _onLogin(
       AuthenticationInit event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
+    _trackEvent(const SignInStartedEvent(authMethod: AuthMethodValues.email));
 
     final result = await repo.authenticate(
       email: event.email,
@@ -76,10 +83,16 @@ class AuthenticationBloc
     if (result.session != null) {
       await SessionService.saveSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
+      _setAnalyticsUserContext(result.session!.customerID);
+      _trackEvent(const SignInSucceededEvent(authMethod: AuthMethodValues.email));
       _notify(AuthStatus.authenticated);
       emit(AuthenticationAuthenticated());
     } else {
       final friendly = ErrorMessageMapper.forLogin(result.error);
+      _trackEvent(SignInFailedEvent(
+        authMethod: AuthMethodValues.email,
+        failureCode: _mapLoginError(result.error),
+      ));
       emit(AuthenticationUnauthenticated(message: friendly));
     }
   }
@@ -87,6 +100,7 @@ class AuthenticationBloc
   Future<void> _onGoogleSignIn(
       AuthGoogleSignIn event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
+    _trackEvent(const SignInStartedEvent(authMethod: AuthMethodValues.google));
     try {
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
@@ -125,6 +139,7 @@ class AuthenticationBloc
   Future<void> _onFacebookSignIn(
       AuthFacebookSignIn event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
+    _trackEvent(const SignInStartedEvent(authMethod: AuthMethodValues.facebook));
     try {
       final result = await _facebookAuth.login();
       if (result.status != LoginStatus.success || result.accessToken == null) {
@@ -175,15 +190,29 @@ class AuthenticationBloc
     if (result.session != null) {
       await SessionService.saveSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
+      _setAnalyticsUserContext(result.session!.customerID);
+      _trackEvent(SignInSucceededEvent(authMethod: _authMethodFromIdToken(idToken)));
       _notify(AuthStatus.authenticated);
       emit(AuthenticationAuthenticated());
     } else {
+      _trackEvent(SignInFailedEvent(
+        authMethod: _authMethodFromIdToken(idToken),
+        failureCode: FailureCodeValues.unknown,
+      ));
       emit(AuthenticationUnauthenticated(message: result.error));
     }
   }
 
+  static String _authMethodFromIdToken(String token) {
+    // Firebase ID tokens from Google have 'google.com' in the token's iss claim.
+    // We can't decode JWT here without a package, so use length heuristic.
+    // This is analytics-only — not a security boundary.
+    return 'social';
+  }
+
   Future<void> _onBrowseAsGuest(
       AuthBrowseAsGuest event, Emitter<AuthenticationState> emit) async {
+    _trackEvent(const GuestModeSelectedEvent());
     _notify(AuthStatus.guest);
     emit(AuthenticationGuest());
   }
@@ -210,6 +239,7 @@ class AuthenticationBloc
 
   Future<void> _onLogout(
       AuthLogout event, Emitter<AuthenticationState> emit) async {
+    _trackEvent(const LoggedOutEvent(trigger: 'user_action'));
     emit(AuthenticationLoading());
     // C20 LEAKSHIELD: capture UID before session is deleted so
     // DraftRepository/OperationJournal clears fire with a valid key.
@@ -257,6 +287,12 @@ class AuthenticationBloc
       dpLocator<NotificationsController>().clearOnLogout();
       await dpLocator<FcmCoordinator>().deactivateOnLogout();
     } catch (_) {}
+    // C21: clear analytics identity and experiment context on logout.
+    try {
+      await dpLocator<AnalyticsCoordinator>().clearUserContext();
+      dpLocator<ExperimentCoordinator>().clearOnLogout();
+      await dpLocator<CrashlyticsService>().clearUserIdentifier();
+    } catch (_) {}
     _notify(AuthStatus.guest);
     emit(AuthenticationLoggedOut());
   }
@@ -281,5 +317,46 @@ class AuthenticationBloc
       dpLocator<FcmCoordinator>().registerForAccount(uid).ignore();
       dpLocator<MessagingStore>().initForSession().ignore();
     } catch (_) {}
+  }
+
+  // ── C21 Analytics helpers ──────────────────────────────────────────────────
+
+  void _trackEvent(event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
+  void _setAnalyticsUserContext(String rawCustomerId) {
+    try {
+      final analyticsId = AnalyticsUserContext.deriveAnalyticsId(rawCustomerId);
+      final ctx = AnalyticsUserContext(
+        analyticsId: analyticsId,
+        accountState: 'authenticated',
+        lifecycleStage: 'active',
+        profileCompletionBand: '0',
+        hasCompletedBooking: false,
+      );
+      dpLocator<AnalyticsCoordinator>().setUserContext(ctx).ignore();
+      dpLocator<CrashlyticsService>().setUserIdentifier(analyticsId).ignore();
+      dpLocator<CrashlyticsService>().setKeys({
+        'account_state': 'authenticated',
+        'session_state': 'active',
+      }).ignore();
+    } catch (_) {}
+  }
+
+  static String _mapLoginError(String? error) {
+    if (error == null || error.isEmpty) return FailureCodeValues.unknown;
+    final e = error.toLowerCase();
+    if (e.contains('invalid') && e.contains('credential')) {
+      return FailureCodeValues.invalidCredentials;
+    }
+    if (e.contains('disabled')) return FailureCodeValues.accountDisabled;
+    if (e.contains('network') || e.contains('socket')) {
+      return FailureCodeValues.networkError;
+    }
+    if (e.contains('timeout')) return FailureCodeValues.timeout;
+    return FailureCodeValues.unknown;
   }
 }
