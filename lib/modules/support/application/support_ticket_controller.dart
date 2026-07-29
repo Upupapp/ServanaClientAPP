@@ -35,6 +35,7 @@ class SupportTicketController extends ChangeNotifier {
   Future<void> loadTicket(String ticketKey) async {
     final gen = ++_generation;
     _status = TicketDetailStatus.loading;
+    _ticket = null; // clear stale data so the UI shows loading, not the previous ticket
     _error = null;
     _notify();
     try {

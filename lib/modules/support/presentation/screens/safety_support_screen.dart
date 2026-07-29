@@ -245,8 +245,8 @@ class _EmergencyCallButton extends StatelessWidget {
                   children: [
                     Text(
                       line.label,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -255,8 +255,8 @@ class _EmergencyCallButton extends StatelessWidget {
                     if (line.description.isNotEmpty)
                       Text(
                         line.description,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
                           fontSize: 11,
                           color: Colors.white70,
                         ),
@@ -266,8 +266,8 @@ class _EmergencyCallButton extends StatelessWidget {
               ),
               Text(
                 line.dialLabel,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
@@ -327,8 +327,10 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
         category: _category,
         description: desc,
       );
+      if (!mounted) return;
       widget.onSubmitted();
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _submitting = false;
         _error = 'Could not submit the report. Please try again.';
@@ -378,12 +380,18 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
                 .where((s) => s != SafetyIncidentSeverity.immediateDanger)
                 .map((s) {
               final sel = _severity == s;
-              return GestureDetector(
-                onTap: () => setState(() => _severity = s),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              return Semantics(
+                button: true,
+                selected: sel,
+                label: s.label,
+                child: InkWell(
+                  onTap: () => setState(() => _severity = s),
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    constraints: const BoxConstraints(minHeight: 44),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: sel
                         ? ColorPalette.primaryColorDark
@@ -405,7 +413,8 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
                     ),
                   ),
                 ),
-              );
+              ),
+            );
             }).toList(),
           ),
           const SizedBox(height: 14),

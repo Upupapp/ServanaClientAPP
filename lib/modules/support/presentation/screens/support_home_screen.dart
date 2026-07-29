@@ -52,7 +52,10 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        padding: EdgeInsets.fromLTRB(
+          16, 8, 16,
+          20 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           // Safety banner — always first
           _SafetyBanner(
@@ -336,8 +339,8 @@ class _HistoryRow extends StatelessWidget {
                   ),
                   child: Text(
                     unreadCount > 99 ? '99+' : '$unreadCount',
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

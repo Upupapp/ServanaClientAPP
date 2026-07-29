@@ -138,9 +138,13 @@ class SupportCreateController extends ChangeNotifier {
     _notify();
 
     try {
-      // Idempotency key: category + description hash + customerID prefix
-      final session = await SessionService.getSession();
-      final cid = session?.customerID ?? '';
+      // Session is optional — if secure storage is unavailable the prefix is
+      // empty but the ticket can still be submitted; don't abort on error here.
+      String cid = '';
+      try {
+        final session = await SessionService.getSession();
+        cid = session?.customerID ?? '';
+      } catch (_) {}
       final cidPrefix = cid.length > 6 ? cid.substring(0, 6) : cid;
       final clientRequestId = 'cr-$cidPrefix-${descTrimmed.hashCode.abs()}-${_category.apiKey}';
 

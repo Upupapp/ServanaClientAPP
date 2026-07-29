@@ -1,18 +1,37 @@
+import 'dart:io';
+
 import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/application/support_create_controller.dart';
 import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/modules/support/data/support_repository.dart';
+import 'package:client/modules/support/domain/support_draft.dart';
 import 'package:client/modules/support/domain/support_ticket.dart';
 import 'package:client/modules/support/domain/support_ticket_category.dart';
 import 'package:client/modules/support/domain/support_ticket_status.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSupportRepository extends Mock implements SupportRepository {}
 class MockSupportDraftRepository extends Mock implements SupportDraftRepository {}
 class MockSupportController extends Mock implements SupportController {}
 
+class _FakeSupportDraft extends Fake implements SupportDraft {}
+
+late Directory _hiveDir;
+
 void main() {
+  setUpAll(() async {
+    registerFallbackValue(_FakeSupportDraft());
+    registerFallbackValue(SupportTicketCategory.other);
+    _hiveDir = await Directory.systemTemp.createTemp('hive_sc_test_');
+    Hive.init(_hiveDir.path);
+  });
+
+  tearDownAll(() async {
+    await Hive.close();
+    try { await _hiveDir.delete(recursive: true); } catch (_) {}
+  });
   late MockSupportRepository repo;
   late MockSupportDraftRepository draftRepo;
   late MockSupportController supportCtrl;

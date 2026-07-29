@@ -142,10 +142,13 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
                       child: Semantics(
                         selected: selected,
                         label: _filterLabel(f),
-                        child: GestureDetector(
+                        button: true,
+                        child: InkWell(
                           onTap: () => _ctrl.setFilter(f),
+                          borderRadius: BorderRadius.circular(20),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
+                            constraints: const BoxConstraints(minHeight: 44),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(

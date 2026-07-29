@@ -23,6 +23,7 @@ class _SupportTicketDetailScreenState
     extends State<SupportTicketDetailScreen> {
   late final SupportTicketController _ctrl;
   final _scrollCtrl = ScrollController();
+  int _lastReplyCount = 0;
 
   @override
   void initState() {
@@ -41,16 +42,19 @@ class _SupportTicketDetailScreenState
 
   void _onControllerChange() {
     if (!mounted) return;
-    // Scroll to bottom when replies load or a new reply arrives
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollCtrl.hasClients) {
+    // Only scroll to bottom when the reply list actually grows
+    final newCount = _ctrl.ticket?.replies.length ?? 0;
+    if (newCount > _lastReplyCount) {
+      _lastReplyCount = newCount;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollCtrl.hasClients) return;
         _scrollCtrl.animateTo(
           _scrollCtrl.position.maxScrollExtent,
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
-      }
-    });
+      });
+    }
   }
 
   Future<void> _closeTicket() async {

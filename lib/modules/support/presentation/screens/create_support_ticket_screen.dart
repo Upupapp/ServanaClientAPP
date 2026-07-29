@@ -60,6 +60,8 @@ class _CreateSupportTicketScreenState
 
   @override
   void dispose() {
+    // Persist any unsaved form content so it survives navigation-away
+    if (_ctrl.description.trim().isNotEmpty) _ctrl.saveDraft().ignore();
     _ctrl.removeListener(_onCtrlChange);
     _subjectCtrl.dispose();
     _descCtrl.dispose();
@@ -165,19 +167,20 @@ class _CreateSupportTicketScreenState
     final isSuccess = _ctrl.status == CreateTicketStatus.succeeded;
 
     if (isSuccess) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_rounded,
+            const Icon(Icons.check_circle_rounded,
                 color: Color(0xFF16A34A), size: 56),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             Text(
               'Request submitted!',
               style: TextStyle(
-                fontFamily: 'Poppins',
+                fontFamily: FontPalette.primaryFontFamily,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
+                color: ColorPalette.secondaryText,
               ),
             ),
           ],
