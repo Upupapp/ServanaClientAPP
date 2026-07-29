@@ -47,6 +47,9 @@ import 'package:client/modules/notifications/data/notifications_remote_data_sour
 import 'package:client/modules/notifications/data/notifications_repository.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
+import 'package:client/modules/profile/application/address_controller.dart';
+import 'package:client/modules/profile/application/profile_controller.dart';
+import 'package:client/modules/profile/data/profile_repository.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -166,6 +169,19 @@ void initInjector(AppConfig config) {
   // dpLocator.registerLazySingleton(() => AuthenticateUserUsecase());
 
   dpLocator.registerLazySingleton(() => SettingsController());
+
+  dpLocator.registerLazySingleton(
+    () => ProfileRepository(api: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => AddressController(repository: dpLocator(), api: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => ProfileController(
+      repository: dpLocator(),
+      addressController: dpLocator(),
+    ),
+  );
 
   dpLocator.registerLazySingleton(
     () => SearchRepository(api: dpLocator()),

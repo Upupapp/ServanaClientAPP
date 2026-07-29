@@ -13,6 +13,8 @@ import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notifications_controller.dart';
+import 'package:client/modules/profile/application/address_controller.dart';
+import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -216,6 +218,8 @@ class AuthenticationBloc
       dpLocator<BookingDraftService>().clear();
       CategoryRevealPolicy.reset();
       SearchController.clearHistoryOnLogout().ignore();
+      dpLocator<ProfileController>().resetPrivateData();
+      dpLocator<AddressController>().resetPrivateData();
       dpLocator<SearchRepository>().clearCache();
     } catch (_) {}
     // FCM + notification cleanup (non-blocking; deactivates device token).

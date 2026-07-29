@@ -1,10 +1,10 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/data/backend/servana_api_client.dart';
-import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   static const String routeName = 'SettingsProfileEdit';
@@ -17,21 +17,30 @@ class ProfileEditScreen extends StatefulWidget {
 }
 
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
-  final _api = dpLocator<ServanaApiClient>();
+  late final ProfileController _ctrl;
 
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   String _email = '';
+  String? _birthdate;
+  String? _gender;
 
   bool _loading = true;
   bool _saving = false;
   String? _error;
   bool _saved = false;
 
+  static const _genderOptions = [
+    ('male', 'Male'),
+    ('female', 'Female'),
+    ('prefer_not_to_say', 'Prefer not to say'),
+  ];
+
   @override
   void initState() {
     super.initState();
-    _loadSession();
+    _ctrl = dpLocator<ProfileController>();
+    _loadProfile();
   }
 
   @override
@@ -41,18 +50,24 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     super.dispose();
   }
 
-  Future<void> _loadSession() async {
-    final s = await SessionService.getSession();
+  Future<void> _loadProfile() async {
+    // If the controller already has a profile, use it immediately.
+    var profile = _ctrl.profile;
+    if (profile == null) {
+      await _ctrl.loadProfile();
+      profile = _ctrl.profile;
+    }
     if (!mounted) return;
-    if (s == null) {
-      // Session unavailable — go back rather than showing a submittable empty form.
+    if (profile == null) {
       context.pop();
       return;
     }
     setState(() {
-      _nameCtrl.text = s.fullname;
-      _email = s.emailAddress ?? '';
-      _phoneCtrl.text = s.mobileNumber;
+      _nameCtrl.text = profile!.displayName;
+      _email = profile.email;
+      _phoneCtrl.text = profile.phoneNumber ?? '';
+      _birthdate = profile.birthdate;
+      _gender = profile.gender;
       _loading = false;
     });
   }
@@ -71,37 +86,60 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       return;
     }
     if (phone.isNotEmpty && !_phoneRx.hasMatch(phone)) {
-      setState(() => _error = 'Enter a valid Philippine mobile number (e.g. +63 917 123 4567).');
+      setState(() => _error =
+          'Enter a valid Philippine mobile number (e.g. +63 917 123 4567).');
       return;
     }
-    setState(() { _saving = true; _error = null; _saved = false; });
-    try {
-      await _api.updateProfile(payload: {
-        'fullname': name,
-        if (phone.isNotEmpty) 'mobileNumber': phone,
-      });
-      // Patch the local session so the profile header reflects the change.
-      final session = await SessionService.getSession();
-      if (session != null) {
-        await SessionService.saveSession(
-          session.copyWith(
-            fullname: name,
-            mobileNumber: phone.isNotEmpty ? phone : session.mobileNumber,
-          ),
-        );
-      }
-      if (!mounted) return;
-      setState(() { _saving = false; _saved = true; });
-      await Future.delayed(const Duration(milliseconds: 900));
-      if (mounted) context.pop();
-    } catch (e) {
-      if (!mounted) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+      _saved = false;
+    });
+    final ok = await _ctrl.updateProfile(
+      fullname: name,
+      mobileNumber: phone.isNotEmpty ? phone : null,
+      birthdate: _birthdate,
+      gender: _gender,
+    );
+    if (!mounted) return;
+    if (ok) {
       setState(() {
         _saving = false;
-        _error = e.toString().contains('401')
-            ? 'Session expired. Please sign in again.'
-            : 'Failed to save. Please try again.';
+        _saved = true;
       });
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (mounted) context.pop();
+    } else {
+      setState(() {
+        _saving = false;
+        _error = _ctrl.saveError ?? 'Failed to save. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _pickBirthdate() async {
+    final now = DateTime.now();
+    final initial = _birthdate != null
+        ? DateTime.tryParse(_birthdate!) ?? DateTime(now.year - 25)
+        : DateTime(now.year - 25);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1920),
+      lastDate: DateTime(now.year - 12),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: ColorPalette.primaryColorDark,
+            onPrimary: Colors.white,
+            surface: ColorPalette.secondaryBackground,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _birthdate = DateFormat('yyyy-MM-dd').format(picked));
     }
   }
 
@@ -155,7 +193,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           style: TextStyle(
                             fontFamily: FontPalette.primaryFontFamily,
                             fontSize: 15,
-                            color: ColorPalette.secondaryText.withOpacity(.55),
+                            color:
+                                ColorPalette.secondaryText.withOpacity(.55),
                           ),
                         ),
                       ),
@@ -185,6 +224,73 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   controller: _phoneCtrl,
                   hint: '+63 9XX XXX XXXX',
                   inputType: TextInputType.phone,
+                ),
+                const SizedBox(height: 20),
+                _fieldLabel('Date of Birth'),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: _pickBirthdate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 15),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.secondaryBackground,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: ColorPalette.border(.45)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _birthdate != null && _birthdate!.isNotEmpty
+                                ? _formatBirthdate(_birthdate!)
+                                : 'Select date of birth',
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontSize: 15,
+                              color: _birthdate != null && _birthdate!.isNotEmpty
+                                  ? ColorPalette.secondaryText
+                                  : ColorPalette.secondaryText.withOpacity(.35),
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.calendar_today_outlined,
+                            size: 16, color: ColorPalette.accentText),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _fieldLabel('Gender'),
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: ColorPalette.secondaryBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: ColorPalette.border(.45)),
+                  ),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < _genderOptions.length; i++) ...[
+                        _GenderOption(
+                          value: _genderOptions[i].$1,
+                          label: _genderOptions[i].$2,
+                          selected: _gender == _genderOptions[i].$1,
+                          onTap: () => setState(
+                              () => _gender = _genderOptions[i].$1),
+                          topRadius: i == 0,
+                          bottomRadius: i == _genderOptions.length - 1,
+                        ),
+                        if (i < _genderOptions.length - 1)
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            indent: 16,
+                            color: ColorPalette.border(.35),
+                          ),
+                      ],
+                    ],
+                  ),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
@@ -252,6 +358,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
+  String _formatBirthdate(String iso) {
+    try {
+      return DateFormat('MMMM d, yyyy').format(DateTime.parse(iso));
+    } catch (_) {
+      return iso;
+    }
+  }
+
   Widget _fieldLabel(String text) => Text(
         text,
         style: TextStyle(
@@ -305,4 +419,61 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         ),
       );
+}
+
+class _GenderOption extends StatelessWidget {
+  const _GenderOption({
+    required this.value,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.topRadius,
+    required this.bottomRadius,
+  });
+
+  final String value;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool topRadius;
+  final bool bottomRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.only(
+      topLeft: topRadius ? const Radius.circular(14) : Radius.zero,
+      topRight: topRadius ? const Radius.circular(14) : Radius.zero,
+      bottomLeft: bottomRadius ? const Radius.circular(14) : Radius.zero,
+      bottomRight: bottomRadius ? const Radius.circular(14) : Radius.zero,
+    );
+    return InkWell(
+      onTap: onTap,
+      borderRadius: radius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                  color: ColorPalette.secondaryText,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle_rounded,
+                  size: 20, color: ColorPalette.primaryColorDark)
+            else
+              Icon(Icons.circle_outlined,
+                  size: 20,
+                  color: ColorPalette.secondaryText.withOpacity(.3)),
+          ],
+        ),
+      ),
+    );
+  }
 }

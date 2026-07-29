@@ -197,6 +197,29 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Load the authenticated user's own profile (JWT-scoped, no ID param).
+  Future<Map<String, dynamic>> loadProfile() async {
+    final uri = _uri('/api/user/profile');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> verifyEmailOtp({required String otp}) async {
+    final uri = _uri('/api/auth/verify-email-otp');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'otp': otp}),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> resendEmailOtp() async {
+    final uri = _uri('/api/auth/resend-email-otp');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getRegisteredUsers({
     bool? isArchived,
     int? role,

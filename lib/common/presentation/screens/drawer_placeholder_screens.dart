@@ -4,6 +4,7 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
+import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
 import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
@@ -180,12 +181,14 @@ class SavedAddressesScreen extends StatefulWidget {
 
 class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   final _api = dpLocator<ServanaApiClient>();
+  late final AddressController _addrCtrl;
   List<Map<String, dynamic>> _addresses = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _addrCtrl = dpLocator<AddressController>();
     _loadAddresses();
   }
 
@@ -200,6 +203,8 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
+    // Keep the controller in sync so ProfileController.completeness is accurate.
+    _addrCtrl.loadAddresses().ignore();
   }
 
   @override
@@ -445,7 +450,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
     if (confirm != true) return;
 
     try {
-      await _api.deleteAddress(addressId: addressId);
+      await _addrCtrl.deleteAddress(addressId);
       await _loadAddresses();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
