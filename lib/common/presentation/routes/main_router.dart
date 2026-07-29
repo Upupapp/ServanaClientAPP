@@ -50,6 +50,12 @@ import 'package:client/modules/settings/presentation/screens/permissions_screen.
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
+import 'package:client/modules/support/presentation/screens/create_support_ticket_screen.dart';
+import 'package:client/modules/support/presentation/screens/help_center_screen.dart';
+import 'package:client/modules/support/presentation/screens/safety_support_screen.dart';
+import 'package:client/modules/support/presentation/screens/support_home_screen.dart';
+import 'package:client/modules/support/presentation/screens/support_ticket_detail_screen.dart';
+import 'package:client/modules/support/presentation/screens/support_tickets_screen.dart';
 import 'package:client/modules/tracking/domain/tracking_args.dart';
 import 'package:client/modules/tracking/presentation/screens/live_tracking_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -118,7 +124,8 @@ class MainRouter {
             loc.startsWith(BookingsScreen.route) || // "/Bookings" tab
             loc.startsWith('/bookings') || // "/bookings/:id" detail routes
             loc.startsWith(MessagesInboxScreen.route) ||
-            loc.startsWith(ProfileScreen.route);
+            loc.startsWith(ProfileScreen.route) ||
+            loc.startsWith('/support');
 
         if (isProtected && !authState.isAuthenticated) {
           // Always land on WelcomeScreen — post-logout and unauthenticated
@@ -588,6 +595,48 @@ class MainRouter {
                 ? state.extra as AuthReturnIntent
                 : null,
           ),
+        ),
+        // ── Support (C18 SUPPORTCORE+) ──────────────────────────────────────
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: SupportHomeScreen.route,
+          name: SupportHomeScreen.routeName,
+          builder: (context, state) => const SupportHomeScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: SupportTicketsScreen.route,
+          name: SupportTicketsScreen.routeName,
+          builder: (context, state) => const SupportTicketsScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: '/support/tickets/:ticketKey',
+          name: SupportTicketDetailScreen.routeName,
+          builder: (context, state) => SupportTicketDetailScreen(
+            ticketKey: state.pathParameters['ticketKey'] ?? '',
+          ),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: CreateSupportTicketScreen.route,
+          name: CreateSupportTicketScreen.routeName,
+          builder: (context, state) => CreateSupportTicketScreen(
+            initialCategory:
+                state.uri.queryParameters['category'],
+          ),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: SafetySupportScreen.route,
+          name: SafetySupportScreen.routeName,
+          builder: (context, state) => const SafetySupportScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: HelpCenterScreen.route,
+          name: HelpCenterScreen.routeName,
+          builder: (context, state) => const HelpCenterScreen(),
         ),
       ],
     );

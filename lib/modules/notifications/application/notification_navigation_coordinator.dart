@@ -3,6 +3,7 @@ import 'package:client/modules/messaging/presentation/screens/booking_chat_scree
 import 'package:client/modules/messaging/presentation/screens/messages_inbox_screen.dart';
 import 'package:client/modules/notifications/domain/notification_target.dart';
 import 'package:client/modules/notifications/domain/servana_notification.dart';
+import 'package:client/modules/support/presentation/screens/support_ticket_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -41,6 +42,14 @@ class NotificationNavigationCoordinator {
 
       case SettingsTarget():
         context.go('/HomeScreen');
+
+      case SupportTicketTarget(:final ticketKey):
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                SupportTicketDetailScreen(ticketKey: ticketKey),
+          ),
+        );
 
       case UnknownTarget():
         break;

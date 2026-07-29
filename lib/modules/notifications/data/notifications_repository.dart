@@ -81,6 +81,7 @@ class NotificationsRepository {
       ConversationTarget t => {'routeKey': 'CONVERSATION', 'resourceId': t.conversationId},
       CategoryTarget t => {'routeKey': 'CATEGORY', 'resourceId': t.categoryKey},
       SettingsTarget() => {'routeKey': 'NOTIFICATION_SETTINGS', 'resourceId': ''},
+      SupportTicketTarget t => {'routeKey': 'SUPPORT_TICKET', 'resourceId': t.ticketKey},
       UnknownTarget t => {'routeKey': t.routeKey, 'resourceId': ''},
     };
   }

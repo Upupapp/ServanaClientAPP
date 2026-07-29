@@ -634,6 +634,115 @@ class ServanaApiClient {
     );
     return _decodeJson(res);
   }
+
+  // ─── Customer Support ─────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> listSupportTickets() async {
+    final uri = _uri('/api/support/tickets');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> createSupportTicket({
+    required String subject,
+    required String description,
+    required String category,
+    String? clientRequestId,
+    String? bookingId,
+  }) async {
+    final uri = _uri('/api/support/tickets');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'subject': subject,
+        'description': description,
+        'category': category,
+        if (clientRequestId != null) 'clientRequestId': clientRequestId,
+        if (bookingId != null) 'bookingId': bookingId,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getSupportTicketDetail(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> addSupportTicketReply({
+    required String ticketKey,
+    required String message,
+  }) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/replies');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'message': message}),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> markSupportTicketRead(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/mark-read');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> closeSupportTicket(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/close');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> reopenSupportTicket(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/reopen');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getSupportUnreadCount() async {
+    final uri = _uri('/api/support/unread-count');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getSupportEmergencyConfig() async {
+    final uri = _uri('/api/support/safety/emergency-config');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> listSafetyIncidents() async {
+    final uri = _uri('/api/support/safety/incidents');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> submitSafetyIncident({
+    required String clientIncidentId,
+    required String category,
+    required String severity,
+    required String description,
+    String? bookingId,
+    bool immediateDanger = false,
+  }) async {
+    final uri = _uri('/api/support/safety/incidents');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'clientIncidentId': clientIncidentId,
+        'category': category,
+        'severity': severity,
+        'description': description,
+        if (bookingId != null) 'bookingId': bookingId,
+        'immediateDanger': immediateDanger,
+      }),
+    );
+    return _decodeJson(res);
+  }
 }
 
 class ServanaApiException implements Exception {

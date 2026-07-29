@@ -22,6 +22,11 @@ class CategoryTarget extends NotificationTarget {
 
 class SettingsTarget extends NotificationTarget {}
 
+class SupportTicketTarget extends NotificationTarget {
+  final String ticketKey;
+  SupportTicketTarget(this.ticketKey);
+}
+
 class UnknownTarget extends NotificationTarget {
   final String routeKey;
   UnknownTarget(this.routeKey);
@@ -45,6 +50,8 @@ NotificationTarget? targetFromRoute(Map<String, dynamic>? route) {
     case 'NOTIFICATION_SETTINGS':
     case 'SECURITY_SETTINGS':
       return SettingsTarget();
+    case 'SUPPORT_TICKET':
+      return resourceId.isNotEmpty ? SupportTicketTarget(resourceId) : null;
     case null:
       return null;
     default:

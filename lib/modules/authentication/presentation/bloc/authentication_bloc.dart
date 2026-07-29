@@ -17,6 +17,10 @@ import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
+import 'package:client/modules/support/application/support_controller.dart';
+import 'package:client/modules/support/application/support_create_controller.dart';
+import 'package:client/modules/support/application/support_ticket_controller.dart';
+import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -221,6 +225,10 @@ class AuthenticationBloc
       dpLocator<ProfileController>().resetPrivateData();
       dpLocator<AddressController>().resetPrivateData();
       dpLocator<SearchRepository>().clearCache();
+      dpLocator<SupportController>().resetPrivateData();
+      dpLocator<SupportCreateController>().resetPrivateData();
+      dpLocator<SupportTicketController>().resetPrivateData();
+      dpLocator<SupportDraftRepository>().clearAllDrafts().ignore();
     } catch (_) {}
     // FCM + notification cleanup (non-blocking; deactivates device token).
     try {

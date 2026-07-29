@@ -51,6 +51,11 @@ import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/profile/data/profile_repository.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
+import 'package:client/modules/support/application/support_controller.dart';
+import 'package:client/modules/support/application/support_create_controller.dart';
+import 'package:client/modules/support/application/support_ticket_controller.dart';
+import 'package:client/modules/support/data/support_draft_repository.dart';
+import 'package:client/modules/support/data/support_repository.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final dpLocator = GetIt.instance;
@@ -233,5 +238,29 @@ void initInjector(AppConfig config) {
   // Factory so each LiveTrackingScreen gets its own controller instance.
   dpLocator.registerFactory(
     () => TrackingController(repository: dpLocator()),
+  );
+
+  // ── Support (C18 SUPPORTCORE+) ────────────────────────────────────────────
+  dpLocator.registerLazySingleton(
+    () => SupportRepository(api: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => SupportDraftRepository(),
+  );
+  dpLocator.registerLazySingleton(
+    () => SupportController(repository: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => SupportTicketController(
+      repository: dpLocator(),
+      supportController: dpLocator(),
+    ),
+  );
+  dpLocator.registerLazySingleton(
+    () => SupportCreateController(
+      repository: dpLocator(),
+      draftRepository: dpLocator(),
+      supportController: dpLocator(),
+    ),
   );
 }

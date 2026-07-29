@@ -885,6 +885,16 @@ class HelpSupportScreen extends StatefulWidget {
 }
 
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
+  // Replaced by SupportHomeScreen — redirect immediately on first frame.
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.push('/support');
+    });
+  }
+
   int? _expanded;
 
   static const _faqs = [
