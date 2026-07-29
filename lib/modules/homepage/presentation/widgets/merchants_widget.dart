@@ -74,14 +74,18 @@ class MerchantsWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.star,
-                        color: ColorPalette.primaryColor,
+                        merchant.rating > 0
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: merchant.rating > 0
+                            ? const Color(0xFFF59E0B)
+                            : ColorPalette.accentText,
                         size: 20,
                       ),
                       Text(
                         merchant.rating > 0
                             ? merchant.rating.toStringAsFixed(1)
-                            : "no rating",
+                            : 'No rating yet',
                         maxLines: 4,
                         style: TextStyle(
                             fontFamily: FontPalette.primaryFontFamily,

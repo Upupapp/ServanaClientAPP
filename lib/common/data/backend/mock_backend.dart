@@ -35,7 +35,7 @@ class MockBackend implements Backend {
       city: 'Makati',
       latitude: 14.5547,
       longitude: 121.0244,
-      rating: 5,
+      rating: 0,
       listImage: null,
       discounts: [10, 15],
       merchantStatus: 1,
@@ -57,7 +57,7 @@ class MockBackend implements Backend {
       currentCredit: 1000,
       bankAccountNumber: '000-000-000',
       bankAccountName: 'Servana',
-      rating: 5,
+      rating: 0,
       merchantFee: 10,
       businessType: 1,
       representativeIDType: 1,
@@ -1118,14 +1118,8 @@ class MockBackend implements Backend {
   Future<List<MerchantLight>> getNearbyMerchants(
       {required double latitude, required double longitude}) async {
     await Future.delayed(const Duration(milliseconds: 250));
-    // Slightly randomize ratings/discounts to feel "live" while remaining stable-ish.
-    return _merchants
-        .map(
-          (m) => m.copyWith(
-            rating: max(1, min(5, m.rating + _rng.nextInt(2) - 1)),
-          ),
-        )
-        .toList();
+    // Ratings come from backend-authoritative aggregates, not mocked.
+    return List.of(_merchants);
   }
 
   @override

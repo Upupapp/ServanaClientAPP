@@ -743,6 +743,109 @@ class ServanaApiClient {
     );
     return _decodeJson(res);
   }
+
+  // ─── Customer Reviews ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getReviewEligibility(String bookingId) async {
+    final uri = _uri('/api/bookings/$bookingId/review-eligibility');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> createReview({
+    required String bookingId,
+    required int overallRating,
+    required Map<String, int> dimensions,
+    String? publicComment,
+    String? privateFeedback,
+    String visibility = 'PUBLIC',
+    String? clientRequestId,
+  }) async {
+    final uri = _uri('/api/bookings/$bookingId/reviews');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'overallRating': overallRating,
+        'dimensions': dimensions,
+        if (publicComment != null) 'publicComment': publicComment,
+        if (privateFeedback != null) 'privateFeedback': privateFeedback,
+        'visibility': visibility,
+        if (clientRequestId != null) 'clientRequestId': clientRequestId,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getReviewByBooking(String bookingId) async {
+    final uri = _uri('/api/bookings/$bookingId/reviews');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getReviewById(String reviewId) async {
+    final uri = _uri('/api/reviews/$reviewId');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> editReview({
+    required String reviewId,
+    required int overallRating,
+    required Map<String, int> dimensions,
+    String? publicComment,
+    String? privateFeedback,
+    String visibility = 'PUBLIC',
+  }) async {
+    final uri = _uri('/api/reviews/$reviewId');
+    final res = await _client.put(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'overallRating': overallRating,
+        'dimensions': dimensions,
+        if (publicComment != null) 'publicComment': publicComment,
+        if (privateFeedback != null) 'privateFeedback': privateFeedback,
+        'visibility': visibility,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> deleteReview(String reviewId) async {
+    final uri = _uri('/api/reviews/$reviewId');
+    final res = await _client.delete(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> listMyReviews() async {
+    final uri = _uri('/api/reviews/me');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> reportReview({
+    required String reviewId,
+    required String reason,
+    String? details,
+  }) async {
+    final uri = _uri('/api/reviews/$reviewId/report');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'reason': reason,
+        if (details != null) 'details': details,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getProviderAggregate(String providerUid) async {
+    final uri = _uri('/api/providers/$providerUid/rating');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
 }
 
 class ServanaApiException implements Exception {

@@ -12,6 +12,8 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
+import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
+import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +52,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   int? _etaMinutes;
   DateTime? _assignedAt;
   String? _workerCode;
+  bool _hasReview = false;
 
   // Poll for worker assignment for up to ~60s after the screen opens, while
   // the booking is still in a pre-assignment state. Stops as soon as a
@@ -112,6 +115,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         s == BookingStatus.awaitingAssignment ||
         s == BookingStatus.assigned ||
         s == BookingStatus.confirmed;
+  }
+
+  bool get _isCompleted {
+    final s = _bookingStatus?.toUpperCase();
+    return s == 'COMPLETED' || s == 'REVIEWED';
   }
 
   bool get _shouldPoll {
@@ -219,6 +227,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         }
 
         _bookingStatus = status.isEmpty ? _bookingStatus : status;
+        _hasReview = status == 'REVIEWED';
         if (workerUid != null && workerUid.isNotEmpty) {
           _workerUid = workerUid;
         }
@@ -329,6 +338,25 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         // Refresh to surface the CANCELLED status.
         _refreshBooking();
       },
+    );
+  }
+
+  Future<void> _openReviewForm() async {
+    final b = _booking;
+    final reviewed = await context.pushNamed<bool>(
+      ReviewFormScreen.routeName,
+      queryParameters: {
+        'bookingId': _bookingId,
+        if (b != null) 'bookingLabel': 'Booking #$_bookingId — ${b.merchantServiceName}',
+      },
+    );
+    if (reviewed == true && mounted) _refreshBooking();
+  }
+
+  void _openReviewDetail() {
+    context.pushNamed(
+      ReviewDetailScreen.routeName,
+      queryParameters: {'bookingId': _bookingId},
     );
   }
 
@@ -681,6 +709,52 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     style: TextStyle(color: Colors.red),
                   ),
                 ),
+              ),
+            ],
+
+            // Leave a Review — available after completion, one per booking.
+            if (_isCompleted) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: _hasReview
+                    ? OutlinedButton.icon(
+                        onPressed: _openReviewDetail,
+                        icon: const Icon(Icons.star_rounded),
+                        label: Text(
+                          'View Your Review',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFF59E0B),
+                          side: const BorderSide(color: Color(0xFFF59E0B)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: _openReviewForm,
+                        icon: const Icon(Icons.star_outline_rounded),
+                        label: Text(
+                          'Leave a Review',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF59E0B),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
               ),
             ],
 

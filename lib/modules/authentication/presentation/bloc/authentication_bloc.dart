@@ -17,6 +17,8 @@ import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/data/search_repository.dart';
+import 'package:client/modules/review/application/review_detail_controller.dart';
+import 'package:client/modules/review/application/review_form_controller.dart';
 import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/application/support_create_controller.dart';
 import 'package:client/modules/support/application/support_ticket_controller.dart';
@@ -229,6 +231,8 @@ class AuthenticationBloc
       dpLocator<SupportCreateController>().resetPrivateData();
       dpLocator<SupportTicketController>().resetPrivateData();
       dpLocator<SupportDraftRepository>().clearAllDrafts().ignore();
+      dpLocator<ReviewFormController>().resetPrivateData();
+      dpLocator<ReviewDetailController>().resetPrivateData();
     } catch (_) {}
     // FCM + notification cleanup (non-blocking; deactivates device token).
     try {

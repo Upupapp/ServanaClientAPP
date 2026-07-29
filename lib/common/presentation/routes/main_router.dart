@@ -50,6 +50,8 @@ import 'package:client/modules/settings/presentation/screens/permissions_screen.
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
+import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
+import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/support/presentation/screens/create_support_ticket_screen.dart';
 import 'package:client/modules/support/presentation/screens/help_center_screen.dart';
 import 'package:client/modules/support/presentation/screens/safety_support_screen.dart';
@@ -637,6 +639,26 @@ class MainRouter {
           path: HelpCenterScreen.route,
           name: HelpCenterScreen.routeName,
           builder: (context, state) => const HelpCenterScreen(),
+        ),
+        // ── Reviews (C19 REVIEWCORE+) ───────────────────────────────────────
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: ReviewFormScreen.route,
+          name: ReviewFormScreen.routeName,
+          builder: (context, state) => ReviewFormScreen(
+            bookingId:       state.uri.queryParameters['bookingId'] ?? '',
+            bookingLabel:    state.uri.queryParameters['bookingLabel'],
+            serviceCategory: state.uri.queryParameters['serviceCategory'],
+          ),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: ReviewDetailScreen.route,
+          name: ReviewDetailScreen.routeName,
+          builder: (context, state) => ReviewDetailScreen(
+            bookingId: state.uri.queryParameters['bookingId'],
+            reviewId:  state.uri.queryParameters['reviewId'],
+          ),
         ),
       ],
     );
