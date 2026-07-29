@@ -31,10 +31,11 @@ class ProfileRepository {
     await _api.updateProfile(payload: payload);
   }
 
-  /// Upload a profile photo via base64-encoded image data.
-  /// Backend calls uploadInStorage() and stores the URL in user_profile.photo_url.
-  Future<void> uploadPhoto(String base64Data) async {
-    await _api.updateProfile(payload: {'photoFile': base64Data});
+  /// Upload a profile photo. [photoDataUri] must be a full data URI
+  /// (e.g. "data:image/jpeg;base64,...") — the backend's uploadInStorage()
+  /// splits on ";" and "," to extract MIME type and raw bytes.
+  Future<void> uploadPhoto(String photoDataUri) async {
+    await _api.updateProfile(payload: {'photoFile': photoDataUri});
   }
 
   /// Remove the profile photo.

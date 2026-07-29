@@ -51,8 +51,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   Future<void> _verify() async {
     final otp = _otpCtrl.text.trim();
-    if (otp.length < 4) {
-      setState(() => _error = 'Please enter the full verification code.');
+    if (otp.length < 6) {
+      setState(() => _error = 'Please enter the full 6-digit verification code.');
       return;
     }
     setState(() { _isVerifying = true; _error = null; });

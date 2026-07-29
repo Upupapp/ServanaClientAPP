@@ -81,6 +81,8 @@ class ProfileController extends ChangeNotifier {
         gender: gender,
       );
       await loadProfile();
+      _isSaving = false;
+      _notify();
       return true;
     } catch (e) {
       _saveError = _sanitize(e);
@@ -90,13 +92,15 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  Future<bool> uploadPhoto(String base64Data) async {
+  Future<bool> uploadPhoto(String photoDataUri) async {
     _isUploadingPhoto = true;
     _saveError = null;
     _notify();
     try {
-      await _repository.uploadPhoto(base64Data);
+      await _repository.uploadPhoto(photoDataUri);
       await loadProfile();
+      _isUploadingPhoto = false;
+      _notify();
       return true;
     } catch (e) {
       _saveError = _sanitize(e);
@@ -113,6 +117,8 @@ class ProfileController extends ChangeNotifier {
     try {
       await _repository.removePhoto();
       await loadProfile();
+      _isUploadingPhoto = false;
+      _notify();
       return true;
     } catch (e) {
       _saveError = _sanitize(e);
@@ -146,16 +152,21 @@ class ProfileController extends ChangeNotifier {
   }
 
   Future<void> _syncSession(CustomerProfile p) async {
-    final session = await SessionService.getSession();
-    if (session == null) return;
-    final parts = [p.firstName?.trim(), p.lastName?.trim()]
-        .where((s) => s != null && s.isNotEmpty)
-        .join(' ');
-    await SessionService.saveSession(session.copyWith(
-      fullname: parts.isNotEmpty ? parts : session.fullname,
-      mobileNumber: p.phoneNumber ?? session.mobileNumber,
-      emailAddress: p.email.isNotEmpty ? p.email : session.emailAddress,
-    ));
+    // Best-effort — a Hive error must never propagate up and flip the load status.
+    try {
+      final session = await SessionService.getSession();
+      if (session == null) return;
+      final parts = [p.firstName?.trim(), p.lastName?.trim()]
+          .where((s) => s != null && s.isNotEmpty)
+          .join(' ');
+      await SessionService.saveSession(session.copyWith(
+        fullname: parts.isNotEmpty ? parts : session.fullname,
+        mobileNumber: p.phoneNumber ?? session.mobileNumber,
+        emailAddress: p.email.isNotEmpty ? p.email : session.emailAddress,
+      ));
+    } catch (_) {
+      // Ignore — session sync is a cache update, not required for profile display.
+    }
   }
 
   String _sanitize(Object e) {

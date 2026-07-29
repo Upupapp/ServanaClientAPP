@@ -159,7 +159,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    32,
+                    16,
+                    24 + MediaQuery.of(context).padding.bottom,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -349,31 +354,39 @@ class _ProfileHeader extends StatelessWidget {
                             ),
                     ),
                     const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: onEditTap,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.edit_rounded,
-                                size: 12, color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Edit',
-                              style: TextStyle(
-                                fontFamily: FontPalette.primaryFontFamily,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Colors.white,
+                    Semantics(
+                      button: true,
+                      label: 'Edit profile',
+                      child: GestureDetector(
+                        onTap: onEditTap,
+                        child: Container(
+                          // 44pt minimum tap target
+                          constraints: const BoxConstraints(
+                              minWidth: 44, minHeight: 44),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(.18),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.edit_rounded,
+                                  size: 12, color: Colors.white),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Edit',
+                                style: TextStyle(
+                                  fontFamily: FontPalette.primaryFontFamily,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -400,24 +413,36 @@ class _ProfileHeader extends StatelessWidget {
                         const Icon(Icons.verified_rounded,
                             size: 14, color: Colors.white70)
                       else
-                        GestureDetector(
-                          onTap: onVerifyEmailTap,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(.25),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                  color: Colors.amber.withOpacity(.5)),
-                            ),
-                            child: Text(
-                              'Verify',
-                              style: TextStyle(
-                                fontFamily: FontPalette.primaryFontFamily,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
-                                color: Colors.amber.shade200,
+                        Semantics(
+                          button: true,
+                          label: 'Verify email address',
+                          child: GestureDetector(
+                            onTap: onVerifyEmailTap,
+                            child: Container(
+                              // 44pt minimum tap target
+                              constraints: const BoxConstraints(
+                                  minWidth: 44, minHeight: 44),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(.25),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: Colors.amber.shade300),
+                                ),
+                                child: Text(
+                                  'Verify',
+                                  style: TextStyle(
+                                    fontFamily: FontPalette.primaryFontFamily,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                    color: Colors.amber.shade100,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

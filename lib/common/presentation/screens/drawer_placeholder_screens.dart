@@ -417,13 +417,13 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   }
 
   Future<void> _setDefault(String addressId) async {
-    try {
-      await _api.makeAddressPrimary(addressId: addressId);
+    final ok = await _addrCtrl.setPrimaryAddress(addressId);
+    if (!mounted) return;
+    if (ok) {
       await _loadAddresses();
-    } catch (e) {
-      if (!mounted) return;
+    } else if (_addrCtrl.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to set default: $e')),
+        SnackBar(content: Text(_addrCtrl.error!)),
       );
     }
   }
