@@ -314,11 +314,24 @@ abstract class _MessagingStore with Store {
         _updateConversationUnread(conversationId, 0);
 
       case SocketConnectedEvent():
+        _syncAfterReconnect();
+
       case SocketDisconnectedEvent():
       case TypingEvent():
       case ConversationClosedEvent():
         break;
     }
+  }
+
+  /// Re-syncs messages and conversation list after a socket reconnect.
+  /// Guards against the initial connect (when convsByBookingId is still empty)
+  /// so it does not duplicate the load that [initForSession] already performs.
+  void _syncAfterReconnect() {
+    if (convsByBookingId.isEmpty) return;
+    for (final convId in messagesByConvId.keys.toList()) {
+      loadMessages(convId, refresh: true);
+    }
+    loadConversations();
   }
 
   // ── Internal helpers ───────────────────────────────────────────────────────

@@ -211,6 +211,13 @@ class AuthenticationBloc
   Future<void> _onLogout(
       AuthLogout event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
+    // C20 LEAKSHIELD: capture UID before session is deleted so
+    // DraftRepository/OperationJournal clears fire with a valid key.
+    var logoutUid = '';
+    try {
+      final session = await SessionService.getSession();
+      logoutUid = session?.customerID ?? '';
+    } catch (_) {}
     try {
       await repo.logout();
     } catch (_) {
@@ -239,11 +246,9 @@ class AuthenticationBloc
     } catch (_) {}
     // C20 Recovery layer — clear all UID-scoped state to prevent cross-account leakage.
     try {
-      final session = await SessionService.getSession();
-      final uid = session?.customerID ?? '';
-      if (uid.isNotEmpty) {
-        dpLocator<DraftRepository>().clearAllForAccount(uid).ignore();
-        dpLocator<OperationJournal>().clearForAccount(uid).ignore();
+      if (logoutUid.isNotEmpty) {
+        dpLocator<DraftRepository>().clearAllForAccount(logoutUid).ignore();
+        dpLocator<OperationJournal>().clearForAccount(logoutUid).ignore();
       }
       dpLocator<SessionGenerationCoordinator>().advance();
     } catch (_) {}
