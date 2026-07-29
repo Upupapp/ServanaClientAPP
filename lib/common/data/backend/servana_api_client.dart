@@ -359,11 +359,16 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> createBooking({
     required String userId,
     required Map<String, dynamic> payload,
+    String? idempotencyKey,
   }) async {
     final uri = _uri('/api/bookings', {'userId': userId});
+    final headers = {
+      ...await _headers(),
+      if (idempotencyKey != null) 'X-Idempotency-Key': idempotencyKey,
+    };
     final res = await _client.post(
       uri,
-      headers: await _headers(),
+      headers: headers,
       body: jsonEncode(payload),
     );
     return _decodeJson(res);

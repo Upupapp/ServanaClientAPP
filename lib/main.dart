@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/config/app_config.dart';
 import 'package:client/common/config/app_theme.dart';
+import 'package:client/core/recovery/app_lifecycle_coordinator.dart';
+import 'package:client/core/recovery/connectivity_monitor.dart';
+import 'package:client/core/recovery/offline_banner.dart';
 import 'package:client/firebase_options.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
@@ -92,6 +95,8 @@ class _MyAppState extends State<MyApp> {
   late final SettingsController _settingsCtrl;
   late final FcmCoordinator _fcmCoord;
   late final NotificationNavigationCoordinator _navCoord;
+  late final AppLifecycleCoordinator _lifecycleCoord;
+  late final ConnectivityMonitor _connectivity;
 
   @override
   void initState() {
@@ -100,6 +105,18 @@ class _MyAppState extends State<MyApp> {
     _settingsCtrl.load();
     _fcmCoord = dpLocator<FcmCoordinator>();
     _navCoord = dpLocator<NotificationNavigationCoordinator>();
+    _connectivity = dpLocator<ConnectivityMonitor>();
+
+    // Rebuild AppLifecycleCoordinator with the messaging store resume callback,
+    // then attach it to the WidgetsBinding.
+    _lifecycleCoord = dpLocator<AppLifecycleCoordinator>();
+    _lifecycleCoord.attach();
+  }
+
+  @override
+  void dispose() {
+    _lifecycleCoord.detach();
+    super.dispose();
   }
 
   @override
@@ -139,10 +156,13 @@ class _MyAppState extends State<MyApp> {
             routeInformationParser: _router.routeInformationParser,
             routeInformationProvider: _router.routeInformationProvider,
             routerDelegate: _router.routerDelegate,
-            builder: (context, child) => ForegroundNotificationBanner(
-              fcmCoordinator: _fcmCoord,
-              navigationCoordinator: _navCoord,
-              child: child ?? const SizedBox.shrink(),
+            builder: (context, child) => OfflineBanner(
+              monitor: _connectivity,
+              child: ForegroundNotificationBanner(
+                fcmCoordinator: _fcmCoord,
+                navigationCoordinator: _navCoord,
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         ),

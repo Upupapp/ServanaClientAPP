@@ -23,6 +23,9 @@ import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/application/support_create_controller.dart';
 import 'package:client/modules/support/application/support_ticket_controller.dart';
 import 'package:client/modules/support/data/support_draft_repository.dart';
+import 'package:client/core/recovery/draft_repository.dart';
+import 'package:client/core/recovery/operation_journal.dart';
+import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -233,6 +236,16 @@ class AuthenticationBloc
       dpLocator<SupportDraftRepository>().clearAllDrafts().ignore();
       dpLocator<ReviewFormController>().resetPrivateData();
       dpLocator<ReviewDetailController>().resetPrivateData();
+    } catch (_) {}
+    // C20 Recovery layer — clear all UID-scoped state to prevent cross-account leakage.
+    try {
+      final session = await SessionService.getSession();
+      final uid = session?.customerID ?? '';
+      if (uid.isNotEmpty) {
+        dpLocator<DraftRepository>().clearAllForAccount(uid).ignore();
+        dpLocator<OperationJournal>().clearForAccount(uid).ignore();
+      }
+      dpLocator<SessionGenerationCoordinator>().advance();
     } catch (_) {}
     // FCM + notification cleanup (non-blocking; deactivates device token).
     try {

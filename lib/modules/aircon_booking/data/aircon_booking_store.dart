@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
@@ -16,6 +17,10 @@ abstract class _AirconBookingStore with Store {
   final ServanaApiClient api;
 
   _AirconBookingStore({required this.api});
+
+  /// Stable idempotency key for the current booking session.
+  /// Generated once on first [createBooking] call; reused on retry; cleared on reset.
+  String? _idempotencyKey;
 
   // ───────── Observable state ─────────
 
@@ -139,6 +144,7 @@ abstract class _AirconBookingStore with Store {
 
   @action
   void reset() {
+    _idempotencyKey = null;
     selectedOption = null;
     selectedHpKey = null;
     selectedHeightKey = null;
@@ -204,6 +210,7 @@ abstract class _AirconBookingStore with Store {
   /// user starts a fresh booking while already-loaded options are reused.
   @action
   void clearSelectionOnly() {
+    _idempotencyKey = null;
     selectedOption = null;
     selectedHpKey = null;
     selectedHeightKey = null;
@@ -371,6 +378,9 @@ abstract class _AirconBookingStore with Store {
         return;
       }
 
+      // Generate a stable idempotency key once; reuse on retry — never regenerate.
+      _idempotencyKey ??= _uuidV4();
+
       final addressId =
           selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
@@ -395,7 +405,11 @@ abstract class _AirconBookingStore with Store {
         'pricing': pricing,
       };
 
-      final res = await api.createBooking(userId: userId, payload: payload);
+      final res = await api.createBooking(
+        userId: userId,
+        payload: payload,
+        idempotencyKey: _idempotencyKey,
+      );
       bookingResult = res;
       final booking = res['booking'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
@@ -523,6 +537,17 @@ abstract class _AirconBookingStore with Store {
       return 'Something went wrong (${e.statusCode}).';
     }
     return e.toString();
+  }
+
+  static String _uuidV4() {
+    final rng = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+        '${hex.substring(20, 32)}';
   }
 
   /// Snapshot of the just-created booking built from current selections, used

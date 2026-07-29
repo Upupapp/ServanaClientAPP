@@ -1,3 +1,8 @@
+import 'package:client/core/recovery/app_lifecycle_coordinator.dart';
+import 'package:client/core/recovery/connectivity_monitor.dart';
+import 'package:client/core/recovery/draft_repository.dart';
+import 'package:client/core/recovery/operation_journal.dart';
+import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/tracking/application/tracking_controller.dart';
 import 'package:client/modules/tracking/data/tracking_data_source.dart';
@@ -65,6 +70,17 @@ final dpLocator = GetIt.instance;
 
 void initInjector(AppConfig config) {
   dpLocator.registerSingleton<AppConfig>(config);
+
+  // ── C20 Recovery layer ────────────────────────────────────────────────────
+  dpLocator.registerLazySingleton(() => ConnectivityMonitor());
+  dpLocator.registerLazySingleton(() => SessionGenerationCoordinator());
+  dpLocator.registerLazySingleton(() => DraftRepository());
+  dpLocator.registerLazySingleton(() => OperationJournal());
+  dpLocator.registerLazySingleton(
+    () => AppLifecycleCoordinator(
+      connectivity: dpLocator(),
+    ),
+  );
 
   // Auth state notifier — router and BLoC share this singleton.
   dpLocator.registerLazySingleton(() => AuthStateService());

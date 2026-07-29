@@ -23,15 +23,13 @@ class NotificationNavigationCoordinator {
         context.pushNamed(BookingsScreen.routeName);
 
       case ConversationTarget(:final conversationId):
-        // Deep-link to a specific booking conversation by resolving the
-        // conversationId → bookingId lookup. For now we navigate to the inbox
-        // with the conversationId stored as extra so the inbox can surface it.
-        // When the backend returns bookingId alongside the FCM payload,
-        // we can push directly to BookingChatScreen.
+        // Navigate to the inbox. When a conversationId is present it is passed
+        // as a query parameter so the router can reconstruct the destination
+        // after a cold start — state.extra does not survive process termination.
         if (conversationId.isNotEmpty) {
           context.pushNamed(
             MessagesInboxScreen.routeName,
-            extra: {'highlightConversationId': conversationId},
+            queryParameters: {'conversationId': conversationId},
           );
         } else {
           context.pushNamed(MessagesInboxScreen.routeName);
