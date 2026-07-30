@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '306195353425',
     projectId: 'servana-1d13b',
     storageBucket: 'servana-1d13b.appspot.com',
-    iosBundleId: 'com.servana.serviceclient',
+    iosBundleId: 'com.servana.client',
   );
 }
