@@ -10,20 +10,27 @@ ServanaNotification mapNotification(Map<String, dynamic> json) {
   final statusStr = (json['status'] as String?) ?? 'unread';
 
   return ServanaNotification(
-    notificationKey: ((json['notificationKey'] ?? json['notification_key'] ?? '') as Object).toString(),
+    notificationKey:
+        ((json['notificationKey'] ?? json['notification_key'] ?? '') as Object)
+            .toString(),
     type: notificationTypeFromString(json['type'] as String?),
     title: ((json['title'] ?? '') as Object).toString(),
-    safeBody: ((json['safeBody'] ?? json['safe_body'] ?? '') as Object).toString(),
-    safeContextLabel: (json['safeContextLabel'] ?? json['safe_context_label']) as String?,
+    safeBody:
+        ((json['safeBody'] ?? json['safe_body'] ?? '') as Object).toString(),
+    safeContextLabel:
+        (json['safeContextLabel'] ?? json['safe_context_label']) as String?,
     target: targetFromRoute(route),
     isRead: statusStr == 'read',
     canMarkRead: (json['canMarkRead'] ?? json['can_mark_read'] ?? true) as bool,
     canDismiss: (json['canDismiss'] ?? json['can_dismiss'] ?? true) as bool,
-    canOpenDetail: (json['canOpenDetail'] ?? json['can_open_detail'] ?? false) as bool,
+    canOpenDetail:
+        (json['canOpenDetail'] ?? json['can_open_detail'] ?? false) as bool,
     createdAt: rawCreatedAt != null
         ? DateTime.tryParse(rawCreatedAt.toString()) ?? DateTime.now()
         : DateTime.now(),
-    expiresAt: rawExpiresAt != null ? DateTime.tryParse(rawExpiresAt.toString()) : null,
+    expiresAt: rawExpiresAt != null
+        ? DateTime.tryParse(rawExpiresAt.toString())
+        : null,
     readAt: rawReadAt != null ? DateTime.tryParse(rawReadAt.toString()) : null,
   );
 }

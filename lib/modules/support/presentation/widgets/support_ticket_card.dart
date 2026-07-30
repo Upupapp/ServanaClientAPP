@@ -18,7 +18,8 @@ class SupportTicketCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '${ticket.category.customerLabel}: ${ticket.title}. Status: ${ticket.status.customerLabel}',
+      label:
+          '${ticket.category.customerLabel}: ${ticket.title}. Status: ${ticket.status.customerLabel}',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -48,13 +49,16 @@ class SupportTicketCard extends StatelessWidget {
                   ),
                   if (ticket.unreadCount > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: ColorPalette.primaryColorDark,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        ticket.unreadCount > 99 ? '99+' : '${ticket.unreadCount}',
+                        ticket.unreadCount > 99
+                            ? '99+'
+                            : '${ticket.unreadCount}',
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 10,
@@ -109,7 +113,8 @@ class SupportTicketCard extends StatelessWidget {
               if (ticket.status.needsCustomerAction) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(8),
@@ -118,7 +123,8 @@ class SupportTicketCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.reply_rounded, size: 12, color: Color(0xFFB45309)),
+                      const Icon(Icons.reply_rounded,
+                          size: 12, color: Color(0xFFB45309)),
                       const SizedBox(width: 4),
                       Text(
                         'Your response is needed',

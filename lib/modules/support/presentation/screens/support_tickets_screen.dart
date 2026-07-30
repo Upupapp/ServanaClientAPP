@@ -32,21 +32,31 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
 
   String _filterLabel(TicketFilter f) {
     switch (f) {
-      case TicketFilter.open: return 'Open';
-      case TicketFilter.needsAction: return 'Needs Action';
-      case TicketFilter.resolved: return 'Resolved';
-      case TicketFilter.closed: return 'Closed';
-      case TicketFilter.all: return 'All';
+      case TicketFilter.open:
+        return 'Open';
+      case TicketFilter.needsAction:
+        return 'Needs Action';
+      case TicketFilter.resolved:
+        return 'Resolved';
+      case TicketFilter.closed:
+        return 'Closed';
+      case TicketFilter.all:
+        return 'All';
     }
   }
 
   String _emptyTitle(TicketFilter f) {
     switch (f) {
-      case TicketFilter.open: return 'No open requests';
-      case TicketFilter.needsAction: return 'No requests need your response';
-      case TicketFilter.resolved: return 'No resolved requests';
-      case TicketFilter.closed: return 'No closed requests';
-      case TicketFilter.all: return 'No support requests yet';
+      case TicketFilter.open:
+        return 'No open requests';
+      case TicketFilter.needsAction:
+        return 'No requests need your response';
+      case TicketFilter.resolved:
+        return 'No resolved requests';
+      case TicketFilter.closed:
+        return 'No closed requests';
+      case TicketFilter.all:
+        return 'No support requests yet';
     }
   }
 

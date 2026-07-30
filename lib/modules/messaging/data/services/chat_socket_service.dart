@@ -195,8 +195,8 @@ class ChatSocketService {
   // ── Internal ─────────────────────────────────────────────────────────────
 
   void _joinRoomOnSocket(int conversationId) {
-    _socket?.emitWithAck('conversation:join', {'conversationId': conversationId},
-        ack: (data) {
+    _socket?.emitWithAck(
+        'conversation:join', {'conversationId': conversationId}, ack: (data) {
       if (data is Map && data['ok'] != true) {
         debugPrint('[ChatSocket] room join denied for $conversationId: $data');
         _joinedRooms.remove(conversationId);

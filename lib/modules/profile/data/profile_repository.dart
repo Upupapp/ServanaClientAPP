@@ -60,11 +60,13 @@ class ProfileRepository {
       lastName: _str(data, ['lastName', 'last_name']),
       email: _str(data, ['email', 'emailAddress', 'email_address']) ?? '',
       isEmailVerified:
-          data['isEmailVerified'] == true ||
-          data['is_email_verified'] == true,
+          data['isEmailVerified'] == true || data['is_email_verified'] == true,
       phoneNumber: _str(data, [
-        'phoneNumber', 'phone_number', 'mobileNumber',
-        'mobile_number', 'phone',
+        'phoneNumber',
+        'phone_number',
+        'mobileNumber',
+        'mobile_number',
+        'phone',
       ]),
       photoUrl: _str(data, ['photoUrl', 'photo_url']),
       birthdate: _str(data, ['birthdate', 'birth_date']),

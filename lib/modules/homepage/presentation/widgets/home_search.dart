@@ -83,7 +83,8 @@ class _ServanaHomeSearchState extends State<ServanaHomeSearch> {
           child: Row(
             children: [
               const SizedBox(width: 16),
-              Icon(Icons.search_rounded, color: ColorPalette.primaryColor, size: 22),
+              Icon(Icons.search_rounded,
+                  color: ColorPalette.primaryColor, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: AnimatedSwitcher(

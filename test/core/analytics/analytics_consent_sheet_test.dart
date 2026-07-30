@@ -66,7 +66,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Simulate Android back button via NavigatorState.maybePop.
-      final NavigatorState navigator = tester.state(find.byType(Navigator).first);
+      final NavigatorState navigator =
+          tester.state(find.byType(Navigator).first);
       await navigator.maybePop();
       await tester.pumpAndSettle();
 

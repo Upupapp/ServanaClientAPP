@@ -88,7 +88,8 @@ class AuthenticationBloc
       await SessionService.saveSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
       _setAnalyticsUserContext(result.session!.customerID);
-      _trackEvent(const SignInSucceededEvent(authMethod: AuthMethodValues.email));
+      _trackEvent(
+          const SignInSucceededEvent(authMethod: AuthMethodValues.email));
       _notify(AuthStatus.authenticated);
       emit(AuthenticationAuthenticated());
     } else {
@@ -139,8 +140,7 @@ class AuthenticationBloc
             message: 'Google sign-in failed. Please try again.'));
         return;
       }
-      await _loginWithFirebaseToken(
-          firebaseIdToken, googleUser.email, emit);
+      await _loginWithFirebaseToken(firebaseIdToken, googleUser.email, emit);
     } catch (e) {
       debugPrint('[AuthBloc] Google sign-in error: $e');
       _trackEvent(const SignInFailedEvent(
@@ -155,7 +155,8 @@ class AuthenticationBloc
   Future<void> _onFacebookSignIn(
       AuthFacebookSignIn event, Emitter<AuthenticationState> emit) async {
     emit(AuthenticationLoading());
-    _trackEvent(const SignInStartedEvent(authMethod: AuthMethodValues.facebook));
+    _trackEvent(
+        const SignInStartedEvent(authMethod: AuthMethodValues.facebook));
     try {
       final result = await _facebookAuth.login();
       if (result.status != LoginStatus.success || result.accessToken == null) {
@@ -222,7 +223,8 @@ class AuthenticationBloc
       await SessionService.saveSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
       _setAnalyticsUserContext(result.session!.customerID);
-      _trackEvent(SignInSucceededEvent(authMethod: _authMethodFromIdToken(idToken)));
+      _trackEvent(
+          SignInSucceededEvent(authMethod: _authMethodFromIdToken(idToken)));
       _notify(AuthStatus.authenticated);
       emit(AuthenticationAuthenticated());
     } else {
@@ -255,8 +257,7 @@ class AuthenticationBloc
     try {
       // STITCH-C20-POST-003: capture generation before async gap so concurrent
       // logout (which advances the generation) invalidates this in-flight check.
-      final capturedGen =
-          dpLocator<SessionGenerationCoordinator>().current;
+      final capturedGen = dpLocator<SessionGenerationCoordinator>().current;
       final session = await SessionService.getSession();
       if (!dpLocator<SessionGenerationCoordinator>().isValid(capturedGen)) {
         // A logout fired concurrently — discard this stale session check.

@@ -44,7 +44,8 @@ class SupportCreateController extends ChangeNotifier {
   String? get bookingLabel => _bookingLabel;
   String get subject => _subject;
   String get description => _description;
-  Map<String, String> get structuredAnswers => Map.unmodifiable(_structuredAnswers);
+  Map<String, String> get structuredAnswers =>
+      Map.unmodifiable(_structuredAnswers);
   CreateTicketStatus get status => _status;
   String? get error => _error;
   SupportTicket? get createdTicket => _createdTicket;
@@ -88,7 +89,8 @@ class SupportCreateController extends ChangeNotifier {
       final session = await SessionService.getSession();
       if (session == null) return;
       final draft = SupportDraft(
-        draftId: 'draft-${session.customerID}-${DateTime.now().millisecondsSinceEpoch}',
+        draftId:
+            'draft-${session.customerID}-${DateTime.now().millisecondsSinceEpoch}',
         category: _category,
         bookingId: _bookingId,
         bookingLabel: _bookingLabel,
@@ -121,9 +123,8 @@ class SupportCreateController extends ChangeNotifier {
 
   Future<bool> submit() async {
     final descTrimmed = _description.trim();
-    final subjectTrimmed = _subject.trim().isNotEmpty
-        ? _subject.trim()
-        : _category.customerLabel;
+    final subjectTrimmed =
+        _subject.trim().isNotEmpty ? _subject.trim() : _category.customerLabel;
 
     if (descTrimmed.length < 10) {
       _error = 'Please describe your issue in at least a few words.';
@@ -149,7 +150,8 @@ class SupportCreateController extends ChangeNotifier {
         cid = session?.customerID ?? '';
       } catch (_) {}
       final cidPrefix = cid.length > 6 ? cid.substring(0, 6) : cid;
-      final clientRequestId = 'cr-$cidPrefix-${descTrimmed.hashCode.abs()}-${_category.apiKey}';
+      final clientRequestId =
+          'cr-$cidPrefix-${descTrimmed.hashCode.abs()}-${_category.apiKey}';
 
       final ticket = await _repository.createTicket(
         subject: subjectTrimmed,
@@ -168,8 +170,7 @@ class SupportCreateController extends ChangeNotifier {
       // Refresh ticket list
       _supportCtrl.loadTickets(refresh: true).ignore();
 
-      _track(SupportTicketSubmittedEvent(
-          supportCategory: _category.apiKey));
+      _track(SupportTicketSubmittedEvent(supportCategory: _category.apiKey));
       _notify();
       return true;
     } catch (e) {
@@ -218,7 +219,8 @@ class SupportCreateController extends ChangeNotifier {
   String _sanitize(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('401')) return 'Session expired. Please sign in again.';
-    if (msg.contains('network') || msg.contains('socket')) return 'No internet connection. Please try again.';
+    if (msg.contains('network') || msg.contains('socket'))
+      return 'No internet connection. Please try again.';
     return 'Could not submit your request. Please try again.';
   }
 }

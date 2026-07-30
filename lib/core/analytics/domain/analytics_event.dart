@@ -46,7 +46,8 @@ final class ScreenViewEvent extends AnalyticsEvent {
   @override
   Map<String, Object?> get properties => {
         AnalyticsKeys.screenName: screenName,
-        if (previousScreen != null) AnalyticsKeys.previousScreen: previousScreen,
+        if (previousScreen != null)
+          AnalyticsKeys.previousScreen: previousScreen,
       };
 }
 

@@ -53,7 +53,9 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
       ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-          16, 8, 16,
+          16,
+          8,
+          16,
           20 + MediaQuery.of(context).padding.bottom,
         ),
         children: [
@@ -123,7 +125,8 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
                 openCount: open,
                 unreadCount: unread,
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SupportTicketsScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const SupportTicketsScreen()),
                 ),
               );
             },
@@ -171,7 +174,8 @@ class _SafetyBanner extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.emergency_outlined, color: Colors.white, size: 26),
+              const Icon(Icons.emergency_outlined,
+                  color: Colors.white, size: 26),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -288,7 +292,8 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'My support requests${unreadCount > 0 ? ", $unreadCount unread" : ""}',
+      label:
+          'My support requests${unreadCount > 0 ? ", $unreadCount unread" : ""}',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
@@ -332,7 +337,8 @@ class _HistoryRow extends StatelessWidget {
               if (unreadCount > 0)
                 Container(
                   margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: ColorPalette.primaryColorDark,
                     borderRadius: BorderRadius.circular(10),

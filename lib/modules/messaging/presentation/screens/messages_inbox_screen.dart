@@ -146,7 +146,8 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                     await _homeStore.loadBookings();
                     await _msgStore.loadConversations();
                   },
-                  child: filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
+                  child:
+                      filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
                 );
               },
             ),

@@ -5,7 +5,8 @@ import 'package:flutter/foundation.dart';
 enum ReviewDetailStatus { idle, loading, loaded, reporting, error }
 
 class ReviewDetailController extends ChangeNotifier {
-  ReviewDetailController({required ReviewsRepository repository}) : _repo = repository;
+  ReviewDetailController({required ReviewsRepository repository})
+      : _repo = repository;
 
   final ReviewsRepository _repo;
 
@@ -17,11 +18,11 @@ class ReviewDetailController extends ChangeNotifier {
   String? _error;
   bool _reportSubmitted = false;
 
-  ReviewDetailStatus get status          => _status;
-  ServanaReview?     get review          => _review;
-  String?            get error           => _error;
-  bool               get reportSubmitted => _reportSubmitted;
-  bool               get isLoading       => _status == ReviewDetailStatus.loading;
+  ReviewDetailStatus get status => _status;
+  ServanaReview? get review => _review;
+  String? get error => _error;
+  bool get reportSubmitted => _reportSubmitted;
+  bool get isLoading => _status == ReviewDetailStatus.loading;
 
   // ─── Load ─────────────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ class ReviewDetailController extends ChangeNotifier {
     } catch (e) {
       if (_disposed || gen != _generation) return;
       _status = ReviewDetailStatus.error;
-      _error  = _sanitize(e);
+      _error = _sanitize(e);
       _notify();
     }
   }
@@ -54,7 +55,7 @@ class ReviewDetailController extends ChangeNotifier {
     } catch (e) {
       if (_disposed || gen != _generation) return;
       _status = ReviewDetailStatus.error;
-      _error  = _sanitize(e);
+      _error = _sanitize(e);
       _notify();
     }
   }
@@ -84,7 +85,8 @@ class ReviewDetailController extends ChangeNotifier {
 
     final gen = ++_generation;
     try {
-      await _repo.reportReview(reviewId: r.reviewId, reason: reason, details: details);
+      await _repo.reportReview(
+          reviewId: r.reviewId, reason: reason, details: details);
       if (_disposed || gen != _generation) return false;
       _reportSubmitted = true;
       _status = ReviewDetailStatus.loaded;
@@ -93,7 +95,7 @@ class ReviewDetailController extends ChangeNotifier {
     } catch (e) {
       if (_disposed || gen != _generation) return false;
       _status = ReviewDetailStatus.loaded;
-      _error  = 'Could not submit report. Please try again.';
+      _error = 'Could not submit report. Please try again.';
       _notify();
       return false;
     }
@@ -103,9 +105,9 @@ class ReviewDetailController extends ChangeNotifier {
 
   void resetPrivateData() {
     ++_generation;
-    _status          = ReviewDetailStatus.idle;
-    _review          = null;
-    _error           = null;
+    _status = ReviewDetailStatus.idle;
+    _review = null;
+    _error = null;
     _reportSubmitted = false;
     _notify();
   }
@@ -120,7 +122,7 @@ class ReviewDetailController extends ChangeNotifier {
 
   void _begin() {
     _status = ReviewDetailStatus.loading;
-    _error  = null;
+    _error = null;
     _notify();
   }
 
@@ -131,7 +133,8 @@ class ReviewDetailController extends ChangeNotifier {
   String _sanitize(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('401')) return 'Session expired. Please sign in again.';
-    if (msg.contains('network') || msg.contains('socket')) return 'No internet connection.';
+    if (msg.contains('network') || msg.contains('socket'))
+      return 'No internet connection.';
     return 'Could not load review. Please try again.';
   }
 }

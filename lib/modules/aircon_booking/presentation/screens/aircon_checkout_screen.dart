@@ -183,76 +183,78 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Semantics(
-                      label: 'Select ${label.toString().isNotEmpty ? label.toString() : line1.toString()} address',
+                      label:
+                          'Select ${label.toString().isNotEmpty ? label.toString() : line1.toString()} address',
                       button: true,
                       selected: isSelected,
                       excludeSemantics: true,
                       child: InkWell(
                         onTap: () => store.selectAddress(addr),
                         borderRadius: BorderRadius.circular(14),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? ColorPalette.primaryColorDark
-                              : ColorPalette.secondaryBackground,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
                             color: isSelected
                                 ? ColorPalette.primaryColorDark
-                                : ColorPalette.border(.55),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_rounded,
+                                : ColorPalette.secondaryBackground,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
                               color: isSelected
-                                  ? ColorPalette.primaryText
-                                  : ColorPalette.primaryColorDark,
+                                  ? ColorPalette.primaryColorDark
+                                  : ColorPalette.border(.55),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (label.toString().isNotEmpty)
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                color: isSelected
+                                    ? ColorPalette.primaryText
+                                    : ColorPalette.primaryColorDark,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (label.toString().isNotEmpty)
+                                      Text(
+                                        label.toString(),
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          fontWeight: FontWeight.w800,
+                                          color: isSelected
+                                              ? ColorPalette.primaryText
+                                              : ColorPalette.secondaryText,
+                                        ),
+                                      ),
                                     Text(
-                                      label.toString(),
+                                      '$line1, $line2',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontFamily:
                                             FontPalette.primaryFontFamily,
-                                        fontWeight: FontWeight.w800,
                                         color: isSelected
                                             ? ColorPalette.primaryText
-                                            : ColorPalette.secondaryText,
+                                                .withOpacity(.85)
+                                            : ColorPalette.accentText,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  Text(
-                                    '$line1, $line2',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: FontPalette.primaryFontFamily,
-                                      color: isSelected
-                                          ? ColorPalette.primaryText
-                                              .withOpacity(.85)
-                                          : ColorPalette.accentText,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            if (isSelected)
-                              Icon(Icons.check_circle,
-                                  color: ColorPalette.primaryText),
-                          ],
+                              if (isSelected)
+                                Icon(Icons.check_circle,
+                                    color: ColorPalette.primaryText),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   );
                 }),
                 // Add new address button

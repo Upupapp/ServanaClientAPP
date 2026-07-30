@@ -171,8 +171,8 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
                   SnackBar(
                     content: Text(
                       'Your safety report has been submitted. Servana will review it.',
-                      style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily),
+                      style:
+                          TextStyle(fontFamily: FontPalette.primaryFontFamily),
                     ),
                     backgroundColor: ColorPalette.primaryColorDark,
                   ),
@@ -409,29 +409,29 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
                     constraints: const BoxConstraints(minHeight: 44),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: sel
-                        ? ColorPalette.primaryColorDark
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
+                    decoration: BoxDecoration(
                       color: sel
                           ? ColorPalette.primaryColorDark
-                          : ColorPalette.border(.35),
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: sel
+                            ? ColorPalette.primaryColorDark
+                            : ColorPalette.border(.35),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    s.label,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: sel ? Colors.white : ColorPalette.accentText,
+                    child: Text(
+                      s.label,
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: sel ? Colors.white : ColorPalette.accentText,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
+              );
             }).toList(),
           ),
           const SizedBox(height: 14),
@@ -469,8 +469,8 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
               fontSize: 13,
               color: ColorPalette.secondaryText,
             ),
-            decoration: _inputDecoration(
-                'Describe what happened, when, and where…'),
+            decoration:
+                _inputDecoration('Describe what happened, when, and where…'),
           ),
           if (_error != null) ...[
             const SizedBox(height: 6),

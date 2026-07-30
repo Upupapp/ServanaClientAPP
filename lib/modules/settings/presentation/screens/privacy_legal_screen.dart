@@ -39,8 +39,9 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
 
   Future<void> _onAnalyticsToggled(bool value) async {
     setState(() => _saving = true);
-    final consent =
-        value ? AnalyticsConsent.fullConsent() : AnalyticsConsent.defaultConsent();
+    final consent = value
+        ? AnalyticsConsent.fullConsent()
+        : AnalyticsConsent.defaultConsent();
     await dpLocator<AnalyticsCoordinator>().setConsent(consent);
     if (!mounted) return;
     setState(() {
@@ -71,7 +72,6 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
           : ListView(
               children: [
                 const SizedBox(height: 8),
-
                 SettingsSectionHeader('Analytics & Diagnostics'),
                 SettingsGroup(children: [
                   SettingsToggleTile(
@@ -84,7 +84,6 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                     onChanged: _onAnalyticsToggled,
                   ),
                 ]),
-
                 SettingsSectionHeader('Legal Documents'),
                 SettingsGroup(children: [
                   SettingsNavTile(
@@ -114,7 +113,6 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                         _launch(context, 'https://servana.com.ph/refunds'),
                   ),
                 ]),
-
                 SettingsSectionHeader('Your Data'),
                 SettingsGroup(children: [
                   SettingsUnavailableTile(
@@ -129,7 +127,6 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                         'Account deletion will be available in a future update',
                   ),
                 ]),
-
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

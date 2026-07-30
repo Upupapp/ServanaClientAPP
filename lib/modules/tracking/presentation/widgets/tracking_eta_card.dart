@@ -36,9 +36,8 @@ class TrackingEtaCard extends StatelessWidget {
     final expired = e.isExpired(now);
     final remaining = e.remainingMinutes(now);
 
-    final Color headerColor = expired
-        ? Colors.orange.shade700
-        : ColorPalette.primaryColorDark;
+    final Color headerColor =
+        expired ? Colors.orange.shade700 : ColorPalette.primaryColorDark;
 
     final String etaLabel;
     final String etaSublabel;
@@ -121,7 +120,8 @@ class _EstimateNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.info_outline_rounded, size: 11, color: ColorPalette.accentText.withOpacity(.7)),
+        Icon(Icons.info_outline_rounded,
+            size: 11, color: ColorPalette.accentText.withOpacity(.7)),
         const SizedBox(width: 4),
         Text(
           'Estimated at assignment · not a live countdown',

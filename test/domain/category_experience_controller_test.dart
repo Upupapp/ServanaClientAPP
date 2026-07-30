@@ -27,8 +27,11 @@ class _FakeRepo extends CategoryExperienceRepository {
 }
 
 ServiceOptionSummary _opt(String id, {String categoryKey = ''}) =>
-    ServiceOptionSummaryMapper.fromMap(
-        <String, dynamic>{'id': id, 'name': 'Option $id', 'level2': categoryKey});
+    ServiceOptionSummaryMapper.fromMap(<String, dynamic>{
+      'id': id,
+      'name': 'Option $id',
+      'level2': categoryKey
+    });
 
 void main() {
   setUp(CategoryRevealPolicy.reset);
@@ -53,14 +56,14 @@ void main() {
           isTrue);
     });
 
-    test('H2: failure sets status=failure and exposes a non-null error', () async {
+    test('H2: failure sets status=failure and exposes a non-null error',
+        () async {
       final ctrl = CategoryExperienceController(
           _FakeRepo(error: Exception('network error')));
 
       await ctrl.load(
         categoryId: ServiceCategoryId.massage,
-        config:
-            CategoryPresentationRegistry.forId(ServiceCategoryId.massage),
+        config: CategoryPresentationRegistry.forId(ServiceCategoryId.massage),
         reducedMotion: true,
       );
 
@@ -208,7 +211,8 @@ void main() {
 
   group('CategoryExperienceController.dismissOverlay()', () {
     test('sets showOverlay to false', () async {
-      final ctrl = CategoryExperienceController(_FakeRepo(options: [_opt('1')]));
+      final ctrl =
+          CategoryExperienceController(_FakeRepo(options: [_opt('1')]));
       await ctrl.load(
         categoryId: ServiceCategoryId.beautyWellness,
         config: CategoryPresentationRegistry.forId(

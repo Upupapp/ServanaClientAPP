@@ -178,8 +178,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 _fieldLabel('Email Address'),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                   decoration: BoxDecoration(
                     color: ColorPalette.secondaryBackground,
                     borderRadius: BorderRadius.circular(14),
@@ -193,8 +193,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           style: TextStyle(
                             fontFamily: FontPalette.primaryFontFamily,
                             fontSize: 15,
-                            color:
-                                ColorPalette.secondaryText.withOpacity(.55),
+                            color: ColorPalette.secondaryText.withOpacity(.55),
                           ),
                         ),
                       ),
@@ -253,9 +252,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                               style: TextStyle(
                                 fontFamily: FontPalette.primaryFontFamily,
                                 fontSize: 15,
-                                color: _birthdate != null && _birthdate!.isNotEmpty
-                                    ? ColorPalette.secondaryText
-                                    : ColorPalette.secondaryText.withOpacity(.35),
+                                color:
+                                    _birthdate != null && _birthdate!.isNotEmpty
+                                        ? ColorPalette.secondaryText
+                                        : ColorPalette.secondaryText
+                                            .withOpacity(.35),
                               ),
                             ),
                           ),
@@ -282,8 +283,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           value: _genderOptions[i].$1,
                           label: _genderOptions[i].$2,
                           selected: _gender == _genderOptions[i].$1,
-                          onTap: () => setState(
-                              () => _gender = _genderOptions[i].$1),
+                          onTap: () =>
+                              setState(() => _gender = _genderOptions[i].$1),
                           topRadius: i == 0,
                           bottomRadius: i == _genderOptions.length - 1,
                         ),
@@ -420,8 +421,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(
-                color: ColorPalette.primaryColorDark, width: 1.5),
+            borderSide:
+                BorderSide(color: ColorPalette.primaryColorDark, width: 1.5),
           ),
         ),
       );

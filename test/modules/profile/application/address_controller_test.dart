@@ -120,7 +120,8 @@ void main() {
 
   group('AddressController.setPrimaryAddress()', () {
     test('sets matching address as primary optimistically', () async {
-      final repo = _Repo()..willReturn([_addr('a1'), _addr('a2', isPrimary: true)]);
+      final repo = _Repo()
+        ..willReturn([_addr('a1'), _addr('a2', isPrimary: true)]);
       final api = _Api();
       final ctrl = _makeCtrl(repo: repo, api: api);
       await ctrl.loadAddresses();
@@ -149,8 +150,8 @@ void main() {
     });
 
     test('primaryAddress getter returns the primary address', () async {
-      final repo =
-          _Repo()..willReturn([_addr('a1'), _addr('a2', isPrimary: true)]);
+      final repo = _Repo()
+        ..willReturn([_addr('a1'), _addr('a2', isPrimary: true)]);
       final ctrl = _makeCtrl(repo: repo);
       await ctrl.loadAddresses();
 
@@ -218,8 +219,8 @@ void main() {
     });
 
     test('displayLabel falls back to "Address" when label is null', () {
-      final a = CustomerAddress(
-          addressId: 'a', userId: 'u', addressOne: '1 Main St');
+      final a =
+          CustomerAddress(addressId: 'a', userId: 'u', addressOne: '1 Main St');
       expect(a.displayLabel, 'Address');
     });
 

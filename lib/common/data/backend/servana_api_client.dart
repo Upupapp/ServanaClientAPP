@@ -591,7 +591,8 @@ class ServanaApiClient {
     required String category,
     String? description,
   }) async {
-    final uri = _uri('/api/chat/conversations/$conversationId/messages/$messageId/report');
+    final uri = _uri(
+        '/api/chat/conversations/$conversationId/messages/$messageId/report');
     final res = await _client.post(
       uri,
       headers: await _headers(),

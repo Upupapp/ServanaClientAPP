@@ -381,8 +381,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                   TextSpan(
                                     text: 'Already have an account? ',
                                     style: TextStyle(
-                                      fontFamily:
-                                          FontPalette.primaryFontFamily,
+                                      fontFamily: FontPalette.primaryFontFamily,
                                       color: ColorPalette.secondaryText,
                                       fontSize: 14,
                                     ),

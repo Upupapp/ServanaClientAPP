@@ -619,7 +619,8 @@ class _GradientHeader extends StatelessWidget {
                   button: true,
                   excludeSemantics: true,
                   child: GestureDetector(
-                    onTap: () => context.pushNamed(NotificationsScreen.routeName),
+                    onTap: () =>
+                        context.pushNamed(NotificationsScreen.routeName),
                     behavior: HitTestBehavior.opaque,
                     child: const Center(
                       child: Icon(Icons.notifications_outlined,

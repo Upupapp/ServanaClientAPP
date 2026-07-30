@@ -34,7 +34,8 @@ void main() {
     });
 
     test('returns null when etaMinutes is missing', () {
-      expect(TrackingEta.fromBookingMap({'etaAt': base.toIso8601String()}), isNull);
+      expect(TrackingEta.fromBookingMap({'etaAt': base.toIso8601String()}),
+          isNull);
     });
 
     test('returns null when etaAt is missing', () {

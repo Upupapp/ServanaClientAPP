@@ -10,17 +10,26 @@ import 'package:client/modules/review/domain/review_visibility.dart';
 import 'package:client/modules/review/domain/servana_review.dart';
 import 'package:flutter/foundation.dart';
 
-enum ReviewFormStatus { idle, loadingEligibility, eligible, notEligible, submitting, succeeded, failed }
+enum ReviewFormStatus {
+  idle,
+  loadingEligibility,
+  eligible,
+  notEligible,
+  submitting,
+  succeeded,
+  failed
+}
 
 class ReviewFormController extends ChangeNotifier {
-  ReviewFormController({required ReviewsRepository repository}) : _repo = repository;
+  ReviewFormController({required ReviewsRepository repository})
+      : _repo = repository;
 
   final ReviewsRepository _repo;
 
   bool _disposed = false;
   int _generation = 0;
 
-  ReviewFormStatus _status  = ReviewFormStatus.idle;
+  ReviewFormStatus _status = ReviewFormStatus.idle;
   ReviewEligibility? _eligibility;
   ReviewDraft? _draft;
   ServanaReview? _submitted;
@@ -28,21 +37,22 @@ class ReviewFormController extends ChangeNotifier {
   List<String> _dimensionKeys = ReviewDimensionSet.general;
   String? _serviceCategory;
 
-  ReviewFormStatus   get status       => _status;
-  ReviewEligibility? get eligibility  => _eligibility;
-  ReviewDraft?       get draft        => _draft;
-  ServanaReview?     get submitted    => _submitted;
-  String?            get error        => _error;
-  List<String>       get dimensionKeys => _dimensionKeys;
-  bool               get isSubmitting => _status == ReviewFormStatus.submitting;
+  ReviewFormStatus get status => _status;
+  ReviewEligibility? get eligibility => _eligibility;
+  ReviewDraft? get draft => _draft;
+  ServanaReview? get submitted => _submitted;
+  String? get error => _error;
+  List<String> get dimensionKeys => _dimensionKeys;
+  bool get isSubmitting => _status == ReviewFormStatus.submitting;
 
   // ─── Eligibility check ────────────────────────────────────────────────────
 
-  Future<void> loadEligibility(String bookingId, {String? serviceCategory}) async {
+  Future<void> loadEligibility(String bookingId,
+      {String? serviceCategory}) async {
     _status = ReviewFormStatus.loadingEligibility;
-    _error  = null;
+    _error = null;
     _eligibility = null;
-    _submitted   = null;
+    _submitted = null;
     _notify();
 
     _serviceCategory = serviceCategory;
@@ -56,7 +66,7 @@ class ReviewFormController extends ChangeNotifier {
 
       if (eligibility.eligible) {
         _draft = ReviewDraft(
-          bookingId:       bookingId,
+          bookingId: bookingId,
           clientRequestId: await _buildClientRequestId(bookingId),
         );
         _status = ReviewFormStatus.eligible;
@@ -67,7 +77,7 @@ class ReviewFormController extends ChangeNotifier {
     } catch (e) {
       if (_disposed || gen != _generation) return;
       _status = ReviewFormStatus.failed;
-      _error  = _sanitize(e);
+      _error = _sanitize(e);
       _notify();
     }
   }
@@ -111,7 +121,7 @@ class ReviewFormController extends ChangeNotifier {
     }
 
     _status = ReviewFormStatus.submitting;
-    _error  = null;
+    _error = null;
     _notify();
 
     final gen = ++_generation;
@@ -119,7 +129,7 @@ class ReviewFormController extends ChangeNotifier {
       final review = await _repo.createReview(d);
       if (_disposed || gen != _generation) return false;
       _submitted = review;
-      _status    = ReviewFormStatus.succeeded;
+      _status = ReviewFormStatus.succeeded;
       _notify();
       _track(ReviewSubmittedEvent(
         ratingBucket: '${d.overallRating}',
@@ -131,7 +141,7 @@ class ReviewFormController extends ChangeNotifier {
     } catch (e) {
       if (_disposed || gen != _generation) return false;
       _status = ReviewFormStatus.failed;
-      _error  = _sanitize(e);
+      _error = _sanitize(e);
       _notify();
       return false;
     }
@@ -146,11 +156,11 @@ class ReviewFormController extends ChangeNotifier {
   }
 
   void reset() {
-    _status         = ReviewFormStatus.idle;
-    _eligibility    = null;
-    _draft          = null;
-    _submitted      = null;
-    _error          = null;
+    _status = ReviewFormStatus.idle;
+    _eligibility = null;
+    _draft = null;
+    _submitted = null;
+    _error = null;
     _serviceCategory = null;
     _notify();
   }
@@ -185,7 +195,9 @@ class ReviewFormController extends ChangeNotifier {
     if (msg.contains('401') || msg.contains('session')) {
       return 'Session expired. Please sign in again.';
     }
-    if (msg.contains('duplicate') || msg.contains('409') || msg.contains('already')) {
+    if (msg.contains('duplicate') ||
+        msg.contains('409') ||
+        msg.contains('already')) {
       return 'You\'ve already reviewed this booking.';
     }
     if (msg.contains('network') || msg.contains('socket')) {

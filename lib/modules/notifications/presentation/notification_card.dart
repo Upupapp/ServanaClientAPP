@@ -82,8 +82,7 @@ class NotificationCard extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -147,8 +146,7 @@ class NotificationCard extends StatelessWidget {
                               style: TextStyle(
                                 fontFamily: FontPalette.primaryFontFamily,
                                 fontSize: 11,
-                                color:
-                                    ColorPalette.accentText.withOpacity(0.7),
+                                color: ColorPalette.accentText.withOpacity(0.7),
                               ),
                             ),
                             if (notification.safeContextLabel != null) ...[
@@ -156,8 +154,8 @@ class NotificationCard extends StatelessWidget {
                                 ' · ',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: ColorPalette.accentText
-                                      .withOpacity(0.5),
+                                  color:
+                                      ColorPalette.accentText.withOpacity(0.5),
                                 ),
                               ),
                               Flexible(
@@ -185,8 +183,7 @@ class NotificationCard extends StatelessWidget {
                                 child: GestureDetector(
                                   onTap: onMarkRead,
                                   child: Padding(
-                                    padding:
-                                        const EdgeInsets.only(left: 8),
+                                    padding: const EdgeInsets.only(left: 8),
                                     child: Text(
                                       'Mark read',
                                       style: TextStyle(

@@ -38,7 +38,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     });
     try {
       await _repo.resendEmailVerification();
-      if (mounted) setState(() { _isSending = false; _otpSent = true; });
+      if (mounted)
+        setState(() {
+          _isSending = false;
+          _otpSent = true;
+        });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -52,15 +56,23 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Future<void> _verify() async {
     final otp = _otpCtrl.text.trim();
     if (otp.length < 6) {
-      setState(() => _error = 'Please enter the full 6-digit verification code.');
+      setState(
+          () => _error = 'Please enter the full 6-digit verification code.');
       return;
     }
-    setState(() { _isVerifying = true; _error = null; });
+    setState(() {
+      _isVerifying = true;
+      _error = null;
+    });
     try {
       await _repo.verifyEmailOtp(otp);
       // Refresh the profile so the verification badge appears.
       await _profileCtrl.loadProfile();
-      if (mounted) setState(() { _isVerifying = false; _verified = true; });
+      if (mounted)
+        setState(() {
+          _isVerifying = false;
+          _verified = true;
+        });
       await Future.delayed(const Duration(milliseconds: 1200));
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -218,8 +230,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   ),
                   filled: true,
                   fillColor: ColorPalette.secondaryBackground,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 16),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(color: ColorPalette.border(.45)),

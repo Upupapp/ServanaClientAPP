@@ -493,7 +493,8 @@ class HttpBackend implements Backend {
   }
 
   @override
-  Future<List<SearchServiceResult>> searchService({required String keyword}) async {
+  Future<List<SearchServiceResult>> searchService(
+      {required String keyword}) async {
     return [];
   }
 
@@ -568,7 +569,6 @@ class HttpBackend implements Backend {
   Future<bool> markAsCompleted({required String id}) async {
     return false;
   }
-
 }
 
 /// Wraps every outgoing request with a [Duration] timeout.

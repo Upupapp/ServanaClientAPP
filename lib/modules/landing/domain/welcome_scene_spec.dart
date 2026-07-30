@@ -58,7 +58,8 @@ class WelcomeSceneSpec {
       subtext:
           'Find and book available home and personal services in one convenient app.',
       backgroundAsset: 'assets/images/welcome/page_1_bg.png',
-      semanticDescription: 'Page 1 of 3: A Filipino customer using Servana at home',
+      semanticDescription:
+          'Page 1 of 3: A Filipino customer using Servana at home',
       gradientStops: [0.058, 0.607, 0.738],
       compactFocalPoint: Alignment.topCenter,
       standardFocalPoint: Alignment.center,

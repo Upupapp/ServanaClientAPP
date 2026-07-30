@@ -17,9 +17,12 @@ class MockFirebaseAnalytics extends Mock implements FirebaseAnalytics {}
 // Minimal fake event with a known banned key in properties.
 final class _PiiEvent extends AnalyticsEvent {
   const _PiiEvent();
-  @override String get eventName => 'test_pii_event';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {
+  @override
+  String get eventName => 'test_pii_event';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties => {
         AnalyticsKeys.entrySource: 'home',
         'email': 'user@example.com', // banned key — must be stripped
       };
@@ -28,19 +31,25 @@ final class _PiiEvent extends AnalyticsEvent {
 // Minimal valid event with no PII.
 final class _ValidEvent extends AnalyticsEvent {
   const _ValidEvent();
-  @override String get eventName => 'test_valid_event';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties =>
-      {AnalyticsKeys.entrySource: 'home'};
+  @override
+  String get eventName => 'test_valid_event';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties => {AnalyticsKeys.entrySource: 'home'};
 }
 
 // Event with a fast dedupKey to test deduplication.
 final class _DedupEvent extends AnalyticsEvent {
   const _DedupEvent();
-  @override String get eventName => 'test_dedup_event';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override String? get dedupKey => 'test_dedup';
-  @override Map<String, Object?> get properties => {};
+  @override
+  String get eventName => 'test_dedup_event';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  String? get dedupKey => 'test_dedup';
+  @override
+  Map<String, Object?> get properties => {};
 }
 
 AnalyticsCoordinator _makeCoordinator(
@@ -75,14 +84,15 @@ void main() {
   // ── Stage 1: Consent gate ──────────────────────────────────────────────────
 
   group('Stage 1 — consent gate', () {
-    test('blocks analytics event when consent is defaultConsent (essential-only)',
+    test(
+        'blocks analytics event when consent is defaultConsent (essential-only)',
         () async {
       final mockFa = MockFirebaseAnalytics();
       final coord = _makeCoordinator(mockFa);
       // defaultConsent grants only essential — analytics events must be blocked.
       await coord.track(const _ValidEvent());
-      verifyNever(
-          () => mockFa.logEvent(name: any(named: 'name'), parameters: any(named: 'parameters')));
+      verifyNever(() => mockFa.logEvent(
+          name: any(named: 'name'), parameters: any(named: 'parameters')));
     });
 
     test('passes essential event through even with defaultConsent', () async {
@@ -153,7 +163,8 @@ void main() {
 
     test('second fire after dedup window is NOT suppressed', () async {
       final mockFa = MockFirebaseAnalytics();
-      final dedup = AnalyticsDeduplicator(window: const Duration(milliseconds: 50));
+      final dedup =
+          AnalyticsDeduplicator(window: const Duration(milliseconds: 50));
       final coord = _makeCoordinator(mockFa, deduplicator: dedup);
       await coord.setConsent(AnalyticsConsent.fullConsent());
 

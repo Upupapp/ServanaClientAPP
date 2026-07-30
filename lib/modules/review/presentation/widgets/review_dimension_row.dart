@@ -44,7 +44,8 @@ class ReviewDimensionRow extends StatelessWidget {
                 final val = i + 1;
                 final filled = val <= score;
                 return Semantics(
-                  label: '$label: ${SemanticsLabels.ratingLabel(val, 5, SemanticsLabels.ratingMeaning(val))}',
+                  label:
+                      '$label: ${SemanticsLabels.ratingLabel(val, 5, SemanticsLabels.ratingMeaning(val))}',
                   hint: enabled ? SemanticsLabels.ratingHint(score) : null,
                   button: enabled,
                   selected: score == val,
@@ -54,8 +55,12 @@ class ReviewDimensionRow extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Icon(
-                        filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                        color: filled ? const Color(0xFFF59E0B) : const Color(0xFFD1D5DB),
+                        filled
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: filled
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFFD1D5DB),
                         size: 22,
                       ),
                     ),

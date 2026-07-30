@@ -134,8 +134,7 @@ class AddressController extends ChangeNotifier {
 
   CustomerAddress _fromJson(Map<String, dynamic> data) {
     return CustomerAddress(
-      addressId:
-          data['addressId']?.toString() ?? data['id']?.toString() ?? '',
+      addressId: data['addressId']?.toString() ?? data['id']?.toString() ?? '',
       userId: data['userId']?.toString() ?? data['user_id']?.toString() ?? '',
       locationId: data['locationId']?.toString(),
       addressOne: data['addressOne'] ?? data['address_one'] ?? '',

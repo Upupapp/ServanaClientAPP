@@ -24,8 +24,7 @@ class PendingPaymentContext {
   final DateTime savedAt;
 
   static const Duration _maxAge = Duration(hours: 2);
-  bool get isExpired =>
-      DateTime.now().difference(savedAt).abs() > _maxAge;
+  bool get isExpired => DateTime.now().difference(savedAt).abs() > _maxAge;
 
   Map<String, dynamic> toJson() => {
         'bookingId': bookingId,
@@ -65,8 +64,7 @@ class DraftRepository {
     final raw = await _storage.read(key: '$_kDraftPrefix$uid');
     if (raw == null || raw.isEmpty) return null;
     try {
-      final draft = _draftFromJson(
-          jsonDecode(raw) as Map<dynamic, dynamic>);
+      final draft = _draftFromJson(jsonDecode(raw) as Map<dynamic, dynamic>);
       return draft.isExpired ? null : draft;
     } catch (_) {
       return null;
@@ -87,8 +85,7 @@ class DraftRepository {
   /// Returns a stable idempotency key for [draftId], generating one on first
   /// call. Reuse is guaranteed across retries within the same booking session.
   /// Call [clearIdempotencyKey] only after the booking is confirmed by the backend.
-  Future<String> getOrCreateIdempotencyKey(
-      String uid, String draftId) async {
+  Future<String> getOrCreateIdempotencyKey(String uid, String draftId) async {
     final k = '$_kIdemPrefix${uid}_$draftId';
     final existing = await _storage.read(key: k);
     if (existing != null && existing.isNotEmpty) return existing;
@@ -131,12 +128,14 @@ class DraftRepository {
   /// Call during logout to prevent cross-account state leakage.
   Future<void> clearAllForAccount(String uid) async {
     final all = await _storage.readAll();
-    final toDelete = all.keys.where(
-      (k) =>
-          k.startsWith('$_kDraftPrefix$uid') ||
-          k.startsWith('$_kIdemPrefix$uid') ||
-          k.startsWith('$_kPaymentPrefix$uid'),
-    ).toList();
+    final toDelete = all.keys
+        .where(
+          (k) =>
+              k.startsWith('$_kDraftPrefix$uid') ||
+              k.startsWith('$_kIdemPrefix$uid') ||
+              k.startsWith('$_kPaymentPrefix$uid'),
+        )
+        .toList();
     for (final k in toDelete) {
       await _storage.delete(key: k);
     }
@@ -146,12 +145,14 @@ class DraftRepository {
   /// Used as a fallback during logout when the UID cannot be determined (LEAK M-1).
   Future<void> clearAll() async {
     final all = await _storage.readAll();
-    final toDelete = all.keys.where(
-      (k) =>
-          k.startsWith(_kDraftPrefix) ||
-          k.startsWith(_kIdemPrefix) ||
-          k.startsWith(_kPaymentPrefix),
-    ).toList();
+    final toDelete = all.keys
+        .where(
+          (k) =>
+              k.startsWith(_kDraftPrefix) ||
+              k.startsWith(_kIdemPrefix) ||
+              k.startsWith(_kPaymentPrefix),
+        )
+        .toList();
     for (final k in toDelete) {
       await _storage.delete(key: k);
     }
@@ -201,8 +202,9 @@ class DraftRepository {
     return BookingDraft(
       id: j['id'] as String,
       createdAt: DateTime.parse(j['createdAt'] as String),
-      updatedAt:
-          j['updatedAt'] != null ? DateTime.parse(j['updatedAt'] as String) : null,
+      updatedAt: j['updatedAt'] != null
+          ? DateTime.parse(j['updatedAt'] as String)
+          : null,
       status: status,
       serviceId: j['serviceId'] as String?,
       merchantId: j['merchantId'] as String?,
@@ -237,8 +239,7 @@ class DraftRepository {
     final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    final hex =
-        bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
         '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
         '${hex.substring(20, 32)}';

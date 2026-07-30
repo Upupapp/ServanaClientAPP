@@ -95,8 +95,8 @@ void main() {
     test('location failure is isolated — booking status still returned',
         () async {
       final ds = _FakeDataSource()
-        ..bookingResponse = makeBookingBody(
-            status: 'INPROGRESS', workerUid: 'uid-001')
+        ..bookingResponse =
+            makeBookingBody(status: 'INPROGRESS', workerUid: 'uid-001')
         ..locationError = Exception('network error');
 
       final repo = TrackingRepository(ds);
@@ -108,8 +108,7 @@ void main() {
     });
 
     test('does not fire location call when knownWorkerUid is empty', () async {
-      final ds = _FakeDataSource()
-        ..bookingResponse = makeBookingBody();
+      final ds = _FakeDataSource()..bookingResponse = makeBookingBody();
 
       final repo = TrackingRepository(ds);
       await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: '');
@@ -135,8 +134,8 @@ void main() {
 
     test('late UID location failure is isolated', () async {
       final ds = _FakeDataSource()
-        ..bookingResponse = makeBookingBody(
-            status: 'ENROUTE', workerUid: 'uid-from-booking')
+        ..bookingResponse =
+            makeBookingBody(status: 'ENROUTE', workerUid: 'uid-from-booking')
         ..locationError = Exception('timeout');
 
       final repo = TrackingRepository(ds);
@@ -205,15 +204,14 @@ void main() {
         ..bookingResponse = {'status': 'ENROUTE', 'workerUid': 'uid-001'};
 
       final repo = TrackingRepository(ds);
-      final state = await repo.fetchSnapshot(
-          bookingId: '42', seedName: 'Seeded Name');
+      final state =
+          await repo.fetchSnapshot(bookingId: '42', seedName: 'Seeded Name');
 
       expect(state.providerName, 'Seeded Name');
     });
 
     test('service address falls back to seedAddress', () async {
-      final ds = _FakeDataSource()
-        ..bookingResponse = {'status': 'ENROUTE'};
+      final ds = _FakeDataSource()..bookingResponse = {'status': 'ENROUTE'};
 
       final repo = TrackingRepository(ds);
       final state = await repo.fetchSnapshot(
@@ -223,8 +221,7 @@ void main() {
     });
 
     test('service coordinates fall back to Metro Manila default', () async {
-      final ds = _FakeDataSource()
-        ..bookingResponse = {'status': 'ENROUTE'};
+      final ds = _FakeDataSource()..bookingResponse = {'status': 'ENROUTE'};
 
       final repo = TrackingRepository(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
@@ -280,8 +277,7 @@ void main() {
     });
 
     test('uses raw response body when no envelope key is present', () async {
-      final ds = _FakeDataSource()
-        ..bookingResponse = {'status': 'COMPLETED'};
+      final ds = _FakeDataSource()..bookingResponse = {'status': 'COMPLETED'};
 
       final repo = TrackingRepository(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
@@ -321,13 +317,14 @@ void main() {
         ..bookingResponse = {'status': 'ENROUTE', 'workerUid': 'uid-001'};
 
       final repo = TrackingRepository(ds);
-      final state = await repo.fetchSnapshot(
-          bookingId: '42', seedPhone: '+639179999999');
+      final state =
+          await repo.fetchSnapshot(bookingId: '42', seedPhone: '+639179999999');
 
       expect(state.providerPhone, '+639179999999');
     });
 
-    test('knownWorkerUid surfaces as providerUid in output state when body omits uid',
+    test(
+        'knownWorkerUid surfaces as providerUid in output state when body omits uid',
         () async {
       final ds = _FakeDataSource()
         ..bookingResponse = {'status': 'ENROUTE'} // no uid in body

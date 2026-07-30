@@ -67,7 +67,8 @@ Future<void> _bootstrap() async {
     if (!kDebugMode) {
       // C21: Only capture Flutter framework fatal errors here.
       // Zone errors are handled separately below with non-fatal classification.
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
     }
   }
 
@@ -155,8 +156,12 @@ class _MyAppState extends State<MyApp> {
         if (!mounted) return;
         final data = <String, dynamic>{
           ...message.data,
-          'title': message.notification?.title ?? message.data['title'] as String? ?? '',
-          'body': message.notification?.body ?? message.data['body'] as String? ?? '',
+          'title': message.notification?.title ??
+              message.data['title'] as String? ??
+              '',
+          'body': message.notification?.body ??
+              message.data['body'] as String? ??
+              '',
         };
         final notification = mapFcmDataToNotification(data);
         if (notification != null) _navCoord.navigateTo(context, notification);
@@ -168,8 +173,11 @@ class _MyAppState extends State<MyApp> {
       if (!mounted) return;
       final data = <String, dynamic>{
         ...message.data,
-        'title': message.notification?.title ?? message.data['title'] as String? ?? '',
-        'body': message.notification?.body ?? message.data['body'] as String? ?? '',
+        'title': message.notification?.title ??
+            message.data['title'] as String? ??
+            '',
+        'body':
+            message.notification?.body ?? message.data['body'] as String? ?? '',
       };
       final notification = mapFcmDataToNotification(data);
       if (notification != null) _navCoord.navigateTo(context, notification);

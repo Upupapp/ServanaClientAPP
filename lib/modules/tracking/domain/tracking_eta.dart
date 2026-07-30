@@ -52,7 +52,8 @@ class TrackingEta {
     final assignedAtRaw =
         b['assignedAt']?.toString() ?? b['assigned_at']?.toString();
     final computedAt = assignedAtRaw != null
-        ? (DateTime.tryParse(assignedAtRaw)?.toLocal() ?? etaAt.subtract(Duration(minutes: etaMinutes)))
+        ? (DateTime.tryParse(assignedAtRaw)?.toLocal() ??
+            etaAt.subtract(Duration(minutes: etaMinutes)))
         : etaAt.subtract(Duration(minutes: etaMinutes));
 
     return TrackingEta(

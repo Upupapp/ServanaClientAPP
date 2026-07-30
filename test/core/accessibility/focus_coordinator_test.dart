@@ -58,7 +58,8 @@ void main() {
     });
 
     group('restoreToNode', () {
-      testWidgets('does not throw when called with a valid node', (tester) async {
+      testWidgets('does not throw when called with a valid node',
+          (tester) async {
         final node = FocusNode();
         addTearDown(node.dispose);
 
@@ -85,7 +86,8 @@ void main() {
     });
 
     group('focusFirstError', () {
-      testWidgets('does not throw with a mix of null and valid nodes', (tester) async {
+      testWidgets('does not throw with a mix of null and valid nodes',
+          (tester) async {
         final first = FocusNode();
         final second = FocusNode();
         addTearDown(first.dispose);
@@ -96,8 +98,12 @@ void main() {
             home: Scaffold(
               body: Column(
                 children: [
-                  Focus(focusNode: first, child: const SizedBox(width: 44, height: 44)),
-                  Focus(focusNode: second, child: const SizedBox(width: 44, height: 44)),
+                  Focus(
+                      focusNode: first,
+                      child: const SizedBox(width: 44, height: 44)),
+                  Focus(
+                      focusNode: second,
+                      child: const SizedBox(width: 44, height: 44)),
                 ],
               ),
             ),
@@ -114,7 +120,8 @@ void main() {
         await tester.pump();
       });
 
-      testWidgets('does not throw when all nodes in list are null', (tester) async {
+      testWidgets('does not throw when all nodes in list are null',
+          (tester) async {
         await tester.pumpWidget(const MaterialApp(home: SizedBox()));
         expect(
           () => FocusCoordinator.focusFirstError(

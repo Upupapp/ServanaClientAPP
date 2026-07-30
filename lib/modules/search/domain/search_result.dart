@@ -67,8 +67,11 @@ ServiceCategoryId? categoryIdFromService({
   if (n.contains('hair') || n.contains('nail')) {
     return ServiceCategoryId.hairAndNails;
   }
-  if (n.contains('beauty') || n.contains('wellness') || n.contains('facial') ||
-      n.contains('wax') || n.contains('lash')) {
+  if (n.contains('beauty') ||
+      n.contains('wellness') ||
+      n.contains('facial') ||
+      n.contains('wax') ||
+      n.contains('lash')) {
     return ServiceCategoryId.beautyWellness;
   }
   return null;

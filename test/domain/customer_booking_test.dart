@@ -152,8 +152,8 @@ void main() {
     });
 
     test('sets servicePhotoUrl when merchantServicePhoto is non-empty', () {
-      final jo =
-          _makeJobOrder(merchantServicePhoto: 'https://cdn.example.com/svc.jpg');
+      final jo = _makeJobOrder(
+          merchantServicePhoto: 'https://cdn.example.com/svc.jpg');
       final booking = CustomerBooking.fromJobOrder(jo);
       expect(booking.servicePhotoUrl, 'https://cdn.example.com/svc.jpg');
     });
@@ -370,8 +370,7 @@ void main() {
     });
 
     test('parses assignedAt when provided', () {
-      final map = minimalMap()
-        ..['assignedAt'] = '2025-04-29T09:30:00.000Z';
+      final map = minimalMap()..['assignedAt'] = '2025-04-29T09:30:00.000Z';
       expect(CustomerBooking.fromApiMap(map).assignedAt,
           DateTime.parse('2025-04-29T09:30:00.000Z'));
     });

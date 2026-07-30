@@ -21,9 +21,7 @@ class ReviewRatingControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: rating == 0
-          ? 'Rating not yet selected'
-          : '$rating out of 5 stars',
+      label: rating == 0 ? 'Rating not yet selected' : '$rating out of 5 stars',
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(5, (i) {
@@ -41,7 +39,9 @@ class ReviewRatingControl extends StatelessWidget {
                 height: size,
                 child: Icon(
                   filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: filled ? const Color(0xFFF59E0B) : const Color(0xFFD1D5DB),
+                  color: filled
+                      ? const Color(0xFFF59E0B)
+                      : const Color(0xFFD1D5DB),
                   size: size * 0.72,
                 ),
               ),
@@ -77,7 +77,8 @@ class ReviewStarDisplay extends StatelessWidget {
         children: [
           Icon(
             Icons.star_rounded,
-            color: hasRating ? const Color(0xFFF59E0B) : const Color(0xFFD1D5DB),
+            color:
+                hasRating ? const Color(0xFFF59E0B) : const Color(0xFFD1D5DB),
             size: size,
           ),
           if (showLabel) ...[
@@ -87,7 +88,9 @@ class ReviewStarDisplay extends StatelessWidget {
               style: TextStyle(
                 fontSize: size * 0.85,
                 fontWeight: FontWeight.w600,
-                color: hasRating ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
+                color: hasRating
+                    ? const Color(0xFF374151)
+                    : const Color(0xFF9CA3AF),
               ),
             ),
           ],

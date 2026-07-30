@@ -65,7 +65,8 @@ class SearchController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
     final sw = Stopwatch()..start();
     try {
-      _allResults = await _perf(TraceNames.searchRequest, () async => _repository.fetchCatalog(forceRefresh: forceRefresh));
+      _allResults = await _perf(TraceNames.searchRequest,
+          () async => _repository.fetchCatalog(forceRefresh: forceRefresh));
       _state = SearchLoadState.ready;
       _applyFilters();
       _track(SearchResultsLoadedEvent(
@@ -97,8 +98,8 @@ class SearchController extends ChangeNotifier {
       _addToHistory(term);
       _track(SearchSubmittedEvent(
         queryLengthBucket: _lengthBucket(term.length),
-        queryTokenCountBucket: CountBucketValues.forCount(
-            term.split(RegExp(r'\s+')).length),
+        queryTokenCountBucket:
+            CountBucketValues.forCount(term.split(RegExp(r'\s+')).length),
       ));
     }
     _applyFilters();
@@ -153,7 +154,8 @@ class SearchController extends ChangeNotifier {
     }
     _filteredResults = _sortResults(filtered.toList());
     if (q.isNotEmpty && _filteredResults.isEmpty) {
-      _track(SearchZeroResultsEvent(queryLengthBucket: _lengthBucket(q.length)));
+      _track(
+          SearchZeroResultsEvent(queryLengthBucket: _lengthBucket(q.length)));
     }
     if (!_disposed) notifyListeners();
   }
@@ -174,8 +176,7 @@ class SearchController extends ChangeNotifier {
   }
 
   void _addToHistory(String term) {
-    _history =
-        [term, ..._history.where((t) => t != term)].take(10).toList();
+    _history = [term, ..._history.where((t) => t != term)].take(10).toList();
     SearchLocalDataSource.addTerm(term);
   }
 

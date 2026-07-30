@@ -3,7 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 // First-touch and last-touch campaign attribution storage.
 // Only approved UTM parameters are persisted — arbitrary URL params are NOT.
 class AnalyticsAttributionRepository {
-  static const _approvedParams = {'utm_source', 'utm_medium', 'utm_campaign', 'referral_category'};
+  static const _approvedParams = {
+    'utm_source',
+    'utm_medium',
+    'utm_campaign',
+    'referral_category'
+  };
   static const _firstTouchKey = 'analytics_attribution_first_v1';
   static const _lastTouchKey = 'analytics_attribution_last_v1';
 
@@ -49,8 +54,9 @@ class AnalyticsAttributionRepository {
     await prefs.remove(_lastTouchKey);
   }
 
-  String _encode(Map<String, String> m) =>
-      m.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+  String _encode(Map<String, String> m) => m.entries
+      .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+      .join('&');
 
   Map<String, String> _decode(String raw) {
     final result = <String, String>{};

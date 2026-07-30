@@ -14,7 +14,8 @@ void main() {
     test('valid lower_snake_case names pass', () {
       for (final event in _allRealEvents()) {
         final result = validator.validate(event);
-        expect(result.isValid, true, reason: '${event.eventName} should be valid');
+        expect(result.isValid, true,
+            reason: '${event.eventName} should be valid');
       }
     });
 
@@ -98,7 +99,8 @@ void main() {
       final events = [
         const SignInStartedEvent(authMethod: 'email'),
         const SignInSucceededEvent(authMethod: 'email'),
-        const SignInFailedEvent(authMethod: 'email', failureCode: 'network_error'),
+        const SignInFailedEvent(
+            authMethod: 'email', failureCode: 'network_error'),
         const GuestModeSelectedEvent(),
         const LoggedOutEvent(trigger: 'user_action'),
         const RegistrationStartedEvent(entrySource: 'welcome'),
@@ -113,10 +115,12 @@ void main() {
 
     test('all booking events have valid names', () {
       final events = [
-        const BookingStartedEvent(serviceCategory: 'aircon', entrySource: 'home'),
+        const BookingStartedEvent(
+            serviceCategory: 'aircon', entrySource: 'home'),
         const BookingSubmittedEvent(serviceCategory: 'aircon'),
         const BookingCreatedEvent(serviceCategory: 'aircon'),
-        const BookingFailedEvent(serviceCategory: 'aircon', failureCode: 'network_error'),
+        const BookingFailedEvent(
+            serviceCategory: 'aircon', failureCode: 'network_error'),
         const BookingAbandonedEvent(serviceCategory: 'aircon', step: 'address'),
       ];
       for (final e in events) {
@@ -127,10 +131,13 @@ void main() {
     test('all payment events have valid names', () {
       final events = [
         const PaymentMethodSelectedEvent(paymentMethod: 'gcash'),
-        const CheckoutOpenedEvent(checkoutProvider: 'paymongo', amountBand: '501-1000'),
+        const CheckoutOpenedEvent(
+            checkoutProvider: 'paymongo', amountBand: '501-1000'),
         const CheckoutReturnedEvent(paymentStatus: 'pending'),
-        const PaymentSucceededObservedEvent(paymentMethod: 'gcash', amountBand: '501-1000'),
-        const PaymentFailedEvent(paymentMethod: 'gcash', failureCode: 'payment_declined'),
+        const PaymentSucceededObservedEvent(
+            paymentMethod: 'gcash', amountBand: '501-1000'),
+        const PaymentFailedEvent(
+            paymentMethod: 'gcash', failureCode: 'payment_declined'),
       ];
       for (final e in events) {
         expect(validator.validate(e).isValid, true, reason: e.eventName);
@@ -140,8 +147,10 @@ void main() {
     test('all search events have valid names', () {
       final events = [
         const SearchOpenedEvent(entrySource: 'home'),
-        const SearchSubmittedEvent(queryLengthBucket: '<10', queryTokenCountBucket: '1'),
-        const SearchResultsLoadedEvent(resultCountBucket: '1-10', latencyBucket: '<500ms'),
+        const SearchSubmittedEvent(
+            queryLengthBucket: '<10', queryTokenCountBucket: '1'),
+        const SearchResultsLoadedEvent(
+            resultCountBucket: '1-10', latencyBucket: '<500ms'),
         const SearchZeroResultsEvent(queryLengthBucket: '<10'),
         const SearchFailedEvent(failureCode: 'network_error'),
       ];
@@ -151,33 +160,41 @@ void main() {
     });
 
     test('screen_view event passes', () {
-      const event = ScreenViewEvent(screenName: 'home', previousScreen: 'splash');
+      const event =
+          ScreenViewEvent(screenName: 'home', previousScreen: 'splash');
       expect(validator.validate(event).isValid, true);
     });
   });
 }
 
 List<AnalyticsEvent> _allRealEvents() => [
-  const SignInStartedEvent(authMethod: 'email'),
-  const SignInSucceededEvent(authMethod: 'email'),
-  const SignInFailedEvent(authMethod: 'email', failureCode: 'network_error'),
-  const GuestModeSelectedEvent(),
-  const LoggedOutEvent(trigger: 'user_action'),
-  const BookingStartedEvent(serviceCategory: 'aircon', entrySource: 'home'),
-  const BookingCreatedEvent(serviceCategory: 'aircon'),
-  const BookingFailedEvent(serviceCategory: 'aircon', failureCode: 'network_error'),
-  const PaymentMethodSelectedEvent(paymentMethod: 'gcash'),
-  const CheckoutOpenedEvent(checkoutProvider: 'paymongo', amountBand: '501-1000'),
-  const SearchOpenedEvent(entrySource: 'home'),
-  const SearchSubmittedEvent(queryLengthBucket: '<10', queryTokenCountBucket: '1'),
-  const ScreenViewEvent(screenName: 'home'),
-];
+      const SignInStartedEvent(authMethod: 'email'),
+      const SignInSucceededEvent(authMethod: 'email'),
+      const SignInFailedEvent(
+          authMethod: 'email', failureCode: 'network_error'),
+      const GuestModeSelectedEvent(),
+      const LoggedOutEvent(trigger: 'user_action'),
+      const BookingStartedEvent(serviceCategory: 'aircon', entrySource: 'home'),
+      const BookingCreatedEvent(serviceCategory: 'aircon'),
+      const BookingFailedEvent(
+          serviceCategory: 'aircon', failureCode: 'network_error'),
+      const PaymentMethodSelectedEvent(paymentMethod: 'gcash'),
+      const CheckoutOpenedEvent(
+          checkoutProvider: 'paymongo', amountBand: '501-1000'),
+      const SearchOpenedEvent(entrySource: 'home'),
+      const SearchSubmittedEvent(
+          queryLengthBucket: '<10', queryTokenCountBucket: '1'),
+      const ScreenViewEvent(screenName: 'home'),
+    ];
 
 final class _NamedEvent extends AnalyticsEvent {
   _NamedEvent(this._name, this._props);
   final String _name;
   final Map<String, Object?> _props;
-  @override String get eventName => _name;
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => _props;
+  @override
+  String get eventName => _name;
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties => _props;
 }

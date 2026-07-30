@@ -51,7 +51,8 @@ abstract class _MessagingStore with Store {
 
   /// conversationId → list of messages (oldest at index 0, newest at end)
   @observable
-  ObservableMap<int, ObservableList<MessageModel>> messagesByConvId = ObservableMap();
+  ObservableMap<int, ObservableList<MessageModel>> messagesByConvId =
+      ObservableMap();
 
   /// conversationId → oldest message id loaded (null = not loaded yet)
   @observable
@@ -167,11 +168,13 @@ abstract class _MessagingStore with Store {
     isLoadingByConvId[conversationId] = true;
     final gen = _generation;
     try {
-      final messages = await _perf(TraceNames.conversationLoad, () async => repository.getMessages(
-        conversationId: conversationId,
-        limit: 40,
-        before: refresh ? null : oldestIdByConvId[conversationId],
-      ));
+      final messages = await _perf(
+          TraceNames.conversationLoad,
+          () async => repository.getMessages(
+                conversationId: conversationId,
+                limit: 40,
+                before: refresh ? null : oldestIdByConvId[conversationId],
+              ));
       if (_generation != gen) return;
 
       final list = messagesByConvId.putIfAbsent(
@@ -190,7 +193,8 @@ abstract class _MessagingStore with Store {
 
       // Track the oldest message id for subsequent page loads.
       if (messages.isNotEmpty) {
-        final oldest = messages.reduce((a, b) => (a.id ?? 0) < (b.id ?? 0) ? a : b);
+        final oldest =
+            messages.reduce((a, b) => (a.id ?? 0) < (b.id ?? 0) ? a : b);
         oldestIdByConvId[conversationId] = oldest.id;
       }
       hasMoreByConvId[conversationId] = messages.length >= 40;
@@ -304,11 +308,13 @@ abstract class _MessagingStore with Store {
   void _onSocketEvent(ChatSocketEvent event) {
     switch (event) {
       case MessageNewEvent(:final conversationId, :final message):
-        final model = MessageMapper.fromJson(message, conversationId: conversationId);
+        final model =
+            MessageMapper.fromJson(message, conversationId: conversationId);
         // If a pending message with the same clientMsgId exists, replace it.
         final clientId = model.clientMsgId;
         if (clientId != null) {
-          final replaced = _replaceByClientMsgId(conversationId, clientId, model);
+          final replaced =
+              _replaceByClientMsgId(conversationId, clientId, model);
           if (replaced) break;
         }
         _insertMessage(conversationId, model);
@@ -316,13 +322,16 @@ abstract class _MessagingStore with Store {
         _updateConversationUnread(
           conversationId,
           (convsByBookingId.values
-                  .where((c) => c.id == conversationId)
-                  .firstOrNull
-                  ?.unreadCount ?? 0) + 1,
+                      .where((c) => c.id == conversationId)
+                      .firstOrNull
+                      ?.unreadCount ??
+                  0) +
+              1,
         );
 
       case MessageUpdatedEvent(:final conversationId, :final message):
-        final model = MessageMapper.fromJson(message, conversationId: conversationId);
+        final model =
+            MessageMapper.fromJson(message, conversationId: conversationId);
         _replaceById(conversationId, model);
 
       case MessageReadEvent(:final conversationId):
@@ -413,7 +422,9 @@ abstract class _MessagingStore with Store {
 
   @action
   void _updateConversationUnread(int conversationId, int count) {
-    final entry = convsByBookingId.entries.where((e) => e.value.id == conversationId).firstOrNull;
+    final entry = convsByBookingId.entries
+        .where((e) => e.value.id == conversationId)
+        .firstOrNull;
     if (entry == null) return;
     convsByBookingId[entry.key] = entry.value.copyWith(unreadCount: count);
     _recalcTotalUnread();
@@ -421,7 +432,8 @@ abstract class _MessagingStore with Store {
 
   @action
   void _recalcTotalUnread() {
-    totalUnread = convsByBookingId.values.fold(0, (sum, c) => sum + c.unreadCount);
+    totalUnread =
+        convsByBookingId.values.fold(0, (sum, c) => sum + c.unreadCount);
   }
 
   // ── Analytics ──────────────────────────────────────────────────────────────

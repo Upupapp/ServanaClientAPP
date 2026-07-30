@@ -16,7 +16,7 @@ class ReviewDetailScreen extends StatefulWidget {
   final String? bookingId;
   final String? reviewId;
 
-  static const String route     = '/review/detail';
+  static const String route = '/review/detail';
   static const String routeName = 'ReviewDetail';
 
   @override
@@ -71,13 +71,19 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
               builder: (ctx, ss) => DropdownButtonFormField<String>(
                 value: selectedReason,
                 items: const [
-                  DropdownMenuItem(value: 'INACCURATE',          child: Text('Inaccurate')),
-                  DropdownMenuItem(value: 'SPAM',                child: Text('Spam')),
-                  DropdownMenuItem(value: 'HARASSMENT',          child: Text('Harassment')),
-                  DropdownMenuItem(value: 'HATE_SPEECH',         child: Text('Hate speech')),
-                  DropdownMenuItem(value: 'PERSONAL_INFORMATION',child: Text('Personal info')),
-                  DropdownMenuItem(value: 'THREATENING_CONTENT', child: Text('Threatening')),
-                  DropdownMenuItem(value: 'OTHER',               child: Text('Other')),
+                  DropdownMenuItem(
+                      value: 'INACCURATE', child: Text('Inaccurate')),
+                  DropdownMenuItem(value: 'SPAM', child: Text('Spam')),
+                  DropdownMenuItem(
+                      value: 'HARASSMENT', child: Text('Harassment')),
+                  DropdownMenuItem(
+                      value: 'HATE_SPEECH', child: Text('Hate speech')),
+                  DropdownMenuItem(
+                      value: 'PERSONAL_INFORMATION',
+                      child: Text('Personal info')),
+                  DropdownMenuItem(
+                      value: 'THREATENING_CONTENT', child: Text('Threatening')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('Other')),
                 ],
                 onChanged: (v) {
                   if (v != null) ss(() => selectedReason = v);
@@ -111,8 +117,9 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
 
     if (confirmed == true && mounted) {
       await _ctrl.reportReview(
-        reason:  selectedReason,
-        details: detailsCtrl.text.trim().isNotEmpty ? detailsCtrl.text.trim() : null,
+        reason: selectedReason,
+        details:
+            detailsCtrl.text.trim().isNotEmpty ? detailsCtrl.text.trim() : null,
       );
       detailsCtrl.dispose();
       if (mounted && _ctrl.reportSubmitted) {
@@ -200,13 +207,15 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
-        20, 16, 20,
+        20,
+        16,
+        20,
         20 + MediaQuery.of(context).padding.bottom,
       ),
       child: ReviewCard(
-        review:      review,
+        review: review,
         showPrivate: true,
-        onReport:    _showReportDialog,
+        onReport: _showReportDialog,
       ),
     );
   }

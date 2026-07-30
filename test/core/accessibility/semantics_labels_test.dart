@@ -50,11 +50,16 @@ void main() {
 
     group('ratingMeaning', () {
       test('returns correct strings for 1-5', () {
-        expect(SemanticsLabels.ratingMeaning(1), equals(SemanticsLabels.ratingMeaningPoor));
-        expect(SemanticsLabels.ratingMeaning(2), equals(SemanticsLabels.ratingMeaningFair));
-        expect(SemanticsLabels.ratingMeaning(3), equals(SemanticsLabels.ratingMeaningGood));
-        expect(SemanticsLabels.ratingMeaning(4), equals(SemanticsLabels.ratingMeaningVeryGood));
-        expect(SemanticsLabels.ratingMeaning(5), equals(SemanticsLabels.ratingMeaningExcellent));
+        expect(SemanticsLabels.ratingMeaning(1),
+            equals(SemanticsLabels.ratingMeaningPoor));
+        expect(SemanticsLabels.ratingMeaning(2),
+            equals(SemanticsLabels.ratingMeaningFair));
+        expect(SemanticsLabels.ratingMeaning(3),
+            equals(SemanticsLabels.ratingMeaningGood));
+        expect(SemanticsLabels.ratingMeaning(4),
+            equals(SemanticsLabels.ratingMeaningVeryGood));
+        expect(SemanticsLabels.ratingMeaning(5),
+            equals(SemanticsLabels.ratingMeaningExcellent));
       });
 
       test('returns empty for out-of-range', () {
@@ -122,7 +127,8 @@ void main() {
     group('newMessagesAvailable', () {
       test('singular', () {
         expect(SemanticsLabels.newMessagesAvailable(1), contains('1'));
-        expect(SemanticsLabels.newMessagesAvailable(1), isNot(contains('messages')));
+        expect(SemanticsLabels.newMessagesAvailable(1),
+            isNot(contains('messages')));
       });
 
       test('plural', () {

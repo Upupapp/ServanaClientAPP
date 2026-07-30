@@ -227,17 +227,19 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                   excludeSemantics: true,
                                   child: InkWell(
                                     onTap: () {
-                                      setState(
-                                          () => _isPassVisible = !_isPassVisible);
+                                      setState(() =>
+                                          _isPassVisible = !_isPassVisible);
                                     },
                                     child: _isPassVisible
                                         ? Icon(
                                             Icons.visibility_off_rounded,
-                                            color: ColorPalette.primaryColorDark,
+                                            color:
+                                                ColorPalette.primaryColorDark,
                                           )
                                         : Icon(
                                             Icons.visibility_rounded,
-                                            color: ColorPalette.primaryColorDark,
+                                            color:
+                                                ColorPalette.primaryColorDark,
                                           ),
                                   ),
                                 ),
@@ -254,23 +256,23 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                   button: true,
                                   excludeSemantics: true,
                                   child: GestureDetector(
-                                  onTap: _showForgotPasswordInfo,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8, horizontal: 4),
-                                    child: Text(
-                                      'Forgot password?',
-                                      style: TextStyle(
-                                        fontFamily:
-                                            FontPalette.primaryFontFamily,
-                                        fontSize: 13,
-                                        color: ColorPalette.primaryColorDark,
-                                        fontWeight: FontWeight.w500,
+                                    onTap: _showForgotPasswordInfo,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8, horizontal: 4),
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          fontSize: 13,
+                                          color: ColorPalette.primaryColorDark,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
                                 ),
                               ),
 
@@ -367,9 +369,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                             child: Text(
                                               'or continue with',
                                               style: TextStyle(
-                                                fontFamily:
-                                                    FontPalette.primaryFontFamily,
-                                                color: ColorPalette.secondaryText,
+                                                fontFamily: FontPalette
+                                                    .primaryFontFamily,
+                                                color:
+                                                    ColorPalette.secondaryText,
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -425,8 +428,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                               Text(
                                                 'Continue with Google',
                                                 style: TextStyle(
-                                                  fontFamily:
-                                                      FontPalette.primaryFontFamily,
+                                                  fontFamily: FontPalette
+                                                      .primaryFontFamily,
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                   color: Theme.of(context)
@@ -468,8 +471,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                               Text(
                                                 'Continue with Facebook',
                                                 style: TextStyle(
-                                                  fontFamily:
-                                                      FontPalette.primaryFontFamily,
+                                                  fontFamily: FontPalette
+                                                      .primaryFontFamily,
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                   color: Theme.of(context)
@@ -577,4 +580,3 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     );
   }
 }
-

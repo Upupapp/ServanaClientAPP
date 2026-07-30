@@ -24,8 +24,7 @@ abstract final class ServiceBookingEntryResolver {
       };
 
   /// Route name to push for [flowType].
-  static String routeNameFor(BookingFlowType flowType) =>
-      switch (flowType) {
+  static String routeNameFor(BookingFlowType flowType) => switch (flowType) {
         BookingFlowType.bwAddOns => 'BwAddOns',
         BookingFlowType.airconOptions => 'AirconOptions',
         BookingFlowType.generic => 'BwAddOns',

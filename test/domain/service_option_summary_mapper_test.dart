@@ -31,13 +31,21 @@ void main() {
     });
 
     test('falls back to price field', () {
-      final o = <String, dynamic>{'id': '2', 'name': 'Foot Massage', 'price': 500};
+      final o = <String, dynamic>{
+        'id': '2',
+        'name': 'Foot Massage',
+        'price': 500
+      };
       final summary = ServiceOptionSummaryMapper.fromMap(o);
       expect(summary.basePrice, 500.0);
     });
 
     test('formats decimal price correctly', () {
-      final o = <String, dynamic>{'id': '3', 'name': 'Drip', 'basePrice': 299.5};
+      final o = <String, dynamic>{
+        'id': '3',
+        'name': 'Drip',
+        'basePrice': 299.5
+      };
       final summary = ServiceOptionSummaryMapper.fromMap(o);
       expect(summary.formattedPrice, '₱299.50');
     });
@@ -52,7 +60,9 @@ void main() {
       final o = <String, dynamic>{
         'id': '5',
         'name': 'Facial',
-        'addons': [{'id': 1}],
+        'addons': [
+          {'id': 1}
+        ],
       };
       final summary = ServiceOptionSummaryMapper.fromMap(o);
       expect(summary.hasAddons, isTrue);

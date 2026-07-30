@@ -76,7 +76,8 @@ class _TrackingMapState extends State<TrackingMap> {
             title: 'Service Location',
             snippet: s.serviceAddress.isNotEmpty ? s.serviceAddress : null,
           ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         ),
       );
     }
@@ -94,9 +95,7 @@ class _TrackingMapState extends State<TrackingMap> {
             snippet: isStale ? 'Last known location' : 'Current location',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(
-            isStale
-                ? BitmapDescriptor.hueOrange
-                : BitmapDescriptor.hueGreen,
+            isStale ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueGreen,
           ),
         ),
       );
@@ -127,7 +126,8 @@ class _TrackingMapState extends State<TrackingMap> {
         child: Stack(
           children: [
             Semantics(
-              label: 'Live tracking map. Provider location and route shown visually.',
+              label:
+                  'Live tracking map. Provider location and route shown visually.',
               child: GoogleMap(
                 initialCameraPosition: CameraPosition(
                   target: _initialCameraTarget(),
@@ -260,7 +260,9 @@ class _FreshnessBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.2), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(.2), blurRadius: 4)
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -269,7 +271,8 @@ class _FreshnessBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             freshness.chipLabel,
-            style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
+            style:
+                TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
           ),
         ],
       ),

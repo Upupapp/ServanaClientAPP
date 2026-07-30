@@ -7,31 +7,52 @@ void main() {
     const policy = RetryPolicyRegistry.query;
 
     test('retries on 500 server error', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 500, body: '')), isTrue);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 500, body: '')),
+          isTrue);
     });
 
     test('retries on 503', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 503, body: '')), isTrue);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 503, body: '')),
+          isTrue);
     });
 
     test('retries on 408 timeout', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 408, body: '')), isTrue);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 408, body: '')),
+          isTrue);
     });
 
     test('retries on 429 rate-limit', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 429, body: '')), isTrue);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 429, body: '')),
+          isTrue);
     });
 
     test('does NOT retry on 400 bad request', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 400, body: '')), isFalse);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 400, body: '')),
+          isFalse);
     });
 
     test('does NOT retry on 401 unauthorized', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 401, body: '')), isFalse);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 401, body: '')),
+          isFalse);
     });
 
     test('does NOT retry on 404', () {
-      expect(policy.shouldRetry(const ServanaApiException(statusCode: 404, body: '')), isFalse);
+      expect(
+          policy.shouldRetry(
+              const ServanaApiException(statusCode: 404, body: '')),
+          isFalse);
     });
 
     test('retries on generic Exception (network error)', () {

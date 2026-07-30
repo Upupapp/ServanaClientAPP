@@ -38,8 +38,7 @@ class HomePromotionRepository {
     version: '1',
     slot: HomeBannerSlot.reengagement,
     title: 'One app. More ways to get things done.',
-    subtitle:
-        'Find, book, and manage home and personal services in one place.',
+    subtitle: 'Find, book, and manage home and personal services in one place.',
     ctaLabel: 'Get Started',
     target: HomeTargetSearch(),
     motion: HomeMotionPreset.genericFade,
@@ -56,8 +55,7 @@ class HomePromotionRepository {
     version: '1',
     slot: HomeBannerSlot.reengagement,
     title: 'Book again in fewer steps.',
-    subtitle:
-        'Reuse your recent service details and review before confirming.',
+    subtitle: 'Reuse your recent service details and review before confirming.',
     ctaLabel: 'Book a Service',
     target: HomeTargetSearch(),
     motion: HomeMotionPreset.genericFade,

@@ -301,7 +301,8 @@ class SettingsUnavailableTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: ColorPalette.accentText.withOpacity(.5)),
+            Icon(icon,
+                size: 20, color: ColorPalette.accentText.withOpacity(.5)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -398,7 +399,13 @@ class SettingsDestructiveTile extends StatelessWidget {
 
 // ── Permission tile ────────────────────────────────────────────────────────
 
-enum PermissionStatus { allowed, denied, restricted, notDetermined, unavailable }
+enum PermissionStatus {
+  allowed,
+  denied,
+  restricted,
+  notDetermined,
+  unavailable
+}
 
 class SettingsPermissionTile extends StatelessWidget {
   final IconData icon;
@@ -427,9 +434,9 @@ class SettingsPermissionTile extends StatelessWidget {
       PermissionStatus.notDetermined => ('Not set', ColorPalette.accentText),
       PermissionStatus.unavailable => ('Unavailable', ColorPalette.accentText),
     };
-    final canOpenSettings =
-        (status == PermissionStatus.denied || status == PermissionStatus.restricted) &&
-            onOpenSettings != null;
+    final canOpenSettings = (status == PermissionStatus.denied ||
+            status == PermissionStatus.restricted) &&
+        onOpenSettings != null;
     final canRequest =
         status == PermissionStatus.notDetermined && onRequest != null;
     final effectiveTap = canOpenSettings

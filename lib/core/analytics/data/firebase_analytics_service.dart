@@ -24,7 +24,8 @@ final class FirebaseAnalyticsService {
     }
   }
 
-  Future<void> track(AnalyticsEvent event, Map<String, Object?> filteredProps) async {
+  Future<void> track(
+      AnalyticsEvent event, Map<String, Object?> filteredProps) async {
     if (!_collectionEnabled) return;
     if (kIsWeb) return; // Firebase Analytics SDK does not support Flutter Web
     try {
@@ -72,10 +73,8 @@ final class FirebaseAnalyticsService {
     try {
       await _fa.setUserProperty(name: 'account_state', value: null);
       await _fa.setUserProperty(name: 'lifecycle_stage', value: null);
-      await _fa.setUserProperty(
-          name: 'profile_completion_band', value: null);
-      await _fa.setUserProperty(
-          name: 'has_completed_booking', value: null);
+      await _fa.setUserProperty(name: 'profile_completion_band', value: null);
+      await _fa.setUserProperty(name: 'has_completed_booking', value: null);
     } catch (e) {
       debugPrint('[Analytics] clearUserContext error: $e');
     }

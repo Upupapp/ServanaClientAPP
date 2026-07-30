@@ -195,7 +195,8 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Semantics(
-                      label: 'Select ${label.toString().isNotEmpty ? label.toString() : line1.toString()} address',
+                      label:
+                          'Select ${label.toString().isNotEmpty ? label.toString() : line1.toString()} address',
                       button: true,
                       selected: isSelected,
                       excludeSemantics: true,
@@ -246,7 +247,8 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontFamily: FontPalette.primaryFontFamily,
+                                        fontFamily:
+                                            FontPalette.primaryFontFamily,
                                         color: isSelected
                                             ? ColorPalette.primaryText
                                                 .withOpacity(.85)

@@ -32,7 +32,8 @@ void main() {
     });
 
     group('reducedMotion', () {
-      testWidgets('returns true when disableAnimations is true', (tester) async {
+      testWidgets('returns true when disableAnimations is true',
+          (tester) async {
         late bool result;
         await pumpWithMedia(
           tester,
@@ -45,7 +46,8 @@ void main() {
         expect(result, isTrue);
       });
 
-      testWidgets('returns false when disableAnimations is false', (tester) async {
+      testWidgets('returns false when disableAnimations is false',
+          (tester) async {
         late bool result;
         await pumpWithMedia(
           tester,
@@ -75,7 +77,8 @@ void main() {
     });
 
     group('screenReaderActive', () {
-      testWidgets('returns true when accessibleNavigation is true', (tester) async {
+      testWidgets('returns true when accessibleNavigation is true',
+          (tester) async {
         late bool result;
         await pumpWithMedia(
           tester,
@@ -88,7 +91,8 @@ void main() {
         expect(result, isTrue);
       });
 
-      testWidgets('returns false when accessibleNavigation is false', (tester) async {
+      testWidgets('returns false when accessibleNavigation is false',
+          (tester) async {
         late bool result;
         await pumpWithMedia(
           tester,

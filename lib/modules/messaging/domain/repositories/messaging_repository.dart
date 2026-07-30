@@ -27,8 +27,7 @@ class MessagingRepository {
     try {
       final json = await _api.getBookingConversation(bookingId: bookingId);
       // Backend returns: {success: true, conversation: {...}}
-      final data =
-          (json['conversation'] as Map<String, dynamic>?) ?? json;
+      final data = (json['conversation'] as Map<String, dynamic>?) ?? json;
       return ConversationMapper.fromJson(data);
     } on ServanaApiException catch (e) {
       if (e.statusCode == 404) return null;
@@ -69,8 +68,7 @@ class MessagingRepository {
       clientMsgId: clientMsgId,
     );
     // Backend returns: {success: true, message: {...}}
-    final data =
-        (json['message'] as Map<String, dynamic>?) ?? json;
+    final data = (json['message'] as Map<String, dynamic>?) ?? json;
     return MessageMapper.fromJson(data, conversationId: conversationId);
   }
 

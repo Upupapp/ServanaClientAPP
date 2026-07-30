@@ -1,6 +1,11 @@
 import '../domain/analytics_event.dart';
 
-enum ValidationResult { valid, invalidName, missingRequiredProperty, unknownConsentCategory }
+enum ValidationResult {
+  valid,
+  invalidName,
+  missingRequiredProperty,
+  unknownConsentCategory
+}
 
 final class EventValidationOutcome {
   const EventValidationOutcome(this.result, {this.reason = ''});

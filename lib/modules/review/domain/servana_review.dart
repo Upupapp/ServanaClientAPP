@@ -44,44 +44,52 @@ class ServanaReview {
   bool get hasResponse => providerResponse != null;
 
   factory ServanaReview.fromMap(Map<String, dynamic> m) => ServanaReview(
-    reviewId:         m['reviewId'] as String? ?? '',
-    bookingId:        m['bookingId'] as String? ?? '',
-    providerUid:      m['providerUid'] as String?,
-    serviceId:        m['serviceId'] as String?,
-    overallRating:    (m['overallRating'] as num?)?.toInt() ?? 0,
-    publicComment:    m['publicComment'] as String?,
-    privateFeedback:  m['privateFeedback'] as String?,
-    visibility:       ReviewVisibility.fromString(m['visibility'] as String?),
-    moderationStatus: ReviewModerationStatus.fromString(m['moderationStatus'] as String?),
-    dimensions: (m['dimensions'] as List? ?? [])
-        .map((e) => ReviewDimensionScore.fromMap(e as Map<String, dynamic>))
-        .toList(),
-    providerResponse: m['providerResponse'] != null
-        ? ProviderReviewResponse.fromMap(m['providerResponse'] as Map<String, dynamic>)
-        : null,
-    createdAt: m['createdAt'] != null ? DateTime.tryParse(m['createdAt'].toString()) : null,
-    updatedAt: m['updatedAt'] != null ? DateTime.tryParse(m['updatedAt'].toString()) : null,
-    editedAt:  m['editedAt']  != null ? DateTime.tryParse(m['editedAt'].toString())  : null,
-  );
+        reviewId: m['reviewId'] as String? ?? '',
+        bookingId: m['bookingId'] as String? ?? '',
+        providerUid: m['providerUid'] as String?,
+        serviceId: m['serviceId'] as String?,
+        overallRating: (m['overallRating'] as num?)?.toInt() ?? 0,
+        publicComment: m['publicComment'] as String?,
+        privateFeedback: m['privateFeedback'] as String?,
+        visibility: ReviewVisibility.fromString(m['visibility'] as String?),
+        moderationStatus:
+            ReviewModerationStatus.fromString(m['moderationStatus'] as String?),
+        dimensions: (m['dimensions'] as List? ?? [])
+            .map((e) => ReviewDimensionScore.fromMap(e as Map<String, dynamic>))
+            .toList(),
+        providerResponse: m['providerResponse'] != null
+            ? ProviderReviewResponse.fromMap(
+                m['providerResponse'] as Map<String, dynamic>)
+            : null,
+        createdAt: m['createdAt'] != null
+            ? DateTime.tryParse(m['createdAt'].toString())
+            : null,
+        updatedAt: m['updatedAt'] != null
+            ? DateTime.tryParse(m['updatedAt'].toString())
+            : null,
+        editedAt: m['editedAt'] != null
+            ? DateTime.tryParse(m['editedAt'].toString())
+            : null,
+      );
 
   ServanaReview copyWith({
     ReviewModerationStatus? moderationStatus,
     ProviderReviewResponse? providerResponse,
   }) =>
       ServanaReview(
-        reviewId:         reviewId,
-        bookingId:        bookingId,
-        providerUid:      providerUid,
-        serviceId:        serviceId,
-        overallRating:    overallRating,
-        publicComment:    publicComment,
-        privateFeedback:  privateFeedback,
-        visibility:       visibility,
+        reviewId: reviewId,
+        bookingId: bookingId,
+        providerUid: providerUid,
+        serviceId: serviceId,
+        overallRating: overallRating,
+        publicComment: publicComment,
+        privateFeedback: privateFeedback,
+        visibility: visibility,
         moderationStatus: moderationStatus ?? this.moderationStatus,
-        dimensions:       dimensions,
+        dimensions: dimensions,
         providerResponse: providerResponse ?? this.providerResponse,
-        createdAt:        createdAt,
-        updatedAt:        updatedAt,
-        editedAt:         editedAt,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        editedAt: editedAt,
       );
 }

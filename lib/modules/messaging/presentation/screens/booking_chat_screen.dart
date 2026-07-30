@@ -186,7 +186,8 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
           // Connection indicator
           Observer(
             builder: (_) {
-              final connected = _store.messagesByConvId[_conversationId] != null;
+              final connected =
+                  _store.messagesByConvId[_conversationId] != null;
               return Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Tooltip(
@@ -308,8 +309,8 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
                     color: ColorPalette.secondaryText.withOpacity(.5),
                     fontWeight: FontWeight.w600,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   filled: true,
                   fillColor: ColorPalette.secondaryColor,
                   border: OutlineInputBorder(
@@ -475,31 +476,27 @@ class _MessageBubble extends StatelessWidget {
         isMe ? ColorPalette.primaryColor : ColorPalette.secondaryColor;
     final textColor =
         isMe ? ColorPalette.primaryText : ColorPalette.secondaryText;
-    final align =
-        isMe ? Alignment.centerRight : Alignment.centerLeft;
+    final align = isMe ? Alignment.centerRight : Alignment.centerLeft;
     final senderLabel = isMe ? 'Client' : providerLabel;
 
     final statusIcon = _statusIcon(message.sendStatus, isMe);
 
     return Semantics(
-      label:
-          '$senderLabel at ${timeFormat.format(message.createdAt)}: $body'
+      label: '$senderLabel at ${timeFormat.format(message.createdAt)}: $body'
           '${message.isPending ? ", sending" : ""}${message.isFailed ? ", failed to send" : ""}',
       child: Align(
         alignment: align,
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           constraints: BoxConstraints(maxWidth: bubbleMax),
           decoration: BoxDecoration(
             color: bubbleColor.withOpacity(message.isPending ? .6 : 1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
-            crossAxisAlignment: isMe
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Text(
                 senderLabel,
@@ -516,11 +513,8 @@ class _MessageBubble extends StatelessWidget {
                 body,
                 style: TextStyle(
                   fontFamily: FontPalette.primaryFontFamily,
-                  color: isDeleted
-                      ? textColor.withOpacity(.5)
-                      : textColor,
-                  fontStyle:
-                      isDeleted ? FontStyle.italic : FontStyle.normal,
+                  color: isDeleted ? textColor.withOpacity(.5) : textColor,
+                  fontStyle: isDeleted ? FontStyle.italic : FontStyle.normal,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),

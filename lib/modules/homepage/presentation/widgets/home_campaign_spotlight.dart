@@ -45,8 +45,7 @@ class _CampaignSpotlightPage extends StatefulWidget {
   });
 
   @override
-  State<_CampaignSpotlightPage> createState() =>
-      _CampaignSpotlightPageState();
+  State<_CampaignSpotlightPage> createState() => _CampaignSpotlightPageState();
 }
 
 class _CampaignSpotlightPageState extends State<_CampaignSpotlightPage>

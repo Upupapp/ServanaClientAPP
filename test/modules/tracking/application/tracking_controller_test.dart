@@ -167,7 +167,8 @@ void main() {
       ctrl.stopTracking();
 
       // Complete the in-flight future — the callback should be discarded.
-      slowRepo.completer.complete(makeSnapshot(status: BookingStatus.completed));
+      slowRepo.completer
+          .complete(makeSnapshot(status: BookingStatus.completed));
       await Future<void>.delayed(Duration.zero); // pump microtask queue
 
       expect(ctrl.trackingState, isNull);
@@ -236,13 +237,13 @@ void main() {
       repo.response = makeSnapshot(status: BookingStatus.completed);
       await ctrl.refresh();
 
-      expect(ctrl.trackingState?.bookingStatus,
-          stateBeforeDispose?.bookingStatus);
+      expect(
+          ctrl.trackingState?.bookingStatus, stateBeforeDispose?.bookingStatus);
     });
 
     test('dispose is safe to call multiple times', () {
-      final ctrl =
-          TrackingController(repository: _FakeRepo()..response = makeSnapshot());
+      final ctrl = TrackingController(
+          repository: _FakeRepo()..response = makeSnapshot());
       expect(() {
         ctrl.dispose();
         ctrl.dispose();

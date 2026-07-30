@@ -97,8 +97,8 @@ class AnalyticsConsent {
           .toSet();
       return AnalyticsConsent(
         grantedCategories: categories,
-        policyVersion: prefs.getInt('${_keyPrefix}policy_version') ??
-            currentPolicyVersion,
+        policyVersion:
+            prefs.getInt('${_keyPrefix}policy_version') ?? currentPolicyVersion,
         grantedAt: DateTime.tryParse(
                 prefs.getString('${_keyPrefix}granted_at') ?? '') ??
             DateTime.now(),

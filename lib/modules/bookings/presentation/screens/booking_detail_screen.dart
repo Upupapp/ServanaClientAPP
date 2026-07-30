@@ -159,8 +159,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
       final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
       final status = (b['status'] ?? '').toString().toUpperCase();
-      final workerUid =
-          b['workerUid']?.toString() ?? b['worker_uid']?.toString() ?? b['providerUid']?.toString();
+      final workerUid = b['workerUid']?.toString() ??
+          b['worker_uid']?.toString() ??
+          b['providerUid']?.toString();
       final eta = b['etaMinutes'];
       final assignedAtRaw = b['assignedAt']?.toString();
       final workerCode = b['workerCode']?.toString();
@@ -364,7 +365,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       ReviewFormScreen.routeName,
       queryParameters: {
         'bookingId': _bookingId,
-        if (b != null) 'bookingLabel': 'Booking #$_bookingId — ${b.merchantServiceName}',
+        if (b != null)
+          'bookingLabel': 'Booking #$_bookingId — ${b.merchantServiceName}',
       },
     );
     if (reviewed == true && mounted) _refreshBooking();

@@ -17,11 +17,11 @@ class ReviewAggregate {
   bool get hasReviews => reviewCount > 0;
 
   factory ReviewAggregate.empty(String providerUid) => ReviewAggregate(
-    providerUid:    providerUid,
-    averageRating:  0,
-    reviewCount:    0,
-    distribution:   const {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-  );
+        providerUid: providerUid,
+        averageRating: 0,
+        reviewCount: 0,
+        distribution: const {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+      );
 
   factory ReviewAggregate.fromMap(Map<String, dynamic> m) {
     final dist = <int, int>{};
@@ -33,15 +33,18 @@ class ReviewAggregate {
         if (k != null) dist[k] = v;
       }
     }
-    for (var i = 1; i <= 5; i++) { dist.putIfAbsent(i, () => 0); }
+    for (var i = 1; i <= 5; i++) {
+      dist.putIfAbsent(i, () => 0);
+    }
 
     return ReviewAggregate(
-      providerUid:   m['providerUid'] as String? ?? '',
+      providerUid: m['providerUid'] as String? ?? '',
       averageRating: (m['averageRating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount:   (m['reviewCount'] as num?)?.toInt() ?? 0,
-      distribution:  dist,
+      reviewCount: (m['reviewCount'] as num?)?.toInt() ?? 0,
+      distribution: dist,
     );
   }
 
-  String get displayRating => hasReviews ? averageRating.toStringAsFixed(1) : '';
+  String get displayRating =>
+      hasReviews ? averageRating.toStringAsFixed(1) : '';
 }

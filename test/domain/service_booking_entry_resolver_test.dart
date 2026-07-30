@@ -50,8 +50,7 @@ void main() {
 
     test('airconOptions → AirconOptions', () {
       expect(
-        ServiceBookingEntryResolver.routeNameFor(
-            BookingFlowType.airconOptions),
+        ServiceBookingEntryResolver.routeNameFor(BookingFlowType.airconOptions),
         'AirconOptions',
       );
     });

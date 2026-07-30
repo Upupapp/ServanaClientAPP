@@ -362,8 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     ServanaHomeSearch(
-                      onTap: () =>
-                          context.pushNamed(SearchScreen.routeName),
+                      onTap: () => context.pushNamed(SearchScreen.routeName),
                       animate: true,
                       animationDelay: const Duration(milliseconds: 160),
                     ),
@@ -477,8 +476,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFeaturedSection() {
     return Observer(builder: (ctx) {
-      final bwItems =
-          bwStore.bookableOptions.map((o) => _FeaturedItem(raw: o, isAircon: false));
+      final bwItems = bwStore.bookableOptions
+          .map((o) => _FeaturedItem(raw: o, isAircon: false));
       final airconItems = airconStore.bookableOptions
           .map((o) => _FeaturedItem(raw: o, isAircon: true));
       final all = [...bwItems, ...airconItems].take(12).toList();

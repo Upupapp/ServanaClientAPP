@@ -18,8 +18,7 @@ class ExperimentAssignment {
   final String scope;
   final DateTime? expiresAt;
 
-  bool get isExpired =>
-      expiresAt != null && DateTime.now().isAfter(expiresAt!);
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   bool get isControl => variantKey == 'control';
 

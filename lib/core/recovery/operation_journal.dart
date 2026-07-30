@@ -36,8 +36,7 @@ class JournaledOperation {
   static const Duration _maxAge = Duration(hours: 24);
 
   /// Operations older than 24 h are too stale to reconcile safely.
-  bool get isExpired =>
-      DateTime.now().difference(startedAt).abs() > _maxAge;
+  bool get isExpired => DateTime.now().difference(startedAt).abs() > _maxAge;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -85,8 +84,7 @@ class OperationJournal {
       final list = jsonDecode(raw) as List<dynamic>;
       final ops = list
           .whereType<Map<dynamic, dynamic>>()
-          .map((m) =>
-              JournaledOperation.fromJson(m.cast<String, dynamic>()))
+          .map((m) => JournaledOperation.fromJson(m.cast<String, dynamic>()))
           .where((op) => !op.isExpired)
           .toList();
       return ops;

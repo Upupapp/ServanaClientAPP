@@ -36,7 +36,8 @@ class ReviewCard extends StatelessWidget {
           // Rating row
           Row(
             children: [
-              ReviewStarDisplay(rating: review.overallRating.toDouble(), size: 18),
+              ReviewStarDisplay(
+                  rating: review.overallRating.toDouble(), size: 18),
               const Spacer(),
               if (review.isEdited)
                 Text(
@@ -113,7 +114,8 @@ class ReviewCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.reply_rounded, size: 14, color: ColorPalette.primaryColorDark),
+                Icon(Icons.reply_rounded,
+                    size: 14, color: ColorPalette.primaryColorDark),
                 const SizedBox(width: 6),
                 Text(
                   'Provider response',
@@ -164,8 +166,18 @@ class ReviewCard extends StatelessWidget {
 
   static String _formatDate(DateTime dt) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }

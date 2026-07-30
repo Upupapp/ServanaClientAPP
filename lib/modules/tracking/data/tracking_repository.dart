@@ -34,7 +34,8 @@ class TrackingRepository {
   }) async {
     final bookingIdInt = int.tryParse(bookingId);
     if (bookingIdInt == null) {
-      throw ArgumentError('bookingId must be a numeric string, got: $bookingId');
+      throw ArgumentError(
+          'bookingId must be a numeric string, got: $bookingId');
     }
 
     // Fire both calls in parallel. Location failure is isolated.
@@ -60,7 +61,9 @@ class TrackingRepository {
         knownWorkerUid;
 
     // If we now know the uid but didn't before, fire a fresh location fetch.
-    final locationResult = await (workerUid != null && workerUid.isNotEmpty && knownWorkerUid == null
+    final locationResult = await (workerUid != null &&
+            workerUid.isNotEmpty &&
+            knownWorkerUid == null
         ? _dataSource.getProviderLocation(workerUid).catchError((e) {
             debugPrint('[TrackingRepo] location fetch (late uid) failed: $e');
             return null;
@@ -73,13 +76,14 @@ class TrackingRepository {
         (b['latitude'] as num?)?.toDouble() ?? seedLatitude ?? 14.5995;
     final serviceLongitude =
         (b['longitude'] as num?)?.toDouble() ?? seedLongitude ?? 120.9842;
-    final serviceAddress =
-        b['addressLine']?.toString() ?? b['address']?.toString() ?? seedAddress ?? '';
+    final serviceAddress = b['addressLine']?.toString() ??
+        b['address']?.toString() ??
+        seedAddress ??
+        '';
 
     // Worker name/phone: booking response may include them; fall back to seed.
-    final providerName = b['workerName']?.toString() ??
-        b['worker_name']?.toString() ??
-        seedName;
+    final providerName =
+        b['workerName']?.toString() ?? b['worker_name']?.toString() ?? seedName;
     final providerPhone = b['workerPhone']?.toString() ??
         b['worker_phone']?.toString() ??
         seedPhone;

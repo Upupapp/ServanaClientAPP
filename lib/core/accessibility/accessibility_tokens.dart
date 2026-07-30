@@ -29,8 +29,7 @@ abstract final class AccessibilityTokens {
       MediaQuery.of(context).disableAnimations;
 
   /// Returns true when the system is running with bold text enabled.
-  static bool boldText(BuildContext context) =>
-      MediaQuery.of(context).boldText;
+  static bool boldText(BuildContext context) => MediaQuery.of(context).boldText;
 
   /// Returns true when the system is running a screen reader (TalkBack/VoiceOver).
   static bool screenReaderActive(BuildContext context) =>

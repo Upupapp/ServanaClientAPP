@@ -38,7 +38,8 @@ class SupportTicketController extends ChangeNotifier {
   Future<void> loadTicket(String ticketKey) async {
     final gen = ++_generation;
     _status = TicketDetailStatus.loading;
-    _ticket = null; // clear stale data so the UI shows loading, not the previous ticket
+    _ticket =
+        null; // clear stale data so the UI shows loading, not the previous ticket
     _error = null;
     _notify();
     try {
@@ -59,7 +60,8 @@ class SupportTicketController extends ChangeNotifier {
   Future<bool> sendReply(String body) async {
     if (_ticket == null) return false;
     final ticketKey = _ticket!.ticketKey;
-    final clientReplyId = '${DateTime.now().millisecondsSinceEpoch}-${body.hashCode.abs()}';
+    final clientReplyId =
+        '${DateTime.now().millisecondsSinceEpoch}-${body.hashCode.abs()}';
 
     // Optimistic append
     final optimistic = SupportReply.optimistic(
@@ -87,7 +89,8 @@ class SupportTicketController extends ChangeNotifier {
     } catch (e) {
       // Mark optimistic reply as failed
       final failedReplies = _ticket!.replies.map((r) {
-        if (r.clientReplyId == clientReplyId) return r.copyWith(isPending: false, isFailed: true);
+        if (r.clientReplyId == clientReplyId)
+          return r.copyWith(isPending: false, isFailed: true);
         return r;
       }).toList();
       _ticket = _ticket!.copyWith(replies: failedReplies);
@@ -99,11 +102,15 @@ class SupportTicketController extends ChangeNotifier {
   }
 
   Future<bool> retryReply(String clientReplyId) async {
-    final failed = _ticket?.replies.where((r) => r.clientReplyId == clientReplyId && r.isFailed).firstOrNull;
+    final failed = _ticket?.replies
+        .where((r) => r.clientReplyId == clientReplyId && r.isFailed)
+        .firstOrNull;
     if (failed == null) return false;
     // Remove failed reply and resend
     _ticket = _ticket!.copyWith(
-      replies: _ticket!.replies.where((r) => r.clientReplyId != clientReplyId).toList(),
+      replies: _ticket!.replies
+          .where((r) => r.clientReplyId != clientReplyId)
+          .toList(),
     );
     return sendReply(failed.body);
   }
@@ -111,7 +118,9 @@ class SupportTicketController extends ChangeNotifier {
   void removeFailedReply(String clientReplyId) {
     if (_ticket == null) return;
     _ticket = _ticket!.copyWith(
-      replies: _ticket!.replies.where((r) => r.clientReplyId != clientReplyId).toList(),
+      replies: _ticket!.replies
+          .where((r) => r.clientReplyId != clientReplyId)
+          .toList(),
     );
     _notify();
   }
@@ -192,7 +201,8 @@ class SupportTicketController extends ChangeNotifier {
   String _sanitize(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('401')) return 'Session expired. Please sign in again.';
-    if (msg.contains('network') || msg.contains('socket')) return 'No internet connection.';
+    if (msg.contains('network') || msg.contains('socket'))
+      return 'No internet connection.';
     return 'Something went wrong. Please try again.';
   }
 }

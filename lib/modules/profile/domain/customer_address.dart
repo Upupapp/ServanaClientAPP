@@ -28,7 +28,8 @@ class CustomerAddress {
   final double? lat;
   final double? lon;
 
-  String get displayLabel => (label != null && label!.isNotEmpty) ? label! : 'Address';
+  String get displayLabel =>
+      (label != null && label!.isNotEmpty) ? label! : 'Address';
 
   String get displayLine1 => addressOne;
 

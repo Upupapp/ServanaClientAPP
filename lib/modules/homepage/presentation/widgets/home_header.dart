@@ -102,53 +102,53 @@ class ServanaHomeHeader extends StatelessWidget {
             button: true,
             excludeSemantics: true,
             child: GestureDetector(
-            onTap: onNotificationTap,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+              onTap: onNotificationTap,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                if (notificationCount > 0)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: ColorPalette.primaryColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: ColorPalette.primaryColorDark,
-                          width: 1.5,
+                  if (notificationCount > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: ColorPalette.primaryColorDark,
+                            width: 1.5,
+                          ),
                         ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          notificationCount > 9 ? '9+' : '$notificationCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
+                        child: Center(
+                          child: Text(
+                            notificationCount > 9 ? '9+' : '$notificationCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
         ],
       ),
@@ -156,10 +156,7 @@ class ServanaHomeHeader extends StatelessWidget {
 
     if (!doAnimate) return content;
 
-    return content
-        .animate()
-        .fadeIn(duration: 220.ms, delay: 80.ms)
-        .slideY(
+    return content.animate().fadeIn(duration: 220.ms, delay: 80.ms).slideY(
           begin: -0.1,
           end: 0,
           duration: 220.ms,

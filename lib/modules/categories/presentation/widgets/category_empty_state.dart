@@ -11,7 +11,8 @@ class CategoryEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 56, color: accentColor.withOpacity(0.4)),
+          Icon(Icons.search_off_rounded,
+              size: 56, color: accentColor.withOpacity(0.4)),
           const SizedBox(height: 16),
           Text(
             'No services found',

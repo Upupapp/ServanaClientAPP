@@ -33,9 +33,13 @@ class SupportController extends ChangeNotifier {
       case TicketFilter.needsAction:
         return _tickets.where((t) => t.status.needsCustomerAction).toList();
       case TicketFilter.resolved:
-        return _tickets.where((t) => t.status == SupportTicketStatus.resolved).toList();
+        return _tickets
+            .where((t) => t.status == SupportTicketStatus.resolved)
+            .toList();
       case TicketFilter.closed:
-        return _tickets.where((t) => t.status == SupportTicketStatus.closed).toList();
+        return _tickets
+            .where((t) => t.status == SupportTicketStatus.closed)
+            .toList();
       case TicketFilter.all:
         return List.unmodifiable(_tickets);
     }

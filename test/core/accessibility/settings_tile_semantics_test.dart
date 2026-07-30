@@ -54,7 +54,8 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('single semantics node — no duplicate from inner Switch', (tester) async {
+    testWidgets('single semantics node — no duplicate from inner Switch',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -162,7 +163,8 @@ void main() {
         ),
       );
 
-      final semantics = tester.getSemantics(find.byType(SettingsDestructiveTile));
+      final semantics =
+          tester.getSemantics(find.byType(SettingsDestructiveTile));
       expect(semantics.label, contains('Delete account'));
       expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
 

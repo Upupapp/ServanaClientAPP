@@ -19,8 +19,7 @@ class SupportTicketDetailScreen extends StatefulWidget {
       _SupportTicketDetailScreenState();
 }
 
-class _SupportTicketDetailScreenState
-    extends State<SupportTicketDetailScreen> {
+class _SupportTicketDetailScreenState extends State<SupportTicketDetailScreen> {
   late final SupportTicketController _ctrl;
   final _scrollCtrl = ScrollController();
   int _lastReplyCount = 0;
@@ -61,7 +60,8 @@ class _SupportTicketDetailScreenState
     final confirm = await _showConfirm(
       context,
       title: 'Close this request?',
-      body: 'Closing marks this request as resolved. You can reopen it if the issue returns.',
+      body:
+          'Closing marks this request as resolved. You can reopen it if the issue returns.',
       confirmLabel: 'Close Request',
     );
     if (!confirm) return;
@@ -305,8 +305,8 @@ class _SupportTicketDetailScreenState
                             child: SupportReplyBubble(
                               reply: reply,
                               onRetry: reply.isFailed
-                                  ? () => _ctrl.retryReply(
-                                      reply.clientReplyId ?? '')
+                                  ? () => _ctrl
+                                      .retryReply(reply.clientReplyId ?? '')
                                   : null,
                               onDeleteFailed: reply.isFailed
                                   ? () => _ctrl.removeFailedReply(

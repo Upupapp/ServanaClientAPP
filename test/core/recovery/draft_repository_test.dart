@@ -141,7 +141,8 @@ void main() {
   });
 
   group('DraftRepository — clearAllForAccount', () {
-    test('removes draft, idempotency key, and payment context for UID', () async {
+    test('removes draft, idempotency key, and payment context for UID',
+        () async {
       final repo = DraftRepository();
       await repo.saveDraft(
         'uid1',

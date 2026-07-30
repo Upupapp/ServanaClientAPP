@@ -22,7 +22,8 @@ abstract final class AnalyticsKeys {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   static const String authMethod = 'auth_method';
-  static const String identifierType = 'identifier_type'; // reserved: email|phone
+  static const String identifierType =
+      'identifier_type'; // reserved: email|phone
   static const String hasSession = 'has_session';
   static const String otpContext = 'otp_context';
   static const String logoutTrigger = 'logout_trigger';
@@ -80,7 +81,8 @@ abstract final class AnalyticsKeys {
   // ── Tracking ─────────────────────────────────────────────────────────────
   static const String trackingStatusCategory = 'tracking_status_category';
   static const String freshnessCategory = 'freshness_category';
-  static const String connectionState = 'connection_state'; // reserved: future use
+  static const String connectionState =
+      'connection_state'; // reserved: future use
 
   // ── Profile ───────────────────────────────────────────────────────────────
   static const String fieldCategory = 'field_category';

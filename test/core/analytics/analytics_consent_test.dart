@@ -6,8 +6,8 @@ void main() {
     test('grants ONLY essential — never analytics', () {
       final consent = AnalyticsConsent.defaultConsent();
       expect(consent.grantedCategories, {ConsentCategory.essential});
-      expect(consent.grantedCategories.contains(ConsentCategory.analytics),
-          false,
+      expect(
+          consent.grantedCategories.contains(ConsentCategory.analytics), false,
           reason: 'analytics consent must never be on by default (PDPA/GDPR)');
     });
 
@@ -34,12 +34,14 @@ void main() {
   group('AnalyticsConsent.fullConsent()', () {
     test('grants essential + analytics + crashReporting + performance', () {
       final consent = AnalyticsConsent.fullConsent();
-      expect(consent.grantedCategories, containsAll([
-        ConsentCategory.essential,
-        ConsentCategory.analytics,
-        ConsentCategory.crashReporting,
-        ConsentCategory.performance,
-      ]));
+      expect(
+          consent.grantedCategories,
+          containsAll([
+            ConsentCategory.essential,
+            ConsentCategory.analytics,
+            ConsentCategory.crashReporting,
+            ConsentCategory.performance,
+          ]));
     });
 
     test('allows analytics events', () {
@@ -49,10 +51,11 @@ void main() {
 
     test('does NOT grant personalization or marketing', () {
       final consent = AnalyticsConsent.fullConsent();
-      expect(consent.grantedCategories.contains(ConsentCategory.personalization),
+      expect(
+          consent.grantedCategories.contains(ConsentCategory.personalization),
           false);
-      expect(consent.grantedCategories.contains(ConsentCategory.marketing),
-          false);
+      expect(
+          consent.grantedCategories.contains(ConsentCategory.marketing), false);
     });
 
     test('policyVersion matches currentPolicyVersion', () {

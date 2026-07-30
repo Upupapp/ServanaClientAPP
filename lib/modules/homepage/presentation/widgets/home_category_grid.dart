@@ -124,78 +124,79 @@ class _HomeCategoryTileState extends State<_HomeCategoryTile> {
       hint: 'Browse ${widget.data.label} services',
       excludeSemantics: true,
       child: GestureDetector(
-      onTapDown: (_) {
-        if (!reduced) setState(() => _pressed = true);
-      },
-      onTapUp: (_) {
-        if (!reduced) setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () {
-        if (!reduced) setState(() => _pressed = false);
-      },
-      child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: widget.data.gradientColors,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: widget.data.gradientColors[0].withOpacity(0.25),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+        onTapDown: (_) {
+          if (!reduced) setState(() => _pressed = true);
+        },
+        onTapUp: (_) {
+          if (!reduced) setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () {
+          if (!reduced) setState(() => _pressed = false);
+        },
+        child: AnimatedScale(
+          scale: _pressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: widget.data.gradientColors,
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.20),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(widget.data.icon, color: Colors.white, size: 20),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.data.label,
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      widget.data.phrase,
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        color: Colors.white.withOpacity(0.75),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.data.gradientColors[0].withOpacity(0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.20),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child:
+                        Icon(widget.data.icon, color: Colors.white, size: 20),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.data.label,
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        widget.data.phrase,
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          color: Colors.white.withOpacity(0.75),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
       ),
     );
   }

@@ -19,8 +19,7 @@ abstract final class SemanticsLabels {
   static const String tabBookings = 'My bookings';
   static const String tabMessages = 'Messages';
   static const String tabProfile = 'Profile';
-  static String tabMessagesWithUnread(int count) =>
-      'Messages, $count unread';
+  static String tabMessagesWithUnread(int count) => 'Messages, $count unread';
 
   // ── Authentication ────────────────────────────────────────────────────────
   static const String signIn = 'Sign in';
@@ -76,8 +75,7 @@ abstract final class SemanticsLabels {
   static const String continuePayment = 'Continue to payment';
   static const String retryPayment = 'Retry payment';
 
-  static String bookingStep(int step, int total) =>
-      'Step $step of $total';
+  static String bookingStep(int step, int total) => 'Step $step of $total';
   static String bookingStatus(String status) => 'Booking status: $status';
 
   // ── Address ───────────────────────────────────────────────────────────────
@@ -198,13 +196,13 @@ abstract final class SemanticsLabels {
   static const String loadingProfile = 'Loading profile';
   static const String loadingPayment = 'Checking payment status';
   static const String retryAction = 'Retry';
-  static const String genericError =
-      'Something went wrong. Please try again.';
+  static const String genericError = 'Something went wrong. Please try again.';
 
   // ── Offline / recovery ────────────────────────────────────────────────────
   static const String offline = 'No internet connection';
   static const String reconnected = 'Connected. Refreshing your content.';
-  static const String draftRestored = 'Your previous booking draft has been restored.';
+  static const String draftRestored =
+      'Your previous booking draft has been restored.';
 
   // ── Consent ───────────────────────────────────────────────────────────────
   static const String consentAccept = 'Accept analytics and continue';

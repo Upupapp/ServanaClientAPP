@@ -259,7 +259,6 @@ void main() {
   });
 
   group('AuthGoogleSignIn — other paths', () {
-
     test(
       'emits Loading then Authenticated when Firebase token exchanges successfully',
       () async {
@@ -373,7 +372,8 @@ void main() {
         expect(
           (states[1] as AuthenticationUnauthenticated).message,
           isNotNull,
-          reason: 'A failed (non-cancelled) Facebook login must surface a message',
+          reason:
+              'A failed (non-cancelled) Facebook login must surface a message',
         );
         await bloc.close();
       },
@@ -473,7 +473,8 @@ void main() {
         expect(result.error, isNotEmpty,
             reason: 'A fallback error message must always be present');
         expect(result.error, equals('Sign-in failed. Please try again.'),
-            reason: 'Fallback must match the constant defined in the exchanger');
+            reason:
+                'Fallback must match the constant defined in the exchanger');
       },
     );
 

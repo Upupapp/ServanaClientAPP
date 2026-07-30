@@ -75,8 +75,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       id: 'ac-002',
       category: 'Account',
       title: 'Is my personal information safe?',
-      body:
-          'Servana uses industry-standard encryption to protect your data. '
+      body: 'Servana uses industry-standard encryption to protect your data. '
           'Your personal information is only shared with providers assigned to your bookings, '
           'and only as needed to fulfil the service.',
     ),
@@ -101,9 +100,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     }
     if (_search.trim().isNotEmpty) {
       final q = _search.trim().toLowerCase();
-      list = list.where((a) =>
-          a.title.toLowerCase().contains(q) ||
-          a.body.toLowerCase().contains(q)).toList();
+      list = list
+          .where((a) =>
+              a.title.toLowerCase().contains(q) ||
+              a.body.toLowerCase().contains(q))
+          .toList();
     }
     return list;
   }
@@ -187,8 +188,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   _CategoryChip(
                     label: c,
                     selected: _activeCategory == c,
-                    onTap: () =>
-                        setState(() => _activeCategory = _activeCategory == c ? null : c),
+                    onTap: () => setState(() =>
+                        _activeCategory = _activeCategory == c ? null : c),
                   ),
               ],
             ),
@@ -239,10 +240,14 @@ class _CategoryChip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: selected ? ColorPalette.primaryColorDark : ColorPalette.secondaryBackground,
+            color: selected
+                ? ColorPalette.primaryColorDark
+                : ColorPalette.secondaryBackground,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? ColorPalette.primaryColorDark : ColorPalette.border(.3),
+              color: selected
+                  ? ColorPalette.primaryColorDark
+                  : ColorPalette.border(.3),
             ),
           ),
           child: Text(

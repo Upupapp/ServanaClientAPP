@@ -491,7 +491,6 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 8),
-
           _SettingsSectionLabel('Account'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -504,7 +503,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Preferences'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -526,7 +524,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Permissions'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -539,7 +536,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Security'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -551,7 +547,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Legal & Info'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -571,7 +566,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           const SizedBox(height: 32),
         ],
       ),

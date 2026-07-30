@@ -14,7 +14,8 @@ class ServanaBenefitSection extends StatelessWidget {
       _BenefitStep(
         icon: Icons.search_rounded,
         title: 'Choose a service',
-        desc: 'Browse available home and personal services by category or search.',
+        desc:
+            'Browse available home and personal services by category or search.',
       ),
       _BenefitStep(
         icon: Icons.calendar_today_outlined,

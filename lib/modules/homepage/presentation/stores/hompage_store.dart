@@ -82,7 +82,8 @@ abstract class _HomeStore with Store {
     session = await SessionService.getSession();
 
     try {
-      final res = await _perf(TraceNames.homeLoad, () async => repo.getBookings());
+      final res =
+          await _perf(TraceNames.homeLoad, () async => repo.getBookings());
       // Discard response if logout fired while we were awaiting — prevents
       // stale old-account data from writing into a reset store (LEAKSHIELD §7).
       if (_generation != gen) {

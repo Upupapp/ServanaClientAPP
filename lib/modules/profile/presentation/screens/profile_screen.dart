@@ -5,7 +5,11 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart'
-    show LanguageScreen, SavedAddressesScreen, SettingsScreen, HelpSupportScreen;
+    show
+        LanguageScreen,
+        SavedAddressesScreen,
+        SettingsScreen,
+        HelpSupportScreen;
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
@@ -118,7 +122,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _MenuItem(
                         icon: Icons.settings_outlined,
                         label: 'Settings',
-                        onTap: () => context.pushNamed(SettingsScreen.routeName),
+                        onTap: () =>
+                            context.pushNamed(SettingsScreen.routeName),
                       ),
                       _MenuItem(
                         icon: Icons.location_on_outlined,
@@ -178,8 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: ColorPalette.danger,
                                 side: BorderSide(
-                                    color:
-                                        ColorPalette.danger.withOpacity(.5)),
+                                    color: ColorPalette.danger.withOpacity(.5)),
                                 disabledForegroundColor:
                                     ColorPalette.danger.withOpacity(.4),
                                 padding:
@@ -193,7 +197,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       LogoutDialog.showDialog(
                                         context: context,
                                         onConfirm: () {
-                                          FocusCoordinator.clearStaleFocus(context);
+                                          FocusCoordinator.clearStaleFocus(
+                                              context);
                                           context
                                               .read<AuthenticationBloc>()
                                               .add(AuthLogout());
@@ -260,7 +265,8 @@ class _ProfileHeader extends StatelessWidget {
     final phone = profile?.phoneNumber ?? '';
     final isEmailVerified = profile?.isEmailVerified ?? false;
     final photoUrl = profile?.photoUrl;
-    final initials = profile?.initials ?? (name.isNotEmpty ? name[0].toUpperCase() : '?');
+    final initials =
+        profile?.initials ?? (name.isNotEmpty ? name[0].toUpperCase() : '?');
 
     return Container(
       padding: EdgeInsets.only(
@@ -288,55 +294,55 @@ class _ProfileHeader extends StatelessWidget {
             button: true,
             excludeSemantics: true,
             child: GestureDetector(
-            onTap: onPhotoTap,
-            child: Stack(
-              children: [
-                Container(
-                  width: 68,
-                  height: 68,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.20),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: Colors.white.withOpacity(.5), width: 2),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: isUploadingPhoto
-                      ? const Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          ),
-                        )
-                      : (photoUrl != null && photoUrl.isNotEmpty)
-                          ? Image.network(
-                              photoUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _initialsWidget(initials),
-                            )
-                          : _initialsWidget(initials),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 22,
-                    height: 22,
+              onTap: onPhotoTap,
+              child: Stack(
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
                     decoration: BoxDecoration(
-                      color: ColorPalette.primaryColor,
+                      color: Colors.white.withOpacity(.20),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(.5), width: 2),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded,
-                        size: 12, color: Colors.white),
+                    clipBehavior: Clip.antiAlias,
+                    child: isUploadingPhoto
+                        ? const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            ),
+                          )
+                        : (photoUrl != null && photoUrl.isNotEmpty)
+                            ? Image.network(
+                                photoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _initialsWidget(initials),
+                              )
+                            : _initialsWidget(initials),
                   ),
-                ),
-              ],
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: ColorPalette.primaryColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded,
+                          size: 12, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -368,8 +374,8 @@ class _ProfileHeader extends StatelessWidget {
                         onTap: onEditTap,
                         child: Container(
                           // 44pt minimum tap target
-                          constraints: const BoxConstraints(
-                              minWidth: 44, minHeight: 44),
+                          constraints:
+                              const BoxConstraints(minWidth: 44, minHeight: 44),
                           alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
@@ -442,8 +448,8 @@ class _ProfileHeader extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: Colors.amber.withOpacity(.25),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                      color: Colors.amber.shade300),
+                                  border:
+                                      Border.all(color: Colors.amber.shade300),
                                 ),
                                 child: Text(
                                   'Verify',
@@ -554,8 +560,8 @@ class _CompletenessCard extends StatelessWidget {
               value: score / 100,
               minHeight: 6,
               backgroundColor: ColorPalette.border(.25),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                  ColorPalette.primaryColorDark),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(ColorPalette.primaryColorDark),
             ),
           ),
           if (next != null) ...[

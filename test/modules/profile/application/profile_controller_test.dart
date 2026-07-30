@@ -15,8 +15,15 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
   int uploadCallCount = 0;
   int removeCallCount = 0;
 
-  void willReturn(CustomerProfile p) { _next = p; _error = null; }
-  void willThrow(Object e) { _error = e; _next = null; }
+  void willReturn(CustomerProfile p) {
+    _next = p;
+    _error = null;
+  }
+
+  void willThrow(Object e) {
+    _error = e;
+    _next = null;
+  }
 
   @override
   Future<CustomerProfile?> loadProfile() async {
@@ -65,12 +72,14 @@ class _FakeApiClient extends Fake implements ServanaApiClient {
   @override
   Future<Map<String, dynamic>> makeAddressPrimary({
     required String addressId,
-  }) async => {'status': 'success'};
+  }) async =>
+      {'status': 'success'};
 
   @override
   Future<Map<String, dynamic>> deleteAddress({
     required String addressId,
-  }) async => {'status': 'success'};
+  }) async =>
+      {'status': 'success'};
 }
 
 AddressController _makeAddressCtrl() => AddressController(
@@ -214,7 +223,8 @@ void main() {
       expect(ctrl.saveError, isNotNull);
     });
 
-    test('isUploadingPhoto is true while awaiting and false afterward', () async {
+    test('isUploadingPhoto is true while awaiting and false afterward',
+        () async {
       final repo = _FakeProfileRepo()..willReturn(_profile);
       final ctrl = _makeCtrl(repo: repo);
       final states = <bool>[];
@@ -324,8 +334,7 @@ void main() {
     });
 
     test('displayName returns first only when last absent', () {
-      final p = CustomerProfile(
-          id: '1', firstName: 'Maria', email: 'x@y.com');
+      final p = CustomerProfile(id: '1', firstName: 'Maria', email: 'x@y.com');
       expect(p.displayName, 'Maria');
     });
 

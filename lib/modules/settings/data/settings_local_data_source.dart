@@ -17,11 +17,13 @@ abstract final class SettingsLocalDataSource {
 
   static Future<void> saveThemeMode(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyTheme, switch (mode) {
-      ThemeMode.light => 'light',
-      ThemeMode.dark => 'dark',
-      _ => 'system',
-    });
+    await prefs.setString(
+        _keyTheme,
+        switch (mode) {
+          ThemeMode.light => 'light',
+          ThemeMode.dark => 'dark',
+          _ => 'system',
+        });
   }
 
   static Future<bool> loadHapticsEnabled() async {

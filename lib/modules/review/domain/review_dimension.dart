@@ -11,13 +11,13 @@ class ReviewDimensionScore {
   factory ReviewDimensionScore.fromMap(Map<String, dynamic> m) =>
       ReviewDimensionScore(
         dimensionKey: m['dimensionKey'] as String? ?? '',
-        score:        (m['score'] as num?)?.toInt() ?? 0,
+        score: (m['score'] as num?)?.toInt() ?? 0,
       );
 
   Map<String, dynamic> toMap() => {
-    'dimensionKey': dimensionKey,
-    'score':        score,
-  };
+        'dimensionKey': dimensionKey,
+        'score': score,
+      };
 
   String get label => labelFor(dimensionKey);
 
@@ -25,14 +25,22 @@ class ReviewDimensionScore {
 
   static String _label(String key) {
     switch (key) {
-      case 'SERVICE_QUALITY':  return 'Service quality';
-      case 'PROFESSIONALISM':  return 'Professionalism';
-      case 'PUNCTUALITY':      return 'Punctuality';
-      case 'COMMUNICATION':    return 'Communication';
-      case 'VALUE':            return 'Value for money';
-      case 'CLEANLINESS':      return 'Cleanliness';
-      case 'ACCURACY':         return 'Accuracy of booking';
-      default:                 return key.toLowerCase().replaceAll('_', ' ');
+      case 'SERVICE_QUALITY':
+        return 'Service quality';
+      case 'PROFESSIONALISM':
+        return 'Professionalism';
+      case 'PUNCTUALITY':
+        return 'Punctuality';
+      case 'COMMUNICATION':
+        return 'Communication';
+      case 'VALUE':
+        return 'Value for money';
+      case 'CLEANLINESS':
+        return 'Cleanliness';
+      case 'ACCURACY':
+        return 'Accuracy of booking';
+      default:
+        return key.toLowerCase().replaceAll('_', ' ');
     }
   }
 }
@@ -66,7 +74,8 @@ class ReviewDimensionSet {
   static List<String> forCategory(String? category) {
     final c = (category ?? '').toLowerCase();
     if (c.contains('clean') || c.contains('housekeep')) return cleaning;
-    if (c.contains('install') || c.contains('repair') || c.contains('tech')) return installation;
+    if (c.contains('install') || c.contains('repair') || c.contains('tech'))
+      return installation;
     return general;
   }
 }

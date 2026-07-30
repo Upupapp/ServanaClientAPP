@@ -83,7 +83,7 @@ class _SupportReplyComposerState extends State<SupportReplyComposer> {
                         filled: true,
                         fillColor: ColorPalette.secondaryBackground,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                            horizontal: 14, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide(

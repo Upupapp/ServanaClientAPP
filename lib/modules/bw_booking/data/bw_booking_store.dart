@@ -364,7 +364,8 @@ abstract class _BwBookingStore with Store {
       if (userId.isEmpty) {
         submissionError = 'You must be signed in to create a booking.';
         _track(const BookingFailedEvent(
-            serviceCategory: 'beauty_wellness', failureCode: 'unauthenticated'));
+            serviceCategory: 'beauty_wellness',
+            failureCode: 'unauthenticated'));
         return;
       }
 
@@ -391,14 +392,19 @@ abstract class _BwBookingStore with Store {
       // Journal the operation before the API call so a process kill during
       // the network request leaves a reconcilable record.
       final opId = _uuidV4();
-      dpLocator<OperationJournal>().record(JournaledOperation(
-        id: opId,
-        type: 'booking.create',
-        customerUid: userId,
-        payload: {'category': 'beauty_wellness', 'paymentMethod': paymentMethod},
-        startedAt: DateTime.now(),
-        idempotencyKey: _idempotencyKey,
-      )).ignore();
+      dpLocator<OperationJournal>()
+          .record(JournaledOperation(
+            id: opId,
+            type: 'booking.create',
+            customerUid: userId,
+            payload: {
+              'category': 'beauty_wellness',
+              'paymentMethod': paymentMethod
+            },
+            startedAt: DateTime.now(),
+            idempotencyKey: _idempotencyKey,
+          ))
+          .ignore();
 
       final res = await api.createBooking(
         userId: userId,
@@ -478,12 +484,14 @@ abstract class _BwBookingStore with Store {
         errorMessage = 'Payment session could not be started. Please retry.';
       } else if (uid.isNotEmpty) {
         // Persist checkout URL so the user can resume payment after an app crash.
-        dpLocator<DraftRepository>().savePaymentContext(PendingPaymentContext(
-          bookingId: createdBookingId!,
-          checkoutUrl: paymongoCheckoutUrl!,
-          customerUid: uid,
-          savedAt: DateTime.now(),
-        )).ignore();
+        dpLocator<DraftRepository>()
+            .savePaymentContext(PendingPaymentContext(
+              bookingId: createdBookingId!,
+              checkoutUrl: paymongoCheckoutUrl!,
+              customerUid: uid,
+              savedAt: DateTime.now(),
+            ))
+            .ignore();
       }
     } catch (e) {
       errorMessage = _errorMsg(e);

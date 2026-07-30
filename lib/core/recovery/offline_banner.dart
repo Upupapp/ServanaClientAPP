@@ -116,22 +116,22 @@ class _OfflineStrip extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 6, horizontal: 16),
           child: Row(
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 15, color: Colors.white),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'No internet connection',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.1,
+            children: [
+              Icon(Icons.wifi_off_rounded, size: 15, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'No internet connection',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

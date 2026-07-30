@@ -174,8 +174,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   // End rect: center = logoCenter + (dx*lh, dy*lh), size = (w*ls, h*ls).
   // dx, dy are fractions of logoHalf; w, h are fractions of logoSize (=2*lh).
-  static Rect _endRect(double lcx, double lcy, double lh,
-      double dx, double dy, double w, double h) {
+  static Rect _endRect(double lcx, double lcy, double lh, double dx, double dy,
+      double w, double h) {
     final ls = lh * 2;
     return Rect.fromCenter(
       center: Offset(lcx + dx * lh, lcy + dy * lh),
@@ -185,8 +185,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   // Start rect: center = (fx*sw, fy*sh), size = (ws*ls, hs*ls).
-  static Rect _startRect(double sw, double sh, double ls,
-      double fx, double fy, double ws, double hs) {
+  static Rect _startRect(double sw, double sh, double ls, double fx, double fy,
+      double ws, double hs) {
     return Rect.fromCenter(
       center: Offset(fx * sw, fy * sh),
       width: ws * ls,
@@ -269,18 +269,22 @@ class _SplashScreenState extends State<SplashScreen>
 
               // Petal interpolated rects.
               final petalRects = List<Rect>.generate(7, (i) {
-                final end = _endRect(lcx, lcy, lh,
-                    _petalEnd[i][0], _petalEnd[i][1],
-                    _petalEnd[i][2], _petalEnd[i][3]);
-                final start = _startRect(sw, sh, ls,
-                    _petalStartCenter[i][0], _petalStartCenter[i][1],
-                    _petalStartSize[i][0], _petalStartSize[i][1]);
+                final end = _endRect(lcx, lcy, lh, _petalEnd[i][0],
+                    _petalEnd[i][1], _petalEnd[i][2], _petalEnd[i][3]);
+                final start = _startRect(
+                    sw,
+                    sh,
+                    ls,
+                    _petalStartCenter[i][0],
+                    _petalStartCenter[i][1],
+                    _petalStartSize[i][0],
+                    _petalStartSize[i][1]);
                 return _lerpRect(start, end, petalT);
               });
 
               // Blue logo: full SVG width, taller due to 24 × 33.05 viewBox.
-              final blueLogo = Rect.fromLTWH(
-                  lcx - lh, lcy - 1.761 * lh, ls, lh * 2.754);
+              final blueLogo =
+                  Rect.fromLTWH(lcx - lh, lcy - 1.761 * lh, ls, lh * 2.754);
 
               // Chevron SVG shares the same viewBox dimensions as the blue logo.
               final chevronEnd =
@@ -288,18 +292,17 @@ class _SplashScreenState extends State<SplashScreen>
               // Start well above the screen so the drop reads as a long fall.
               final chevronStart = Rect.fromLTWH(
                   lcx - lh, lcy - 1.812 * lh - sh * 0.55, ls, lh * 2.754);
-              final chevronRect =
-                  _lerpRect(chevronStart, chevronEnd, chevronT);
+              final chevronRect = _lerpRect(chevronStart, chevronEnd, chevronT);
 
               // Portal radius: expands from logo center to the farthest screen corner.
               final portalRadius = _showPortal
                   ? [
-                      math.sqrt(lcx * lcx + lcy * lcy),
-                      math.sqrt((sw - lcx) * (sw - lcx) + lcy * lcy),
-                      math.sqrt(lcx * lcx + (sh - lcy) * (sh - lcy)),
-                      math.sqrt(
-                          (sw - lcx) * (sw - lcx) + (sh - lcy) * (sh - lcy)),
-                    ].reduce(math.max) *
+                        math.sqrt(lcx * lcx + lcy * lcy),
+                        math.sqrt((sw - lcx) * (sw - lcx) + lcy * lcy),
+                        math.sqrt(lcx * lcx + (sh - lcy) * (sh - lcy)),
+                        math.sqrt(
+                            (sw - lcx) * (sw - lcx) + (sh - lcy) * (sh - lcy)),
+                      ].reduce(math.max) *
                       1.05 *
                       _portalProgress.value
                   : 0.0;

@@ -13,7 +13,10 @@ import 'package:hive/hive.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSupportRepository extends Mock implements SupportRepository {}
-class MockSupportDraftRepository extends Mock implements SupportDraftRepository {}
+
+class MockSupportDraftRepository extends Mock
+    implements SupportDraftRepository {}
+
 class MockSupportController extends Mock implements SupportController {}
 
 class _FakeSupportDraft extends Fake implements SupportDraft {}
@@ -30,7 +33,9 @@ void main() {
 
   tearDownAll(() async {
     await Hive.close();
-    try { await _hiveDir.delete(recursive: true); } catch (_) {}
+    try {
+      await _hiveDir.delete(recursive: true);
+    } catch (_) {}
   });
   late MockSupportRepository repo;
   late MockSupportDraftRepository draftRepo;
@@ -38,15 +43,15 @@ void main() {
   late SupportCreateController ctrl;
 
   SupportTicket makeCreatedTicket() => SupportTicket(
-    ticketKey: 'new-ticket-key',
-    category: SupportTicketCategory.booking,
-    status: SupportTicketStatus.submitted,
-    title: 'Test',
-    safeSummary: '',
-    canReply: true,
-    canClose: false,
-    canReopen: false,
-  );
+        ticketKey: 'new-ticket-key',
+        category: SupportTicketCategory.booking,
+        status: SupportTicketStatus.submitted,
+        title: 'Test',
+        safeSummary: '',
+        canReply: true,
+        canClose: false,
+        canReopen: false,
+      );
 
   setUp(() {
     repo = MockSupportRepository();
@@ -90,10 +95,10 @@ void main() {
     expect(ctrl.status, CreateTicketStatus.idle);
     expect(ctrl.error, isNotNull);
     verifyNever(() => repo.createTicket(
-      subject: any(named: 'subject'),
-      description: any(named: 'description'),
-      category: any(named: 'category'),
-    ));
+          subject: any(named: 'subject'),
+          description: any(named: 'description'),
+          category: any(named: 'category'),
+        ));
   });
 
   test('submit fails validation when description > 2000 chars', () async {
@@ -106,12 +111,12 @@ void main() {
   test('submit succeeds when description is valid', () async {
     final ticket = makeCreatedTicket();
     when(() => repo.createTicket(
-      subject: any(named: 'subject'),
-      description: any(named: 'description'),
-      category: any(named: 'category'),
-      clientRequestId: any(named: 'clientRequestId'),
-      bookingId: any(named: 'bookingId'),
-    )).thenAnswer((_) async => ticket);
+          subject: any(named: 'subject'),
+          description: any(named: 'description'),
+          category: any(named: 'category'),
+          clientRequestId: any(named: 'clientRequestId'),
+          bookingId: any(named: 'bookingId'),
+        )).thenAnswer((_) async => ticket);
 
     ctrl.setDescription('A valid description with enough length to pass.');
     final ok = await ctrl.submit();
@@ -124,12 +129,12 @@ void main() {
 
   test('submit sets failed state on API error', () async {
     when(() => repo.createTicket(
-      subject: any(named: 'subject'),
-      description: any(named: 'description'),
-      category: any(named: 'category'),
-      clientRequestId: any(named: 'clientRequestId'),
-      bookingId: any(named: 'bookingId'),
-    )).thenThrow(Exception('network error'));
+          subject: any(named: 'subject'),
+          description: any(named: 'description'),
+          category: any(named: 'category'),
+          clientRequestId: any(named: 'clientRequestId'),
+          bookingId: any(named: 'bookingId'),
+        )).thenThrow(Exception('network error'));
 
     ctrl.setDescription('A valid description with enough length to pass.');
     final ok = await ctrl.submit();
@@ -160,12 +165,12 @@ void main() {
     String? capturedId;
 
     when(() => repo.createTicket(
-      subject: any(named: 'subject'),
-      description: any(named: 'description'),
-      category: any(named: 'category'),
-      clientRequestId: any(named: 'clientRequestId'),
-      bookingId: any(named: 'bookingId'),
-    )).thenAnswer((inv) async {
+          subject: any(named: 'subject'),
+          description: any(named: 'description'),
+          category: any(named: 'category'),
+          clientRequestId: any(named: 'clientRequestId'),
+          bookingId: any(named: 'bookingId'),
+        )).thenAnswer((inv) async {
       capturedId = inv.namedArguments[#clientRequestId] as String?;
       return ticket;
     });

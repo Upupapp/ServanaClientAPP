@@ -128,7 +128,9 @@ abstract class _TrackingController with Store {
       final loc = snapshot.providerLocation;
       final freshness = loc == null
           ? 'unknown'
-          : loc.isStaleAt(DateTime.now()) ? 'stale' : 'fresh';
+          : loc.isStaleAt(DateTime.now())
+              ? 'stale'
+              : 'fresh';
       _track(TrackingSnapshotLoadedEvent(
         freshnessCategory: freshness,
         trackingStatusCategory: snapshot.bookingStatus.name,

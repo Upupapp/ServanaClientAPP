@@ -23,7 +23,8 @@ class NotificationsLocalDataSource {
     }
   }
 
-  Future<void> saveCached(String uid, List<Map<String, dynamic>> notifications) async {
+  Future<void> saveCached(
+      String uid, List<Map<String, dynamic>> notifications) async {
     final prefs = await SharedPreferences.getInstance();
     final limited = notifications.take(_kMaxCached).toList();
     await prefs.setString(_key(uid), jsonEncode(limited));
@@ -50,8 +51,10 @@ class NotificationsLocalDataSource {
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     final toRemove = prefs.getKeys().where(
-      (k) => k.startsWith(_kNotificationsKey) || k.startsWith(_kUnreadCountKey),
-    );
+          (k) =>
+              k.startsWith(_kNotificationsKey) ||
+              k.startsWith(_kUnreadCountKey),
+        );
     for (final k in toRemove) {
       await prefs.remove(k);
     }

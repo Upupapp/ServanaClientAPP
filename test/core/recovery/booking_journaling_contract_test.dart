@@ -37,7 +37,9 @@ void main() {
   group('Booking journaling contract', () {
     // ── Pre-call record ───────────────────────────────────────────────────
 
-    test('entry is readable immediately after record() — simulates process kill', () async {
+    test(
+        'entry is readable immediately after record() — simulates process kill',
+        () async {
       final journal = OperationJournal();
       await journal.record(makeBookingOp(
         opId: 'op-abc',
@@ -109,7 +111,8 @@ void main() {
 
     // ── Logout isolation ─────────────────────────────────────────────────
 
-    test('clearForAccount() on logout removes all pending booking ops', () async {
+    test('clearForAccount() on logout removes all pending booking ops',
+        () async {
       final journal = OperationJournal();
       await journal.record(makeBookingOp(opId: 'op-1', idempotencyKey: 'k-1'));
       await journal.record(makeBookingOp(opId: 'op-2', idempotencyKey: 'k-2'));
@@ -119,9 +122,11 @@ void main() {
       expect(await journal.load(uid), isEmpty);
     });
 
-    test('pending ops of a different customer are unaffected by logout', () async {
+    test('pending ops of a different customer are unaffected by logout',
+        () async {
       final journal = OperationJournal();
-      await journal.record(makeBookingOp(opId: 'op-mine', idempotencyKey: 'k-m'));
+      await journal
+          .record(makeBookingOp(opId: 'op-mine', idempotencyKey: 'k-m'));
 
       const otherUid = 'other-customer-456';
       await journal.record(JournaledOperation(
@@ -152,7 +157,8 @@ void main() {
         idempotencyKey: 'k-stale',
       ));
 
-      await journal.record(makeBookingOp(opId: 'op-fresh', idempotencyKey: 'k-fresh'));
+      await journal
+          .record(makeBookingOp(opId: 'op-fresh', idempotencyKey: 'k-fresh'));
 
       final ops = await journal.load(uid);
       expect(ops, hasLength(1));

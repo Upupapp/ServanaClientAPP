@@ -103,8 +103,10 @@ void main() {
 
     test('respects custom threshold', () {
       final snap = makeSnap(base.subtract(const Duration(minutes: 2)));
-      expect(snap.isStaleAt(base, threshold: const Duration(minutes: 1)), isTrue);
-      expect(snap.isStaleAt(base, threshold: const Duration(minutes: 3)), isFalse);
+      expect(
+          snap.isStaleAt(base, threshold: const Duration(minutes: 1)), isTrue);
+      expect(
+          snap.isStaleAt(base, threshold: const Duration(minutes: 3)), isFalse);
     });
   });
 

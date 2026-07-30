@@ -13,14 +13,14 @@ class ReviewDraft {
   });
 
   final String bookingId;
-  final int overallRating;   // 0 = unset, 1–5 = set
+  final int overallRating; // 0 = unset, 1–5 = set
   final Map<String, int> dimensions;
   final String publicComment;
   final String privateFeedback;
   final ReviewVisibility visibility;
   final String? clientRequestId;
 
-  bool get isRatingSet  => overallRating >= 1 && overallRating <= 5;
+  bool get isRatingSet => overallRating >= 1 && overallRating <= 5;
   bool get isSubmittable => isRatingSet;
 
   ReviewDraft copyWith({
@@ -32,16 +32,16 @@ class ReviewDraft {
     String? clientRequestId,
   }) =>
       ReviewDraft(
-        bookingId:       bookingId,
-        overallRating:   overallRating    ?? this.overallRating,
-        dimensions:      dimensions       ?? this.dimensions,
-        publicComment:   publicComment    ?? this.publicComment,
-        privateFeedback: privateFeedback  ?? this.privateFeedback,
-        visibility:      visibility       ?? this.visibility,
-        clientRequestId: clientRequestId  ?? this.clientRequestId,
+        bookingId: bookingId,
+        overallRating: overallRating ?? this.overallRating,
+        dimensions: dimensions ?? this.dimensions,
+        publicComment: publicComment ?? this.publicComment,
+        privateFeedback: privateFeedback ?? this.privateFeedback,
+        visibility: visibility ?? this.visibility,
+        clientRequestId: clientRequestId ?? this.clientRequestId,
       );
 
   ReviewDraft setDimension(String key, int score) => copyWith(
-    dimensions: Map.from(dimensions)..[key] = score,
-  );
+        dimensions: Map.from(dimensions)..[key] = score,
+      );
 }

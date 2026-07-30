@@ -84,7 +84,8 @@ void main() {
         longitude: 121.0244,
         updatedAt: DateTime.now().subtract(const Duration(seconds: 30)),
       );
-      expect(makeState(providerLocation: loc).freshness, TrackingFreshness.live);
+      expect(
+          makeState(providerLocation: loc).freshness, TrackingFreshness.live);
     });
 
     test('returns stale when location is older than 3 minutes', () {
@@ -93,7 +94,8 @@ void main() {
         longitude: 121.0244,
         updatedAt: DateTime.now().subtract(const Duration(minutes: 5)),
       );
-      expect(makeState(providerLocation: loc).freshness, TrackingFreshness.stale);
+      expect(
+          makeState(providerLocation: loc).freshness, TrackingFreshness.stale);
     });
   });
 

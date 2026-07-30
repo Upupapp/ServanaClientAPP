@@ -298,8 +298,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                         // ── Primary CTA: Browse Services ──────────────────
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Semantics(
                             label: 'Browse services without signing in',
                             child: ServanaPrimaryButton(
@@ -313,8 +312,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                         // ── Secondary CTA: Create Account ─────────────────
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Semantics(
                             label: 'Create a new Servana account',
                             child: ServanaOutlinedButton(
@@ -444,8 +442,8 @@ class _ServiceCategoriesVisual extends StatelessWidget {
       runSpacing: 10,
       alignment: WrapAlignment.center,
       children: List.generate(_services.length, (i) {
-        final chip = _ServiceChip(
-            icon: _services[i].$1, label: _services[i].$2);
+        final chip =
+            _ServiceChip(icon: _services[i].$1, label: _services[i].$2);
         if (isStatic) return chip;
         return chip
             .animate(delay: Duration(milliseconds: i * 55))

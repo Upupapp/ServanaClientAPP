@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSupportRepository extends Mock implements SupportRepository {}
+
 class MockSupportController extends Mock implements SupportController {}
 
 void main() {
@@ -92,7 +93,8 @@ void main() {
     expect(ctrl.error, isNull);
   });
 
-  test('loadTicket clears previous ticket before notifying loading state', () async {
+  test('loadTicket clears previous ticket before notifying loading state',
+      () async {
     when(() => repo.getTicketDetail('tk1'))
         .thenAnswer((_) async => makeTicket(key: 'tk1'));
     await ctrl.loadTicket('tk1');
@@ -180,8 +182,8 @@ void main() {
   });
 
   test('retryReply removes failed reply and resends', () async {
-    final failed = makeReply(
-        body: 'retry me', isFailed: true, clientReplyId: 'crid-1');
+    final failed =
+        makeReply(body: 'retry me', isFailed: true, clientReplyId: 'crid-1');
     when(() => repo.getTicketDetail('tk1'))
         .thenAnswer((_) async => makeTicket(key: 'tk1', replies: [failed]));
     await ctrl.loadTicket('tk1');
@@ -288,7 +290,8 @@ void main() {
     expect(ctrl.status, TicketDetailStatus.initial);
   });
 
-  test('markRead called after load and decrements parent unread count', () async {
+  test('markRead called after load and decrements parent unread count',
+      () async {
     when(() => repo.getTicketDetail('tk1'))
         .thenAnswer((_) async => makeTicket(key: 'tk1', unreadCount: 2));
     when(() => repo.markRead('tk1')).thenAnswer((_) async {});

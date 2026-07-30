@@ -16,12 +16,16 @@ class ReviewsRepository {
 
   Future<ServanaReview> createReview(ReviewDraft draft) async {
     final res = await _api.createReview(
-      bookingId:       draft.bookingId,
-      overallRating:   draft.overallRating,
-      dimensions:      draft.dimensions,
-      publicComment:   draft.publicComment.trim().isNotEmpty ? draft.publicComment.trim() : null,
-      privateFeedback: draft.privateFeedback.trim().isNotEmpty ? draft.privateFeedback.trim() : null,
-      visibility:      draft.visibility.apiValue,
+      bookingId: draft.bookingId,
+      overallRating: draft.overallRating,
+      dimensions: draft.dimensions,
+      publicComment: draft.publicComment.trim().isNotEmpty
+          ? draft.publicComment.trim()
+          : null,
+      privateFeedback: draft.privateFeedback.trim().isNotEmpty
+          ? draft.privateFeedback.trim()
+          : null,
+      visibility: draft.visibility.apiValue,
       clientRequestId: draft.clientRequestId,
     );
     return ServanaReview.fromMap(_map(res));
@@ -53,12 +57,16 @@ class ReviewsRepository {
 
   Future<ServanaReview> editReview(String reviewId, ReviewDraft draft) async {
     final res = await _api.editReview(
-      reviewId:        reviewId,
-      overallRating:   draft.overallRating,
-      dimensions:      draft.dimensions,
-      publicComment:   draft.publicComment.trim().isNotEmpty ? draft.publicComment.trim() : null,
-      privateFeedback: draft.privateFeedback.trim().isNotEmpty ? draft.privateFeedback.trim() : null,
-      visibility:      draft.visibility.apiValue,
+      reviewId: reviewId,
+      overallRating: draft.overallRating,
+      dimensions: draft.dimensions,
+      publicComment: draft.publicComment.trim().isNotEmpty
+          ? draft.publicComment.trim()
+          : null,
+      privateFeedback: draft.privateFeedback.trim().isNotEmpty
+          ? draft.privateFeedback.trim()
+          : null,
+      visibility: draft.visibility.apiValue,
     );
     return ServanaReview.fromMap(_map(res['data'] ?? res));
   }
@@ -78,7 +86,8 @@ class ReviewsRepository {
     required String reason,
     String? details,
   }) async {
-    await _api.reportReview(reviewId: reviewId, reason: reason, details: details);
+    await _api.reportReview(
+        reviewId: reviewId, reason: reason, details: details);
   }
 
   Future<ReviewAggregate> getProviderAggregate(String providerUid) async {

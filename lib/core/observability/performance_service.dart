@@ -19,7 +19,8 @@ final class PerformanceService {
 
   // Start a named trace. Returns a handle — call stop() on it when done.
   // Returns null if the trace name is not registered or on any error.
-  Future<Trace?> startTrace(String traceName, {Map<String, String>? attributes}) async {
+  Future<Trace?> startTrace(String traceName,
+      {Map<String, String>? attributes}) async {
     if (!_isAllowedTrace(traceName)) {
       if (kDebugMode) {
         debugPrint('[Perf] Unregistered trace name: $traceName');

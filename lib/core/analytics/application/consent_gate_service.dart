@@ -14,7 +14,8 @@ class ConsentGateService {
 
   /// Shows the consent dialog if the user has not yet decided.
   /// Safe to call from multiple screens — only fires once per install.
-  Future<void> maybeShow(BuildContext context, AnalyticsCoordinator coordinator) async {
+  Future<void> maybeShow(
+      BuildContext context, AnalyticsCoordinator coordinator) async {
     if (_shown) return;
     // Set before first await — prevents concurrent callers from both passing the
     // guard during the hasUserDecided() suspension window.
@@ -25,7 +26,9 @@ class ConsentGateService {
     final priorFocus = FocusScope.of(context).focusedChild;
     final accepted = await showAnalyticsConsentSheet(context);
     FocusCoordinator.restoreToNode(priorFocus);
-    final consent = accepted ? AnalyticsConsent.fullConsent() : AnalyticsConsent.defaultConsent();
+    final consent = accepted
+        ? AnalyticsConsent.fullConsent()
+        : AnalyticsConsent.defaultConsent();
     await coordinator.setConsent(consent);
   }
 }

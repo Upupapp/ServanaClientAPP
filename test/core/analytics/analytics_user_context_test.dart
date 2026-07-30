@@ -42,22 +42,22 @@ void main() {
   });
 
   group('AnalyticsUserContext — profile band', () {
-    test('0 score → 0 band', () =>
-        expect(AnalyticsUserContext.profileBandFor(0), '0'));
-    test('25 score → 1-25 band', () =>
-        expect(AnalyticsUserContext.profileBandFor(25), '1-25'));
-    test('26 score → 26-50 band', () =>
-        expect(AnalyticsUserContext.profileBandFor(26), '26-50'));
-    test('100 score → 100 band', () =>
-        expect(AnalyticsUserContext.profileBandFor(100), '100'));
-    test('99 score → 76-99 band', () =>
-        expect(AnalyticsUserContext.profileBandFor(99), '76-99'));
+    test('0 score → 0 band',
+        () => expect(AnalyticsUserContext.profileBandFor(0), '0'));
+    test('25 score → 1-25 band',
+        () => expect(AnalyticsUserContext.profileBandFor(25), '1-25'));
+    test('26 score → 26-50 band',
+        () => expect(AnalyticsUserContext.profileBandFor(26), '26-50'));
+    test('100 score → 100 band',
+        () => expect(AnalyticsUserContext.profileBandFor(100), '100'));
+    test('99 score → 76-99 band',
+        () => expect(AnalyticsUserContext.profileBandFor(99), '76-99'));
   });
 
   group('AnalyticsUserContext — guest constant', () {
-    test('guest has empty analytics ID', () =>
-        expect(AnalyticsUserContext.guest.analyticsId, isEmpty));
-    test('guest accountState is guest', () =>
-        expect(AnalyticsUserContext.guest.accountState, 'guest'));
+    test('guest has empty analytics ID',
+        () => expect(AnalyticsUserContext.guest.analyticsId, isEmpty));
+    test('guest accountState is guest',
+        () => expect(AnalyticsUserContext.guest.accountState, 'guest'));
   });
 }

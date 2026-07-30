@@ -25,55 +25,55 @@ class TrackingStatusBar extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: config.color.withOpacity(.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: config.color.withOpacity(.25)),
-      ),
-      child: Row(
-        children: [
-          if (isPolling && !BookingStatusMapper.isTerminal(status))
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: config.color,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: config.color.withOpacity(.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: config.color.withOpacity(.25)),
+        ),
+        child: Row(
+          children: [
+            if (isPolling && !BookingStatusMapper.isTerminal(status))
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: config.color,
+                ),
+              )
+            else
+              Icon(config.icon, size: 20, color: config.color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    BookingStatusMapper.customerLabel(status),
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: config.color,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    BookingStatusMapper.heroSubtitle(status),
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontSize: 11,
+                      color: ColorPalette.accentText,
+                    ),
+                  ),
+                ],
               ),
-            )
-          else
-            Icon(config.icon, size: 20, color: config.color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  BookingStatusMapper.customerLabel(status),
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: config.color,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  BookingStatusMapper.heroSubtitle(status),
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontSize: 11,
-                    color: ColorPalette.accentText,
-                  ),
-                ),
-              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 

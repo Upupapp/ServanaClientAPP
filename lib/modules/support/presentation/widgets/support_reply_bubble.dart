@@ -21,13 +21,15 @@ class SupportReplyBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxWidth = MediaQuery.of(context).size.width * 0.78;
     return Semantics(
-      label: '${_isCustomer ? "You" : "Servana Support"}: ${reply.body}${reply.isPending ? ", sending" : ""}${reply.isFailed ? ", failed to send" : ""}',
+      label:
+          '${_isCustomer ? "You" : "Servana Support"}: ${reply.body}${reply.isPending ? ", sending" : ""}${reply.isFailed ? ", failed to send" : ""}',
       child: Align(
         alignment: _isCustomer ? Alignment.centerRight : Alignment.centerLeft,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
           child: Column(
-            crossAxisAlignment: _isCustomer ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                _isCustomer ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               if (!_isCustomer)
                 Padding(
@@ -43,7 +45,8 @@ class SupportReplyBubble extends StatelessWidget {
                   ),
                 ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: _bubbleColor(),
                   borderRadius: BorderRadius.only(
@@ -61,7 +64,8 @@ class SupportReplyBubble extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: FontPalette.primaryFontFamily,
                     fontSize: 14,
-                    color: _isCustomer ? Colors.white : ColorPalette.secondaryText,
+                    color:
+                        _isCustomer ? Colors.white : ColorPalette.secondaryText,
                     height: 1.45,
                   ),
                 ),
@@ -82,7 +86,8 @@ class SupportReplyBubble extends StatelessWidget {
                   if (reply.isPending) ...[
                     const SizedBox(width: 4),
                     SizedBox(
-                      width: 10, height: 10,
+                      width: 10,
+                      height: 10,
                       child: CircularProgressIndicator(
                         strokeWidth: 1.5,
                         color: ColorPalette.accentText.withOpacity(.5),
@@ -91,7 +96,8 @@ class SupportReplyBubble extends StatelessWidget {
                   ],
                   if (reply.isFailed) ...[
                     const SizedBox(width: 4),
-                    Icon(Icons.error_outline_rounded, size: 12, color: ColorPalette.danger),
+                    Icon(Icons.error_outline_rounded,
+                        size: 12, color: ColorPalette.danger),
                     const SizedBox(width: 2),
                     TextButton(
                       onPressed: onRetry,

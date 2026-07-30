@@ -26,37 +26,40 @@ void main() {
 
   tearDownAll(() async {
     await Hive.close();
-    try { await _hiveDir.delete(recursive: true); } catch (_) {}
+    try {
+      await _hiveDir.delete(recursive: true);
+    } catch (_) {}
   });
 
   late MockReviewsRepository repo;
   late ReviewFormController ctrl;
 
   ReviewEligibility makeEligible() => ReviewEligibility.fromMap({
-    'bookingId': 'bk1',
-    'eligible': true,
-    'availableActions': ['CREATE_REVIEW'],
-    'reviewWindow': {
-      'opensAt': '2020-01-01T00:00:00.000Z',
-      'closesAt': '2099-01-01T00:00:00.000Z',
-    },
-  });
+        'bookingId': 'bk1',
+        'eligible': true,
+        'availableActions': ['CREATE_REVIEW'],
+        'reviewWindow': {
+          'opensAt': '2020-01-01T00:00:00.000Z',
+          'closesAt': '2099-01-01T00:00:00.000Z',
+        },
+      });
 
-  ReviewEligibility makeNotEligible(String reason) => ReviewEligibility.fromMap({
-    'bookingId': 'bk1',
-    'eligible': false,
-    'reason': reason,
-    'availableActions': [],
-  });
+  ReviewEligibility makeNotEligible(String reason) =>
+      ReviewEligibility.fromMap({
+        'bookingId': 'bk1',
+        'eligible': false,
+        'reason': reason,
+        'availableActions': [],
+      });
 
   ServanaReview makeReview() => ServanaReview.fromMap({
-    'reviewId':         'rv-1',
-    'bookingId':        'bk1',
-    'overallRating':    5,
-    'visibility':       'PUBLIC',
-    'moderationStatus': 'NOT_REQUIRED',
-    'dimensions': [],
-  });
+        'reviewId': 'rv-1',
+        'bookingId': 'bk1',
+        'overallRating': 5,
+        'visibility': 'PUBLIC',
+        'moderationStatus': 'NOT_REQUIRED',
+        'dimensions': [],
+      });
 
   setUp(() {
     repo = MockReviewsRepository();
@@ -150,8 +153,7 @@ void main() {
   test('submit succeeds when rating is set', () async {
     when(() => repo.getEligibility('bk1'))
         .thenAnswer((_) async => makeEligible());
-    when(() => repo.createReview(any()))
-        .thenAnswer((_) async => makeReview());
+    when(() => repo.createReview(any())).thenAnswer((_) async => makeReview());
 
     await ctrl.loadEligibility('bk1');
     ctrl.setRating(5);
@@ -167,8 +169,7 @@ void main() {
   test('submit sets failed on API error', () async {
     when(() => repo.getEligibility('bk1'))
         .thenAnswer((_) async => makeEligible());
-    when(() => repo.createReview(any()))
-        .thenThrow(Exception('server error'));
+    when(() => repo.createReview(any())).thenThrow(Exception('server error'));
 
     await ctrl.loadEligibility('bk1');
     ctrl.setRating(3);
@@ -204,7 +205,8 @@ void main() {
     expect(ctrl.draft, isNull);
   });
 
-  test('stale-generation discard: loadEligibility twice, only last wins', () async {
+  test('stale-generation discard: loadEligibility twice, only last wins',
+      () async {
     var callCount = 0;
     when(() => repo.getEligibility('bk1')).thenAnswer((_) async {
       callCount++;

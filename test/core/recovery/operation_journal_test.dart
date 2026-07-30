@@ -9,7 +9,8 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
-  JournaledOperation makeOp(String id, {String uid = 'uid1', bool old = false}) {
+  JournaledOperation makeOp(String id,
+      {String uid = 'uid1', bool old = false}) {
     return JournaledOperation(
       id: id,
       type: 'booking.create',

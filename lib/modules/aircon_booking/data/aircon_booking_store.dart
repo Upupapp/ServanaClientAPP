@@ -417,14 +417,16 @@ abstract class _AirconBookingStore with Store {
       // Journal the operation before the API call so a process kill during
       // the network request leaves a reconcilable record.
       final opId = _uuidV4();
-      dpLocator<OperationJournal>().record(JournaledOperation(
-        id: opId,
-        type: 'booking.create',
-        customerUid: userId,
-        payload: {'category': 'aircon', 'paymentMethod': paymentMethod},
-        startedAt: DateTime.now(),
-        idempotencyKey: _idempotencyKey,
-      )).ignore();
+      dpLocator<OperationJournal>()
+          .record(JournaledOperation(
+            id: opId,
+            type: 'booking.create',
+            customerUid: userId,
+            payload: {'category': 'aircon', 'paymentMethod': paymentMethod},
+            startedAt: DateTime.now(),
+            idempotencyKey: _idempotencyKey,
+          ))
+          .ignore();
 
       final res = await api.createBooking(
         userId: userId,
@@ -483,12 +485,14 @@ abstract class _AirconBookingStore with Store {
         errorMessage = 'Payment session could not be started. Please retry.';
       } else if (uid.isNotEmpty) {
         // Persist checkout URL so the user can resume payment after an app crash.
-        dpLocator<DraftRepository>().savePaymentContext(PendingPaymentContext(
-          bookingId: createdBookingId!,
-          checkoutUrl: paymongoCheckoutUrl!,
-          customerUid: uid,
-          savedAt: DateTime.now(),
-        )).ignore();
+        dpLocator<DraftRepository>()
+            .savePaymentContext(PendingPaymentContext(
+              bookingId: createdBookingId!,
+              checkoutUrl: paymongoCheckoutUrl!,
+              customerUid: uid,
+              savedAt: DateTime.now(),
+            ))
+            .ignore();
       }
     } catch (e) {
       errorMessage = _errorMsg(e);

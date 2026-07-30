@@ -38,7 +38,8 @@ void main() {
       expect(await SettingsLocalDataSource.loadHapticsEnabled(), isTrue);
     });
 
-    test('saveHapticsEnabled false + loadHapticsEnabled returns false', () async {
+    test('saveHapticsEnabled false + loadHapticsEnabled returns false',
+        () async {
       await SettingsLocalDataSource.saveHapticsEnabled(false);
       expect(await SettingsLocalDataSource.loadHapticsEnabled(), isFalse);
     });
@@ -53,7 +54,8 @@ void main() {
   // ── SettingsController ─────────────────────────────────────────────────────
 
   group('SettingsController', () {
-    tearDown(() => AppHaptics.setEnabled(true)); // restore static state after each test
+    tearDown(() =>
+        AppHaptics.setEnabled(true)); // restore static state after each test
     test('themeMode defaults to system before load()', () {
       expect(SettingsController().themeMode, ThemeMode.system);
     });
@@ -129,7 +131,9 @@ void main() {
     });
 
     // GAP-001: dispose race guard
-    test('load() completes without throw when controller disposed before awaits resolve', () async {
+    test(
+        'load() completes without throw when controller disposed before awaits resolve',
+        () async {
       final ctrl = SettingsController();
       ctrl.dispose();
       await expectLater(ctrl.load(), completes);
@@ -144,7 +148,8 @@ void main() {
     });
 
     test('load() with haptics=false wires AppHaptics on startup', () async {
-      SharedPreferences.setMockInitialValues({'settings_haptics_enabled': false});
+      SharedPreferences.setMockInitialValues(
+          {'settings_haptics_enabled': false});
       AppHaptics.setEnabled(true);
       final ctrl = SettingsController();
       await ctrl.load();

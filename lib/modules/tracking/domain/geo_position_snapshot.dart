@@ -44,7 +44,9 @@ class GeoPositionSnapshot {
   /// reverses them so the result is always latitude-first (standard LatLng).
   static GeoPositionSnapshot? fromApiMap(Map<String, dynamic> map) {
     // Backend may wrap in a "data" envelope.
-    final raw = map['loc'] != null ? map : (map['data'] as Map<String, dynamic>? ?? map);
+    final raw = map['loc'] != null
+        ? map
+        : (map['data'] as Map<String, dynamic>? ?? map);
     final loc = raw['loc'] as Map<String, dynamic>?;
     if (loc == null) return null;
 

@@ -68,8 +68,8 @@ const _kMassage = SearchResult(
   categoryLabel: 'Massage',
 );
 
-SearchController _makeCtrl([List<SearchResult>? catalog]) =>
-    SearchController(repository: _FakeSearchRepository(catalog ?? [_kAircon, _kMassage]));
+SearchController _makeCtrl([List<SearchResult>? catalog]) => SearchController(
+    repository: _FakeSearchRepository(catalog ?? [_kAircon, _kMassage]));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -89,7 +89,8 @@ void main() {
       expect(ctrl.results, hasLength(2));
     });
 
-    test('init() resets query, category filter, and sort on each call', () async {
+    test('init() resets query, category filter, and sort on each call',
+        () async {
       final ctrl = _makeCtrl();
       await ctrl.init();
       ctrl.onQueryChanged('aircon');
@@ -150,22 +151,22 @@ void main() {
       expect(ctrl.results, hasLength(2));
     });
 
-    test('setSort(priceLowHigh) orders results by ascending min price', () async {
+    test('setSort(priceLowHigh) orders results by ascending min price',
+        () async {
       final ctrl = _makeCtrl();
       await ctrl.init();
       ctrl.setSort(SearchSort.priceLowHigh);
-      final prices =
-          ctrl.results.map((r) => r.minPricePesos).toList();
+      final prices = ctrl.results.map((r) => r.minPricePesos).toList();
       expect(prices.first, lessThanOrEqualTo(prices.last));
       expect(prices.first, 500);
     });
 
-    test('setSort(priceHighLow) orders results by descending min price', () async {
+    test('setSort(priceHighLow) orders results by descending min price',
+        () async {
       final ctrl = _makeCtrl();
       await ctrl.init();
       ctrl.setSort(SearchSort.priceHighLow);
-      final prices =
-          ctrl.results.map((r) => r.minPricePesos).toList();
+      final prices = ctrl.results.map((r) => r.minPricePesos).toList();
       expect(prices.first, greaterThanOrEqualTo(prices.last));
       expect(prices.first, 700);
     });
@@ -214,7 +215,8 @@ void main() {
       expect(ctrl.hasQuery, isTrue);
     });
 
-    test('init() notifies listeners exactly once for successful load', () async {
+    test('init() notifies listeners exactly once for successful load',
+        () async {
       final ctrl = _makeCtrl();
       var notifyCount = 0;
       ctrl.addListener(() => notifyCount++);
@@ -233,8 +235,7 @@ void main() {
     });
 
     test('init() transitions to error state when repository throws', () async {
-      final ctrl = SearchController(
-          repository: _ThrowingSearchRepository());
+      final ctrl = SearchController(repository: _ThrowingSearchRepository());
       await ctrl.init();
       expect(ctrl.state, SearchLoadState.error);
       expect(ctrl.error, isNotNull);

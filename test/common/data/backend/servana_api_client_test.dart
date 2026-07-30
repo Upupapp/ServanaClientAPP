@@ -79,9 +79,8 @@ void main() {
 
       await client.listOptionsWithAddons(serviceId: 7);
 
-      final captured = verify(() => mockHttp.send(captureAny()))
-          .captured
-          .single as http.BaseRequest;
+      final captured = verify(() => mockHttp.send(captureAny())).captured.single
+          as http.BaseRequest;
 
       expect(
         captured.url.path,
@@ -101,9 +100,8 @@ void main() {
 
       await client.listOptionsWithAddons(serviceId: 42);
 
-      final captured = verify(() => mockHttp.send(captureAny()))
-          .captured
-          .single as http.BaseRequest;
+      final captured = verify(() => mockHttp.send(captureAny())).captured.single
+          as http.BaseRequest;
 
       expect(captured.url.path, '/api/services/42/options-with-addons');
     });
@@ -113,9 +111,8 @@ void main() {
 
       await client.listOptionsWithAddons(serviceId: 1);
 
-      final captured = verify(() => mockHttp.send(captureAny()))
-          .captured
-          .single as http.BaseRequest;
+      final captured = verify(() => mockHttp.send(captureAny())).captured.single
+          as http.BaseRequest;
 
       expect(captured.method, 'GET');
     });
@@ -125,9 +122,8 @@ void main() {
 
       await client.listOptionsWithAddons(serviceId: 5);
 
-      final captured = verify(() => mockHttp.send(captureAny()))
-          .captured
-          .single as http.BaseRequest;
+      final captured = verify(() => mockHttp.send(captureAny())).captured.single
+          as http.BaseRequest;
 
       expect(captured.url.host, 'api.test.example');
     });

@@ -62,7 +62,8 @@ class SupportEmptyState extends StatelessWidget {
                   side: BorderSide(color: ColorPalette.primaryColorDark),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 child: Text(
                   actionLabel!,

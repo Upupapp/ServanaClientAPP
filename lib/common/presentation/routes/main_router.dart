@@ -122,22 +122,25 @@ class MainRouter {
         final loc = state.matchedLocation;
 
         // Protected routes require a signed-in session.
-        final isProtected = loc.startsWith(SettingsScreen.route) || // '/Settings'
-            loc.startsWith(BookingsScreen.route) || // "/Bookings" tab
-            loc.startsWith('/bookings') || // "/bookings/:id" detail routes
-            loc.startsWith('/booking/') || // legacy "/booking/:id" singular alias
-            loc.startsWith(MessagesInboxScreen.route) ||
-            loc.startsWith(ProfileScreen.route) ||
-            loc.startsWith('/support') ||
-            loc.startsWith('/review/') || // /review/new, /review/detail
-            loc.startsWith('/BookingChat') || // /BookingChat/:jobOrderId
-            loc.startsWith('/SavedAddresses') ||
-            loc.startsWith('/Rewards') ||
-            loc.startsWith('/Favourites') ||
-            loc.startsWith(NotificationsScreen.route) || // '/Notifications'
-            loc.startsWith(BookingCalendarScreen.route) || // '/Calendar'
-            loc.startsWith('/JobOrderSummaryScreen') || // '/JobOrderSummaryScreen/:id'
-            loc.startsWith(LanguageScreen.route); // '/Language'
+        final isProtected =
+            loc.startsWith(SettingsScreen.route) || // '/Settings'
+                loc.startsWith(BookingsScreen.route) || // "/Bookings" tab
+                loc.startsWith('/bookings') || // "/bookings/:id" detail routes
+                loc.startsWith(
+                    '/booking/') || // legacy "/booking/:id" singular alias
+                loc.startsWith(MessagesInboxScreen.route) ||
+                loc.startsWith(ProfileScreen.route) ||
+                loc.startsWith('/support') ||
+                loc.startsWith('/review/') || // /review/new, /review/detail
+                loc.startsWith('/BookingChat') || // /BookingChat/:jobOrderId
+                loc.startsWith('/SavedAddresses') ||
+                loc.startsWith('/Rewards') ||
+                loc.startsWith('/Favourites') ||
+                loc.startsWith(NotificationsScreen.route) || // '/Notifications'
+                loc.startsWith(BookingCalendarScreen.route) || // '/Calendar'
+                loc.startsWith(
+                    '/JobOrderSummaryScreen') || // '/JobOrderSummaryScreen/:id'
+                loc.startsWith(LanguageScreen.route); // '/Language'
 
         if (isProtected && !authState.isAuthenticated) {
           // Always land on WelcomeScreen — post-logout and unauthenticated
@@ -257,7 +260,7 @@ class MainRouter {
                       name: AirconRepairScreen.routeName,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
-                            categoryId: ServiceCategoryId.aircon),
+                              categoryId: ServiceCategoryId.aircon),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
@@ -265,7 +268,7 @@ class MainRouter {
                       name: BeautyWellnessScreen.routeName,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
-                            categoryId: ServiceCategoryId.beautyWellness),
+                              categoryId: ServiceCategoryId.beautyWellness),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
@@ -273,7 +276,7 @@ class MainRouter {
                       name: HairNailsScreen.routeName,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
-                            categoryId: ServiceCategoryId.hairAndNails),
+                              categoryId: ServiceCategoryId.hairAndNails),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
@@ -281,7 +284,7 @@ class MainRouter {
                       name: MassageScreen.routeName,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
-                            categoryId: ServiceCategoryId.massage),
+                              categoryId: ServiceCategoryId.massage),
                     ),
                     // Deep-link path route: /category/:categoryKey
                     GoRoute(
@@ -634,8 +637,7 @@ class MainRouter {
           path: CreateSupportTicketScreen.route,
           name: CreateSupportTicketScreen.routeName,
           builder: (context, state) => CreateSupportTicketScreen(
-            initialCategory:
-                state.uri.queryParameters['category'],
+            initialCategory: state.uri.queryParameters['category'],
           ),
         ),
         GoRoute(
@@ -656,8 +658,8 @@ class MainRouter {
           path: ReviewFormScreen.route,
           name: ReviewFormScreen.routeName,
           builder: (context, state) => ReviewFormScreen(
-            bookingId:       state.uri.queryParameters['bookingId'] ?? '',
-            bookingLabel:    state.uri.queryParameters['bookingLabel'],
+            bookingId: state.uri.queryParameters['bookingId'] ?? '',
+            bookingLabel: state.uri.queryParameters['bookingLabel'],
             serviceCategory: state.uri.queryParameters['serviceCategory'],
           ),
         ),
@@ -667,7 +669,7 @@ class MainRouter {
           name: ReviewDetailScreen.routeName,
           builder: (context, state) => ReviewDetailScreen(
             bookingId: state.uri.queryParameters['bookingId'],
-            reviewId:  state.uri.queryParameters['reviewId'],
+            reviewId: state.uri.queryParameters['reviewId'],
           ),
         ),
       ],

@@ -55,8 +55,7 @@ class AnalyticsCoordinator {
       // 1. Consent gate
       if (!_consent.allows(event.consentCategory)) {
         if (kDebugMode) {
-          debugPrint(
-              '[Analytics] BLOCKED (no consent) → ${event.eventName}');
+          debugPrint('[Analytics] BLOCKED (no consent) → ${event.eventName}');
         }
         return;
       }
@@ -97,7 +96,8 @@ class AnalyticsCoordinator {
       await _service.track(event, withContext);
 
       if (kDebugMode) {
-        debugPrint('[Analytics] ✓ ${event.eventName} ${clean.isEmpty ? "" : clean.toString()}');
+        debugPrint(
+            '[Analytics] ✓ ${event.eventName} ${clean.isEmpty ? "" : clean.toString()}');
       }
     } catch (e) {
       // Analytics failure MUST NEVER surface to the user (§123).

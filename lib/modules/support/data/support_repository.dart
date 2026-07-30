@@ -37,12 +37,15 @@ class SupportRepository {
   Future<SupportTicket> getTicketDetail(String ticketKey) async {
     final res = await _api.getSupportTicketDetail(ticketKey);
     final data = _map(res['data']);
-    final replies = _list(data['replies']).map((r) => SupportReply.fromMap(_map(r), ticketKey)).toList();
+    final replies = _list(data['replies'])
+        .map((r) => SupportReply.fromMap(_map(r), ticketKey))
+        .toList();
     return _mapTicket(data).copyWith(replies: replies);
   }
 
   Future<SupportTicket> addReply(String ticketKey, String message) async {
-    final res = await _api.addSupportTicketReply(ticketKey: ticketKey, message: message);
+    final res = await _api.addSupportTicketReply(
+        ticketKey: ticketKey, message: message);
     return _mapTicket(_map(res['data']));
   }
 
@@ -101,18 +104,22 @@ class SupportRepository {
   // ── Private helpers ───────────────────────────────────────────────────────────
 
   static SupportTicket _mapTicket(Map<String, dynamic> m) => SupportTicket(
-    ticketKey: m['ticketKey']?.toString() ?? '',
-    category: SupportTicketCategory.fromString(m['category'] as String?),
-    status: SupportTicketStatus.fromString(m['status'] as String?),
-    title: (m['title'] as String?) ?? '',
-    safeSummary: (m['safeSummary'] as String?) ?? '',
-    bookingId: m['bookingId'] as String?,
-    createdAt: m['createdAt'] != null ? DateTime.tryParse(m['createdAt'].toString()) : null,
-    updatedAt: m['updatedAt'] != null ? DateTime.tryParse(m['updatedAt'].toString()) : null,
-    canReply: (m['canReply'] as bool?) ?? false,
-    canClose: (m['canClose'] as bool?) ?? false,
-    canReopen: (m['canReopen'] as bool?) ?? false,
-  );
+        ticketKey: m['ticketKey']?.toString() ?? '',
+        category: SupportTicketCategory.fromString(m['category'] as String?),
+        status: SupportTicketStatus.fromString(m['status'] as String?),
+        title: (m['title'] as String?) ?? '',
+        safeSummary: (m['safeSummary'] as String?) ?? '',
+        bookingId: m['bookingId'] as String?,
+        createdAt: m['createdAt'] != null
+            ? DateTime.tryParse(m['createdAt'].toString())
+            : null,
+        updatedAt: m['updatedAt'] != null
+            ? DateTime.tryParse(m['updatedAt'].toString())
+            : null,
+        canReply: (m['canReply'] as bool?) ?? false,
+        canClose: (m['canClose'] as bool?) ?? false,
+        canReopen: (m['canReopen'] as bool?) ?? false,
+      );
 
   static Map<String, dynamic> _map(dynamic v) =>
       v is Map<String, dynamic> ? v : <String, dynamic>{};

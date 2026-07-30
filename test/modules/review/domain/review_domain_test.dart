@@ -10,11 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('ReviewVisibility', () {
     test('fromString maps correctly', () {
-      expect(ReviewVisibility.fromString('PUBLIC'),          ReviewVisibility.public);
-      expect(ReviewVisibility.fromString('ANONYMOUS_PUBLIC'),ReviewVisibility.anonymousPublic);
-      expect(ReviewVisibility.fromString('PRIVATE'),         ReviewVisibility.private);
-      expect(ReviewVisibility.fromString(null),              ReviewVisibility.public);
-      expect(ReviewVisibility.fromString('UNKNOWN'),         ReviewVisibility.public);
+      expect(ReviewVisibility.fromString('PUBLIC'), ReviewVisibility.public);
+      expect(ReviewVisibility.fromString('ANONYMOUS_PUBLIC'),
+          ReviewVisibility.anonymousPublic);
+      expect(ReviewVisibility.fromString('PRIVATE'), ReviewVisibility.private);
+      expect(ReviewVisibility.fromString(null), ReviewVisibility.public);
+      expect(ReviewVisibility.fromString('UNKNOWN'), ReviewVisibility.public);
     });
 
     test('apiValue round-trips', () {
@@ -26,22 +27,26 @@ void main() {
 
   group('ReviewModerationStatus', () {
     test('fromString maps correctly', () {
-      expect(ReviewModerationStatus.fromString('PENDING'),  ReviewModerationStatus.pending);
-      expect(ReviewModerationStatus.fromString('APPROVED'), ReviewModerationStatus.approved);
-      expect(ReviewModerationStatus.fromString('FLAGGED'),  ReviewModerationStatus.flagged);
-      expect(ReviewModerationStatus.fromString(null),       ReviewModerationStatus.notRequired);
+      expect(ReviewModerationStatus.fromString('PENDING'),
+          ReviewModerationStatus.pending);
+      expect(ReviewModerationStatus.fromString('APPROVED'),
+          ReviewModerationStatus.approved);
+      expect(ReviewModerationStatus.fromString('FLAGGED'),
+          ReviewModerationStatus.flagged);
+      expect(ReviewModerationStatus.fromString(null),
+          ReviewModerationStatus.notRequired);
     });
 
     test('isVisible is true for notRequired and approved only', () {
       expect(ReviewModerationStatus.notRequired.isVisible, isTrue);
-      expect(ReviewModerationStatus.approved.isVisible,    isTrue);
-      expect(ReviewModerationStatus.pending.isVisible,     isFalse);
-      expect(ReviewModerationStatus.removed.isVisible,     isFalse);
+      expect(ReviewModerationStatus.approved.isVisible, isTrue);
+      expect(ReviewModerationStatus.pending.isVisible, isFalse);
+      expect(ReviewModerationStatus.removed.isVisible, isFalse);
     });
 
     test('isSuppressed is true for hidden/removed/rejected', () {
-      expect(ReviewModerationStatus.hidden.isSuppressed,   isTrue);
-      expect(ReviewModerationStatus.removed.isSuppressed,  isTrue);
+      expect(ReviewModerationStatus.hidden.isSuppressed, isTrue);
+      expect(ReviewModerationStatus.removed.isSuppressed, isTrue);
       expect(ReviewModerationStatus.rejected.isSuppressed, isTrue);
       expect(ReviewModerationStatus.approved.isSuppressed, isFalse);
     });
@@ -49,8 +54,15 @@ void main() {
 
   group('ReviewDimensionScore', () {
     test('labelFor returns a non-empty string for all known keys', () {
-      for (final key in ['SERVICE_QUALITY','PROFESSIONALISM','PUNCTUALITY',
-                         'COMMUNICATION','VALUE','CLEANLINESS','ACCURACY']) {
+      for (final key in [
+        'SERVICE_QUALITY',
+        'PROFESSIONALISM',
+        'PUNCTUALITY',
+        'COMMUNICATION',
+        'VALUE',
+        'CLEANLINESS',
+        'ACCURACY'
+      ]) {
         expect(ReviewDimensionScore.labelFor(key), isNotEmpty);
       }
     });
@@ -155,9 +167,9 @@ void main() {
 
     test('fromMap parses distribution correctly', () {
       final agg = ReviewAggregate.fromMap({
-        'providerUid':   'uid1',
+        'providerUid': 'uid1',
         'averageRating': 4.5,
-        'reviewCount':   20,
+        'reviewCount': 20,
         'distribution': {'1': 0, '2': 1, '3': 2, '4': 7, '5': 10},
       });
       expect(agg.hasReviews, isTrue);
@@ -168,9 +180,9 @@ void main() {
 
     test('fromMap fills missing distribution buckets with 0', () {
       final agg = ReviewAggregate.fromMap({
-        'providerUid':   'uid1',
+        'providerUid': 'uid1',
         'averageRating': 3.0,
-        'reviewCount':   5,
+        'reviewCount': 5,
         'distribution': {'5': 5},
       });
       expect(agg.distribution[1], 0);
@@ -185,11 +197,11 @@ void main() {
       String? moderationStatus,
     }) =>
         {
-          'reviewId':         'rv-1',
-          'bookingId':        'bk-1',
-          'overallRating':    4,
-          'publicComment':    'Great service',
-          'visibility':       visibility ?? 'PUBLIC',
+          'reviewId': 'rv-1',
+          'bookingId': 'bk-1',
+          'overallRating': 4,
+          'publicComment': 'Great service',
+          'visibility': visibility ?? 'PUBLIC',
           'moderationStatus': moderationStatus ?? 'NOT_REQUIRED',
           'dimensions': [
             {'dimensionKey': 'PUNCTUALITY', 'score': 5},
@@ -208,8 +220,10 @@ void main() {
     });
 
     test('isVisible delegates to moderationStatus', () {
-      final visible = ServanaReview.fromMap(makeReviewMap(moderationStatus: 'NOT_REQUIRED'));
-      final suppressed = ServanaReview.fromMap(makeReviewMap(moderationStatus: 'REMOVED'));
+      final visible = ServanaReview.fromMap(
+          makeReviewMap(moderationStatus: 'NOT_REQUIRED'));
+      final suppressed =
+          ServanaReview.fromMap(makeReviewMap(moderationStatus: 'REMOVED'));
       expect(visible.isVisible, isTrue);
       expect(suppressed.isVisible, isFalse);
     });

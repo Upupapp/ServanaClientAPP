@@ -253,6 +253,7 @@ final class AnalyticsPrivacyFilter {
     return false;
   }
 
-  static final _emailPattern = RegExp(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}');
+  static final _emailPattern =
+      RegExp(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}');
   static final _phPhonePattern = RegExp(r'(\+63|0)(9\d{9})');
 }

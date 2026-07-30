@@ -58,7 +58,8 @@ class ProfileController extends ChangeNotifier {
     _error = null;
     _notify();
     try {
-      _profile = await _perf(TraceNames.profileLoad, () async => _repository.loadProfile());
+      _profile = await _perf(
+          TraceNames.profileLoad, () async => _repository.loadProfile());
       _status = ProfileLoadStatus.loaded;
       // Keep local session in sync so other screens see the updated name/phone.
       if (_profile != null) await _syncSession(_profile!);

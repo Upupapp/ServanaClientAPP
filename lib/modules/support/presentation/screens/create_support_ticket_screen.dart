@@ -20,8 +20,7 @@ class CreateSupportTicketScreen extends StatefulWidget {
       _CreateSupportTicketScreenState();
 }
 
-class _CreateSupportTicketScreenState
-    extends State<CreateSupportTicketScreen> {
+class _CreateSupportTicketScreenState extends State<CreateSupportTicketScreen> {
   late final SupportCreateController _ctrl;
 
   // Step: 0 = category, 1 = describe, 2 = submitting/done
@@ -41,8 +40,7 @@ class _CreateSupportTicketScreenState
 
     // Apply initial category from caller
     if (widget.initialCategory != null) {
-      final cat =
-          SupportTicketCategory.fromString(widget.initialCategory);
+      final cat = SupportTicketCategory.fromString(widget.initialCategory);
       _ctrl.setCategory(cat);
       _step = 1; // Skip category selection
     } else {
@@ -127,7 +125,10 @@ class _CreateSupportTicketScreenState
               color: ColorPalette.secondaryText),
           onPressed: () {
             if (_step > 0 && widget.initialCategory == null) {
-              setState(() { _step--; _validationError = null; });
+              setState(() {
+                _step--;
+                _validationError = null;
+              });
             } else {
               Navigator.of(context).pop();
             }
@@ -215,8 +216,10 @@ class _CreateSupportTicketScreenState
               if (widget.initialCategory == null) ...[
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () =>
-                      setState(() { _step = 0; _validationError = null; }),
+                  onTap: () => setState(() {
+                    _step = 0;
+                    _validationError = null;
+                  }),
                   child: Text(
                     'Change',
                     style: TextStyle(
@@ -294,8 +297,7 @@ class _CreateSupportTicketScreenState
                     'Please share what happened, when it occurred, and how Servana can help…',
                   ),
                 ),
-                if (_validationError != null ||
-                    _ctrl.error != null) ...[
+                if (_validationError != null || _ctrl.error != null) ...[
                   const SizedBox(height: 6),
                   Text(
                     _validationError ?? _ctrl.error ?? '',
@@ -319,7 +321,9 @@ class _CreateSupportTicketScreenState
               const Divider(height: 1),
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  16, 10, 16,
+                  16,
+                  10,
+                  16,
                   10 + MediaQuery.of(context).padding.bottom,
                 ),
                 child: SizedBox(
@@ -343,7 +347,8 @@ class _CreateSupportTicketScreenState
                     ),
                     child: isSubmitting
                         ? const SizedBox(
-                            height: 20, width: 20,
+                            height: 20,
+                            width: 20,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2.5, color: Colors.white),
                           )
@@ -488,33 +493,55 @@ class _CategoryTile extends StatelessWidget {
 
   IconData _iconFor(SupportTicketCategory c) {
     switch (c) {
-      case SupportTicketCategory.booking: return Icons.calendar_today_outlined;
-      case SupportTicketCategory.payment: return Icons.credit_card_outlined;
-      case SupportTicketCategory.refund: return Icons.currency_exchange_rounded;
-      case SupportTicketCategory.serviceQuality: return Icons.star_half_rounded;
-      case SupportTicketCategory.providerConduct: return Icons.person_off_outlined;
-      case SupportTicketCategory.account: return Icons.manage_accounts_outlined;
-      case SupportTicketCategory.technical: return Icons.build_outlined;
-      case SupportTicketCategory.promotion: return Icons.local_offer_outlined;
-      case SupportTicketCategory.privacy: return Icons.lock_outline_rounded;
-      case SupportTicketCategory.other: return Icons.more_horiz_rounded;
-      case SupportTicketCategory.safety: return Icons.emergency_outlined;
+      case SupportTicketCategory.booking:
+        return Icons.calendar_today_outlined;
+      case SupportTicketCategory.payment:
+        return Icons.credit_card_outlined;
+      case SupportTicketCategory.refund:
+        return Icons.currency_exchange_rounded;
+      case SupportTicketCategory.serviceQuality:
+        return Icons.star_half_rounded;
+      case SupportTicketCategory.providerConduct:
+        return Icons.person_off_outlined;
+      case SupportTicketCategory.account:
+        return Icons.manage_accounts_outlined;
+      case SupportTicketCategory.technical:
+        return Icons.build_outlined;
+      case SupportTicketCategory.promotion:
+        return Icons.local_offer_outlined;
+      case SupportTicketCategory.privacy:
+        return Icons.lock_outline_rounded;
+      case SupportTicketCategory.other:
+        return Icons.more_horiz_rounded;
+      case SupportTicketCategory.safety:
+        return Icons.emergency_outlined;
     }
   }
 
   String _subtitleFor(SupportTicketCategory c) {
     switch (c) {
-      case SupportTicketCategory.booking: return 'Cancellations, rescheduling, provider issues';
-      case SupportTicketCategory.payment: return 'Charges, billing, payment failures';
-      case SupportTicketCategory.refund: return 'Request a refund or dispute a charge';
-      case SupportTicketCategory.serviceQuality: return 'The service did not meet expectations';
-      case SupportTicketCategory.providerConduct: return 'Unprofessional or concerning behavior';
-      case SupportTicketCategory.account: return 'Login, profile, or account access';
-      case SupportTicketCategory.technical: return 'App errors, crashes, or glitches';
-      case SupportTicketCategory.promotion: return 'Promo codes or rewards not applied';
-      case SupportTicketCategory.privacy: return 'Data access or deletion requests';
-      case SupportTicketCategory.other: return 'Something not listed above';
-      case SupportTicketCategory.safety: return 'Safety or emergency concern';
+      case SupportTicketCategory.booking:
+        return 'Cancellations, rescheduling, provider issues';
+      case SupportTicketCategory.payment:
+        return 'Charges, billing, payment failures';
+      case SupportTicketCategory.refund:
+        return 'Request a refund or dispute a charge';
+      case SupportTicketCategory.serviceQuality:
+        return 'The service did not meet expectations';
+      case SupportTicketCategory.providerConduct:
+        return 'Unprofessional or concerning behavior';
+      case SupportTicketCategory.account:
+        return 'Login, profile, or account access';
+      case SupportTicketCategory.technical:
+        return 'App errors, crashes, or glitches';
+      case SupportTicketCategory.promotion:
+        return 'Promo codes or rewards not applied';
+      case SupportTicketCategory.privacy:
+        return 'Data access or deletion requests';
+      case SupportTicketCategory.other:
+        return 'Something not listed above';
+      case SupportTicketCategory.safety:
+        return 'Safety or emergency concern';
     }
   }
 }

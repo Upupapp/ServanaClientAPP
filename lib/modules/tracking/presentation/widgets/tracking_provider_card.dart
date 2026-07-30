@@ -76,7 +76,8 @@ class TrackingProviderCard extends StatelessWidget {
                     ),
                     if (loc != null) ...[
                       const SizedBox(height: 2),
-                      _LastSeenLabel(updatedAt: loc.updatedAt, freshness: freshness),
+                      _LastSeenLabel(
+                          updatedAt: loc.updatedAt, freshness: freshness),
                     ] else ...[
                       const SizedBox(height: 2),
                       Text(
@@ -93,11 +94,9 @@ class TrackingProviderCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
           const Divider(height: 1),
           const SizedBox(height: 14),
-
           Row(
             children: [
               Expanded(

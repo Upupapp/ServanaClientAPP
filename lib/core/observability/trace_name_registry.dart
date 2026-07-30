@@ -19,7 +19,8 @@ abstract final class TraceNames {
   static const String httpGetBookings = 'GET /api/bookings';
   static const String httpGetBooking = 'GET /api/bookings/{bookingId}';
   static const String httpCreateBooking = 'POST /api/bookings';
-  static const String httpGetConversation = 'GET /api/bookings/{id}/conversation';
+  static const String httpGetConversation =
+      'GET /api/bookings/{id}/conversation';
   static const String httpGetMessages = 'GET /api/conversations/{id}/messages';
   static const String httpSendMessage = 'POST /api/conversations/{id}/messages';
   static const String httpGetProfile = 'GET /api/user/profile';

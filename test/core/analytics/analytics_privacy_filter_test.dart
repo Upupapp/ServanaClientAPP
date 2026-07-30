@@ -25,7 +25,8 @@ void main() {
 
   group('AnalyticsPrivacyFilter — banned keys', () {
     test('drops email property', () {
-      const fake = _FakeEvent({'email': 'user@test.com', 'auth_method': 'email'});
+      const fake =
+          _FakeEvent({'email': 'user@test.com', 'auth_method': 'email'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('email'), false);
       expect(clean['auth_method'], 'email');
@@ -33,14 +34,16 @@ void main() {
     });
 
     test('drops mobile property', () {
-      const fake = _FakeEvent({'mobile': '09171234567', 'auth_method': 'email'});
+      const fake =
+          _FakeEvent({'mobile': '09171234567', 'auth_method': 'email'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('mobile'), false);
       expect(violations.any((v) => v.contains('BANNED:mobile')), true);
     });
 
     test('drops coordinates — lat/lon', () {
-      const fake = _FakeEvent({'lat': 14.5, 'lon': 121.0, 'service_category': 'aircon'});
+      const fake =
+          _FakeEvent({'lat': 14.5, 'lon': 121.0, 'service_category': 'aircon'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('lat'), false);
       expect(clean.containsKey('lon'), false);
@@ -54,13 +57,15 @@ void main() {
     });
 
     test('drops checkout_url', () {
-      const fake = _FakeEvent({'checkout_url': 'https://checkout.paymongo.com/pay/x'});
+      const fake =
+          _FakeEvent({'checkout_url': 'https://checkout.paymongo.com/pay/x'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('checkout_url'), false);
     });
 
     test('drops message_body', () {
-      const fake = _FakeEvent({'message_body': 'Hello provider please call me'});
+      const fake =
+          _FakeEvent({'message_body': 'Hello provider please call me'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('message_body'), false);
     });
@@ -72,14 +77,16 @@ void main() {
     });
 
     test('drops customer_id', () {
-      const fake = _FakeEvent({'customer_id': 'cust-uuid-123', 'auth_method': 'google'});
+      const fake =
+          _FakeEvent({'customer_id': 'cust-uuid-123', 'auth_method': 'google'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('customer_id'), false);
       expect(clean['auth_method'], 'google');
     });
 
     test('drops booking_id', () {
-      const fake = _FakeEvent({'booking_id': 'booking-123', 'service_category': 'aircon'});
+      const fake = _FakeEvent(
+          {'booking_id': 'booking-123', 'service_category': 'aircon'});
       final (:clean, :violations) = filter.filter(fake);
       expect(clean.containsKey('booking_id'), false);
     });
@@ -185,7 +192,8 @@ void main() {
     });
 
     test('SupportTicketSubmittedEvent passes (no description)', () {
-      const event = SupportTicketSubmittedEvent(supportCategory: 'booking_issue');
+      const event =
+          SupportTicketSubmittedEvent(supportCategory: 'booking_issue');
       final (:clean, :violations) = filter.filter(event);
       expect(clean['support_category'], 'booking_issue');
       expect(violations.where((v) => v.startsWith('BANNED')), isEmpty);

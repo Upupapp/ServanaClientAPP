@@ -6,9 +6,12 @@ import '../domain/analytics_property.dart';
 final class PaymentMethodSelectedEvent extends AnalyticsEvent {
   const PaymentMethodSelectedEvent({required this.paymentMethod});
   final String paymentMethod;
-  @override String get eventName => 'payment_method_selected';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties =>
+  @override
+  String get eventName => 'payment_method_selected';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties =>
       {AnalyticsKeys.paymentMethod: paymentMethod};
 }
 
@@ -18,9 +21,12 @@ final class CheckoutOpenedEvent extends AnalyticsEvent {
       {required this.checkoutProvider, required this.amountBand});
   final String checkoutProvider;
   final String amountBand;
-  @override String get eventName => 'checkout_opened';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {
+  @override
+  String get eventName => 'checkout_opened';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties => {
         AnalyticsKeys.checkoutProvider: checkoutProvider,
         AnalyticsKeys.amountBand: amountBand,
       };
@@ -30,9 +36,12 @@ final class CheckoutOpenedEvent extends AnalyticsEvent {
 final class CheckoutReturnedEvent extends AnalyticsEvent {
   const CheckoutReturnedEvent({required this.paymentStatus});
   final String paymentStatus;
-  @override String get eventName => 'checkout_returned';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties =>
+  @override
+  String get eventName => 'checkout_returned';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties =>
       {AnalyticsKeys.paymentStatus: paymentStatus};
 }
 
@@ -41,9 +50,12 @@ final class CheckoutReturnedEvent extends AnalyticsEvent {
 final class PaymentStatusCheckedEvent extends AnalyticsEvent {
   const PaymentStatusCheckedEvent({required this.paymentStatus});
   final String paymentStatus;
-  @override String get eventName => 'payment_status_checked';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties =>
+  @override
+  String get eventName => 'payment_status_checked';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties =>
       {AnalyticsKeys.paymentStatus: paymentStatus};
 }
 
@@ -54,10 +66,14 @@ final class PaymentSucceededObservedEvent extends AnalyticsEvent {
       {required this.paymentMethod, required this.amountBand});
   final String paymentMethod;
   final String amountBand;
-  @override String get eventName => 'payment_succeeded_observed';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override String? get dedupKey => 'payment_succeeded';
-  @override Map<String, Object?> get properties => {
+  @override
+  String get eventName => 'payment_succeeded_observed';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  String? get dedupKey => 'payment_succeeded';
+  @override
+  Map<String, Object?> get properties => {
         AnalyticsKeys.paymentMethod: paymentMethod,
         AnalyticsKeys.amountBand: amountBand,
       };
@@ -68,9 +84,12 @@ final class PaymentFailedEvent extends AnalyticsEvent {
       {required this.paymentMethod, required this.failureCode});
   final String paymentMethod;
   final String failureCode;
-  @override String get eventName => 'payment_failed';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {
+  @override
+  String get eventName => 'payment_failed';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties => {
         AnalyticsKeys.paymentMethod: paymentMethod,
         AnalyticsKeys.failureCode: failureCode,
       };
@@ -79,17 +98,23 @@ final class PaymentFailedEvent extends AnalyticsEvent {
 final class PaymentRetrySelectedEvent extends AnalyticsEvent {
   const PaymentRetrySelectedEvent({required this.paymentMethod});
   final String paymentMethod;
-  @override String get eventName => 'payment_retry_selected';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties =>
+  @override
+  String get eventName => 'payment_retry_selected';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties =>
       {AnalyticsKeys.paymentMethod: paymentMethod};
 }
 
 final class RefundStatusViewedEvent extends AnalyticsEvent {
   const RefundStatusViewedEvent({required this.paymentStatus});
   final String paymentStatus;
-  @override String get eventName => 'refund_status_viewed';
-  @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties =>
+  @override
+  String get eventName => 'refund_status_viewed';
+  @override
+  ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override
+  Map<String, Object?> get properties =>
       {AnalyticsKeys.paymentStatus: paymentStatus};
 }

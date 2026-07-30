@@ -40,23 +40,26 @@ class SupportTicket {
     bool? canReopen,
     List<SupportReply>? replies,
     DateTime? updatedAt,
-  }) => SupportTicket(
-    ticketKey: ticketKey,
-    category: category,
-    status: status ?? this.status,
-    title: title,
-    safeSummary: safeSummary,
-    bookingId: bookingId,
-    unreadCount: unreadCount ?? this.unreadCount,
-    createdAt: createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    canReply: canReply ?? this.canReply,
-    canClose: canClose ?? this.canClose,
-    canReopen: canReopen ?? this.canReopen,
-    replies: replies ?? this.replies,
-  );
+  }) =>
+      SupportTicket(
+        ticketKey: ticketKey,
+        category: category,
+        status: status ?? this.status,
+        title: title,
+        safeSummary: safeSummary,
+        bookingId: bookingId,
+        unreadCount: unreadCount ?? this.unreadCount,
+        createdAt: createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        canReply: canReply ?? this.canReply,
+        canClose: canClose ?? this.canClose,
+        canReopen: canReopen ?? this.canReopen,
+        replies: replies ?? this.replies,
+      );
 
-  String get shortRef => ticketKey.length > 8 ? ticketKey.substring(0, 8).toUpperCase() : ticketKey.toUpperCase();
+  String get shortRef => ticketKey.length > 8
+      ? ticketKey.substring(0, 8).toUpperCase()
+      : ticketKey.toUpperCase();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,47 +90,56 @@ class SupportReply {
     this.clientReplyId,
   });
 
-  SupportReply copyWith({bool? isPending, bool? isFailed, String? replyId}) => SupportReply(
-    replyId: replyId ?? this.replyId,
-    ticketKey: ticketKey,
-    author: author,
-    body: body,
-    isRead: isRead,
-    createdAt: createdAt,
-    isPending: isPending ?? this.isPending,
-    isFailed: isFailed ?? this.isFailed,
-    clientReplyId: clientReplyId,
-  );
+  SupportReply copyWith({bool? isPending, bool? isFailed, String? replyId}) =>
+      SupportReply(
+        replyId: replyId ?? this.replyId,
+        ticketKey: ticketKey,
+        author: author,
+        body: body,
+        isRead: isRead,
+        createdAt: createdAt,
+        isPending: isPending ?? this.isPending,
+        isFailed: isFailed ?? this.isFailed,
+        clientReplyId: clientReplyId,
+      );
 
   static SupportReplyAuthor _authorFrom(String? s) {
     switch (s) {
-      case 'customer': return SupportReplyAuthor.customer;
-      case 'support': return SupportReplyAuthor.support;
-      case 'system': return SupportReplyAuthor.system;
-      default: return SupportReplyAuthor.unknown;
+      case 'customer':
+        return SupportReplyAuthor.customer;
+      case 'support':
+        return SupportReplyAuthor.support;
+      case 'system':
+        return SupportReplyAuthor.system;
+      default:
+        return SupportReplyAuthor.unknown;
     }
   }
 
-  factory SupportReply.fromMap(Map<String, dynamic> m, String ticketKey) => SupportReply(
-    replyId: m['id']?.toString() ?? '',
-    ticketKey: ticketKey,
-    author: _authorFrom(m['senderType'] as String?),
-    body: (m['safeBody'] as String?) ?? '',
-    isRead: (m['isRead'] as bool?) ?? false,
-    createdAt: m['createdAt'] != null ? DateTime.tryParse(m['createdAt'].toString()) : null,
-  );
+  factory SupportReply.fromMap(Map<String, dynamic> m, String ticketKey) =>
+      SupportReply(
+        replyId: m['id']?.toString() ?? '',
+        ticketKey: ticketKey,
+        author: _authorFrom(m['senderType'] as String?),
+        body: (m['safeBody'] as String?) ?? '',
+        isRead: (m['isRead'] as bool?) ?? false,
+        createdAt: m['createdAt'] != null
+            ? DateTime.tryParse(m['createdAt'].toString())
+            : null,
+      );
 
   factory SupportReply.optimistic({
     required String ticketKey,
     required String body,
     required String clientReplyId,
-  }) => SupportReply(
-    replyId: '',
-    ticketKey: ticketKey,
-    author: SupportReplyAuthor.customer,
-    body: body,
-    isPending: true,
-    clientReplyId: clientReplyId,
-    createdAt: DateTime.now(),
-  );
+  }) =>
+      SupportReply(
+        replyId: '',
+        ticketKey: ticketKey,
+        author: SupportReplyAuthor.customer,
+        body: body,
+        isPending: true,
+        clientReplyId: clientReplyId,
+        createdAt: DateTime.now(),
+      );
 }

@@ -19,7 +19,7 @@ class ReviewFormScreen extends StatefulWidget {
   final String? bookingLabel;
   final String? serviceCategory;
 
-  static const String route     = '/review/new';
+  static const String route = '/review/new';
   static const String routeName = 'ReviewForm';
 
   @override
@@ -28,7 +28,7 @@ class ReviewFormScreen extends StatefulWidget {
 
 class _ReviewFormScreenState extends State<ReviewFormScreen> {
   late final ReviewFormController _ctrl;
-  final _publicCtrl  = TextEditingController();
+  final _publicCtrl = TextEditingController();
   final _privateCtrl = TextEditingController();
 
   @override
@@ -36,7 +36,8 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
     super.initState();
     _ctrl = dpLocator<ReviewFormController>();
     _ctrl.addListener(_onChange);
-    _ctrl.loadEligibility(widget.bookingId, serviceCategory: widget.serviceCategory);
+    _ctrl.loadEligibility(widget.bookingId,
+        serviceCategory: widget.serviceCategory);
   }
 
   @override
@@ -98,8 +99,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
       return _SuccessView(onDone: () => Navigator.of(context).pop(true));
     }
 
-    if (status == ReviewFormStatus.failed &&
-        _ctrl.draft == null) {
+    if (status == ReviewFormStatus.failed && _ctrl.draft == null) {
       return _ErrorView(
         message: _ctrl.error ?? 'Could not load review form.',
         onRetry: () => _ctrl.loadEligibility(widget.bookingId,
@@ -138,10 +138,10 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                 const SizedBox(height: 14),
                 Center(
                   child: ReviewRatingControl(
-                    rating:          draft.overallRating,
+                    rating: draft.overallRating,
                     onRatingChanged: isSubmitting ? (_) {} : _ctrl.setRating,
-                    size:            52,
-                    enabled:         !isSubmitting,
+                    size: 52,
+                    enabled: !isSubmitting,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -163,25 +163,26 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                   const _SectionLabel('Rate specific aspects'),
                   const SizedBox(height: 4),
                   ..._ctrl.dimensionKeys.map((key) => ReviewDimensionRow(
-                    dimensionKey:   key,
-                    score:          draft.dimensions[key] ?? 0,
-                    onScoreChanged: isSubmitting
-                        ? (_) {}
-                        : (v) => _ctrl.setDimension(key, v),
-                    enabled:        !isSubmitting,
-                  )),
+                        dimensionKey: key,
+                        score: draft.dimensions[key] ?? 0,
+                        onScoreChanged: isSubmitting
+                            ? (_) {}
+                            : (v) => _ctrl.setDimension(key, v),
+                        enabled: !isSubmitting,
+                      )),
                 ],
 
                 // Public comment
                 const SizedBox(height: 24),
-                const _SectionLabel('Tell others about your experience (optional)'),
+                const _SectionLabel(
+                    'Tell others about your experience (optional)'),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _publicCtrl,
-                  enabled:    !isSubmitting,
-                  minLines:   3,
-                  maxLines:   8,
-                  maxLength:  2000,
+                  enabled: !isSubmitting,
+                  minLines: 3,
+                  maxLines: 8,
+                  maxLength: 2000,
                   textCapitalization: TextCapitalization.sentences,
                   onChanged: _ctrl.setPublicComment,
                   style: TextStyle(
@@ -209,10 +210,10 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _privateCtrl,
-                  enabled:    !isSubmitting,
-                  minLines:   2,
-                  maxLines:   6,
-                  maxLength:  2000,
+                  enabled: !isSubmitting,
+                  minLines: 2,
+                  maxLines: 6,
+                  maxLength: 2000,
                   textCapitalization: TextCapitalization.sentences,
                   onChanged: _ctrl.setPrivateFeedback,
                   style: TextStyle(
@@ -220,7 +221,8 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                     fontSize: 14,
                     color: ColorPalette.secondaryText,
                   ),
-                  decoration: _inputDeco('Anything you\'d like Servana to know…'),
+                  decoration:
+                      _inputDeco('Anything you\'d like Servana to know…'),
                 ),
 
                 // Visibility
@@ -228,7 +230,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                 const _SectionLabel('Who can see your review?'),
                 const SizedBox(height: 8),
                 _VisibilitySelector(
-                  value:    draft.visibility,
+                  value: draft.visibility,
                   onChanged: isSubmitting ? null : _ctrl.setVisibility,
                 ),
 
@@ -258,13 +260,16 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
               const Divider(height: 1),
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  20, 12, 20,
+                  20,
+                  12,
+                  20,
                   12 + MediaQuery.of(context).padding.bottom,
                 ),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: (!isSubmitting && draft.isSubmittable) ? _submit : null,
+                    onPressed:
+                        (!isSubmitting && draft.isSubmittable) ? _submit : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.primaryColorDark,
                       disabledBackgroundColor:
@@ -299,42 +304,50 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
 
   String _ratingLabel(int r) {
     switch (r) {
-      case 1: return 'Poor';
-      case 2: return 'Fair';
-      case 3: return 'Good';
-      case 4: return 'Very good';
-      case 5: return 'Excellent';
-      default: return 'Tap a star to rate';
+      case 1:
+        return 'Poor';
+      case 2:
+        return 'Fair';
+      case 3:
+        return 'Good';
+      case 4:
+        return 'Very good';
+      case 5:
+        return 'Excellent';
+      default:
+        return 'Tap a star to rate';
     }
   }
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: TextStyle(
-      fontFamily: FontPalette.primaryFontFamily,
-      fontSize: 13,
-      color: ColorPalette.accentText.withOpacity(.5),
-    ),
-    filled: true,
-    fillColor: ColorPalette.secondaryBackground,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: ColorPalette.border(.3)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: ColorPalette.border(.3)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: ColorPalette.primaryColorDark, width: 1.5),
-    ),
-    disabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: ColorPalette.border(.15)),
-    ),
-  );
+        hintText: hint,
+        hintStyle: TextStyle(
+          fontFamily: FontPalette.primaryFontFamily,
+          fontSize: 13,
+          color: ColorPalette.accentText.withOpacity(.5),
+        ),
+        filled: true,
+        fillColor: ColorPalette.secondaryBackground,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: ColorPalette.border(.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: ColorPalette.border(.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              BorderSide(color: ColorPalette.primaryColorDark, width: 1.5),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: ColorPalette.border(.15)),
+        ),
+      );
 }
 
 // ─── Sub-widgets ──────────────────────────────────────────────────────────────
@@ -345,14 +358,14 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    text,
-    style: TextStyle(
-      fontFamily: FontPalette.primaryFontFamily,
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      color: ColorPalette.secondaryText,
-    ),
-  );
+        text,
+        style: TextStyle(
+          fontFamily: FontPalette.primaryFontFamily,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: ColorPalette.secondaryText,
+        ),
+      );
 }
 
 class _VisibilitySelector extends StatelessWidget {
@@ -374,47 +387,47 @@ class _VisibilitySelector extends StatelessWidget {
             onTap: onChanged != null ? () => onChanged!(v) : null,
             borderRadius: BorderRadius.circular(10),
             child: Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: selected
-                  ? ColorPalette.primaryColorDark.withOpacity(.06)
-                  : ColorPalette.secondaryBackground,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
                 color: selected
-                    ? ColorPalette.primaryColorDark
-                    : ColorPalette.border(.18),
-                width: selected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _iconFor(v),
-                  size: 18,
+                    ? ColorPalette.primaryColorDark.withOpacity(.06)
+                    : ColorPalette.secondaryBackground,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
                   color: selected
                       ? ColorPalette.primaryColorDark
-                      : ColorPalette.accentText,
+                      : ColorPalette.border(.18),
+                  width: selected ? 1.5 : 1,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    v.displayLabel,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontSize: 13,
-                      color: ColorPalette.secondaryText,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _iconFor(v),
+                    size: 18,
+                    color: selected
+                        ? ColorPalette.primaryColorDark
+                        : ColorPalette.accentText,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      v.displayLabel,
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
+                        fontSize: 13,
+                        color: ColorPalette.secondaryText,
+                      ),
                     ),
                   ),
-                ),
-                if (selected)
-                  Icon(Icons.check_circle_rounded,
-                      size: 16, color: ColorPalette.primaryColorDark),
-              ],
+                  if (selected)
+                    Icon(Icons.check_circle_rounded,
+                        size: 16, color: ColorPalette.primaryColorDark),
+                ],
+              ),
             ),
           ),
-        ),
         );
       }).toList(),
     );
@@ -422,9 +435,12 @@ class _VisibilitySelector extends StatelessWidget {
 
   IconData _iconFor(ReviewVisibility v) {
     switch (v) {
-      case ReviewVisibility.public:          return Icons.public_rounded;
-      case ReviewVisibility.anonymousPublic: return Icons.person_off_outlined;
-      case ReviewVisibility.private:         return Icons.lock_outline_rounded;
+      case ReviewVisibility.public:
+        return Icons.public_rounded;
+      case ReviewVisibility.anonymousPublic:
+        return Icons.person_off_outlined;
+      case ReviewVisibility.private:
+        return Icons.lock_outline_rounded;
     }
   }
 }
@@ -523,7 +539,8 @@ class _SuccessView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: ColorPalette.primaryColorDark,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 13),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 13),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),

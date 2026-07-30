@@ -6,17 +6,24 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('SupportTicketStatus', () {
     test('fromString maps known values', () {
-      expect(SupportTicketStatus.fromString('submitted'), SupportTicketStatus.submitted);
+      expect(SupportTicketStatus.fromString('submitted'),
+          SupportTicketStatus.submitted);
       expect(SupportTicketStatus.fromString('open'), SupportTicketStatus.open);
-      expect(SupportTicketStatus.fromString('waiting_for_support'), SupportTicketStatus.waitingForSupport);
-      expect(SupportTicketStatus.fromString('waiting_for_customer'), SupportTicketStatus.waitingForCustomer);
-      expect(SupportTicketStatus.fromString('escalated'), SupportTicketStatus.escalated);
-      expect(SupportTicketStatus.fromString('resolved'), SupportTicketStatus.resolved);
-      expect(SupportTicketStatus.fromString('closed'), SupportTicketStatus.closed);
+      expect(SupportTicketStatus.fromString('waiting_for_support'),
+          SupportTicketStatus.waitingForSupport);
+      expect(SupportTicketStatus.fromString('waiting_for_customer'),
+          SupportTicketStatus.waitingForCustomer);
+      expect(SupportTicketStatus.fromString('escalated'),
+          SupportTicketStatus.escalated);
+      expect(SupportTicketStatus.fromString('resolved'),
+          SupportTicketStatus.resolved);
+      expect(
+          SupportTicketStatus.fromString('closed'), SupportTicketStatus.closed);
     });
 
     test('fromString returns unknown for unrecognised value', () {
-      expect(SupportTicketStatus.fromString('something_new'), SupportTicketStatus.unknown);
+      expect(SupportTicketStatus.fromString('something_new'),
+          SupportTicketStatus.unknown);
       expect(SupportTicketStatus.fromString(null), SupportTicketStatus.unknown);
     });
 
@@ -35,7 +42,8 @@ void main() {
         expect(
           s.needsCustomerAction,
           s == SupportTicketStatus.waitingForCustomer,
-          reason: 'Expected needsCustomerAction=${s == SupportTicketStatus.waitingForCustomer} for $s',
+          reason:
+              'Expected needsCustomerAction=${s == SupportTicketStatus.waitingForCustomer} for $s',
         );
       }
     });
@@ -43,25 +51,39 @@ void main() {
 
   group('SupportTicketCategory', () {
     test('fromString maps all known apiKey values', () {
-      expect(SupportTicketCategory.fromString('booking'), SupportTicketCategory.booking);
-      expect(SupportTicketCategory.fromString('payment'), SupportTicketCategory.payment);
-      expect(SupportTicketCategory.fromString('refund'), SupportTicketCategory.refund);
-      expect(SupportTicketCategory.fromString('service_quality'), SupportTicketCategory.serviceQuality);
-      expect(SupportTicketCategory.fromString('provider_conduct'), SupportTicketCategory.providerConduct);
-      expect(SupportTicketCategory.fromString('account'), SupportTicketCategory.account);
-      expect(SupportTicketCategory.fromString('technical'), SupportTicketCategory.technical);
-      expect(SupportTicketCategory.fromString('promotion'), SupportTicketCategory.promotion);
-      expect(SupportTicketCategory.fromString('privacy'), SupportTicketCategory.privacy);
-      expect(SupportTicketCategory.fromString('safety'), SupportTicketCategory.safety);
-      expect(SupportTicketCategory.fromString('other'), SupportTicketCategory.other);
+      expect(SupportTicketCategory.fromString('booking'),
+          SupportTicketCategory.booking);
+      expect(SupportTicketCategory.fromString('payment'),
+          SupportTicketCategory.payment);
+      expect(SupportTicketCategory.fromString('refund'),
+          SupportTicketCategory.refund);
+      expect(SupportTicketCategory.fromString('service_quality'),
+          SupportTicketCategory.serviceQuality);
+      expect(SupportTicketCategory.fromString('provider_conduct'),
+          SupportTicketCategory.providerConduct);
+      expect(SupportTicketCategory.fromString('account'),
+          SupportTicketCategory.account);
+      expect(SupportTicketCategory.fromString('technical'),
+          SupportTicketCategory.technical);
+      expect(SupportTicketCategory.fromString('promotion'),
+          SupportTicketCategory.promotion);
+      expect(SupportTicketCategory.fromString('privacy'),
+          SupportTicketCategory.privacy);
+      expect(SupportTicketCategory.fromString('safety'),
+          SupportTicketCategory.safety);
+      expect(SupportTicketCategory.fromString('other'),
+          SupportTicketCategory.other);
     });
 
     test('fromString defaults to other for unknown', () {
-      expect(SupportTicketCategory.fromString(null), SupportTicketCategory.other);
-      expect(SupportTicketCategory.fromString('xyz'), SupportTicketCategory.other);
+      expect(
+          SupportTicketCategory.fromString(null), SupportTicketCategory.other);
+      expect(
+          SupportTicketCategory.fromString('xyz'), SupportTicketCategory.other);
     });
 
-    test('requiresBooking is true for booking, serviceQuality, providerConduct', () {
+    test('requiresBooking is true for booking, serviceQuality, providerConduct',
+        () {
       expect(SupportTicketCategory.booking.requiresBooking, isTrue);
       expect(SupportTicketCategory.serviceQuality.requiresBooking, isTrue);
       expect(SupportTicketCategory.providerConduct.requiresBooking, isTrue);

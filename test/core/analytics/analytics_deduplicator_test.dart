@@ -21,7 +21,8 @@ void main() {
     });
 
     test('after window expires, key is no longer suppressed', () async {
-      final dedup = AnalyticsDeduplicator(window: const Duration(milliseconds: 50));
+      final dedup =
+          AnalyticsDeduplicator(window: const Duration(milliseconds: 50));
       dedup.shouldSuppress('key1');
       expect(dedup.shouldSuppress('key1'), true);
       await Future<void>.delayed(const Duration(milliseconds: 60));

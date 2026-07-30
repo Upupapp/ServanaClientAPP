@@ -39,13 +39,13 @@ void main() {
       await AnalyticsConsent.fullConsent().persist();
       final decided = await AnalyticsConsent.hasUserDecided();
       expect(decided, isTrue,
-          reason: 'After persisting fullConsent the gate must see decided=true');
+          reason:
+              'After persisting fullConsent the gate must see decided=true');
 
       // A fresh ConsentGateService on a fresh prefs sees undecided.
       SharedPreferences.setMockInitialValues({});
       final decided2 = await AnalyticsConsent.hasUserDecided();
-      expect(decided2, isFalse,
-          reason: 'Fresh prefs must report undecided');
+      expect(decided2, isFalse, reason: 'Fresh prefs must report undecided');
 
       // ConsentGateService is a stateful singleton — verify it is constructable.
       expect(svc, isNotNull);
