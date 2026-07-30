@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:client/common/domain/booking/booking_draft.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Context required to resume a PayMongo checkout after process termination
 /// or the user exiting the browser and returning to the app.
@@ -44,11 +44,17 @@ class PendingPaymentContext {
 }
 
 /// Persists booking drafts, idempotency keys, and payment context across
-/// process kills.
+/// process kills using [FlutterSecureStorage] so that sensitive data
+/// (checkout URLs, customer UIDs) is encrypted at rest.
 ///
 /// All storage keys are scoped by customer UID so Customer A's state can
 /// never surface for Customer B. Call [clearAllForAccount] on logout.
 class DraftRepository {
+  DraftRepository({FlutterSecureStorage? storage})
+      : _storage = storage ?? const FlutterSecureStorage();
+
+  final FlutterSecureStorage _storage;
+
   static const String _kDraftPrefix = 'booking_draft_v1_';
   static const String _kIdemPrefix = 'booking_idem_v1_';
   static const String _kPaymentPrefix = 'pending_payment_v1_';
@@ -56,8 +62,7 @@ class DraftRepository {
   // ── Booking Draft ─────────────────────────────────────────────────────────
 
   Future<BookingDraft?> loadDraft(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('$_kDraftPrefix$uid');
+    final raw = await _storage.read(key: '$_kDraftPrefix$uid');
     if (raw == null || raw.isEmpty) return null;
     try {
       final draft = _draftFromJson(
@@ -69,14 +74,12 @@ class DraftRepository {
   }
 
   Future<void> saveDraft(String uid, BookingDraft draft) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        '$_kDraftPrefix$uid', jsonEncode(_draftToJson(draft)));
+    await _storage.write(
+        key: '$_kDraftPrefix$uid', value: jsonEncode(_draftToJson(draft)));
   }
 
   Future<void> clearDraft(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_kDraftPrefix$uid');
+    await _storage.delete(key: '$_kDraftPrefix$uid');
   }
 
   // ── Idempotency Key ───────────────────────────────────────────────────────
@@ -86,25 +89,22 @@ class DraftRepository {
   /// Call [clearIdempotencyKey] only after the booking is confirmed by the backend.
   Future<String> getOrCreateIdempotencyKey(
       String uid, String draftId) async {
-    final prefs = await SharedPreferences.getInstance();
     final k = '$_kIdemPrefix${uid}_$draftId';
-    final existing = prefs.getString(k);
+    final existing = await _storage.read(key: k);
     if (existing != null && existing.isNotEmpty) return existing;
     final generated = _uuidV4();
-    await prefs.setString(k, generated);
+    await _storage.write(key: k, value: generated);
     return generated;
   }
 
   Future<void> clearIdempotencyKey(String uid, String draftId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_kIdemPrefix${uid}_$draftId');
+    await _storage.delete(key: '$_kIdemPrefix${uid}_$draftId');
   }
 
   // ── Pending Payment Context ───────────────────────────────────────────────
 
   Future<PendingPaymentContext?> loadPaymentContext(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('$_kPaymentPrefix$uid');
+    final raw = await _storage.read(key: '$_kPaymentPrefix$uid');
     if (raw == null || raw.isEmpty) return null;
     try {
       final ctx = PendingPaymentContext.fromJson(
@@ -116,14 +116,13 @@ class DraftRepository {
   }
 
   Future<void> savePaymentContext(PendingPaymentContext ctx) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        '$_kPaymentPrefix${ctx.customerUid}', jsonEncode(ctx.toJson()));
+    await _storage.write(
+        key: '$_kPaymentPrefix${ctx.customerUid}',
+        value: jsonEncode(ctx.toJson()));
   }
 
   Future<void> clearPaymentContext(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_kPaymentPrefix$uid');
+    await _storage.delete(key: '$_kPaymentPrefix$uid');
   }
 
   // ── Account Isolation ─────────────────────────────────────────────────────
@@ -131,26 +130,30 @@ class DraftRepository {
   /// Removes all draft, idempotency, and payment context for [uid].
   /// Call during logout to prevent cross-account state leakage.
   Future<void> clearAllForAccount(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    final toRemove = prefs.getKeys().where((k) =>
-        k.startsWith('$_kDraftPrefix$uid') ||
-        k.startsWith('$_kIdemPrefix$uid') ||
-        k.startsWith('$_kPaymentPrefix$uid'));
-    for (final k in toRemove) {
-      await prefs.remove(k);
+    final all = await _storage.readAll();
+    final toDelete = all.keys.where(
+      (k) =>
+          k.startsWith('$_kDraftPrefix$uid') ||
+          k.startsWith('$_kIdemPrefix$uid') ||
+          k.startsWith('$_kPaymentPrefix$uid'),
+    ).toList();
+    for (final k in toDelete) {
+      await _storage.delete(key: k);
     }
   }
 
   /// Clears ALL draft, idempotency, and payment context entries regardless of UID.
   /// Used as a fallback during logout when the UID cannot be determined (LEAK M-1).
   Future<void> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    final toRemove = prefs.getKeys().where((k) =>
-        k.startsWith(_kDraftPrefix) ||
-        k.startsWith(_kIdemPrefix) ||
-        k.startsWith(_kPaymentPrefix));
-    for (final k in toRemove) {
-      await prefs.remove(k);
+    final all = await _storage.readAll();
+    final toDelete = all.keys.where(
+      (k) =>
+          k.startsWith(_kDraftPrefix) ||
+          k.startsWith(_kIdemPrefix) ||
+          k.startsWith(_kPaymentPrefix),
+    ).toList();
+    for (final k in toDelete) {
+      await _storage.delete(key: k);
     }
   }
 

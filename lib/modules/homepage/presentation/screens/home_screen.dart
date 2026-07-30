@@ -1,5 +1,7 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/core/recovery/pending_payment_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
@@ -170,6 +172,24 @@ class _HomeScreenState extends State<HomeScreen> {
         if (state is AuthenticationAuthenticated) {
           store.loadBookings();
           _restoreDraftIfPending();
+          // STITCH B2: show resume prompt for any payment interrupted by process kill.
+          final paymentCtx = dpLocator<PendingPaymentService>().consume();
+          if (paymentCtx != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Resume payment for booking #${paymentCtx.bookingId}?'),
+                duration: const Duration(seconds: 10),
+                action: SnackBarAction(
+                  label: 'Resume',
+                  onPressed: () => launchUrl(
+                    Uri.parse(paymentCtx.checkoutUrl),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                ),
+              ),
+            );
+          }
         }
       },
       child: Scaffold(

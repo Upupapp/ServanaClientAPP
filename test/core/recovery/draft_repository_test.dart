@@ -1,11 +1,13 @@
 import 'package:client/common/domain/booking/booking_draft.dart';
 import 'package:client/core/recovery/draft_repository.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() => TestWidgetsFlutterBinding.ensureInitialized());
+
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   group('DraftRepository — BookingDraft', () {
@@ -179,6 +181,29 @@ void main() {
       await repo.clearAllForAccount('uid-A');
 
       expect(await repo.loadPaymentContext('uid-B'), isNotNull);
+    });
+  });
+
+  group('DraftRepository — clearAll', () {
+    test('removes entries for all UIDs', () async {
+      final repo = DraftRepository();
+      await repo.savePaymentContext(PendingPaymentContext(
+        bookingId: 1,
+        checkoutUrl: 'https://pay.example.com/1',
+        customerUid: 'uid-A',
+        savedAt: DateTime.now(),
+      ));
+      await repo.savePaymentContext(PendingPaymentContext(
+        bookingId: 2,
+        checkoutUrl: 'https://pay.example.com/2',
+        customerUid: 'uid-B',
+        savedAt: DateTime.now(),
+      ));
+
+      await repo.clearAll();
+
+      expect(await repo.loadPaymentContext('uid-A'), isNull);
+      expect(await repo.loadPaymentContext('uid-B'), isNull);
     });
   });
 }

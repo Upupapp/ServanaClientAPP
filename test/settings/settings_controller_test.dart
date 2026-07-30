@@ -159,5 +159,58 @@ void main() {
       await Future.wait([ctrl.load(), ctrl.load()]);
       expect(notifyCount, 1);
     });
+
+    // Language
+    test('language defaults to English before load()', () {
+      expect(SettingsController().language, 'English');
+    });
+
+    test('setLanguage updates language and notifies listeners', () async {
+      final ctrl = SettingsController();
+      var notified = false;
+      ctrl.addListener(() => notified = true);
+      await ctrl.setLanguage('Filipino');
+      expect(ctrl.language, 'Filipino');
+      expect(notified, isTrue);
+    });
+
+    test('setLanguage persists to SharedPreferences', () async {
+      await SettingsController().setLanguage('Filipino');
+      expect(await SettingsLocalDataSource.loadLanguage(), 'Filipino');
+    });
+
+    test('setLanguage is a no-op when value unchanged', () async {
+      final ctrl = SettingsController();
+      var notifyCount = 0;
+      ctrl.addListener(() => notifyCount++);
+      await ctrl.setLanguage('English'); // same as default
+      expect(notifyCount, 0);
+    });
+
+    test('load() reads language from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({'settings_language': 'Filipino'});
+      final ctrl = SettingsController();
+      await ctrl.load();
+      expect(ctrl.language, 'Filipino');
+    });
+  });
+
+  // ── SettingsLocalDataSource — Language ────────────────────────────────────
+
+  group('SettingsLocalDataSource — Language', () {
+    test('loadLanguage returns English when no value stored', () async {
+      expect(await SettingsLocalDataSource.loadLanguage(), 'English');
+    });
+
+    test('saveLanguage + loadLanguage round-trip Filipino', () async {
+      await SettingsLocalDataSource.saveLanguage('Filipino');
+      expect(await SettingsLocalDataSource.loadLanguage(), 'Filipino');
+    });
+
+    test('saveLanguage + loadLanguage round-trip English', () async {
+      await SettingsLocalDataSource.saveLanguage('Filipino');
+      await SettingsLocalDataSource.saveLanguage('English');
+      expect(await SettingsLocalDataSource.loadLanguage(), 'English');
+    });
   });
 }

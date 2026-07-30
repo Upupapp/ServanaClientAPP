@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// A mutation that was dispatched but whose result is unknown
 /// (network timeout, process kill before response arrived).
@@ -61,11 +61,17 @@ class JournaledOperation {
       );
 }
 
-/// Persists pending mutations across process kills.
+/// Persists pending mutations across process kills using [FlutterSecureStorage]
+/// so journal entries (which may contain booking payloads) are encrypted at rest.
 ///
 /// All keys are scoped by customer UID to prevent cross-account state leakage.
 /// Operations older than 24 h are pruned automatically on [load].
 class OperationJournal {
+  OperationJournal({FlutterSecureStorage? storage})
+      : _storage = storage ?? const FlutterSecureStorage();
+
+  final FlutterSecureStorage _storage;
+
   static const String _kPrefix = 'op_journal_v1_';
 
   String _key(String uid) => '$_kPrefix$uid';
@@ -73,8 +79,7 @@ class OperationJournal {
   // ── Public API ────────────────────────────────────────────────────────────
 
   Future<List<JournaledOperation>> load(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key(uid));
+    final raw = await _storage.read(key: _key(uid));
     if (raw == null || raw.isEmpty) return [];
     try {
       final list = jsonDecode(raw) as List<dynamic>;
@@ -108,17 +113,15 @@ class OperationJournal {
 
   /// Removes ALL journaled operations for [uid] — call on logout.
   Future<void> clearForAccount(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key(uid));
+    await _storage.delete(key: _key(uid));
   }
 
   // ── Internal ─────────────────────────────────────────────────────────────
 
   Future<void> _persist(String uid, List<JournaledOperation> ops) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _key(uid),
-      jsonEncode(ops.map((o) => o.toJson()).toList()),
+    await _storage.write(
+      key: _key(uid),
+      value: jsonEncode(ops.map((o) => o.toJson()).toList()),
     );
   }
 }

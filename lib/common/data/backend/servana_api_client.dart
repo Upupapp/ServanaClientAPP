@@ -16,9 +16,14 @@ class ServanaApiClient {
   final String baseUrl;
   final http.Client _client;
 
+  /// Called when any response returns HTTP 401 (token expired / revoked).
+  /// Wire this in GetIt to update [AuthStateService] and clear the session.
+  final void Function()? onUnauthorized;
+
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
+    this.onUnauthorized,
   }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
@@ -50,6 +55,8 @@ class ServanaApiClient {
           name: 'ServanaApi',
         );
       }
+      // STITCH B1: notify caller of session expiry so the router can redirect.
+      if (status == 401) onUnauthorized?.call();
       throw ServanaApiException(
         statusCode: status,
         body: response.body,

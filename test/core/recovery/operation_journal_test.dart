@@ -1,10 +1,12 @@
 import 'package:client/core/recovery/operation_journal.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() => TestWidgetsFlutterBinding.ensureInitialized());
+
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   JournaledOperation makeOp(String id, {String uid = 'uid1', bool old = false}) {

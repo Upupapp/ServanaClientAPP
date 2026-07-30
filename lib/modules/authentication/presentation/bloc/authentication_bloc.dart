@@ -31,6 +31,7 @@ import 'package:client/modules/support/application/support_ticket_controller.dar
 import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/core/recovery/operation_journal.dart';
+import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/core/accessibility/live_region_manager.dart';
 import 'package:client/common/constants/boxes.dart';
@@ -266,6 +267,14 @@ class AuthenticationBloc
         _setAnalyticsUserContext(session.customerID); // STITCH WARN-01
         _notify(AuthStatus.authenticated);
         emit(AuthenticationAuthenticated());
+        // STITCH B2: check for payment interrupted by process kill.
+        try {
+          final ctx = await dpLocator<DraftRepository>()
+              .loadPaymentContext(session.customerID);
+          if (ctx != null) {
+            dpLocator<PendingPaymentService>().setPending(ctx);
+          }
+        } catch (_) {}
       } else {
         _notify(AuthStatus.guest);
         emit(AuthenticationGuest());

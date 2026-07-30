@@ -156,7 +156,7 @@ jobs:
           BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V | tail -1)
           $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner verify \
             --verbose \
-            build/app/outputs/bundle/release/app-release.aab || true
+            build/app/outputs/bundle/release/app-release.aab
 
       - name: Compute SHA-256 checksum
         run: |

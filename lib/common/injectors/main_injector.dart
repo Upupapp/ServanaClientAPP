@@ -8,6 +8,7 @@ import 'package:client/core/recovery/app_lifecycle_coordinator.dart';
 import 'package:client/core/recovery/connectivity_monitor.dart';
 import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/core/recovery/operation_journal.dart';
+import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/tracking/application/tracking_controller.dart';
@@ -38,6 +39,7 @@ import 'package:client/common/data/backend/mock_backend.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/repositories/address_repository.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
+import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
@@ -94,11 +96,21 @@ void initInjector(AppConfig config) {
   // C24: Consent gate — singleton so dialog fires exactly once per install.
   dpLocator.registerLazySingleton(() => ConsentGateService());
 
+  // ── Encrypted storage — registered early so recovery layer can inject it ──
+  dpLocator.registerLazySingleton(
+    () => const FlutterSecureStorage(),
+  );
+
   // ── C20 Recovery layer ────────────────────────────────────────────────────
   dpLocator.registerLazySingleton(() => ConnectivityMonitor());
   dpLocator.registerLazySingleton(() => SessionGenerationCoordinator());
-  dpLocator.registerLazySingleton(() => DraftRepository());
-  dpLocator.registerLazySingleton(() => OperationJournal());
+  dpLocator.registerLazySingleton(
+    () => DraftRepository(storage: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => OperationJournal(storage: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(() => PendingPaymentService());
   dpLocator.registerLazySingleton(
     () => AppLifecycleCoordinator(
       connectivity: dpLocator(),
@@ -132,7 +144,16 @@ void initInjector(AppConfig config) {
 
   // Low-level HTTP client for Servana REST API (raw JSON).
   dpLocator.registerLazySingleton(
-    () => ServanaApiClient(baseUrl: config.baseUrl),
+    () => ServanaApiClient(
+      baseUrl: config.baseUrl,
+      // STITCH B1: force session expiry on any 401 so the router redirects to login.
+      onUnauthorized: () {
+        try {
+          dpLocator<AuthStateService>().update(AuthStatus.expired);
+          SessionService.deleteSession().ignore();
+        } catch (_) {}
+      },
+    ),
   );
 
   // Backend
@@ -269,9 +290,6 @@ void initInjector(AppConfig config) {
   );
   dpLocator.registerLazySingleton(
     () => NotificationNavigationCoordinator(),
-  );
-  dpLocator.registerLazySingleton(
-    () => const FlutterSecureStorage(),
   );
   dpLocator.registerLazySingleton(
     () => FcmCoordinator(
