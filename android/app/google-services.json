@@ -20,7 +20,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAJhIszBqlum-DhCLdH2uA_EZFKnQhOkrU"
+          "current_key": "AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s"
         }
       ],
       "services": {
@@ -31,10 +31,10 @@
               "client_type": 3
             },
             {
-              "client_id": "320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj.apps.googleusercontent.com",
+              "client_id": "320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.servana.worker"
+                "bundle_id": "com.servana.client"
               }
             }
           ]
@@ -56,7 +56,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAJhIszBqlum-DhCLdH2uA_EZFKnQhOkrU"
+          "current_key": "AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s"
         }
       ],
       "services": {
@@ -67,10 +67,10 @@
               "client_type": 3
             },
             {
-              "client_id": "320379709991-uadvdgc2gkcja6lp30e85qpetlnp7qoj.apps.googleusercontent.com",
+              "client_id": "320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.servana.worker"
+                "bundle_id": "com.servana.client"
               }
             }
           ]
