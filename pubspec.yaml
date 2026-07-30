@@ -100,6 +100,7 @@ dependencies:
   webview_flutter: ^4.13.1
   url_launcher: ^6.2.5
   qr_flutter: ^4.1.0
+  crypto: ^3.0.5
   shared_preferences: ^2.3.2
   package_info_plus: ^8.0.0
   firebase_auth: ^5.3.1

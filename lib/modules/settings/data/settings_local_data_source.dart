@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract final class SettingsLocalDataSource {
   static const _keyTheme = 'settings_theme_mode';
   static const _keyHaptics = 'settings_haptics_enabled';
+  static const _keyLanguage = 'settings_language';
 
   static Future<ThemeMode> loadThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -31,5 +32,15 @@ abstract final class SettingsLocalDataSource {
   static Future<void> saveHapticsEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyHaptics, enabled);
+  }
+
+  static Future<String> loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyLanguage) ?? 'English';
+  }
+
+  static Future<void> saveLanguage(String language) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLanguage, language);
   }
 }

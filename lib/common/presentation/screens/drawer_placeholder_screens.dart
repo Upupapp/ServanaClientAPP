@@ -11,6 +11,7 @@ import 'package:client/modules/settings/presentation/screens/appearance_screen.d
 import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
+import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart'
     show LatLong;
@@ -712,7 +713,6 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
-  static const _prefKey = 'settings_language';
   String _selected = 'English';
 
   static const _options = [
@@ -724,19 +724,14 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_prefKey) ?? 'English';
-    if (mounted) setState(() => _selected = saved);
+    // Read current value from SettingsController so it stays in sync.
+    _selected = dpLocator<SettingsController>().language;
   }
 
   Future<void> _select(String name) async {
+    if (!mounted) return;
     setState(() => _selected = name);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefKey, name);
+    await dpLocator<SettingsController>().setLanguage(name);
   }
 
   @override

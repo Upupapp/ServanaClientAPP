@@ -9,6 +9,7 @@ import 'package:client/common/presentation/screens/drawer_placeholder_screens.da
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
+import 'package:client/core/accessibility/focus_coordinator.dart';
 import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
 import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
@@ -192,6 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       LogoutDialog.showDialog(
                                         context: context,
                                         onConfirm: () {
+                                          FocusCoordinator.clearStaleFocus(context);
                                           context
                                               .read<AuthenticationBloc>()
                                               .add(AuthLogout());

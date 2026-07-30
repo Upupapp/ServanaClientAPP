@@ -80,7 +80,6 @@ jobs:
 
       - name: Build debug APK (arm64 only)
         id: build_apk
-        continue-on-error: true
         timeout-minutes: 10
         run: flutter build apk --debug --target-platform android-arm64 --no-tree-shake-icons
 
@@ -148,7 +147,9 @@ jobs:
           flutter build appbundle --release \
             --dart-define=API_BASE_URL=https://api.servana.com.ph \
             --dart-define=BRAND=servana \
-            --dart-define=MOCK_BACKEND=false
+            --dart-define=MOCK_BACKEND=false \
+            --obfuscate \
+            --split-debug-info=build/debug-info
 
       - name: Verify signing
         run: |

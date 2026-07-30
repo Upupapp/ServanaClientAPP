@@ -127,7 +127,12 @@ class MainRouter {
             loc.startsWith('/bookings') || // "/bookings/:id" detail routes
             loc.startsWith(MessagesInboxScreen.route) ||
             loc.startsWith(ProfileScreen.route) ||
-            loc.startsWith('/support');
+            loc.startsWith('/support') ||
+            loc.startsWith('/review/') || // /review/new, /review/detail
+            loc.startsWith('/BookingChat') || // /BookingChat/:jobOrderId
+            loc.startsWith('/SavedAddresses') ||
+            loc.startsWith('/Rewards') ||
+            loc.startsWith('/Favourites');
 
         if (isProtected && !authState.isAuthenticated) {
           // Always land on WelcomeScreen — post-logout and unauthenticated

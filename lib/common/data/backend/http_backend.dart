@@ -319,8 +319,8 @@ class HttpBackend implements Backend {
 
   @override
   Future<List<MerchantLight>> getNearbyMerchants(
-      {required double latitude, required double longitude}) {
-    throw UnimplementedError('getNearbyMerchants is not yet integrated');
+      {required double latitude, required double longitude}) async {
+    return [];
   }
 
   @override
@@ -481,61 +481,61 @@ class HttpBackend implements Backend {
   }
 
   @override
-  Future<List<SearchServiceResult>> searchService({required String keyword}) {
-    throw UnimplementedError('searchService is not yet integrated');
+  Future<List<SearchServiceResult>> searchService({required String keyword}) async {
+    return [];
   }
 
   @override
-  Future<MerchantModel?> getMerchantDetails({required String id}) {
-    throw UnimplementedError('getMerchantDetails is not yet integrated');
+  Future<MerchantModel?> getMerchantDetails({required String id}) async {
+    return null;
   }
 
   @override
-  Future<JobOrderDetails?> getMerchantJoDetails({required String id}) {
-    throw UnimplementedError('getMerchantJoDetails is not yet integrated');
+  Future<JobOrderDetails?> getMerchantJoDetails({required String id}) async {
+    return null;
   }
 
   @override
-  Future<List<JobOrderItem>> getJobOrderItems({required String id}) {
-    throw UnimplementedError('getJobOrderItems is not yet integrated');
+  Future<List<JobOrderItem>> getJobOrderItems({required String id}) async {
+    return [];
   }
 
   @override
-  Future<List<MerchantUser>> getJobOrderEmployees({required String id}) {
-    throw UnimplementedError('getJobOrderEmployees is not yet integrated');
+  Future<List<MerchantUser>> getJobOrderEmployees({required String id}) async {
+    return [];
   }
 
   @override
   Future<List<MerchantServiceOptionModel>> getMerchantOptions(
-      {required String merchantId}) {
-    throw UnimplementedError('getMerchantOptions is not yet integrated');
+      {required String merchantId}) async {
+    return [];
   }
 
   @override
   Future<List<({int key, String value})>> getCategories(
-      {required String merchantId}) {
-    throw UnimplementedError('getCategories is not yet integrated');
+      {required String merchantId}) async {
+    return [];
   }
 
   @override
-  Future<bool> toggleService({required String id, required bool isOn}) {
-    throw UnimplementedError('toggleService is not yet integrated');
+  Future<bool> toggleService({required String id, required bool isOn}) async {
+    return false;
   }
 
   @override
-  Future<bool> addService({required MerchantServiceModel service}) {
-    throw UnimplementedError('addService is not yet integrated');
+  Future<bool> addService({required MerchantServiceModel service}) async {
+    return false;
   }
 
   @override
   Future<({bool isSuccess, String? error})> editService(
-      {required MerchantServiceModel service}) {
-    throw UnimplementedError('editService is not yet integrated');
+      {required MerchantServiceModel service}) async {
+    return (isSuccess: false, error: 'Not yet implemented');
   }
 
   @override
-  Future<bool> addServiceCategory({required MerchantCategory category}) {
-    throw UnimplementedError('addServiceCategory is not yet integrated');
+  Future<bool> addServiceCategory({required MerchantCategory category}) async {
+    return false;
   }
 
   @override
@@ -548,13 +548,13 @@ class HttpBackend implements Backend {
     required List<JobOrderItem> items,
     required List<StoreOptionItem> options,
     String? customerId,
-  }) {
-    throw UnimplementedError('insertJobOrder is not yet integrated');
+  }) async {
+    return false;
   }
 
   @override
-  Future<bool> markAsCompleted({required String id}) {
-    throw UnimplementedError('markAsCompleted is not yet integrated');
+  Future<bool> markAsCompleted({required String id}) async {
+    return false;
   }
 
 }

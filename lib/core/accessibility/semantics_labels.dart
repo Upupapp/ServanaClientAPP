@@ -121,6 +121,9 @@ abstract final class SemanticsLabels {
   static const String messageField = 'Type a message';
   static String newMessagesAvailable(int count) =>
       '$count new message${count == 1 ? '' : 's'} available. Swipe up to read.';
+  @Deprecated(
+    'Dead code — zero callers. Remove if no caller is added by 2026-Q4.',
+  )
   static String messageDelivered(String sender, String preview) =>
       '$sender: $preview';
 

@@ -9,6 +9,8 @@ import 'package:client/common/presentation/widgets/service_category_list_screen.
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
 import 'package:client/core/analytics/events/booking_events.dart';
+import 'package:client/core/recovery/draft_repository.dart';
+import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:mobx/mobx.dart';
 
@@ -386,6 +388,18 @@ abstract class _BwBookingStore with Store {
         },
       };
 
+      // Journal the operation before the API call so a process kill during
+      // the network request leaves a reconcilable record.
+      final opId = _uuidV4();
+      dpLocator<OperationJournal>().record(JournaledOperation(
+        id: opId,
+        type: 'booking.create',
+        customerUid: userId,
+        payload: {'category': 'beauty_wellness', 'paymentMethod': paymentMethod},
+        startedAt: DateTime.now(),
+        idempotencyKey: _idempotencyKey,
+      )).ignore();
+
       final res = await api.createBooking(
         userId: userId,
         payload: payload,
@@ -403,6 +417,10 @@ abstract class _BwBookingStore with Store {
       workerCode =
           (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
       if (workerCode!.isEmpty) workerCode = null;
+
+      // Booking confirmed — remove the pending journal entry.
+      dpLocator<OperationJournal>().resolve(userId, opId).ignore();
+
       _track(BookingCreatedEvent(
         serviceCategory: 'beauty_wellness',
         paymentMethod: paymentMethod.toLowerCase(),
@@ -447,6 +465,8 @@ abstract class _BwBookingStore with Store {
     isPaymentLoading = true;
     errorMessage = null;
     try {
+      final session = await SessionService.getSession();
+      final uid = session?.customerID ?? '';
       final res = await api.createPaymongoSession(bookingId: createdBookingId!);
       final data = res['data'] ?? res;
       paymongoCheckoutUrl =
@@ -456,6 +476,14 @@ abstract class _BwBookingStore with Store {
       // the Retry branch instead of an indefinite spinner.
       if (paymongoCheckoutUrl == null || paymongoCheckoutUrl!.isEmpty) {
         errorMessage = 'Payment session could not be started. Please retry.';
+      } else if (uid.isNotEmpty) {
+        // Persist checkout URL so the user can resume payment after an app crash.
+        dpLocator<DraftRepository>().savePaymentContext(PendingPaymentContext(
+          bookingId: createdBookingId!,
+          checkoutUrl: paymongoCheckoutUrl!,
+          customerUid: uid,
+          savedAt: DateTime.now(),
+        )).ignore();
       }
     } catch (e) {
       errorMessage = _errorMsg(e);
