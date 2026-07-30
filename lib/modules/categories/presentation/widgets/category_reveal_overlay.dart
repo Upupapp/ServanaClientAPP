@@ -1,3 +1,6 @@
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
 import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +65,15 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) setState(() => _tapProtected = false);
     });
+
+    _track(CategoryRevealShownEvent(
+        categoryKey: widget.config.categoryId.name));
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   @override

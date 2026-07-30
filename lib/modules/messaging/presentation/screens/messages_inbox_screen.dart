@@ -4,6 +4,8 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/message_events.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/messaging/presentation/screens/booking_chat_screen.dart';
@@ -28,9 +30,16 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
+    _track(const MessagesOpenedEvent());
     Future.microtask(() async {
       await _homeStore.loadBookings();
       await _msgStore.loadConversations();

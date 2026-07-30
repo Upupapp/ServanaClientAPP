@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/modules/tracking/domain/tracking_args.dart';
 import 'package:client/common/presentation/responsive/servana_responsive.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -53,6 +55,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   DateTime? _assignedAt;
   String? _workerCode;
   bool _hasReview = false;
+  bool _detailViewTracked = false;
 
   // Poll for worker assignment for up to ~60s after the screen opens, while
   // the booking is still in a pre-assignment state. Stops as soon as a
@@ -71,6 +74,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshBooking();
     });
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   @override
@@ -243,6 +252,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       // First time we see a workerUid, look up the technician's name.
       if (_workerUid != null && _workerName == null) {
         unawaited(_loadWorkerProfile(_workerUid!));
+      }
+
+      // Track detail view once per screen visit.
+      if (!_detailViewTracked) {
+        _detailViewTracked = true;
+        _track(BookingDetailViewedEvent(
+            bookingStatusCategory:
+                (_bookingStatus ?? 'unknown').toLowerCase()));
       }
 
       // Also refresh the bookings list so the Bookings tab updates.
