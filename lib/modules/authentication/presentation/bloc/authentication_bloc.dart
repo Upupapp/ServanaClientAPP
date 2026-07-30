@@ -112,6 +112,10 @@ class AuthenticationBloc
       final accessToken = googleAuth.accessToken;
       final idToken = googleAuth.idToken;
       if (accessToken == null || idToken == null) {
+        _trackEvent(const SignInFailedEvent(
+          authMethod: AuthMethodValues.google,
+          failureCode: FailureCodeValues.unknown,
+        ));
         emit(AuthenticationUnauthenticated(
             message: 'Google sign-in failed. Please try again.'));
         return;
@@ -123,6 +127,10 @@ class AuthenticationBloc
           await FirebaseAuth.instance.signInWithCredential(credential);
       final firebaseIdToken = await userCred.user?.getIdToken();
       if (firebaseIdToken == null) {
+        _trackEvent(const SignInFailedEvent(
+          authMethod: AuthMethodValues.google,
+          failureCode: FailureCodeValues.unknown,
+        ));
         emit(AuthenticationUnauthenticated(
             message: 'Google sign-in failed. Please try again.'));
         return;
@@ -131,6 +139,10 @@ class AuthenticationBloc
           firebaseIdToken, googleUser.email, emit);
     } catch (e) {
       debugPrint('[AuthBloc] Google sign-in error: $e');
+      _trackEvent(const SignInFailedEvent(
+        authMethod: AuthMethodValues.google,
+        failureCode: FailureCodeValues.networkError,
+      ));
       emit(AuthenticationUnauthenticated(
           message: 'Google sign-in failed. Please try again.'));
     }
@@ -143,6 +155,13 @@ class AuthenticationBloc
     try {
       final result = await _facebookAuth.login();
       if (result.status != LoginStatus.success || result.accessToken == null) {
+        // Only track non-cancellation failures — user-cancelled is intentional.
+        if (result.status != LoginStatus.cancelled) {
+          _trackEvent(const SignInFailedEvent(
+            authMethod: AuthMethodValues.facebook,
+            failureCode: FailureCodeValues.unknown,
+          ));
+        }
         emit(AuthenticationUnauthenticated(
             message: result.status == LoginStatus.cancelled
                 ? null
@@ -156,6 +175,10 @@ class AuthenticationBloc
       final firebaseIdToken = await userCred.user?.getIdToken();
       final email = userCred.user?.email ?? '';
       if (firebaseIdToken == null) {
+        _trackEvent(const SignInFailedEvent(
+          authMethod: AuthMethodValues.facebook,
+          failureCode: FailureCodeValues.unknown,
+        ));
         emit(AuthenticationUnauthenticated(
             message: 'Facebook sign-in failed. Please try again.'));
         return;
@@ -163,6 +186,10 @@ class AuthenticationBloc
       await _loginWithFirebaseToken(firebaseIdToken, email, emit);
     } catch (e) {
       debugPrint('[AuthBloc] Facebook sign-in error: $e');
+      _trackEvent(const SignInFailedEvent(
+        authMethod: AuthMethodValues.facebook,
+        failureCode: FailureCodeValues.networkError,
+      ));
       emit(AuthenticationUnauthenticated(
           message: 'Facebook sign-in failed. Please try again.'));
     }
@@ -222,7 +249,15 @@ class AuthenticationBloc
     // No Loading state — passive session restore should be silent.
     // Only user-initiated actions (login, logout) emit Loading.
     try {
+      // STITCH-C20-POST-003: capture generation before async gap so concurrent
+      // logout (which advances the generation) invalidates this in-flight check.
+      final capturedGen =
+          dpLocator<SessionGenerationCoordinator>().current;
       final session = await SessionService.getSession();
+      if (!dpLocator<SessionGenerationCoordinator>().isValid(capturedGen)) {
+        // A logout fired concurrently — discard this stale session check.
+        return;
+      }
       if (session != null && session.token.isNotEmpty) {
         _notifyFcmLogin(session.customerID);
         _notify(AuthStatus.authenticated);

@@ -9,7 +9,7 @@ final class AppOpenedEvent extends AnalyticsEvent {
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
   @override String? get dedupKey => 'app_opened:$launchType';
   @override Map<String, Object?> get properties =>
-      {AnalyticsKeys.entrySource: launchType};
+      {AnalyticsKeys.launchType: launchType};
 }
 
 final class SessionRestoredEvent extends AnalyticsEvent {
@@ -17,7 +17,7 @@ final class SessionRestoredEvent extends AnalyticsEvent {
   final bool hasSession;
   @override String get eventName => 'session_restored';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {'has_session': hasSession};
+  @override Map<String, Object?> get properties => {AnalyticsKeys.hasSession: hasSession};
 }
 
 final class AuthEntryViewedEvent extends AnalyticsEvent {
@@ -101,7 +101,7 @@ final class OtpRequestedEvent extends AnalyticsEvent {
   final String context; // 'booking' | 'registration' | 'email_verify'
   @override String get eventName => 'otp_requested';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {'otp_context': context};
+  @override Map<String, Object?> get properties => {AnalyticsKeys.otpContext: context};
 }
 
 final class OtpVerifiedEvent extends AnalyticsEvent {
@@ -109,7 +109,7 @@ final class OtpVerifiedEvent extends AnalyticsEvent {
   final String context;
   @override String get eventName => 'otp_verified';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {'otp_context': context};
+  @override Map<String, Object?> get properties => {AnalyticsKeys.otpContext: context};
 }
 
 final class OtpFailedEvent extends AnalyticsEvent {
@@ -120,7 +120,7 @@ final class OtpFailedEvent extends AnalyticsEvent {
   @override String get eventName => 'otp_failed';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
   @override Map<String, Object?> get properties => {
-        'otp_context': context,
+        AnalyticsKeys.otpContext: context,
         AnalyticsKeys.failureCode: failureCode,
       };
 }
@@ -137,5 +137,5 @@ final class LoggedOutEvent extends AnalyticsEvent {
   final String trigger; // 'user_action' | 'session_expired' | 'account_switch'
   @override String get eventName => 'logged_out';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
-  @override Map<String, Object?> get properties => {'logout_trigger': trigger};
+  @override Map<String, Object?> get properties => {AnalyticsKeys.logoutTrigger: trigger};
 }

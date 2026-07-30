@@ -95,6 +95,13 @@ void initInjector(AppConfig config) {
   dpLocator.registerLazySingleton(
     () => AppLifecycleCoordinator(
       connectivity: dpLocator(),
+      // STITCH-C20-POST-002: refresh messaging state after app returns to
+      // foreground — socket may have missed messages while backgrounded.
+      onResume: () {
+        try {
+          dpLocator<MessagingStore>().initForSession().ignore();
+        } catch (_) {}
+      },
     ),
   );
 

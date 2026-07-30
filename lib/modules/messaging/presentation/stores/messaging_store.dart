@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/observability/performance_service.dart';
+import 'package:client/core/observability/trace_name_registry.dart';
 import 'package:client/core/analytics/events/message_events.dart';
 import 'package:client/core/analytics/events/recovery_events.dart';
 import 'package:client/modules/messaging/data/mappers/message_mapper.dart';
@@ -165,10 +167,13 @@ abstract class _MessagingStore with Store {
     isLoadingByConvId[conversationId] = true;
     final gen = _generation;
     try {
-      final messages = await repository.getMessages(
-        conversationId: conversationId,
-        limit: 40,
-        before: refresh ? null : oldestIdByConvId[conversationId],
+      final messages = await dpLocator<PerformanceService>().traced(
+        TraceNames.conversationLoad,
+        () async => repository.getMessages(
+          conversationId: conversationId,
+          limit: 40,
+          before: refresh ? null : oldestIdByConvId[conversationId],
+        ),
       );
       if (_generation != gen) return;
 

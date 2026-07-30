@@ -1,3 +1,6 @@
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/auth_events.dart';
 import 'package:client/modules/registration/domain/repositories/registration_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,6 +49,12 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
 
   bool isPassVisible = false;
   bool isConfirmPassVisible = false;
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
 
   RegistrationBloc({
     required this.saveRegistrationToLocalUseCase,
@@ -260,6 +269,7 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
 
   Future<void> onInitializeRegistrationForm(
       InitializeRegistrationForm event, Emitter<RegistrationState> emit) async {
+    _track(const RegistrationStartedEvent(entrySource: 'registration_screen'));
     emit(const RegistrationLoadingState());
     var barangayRes = await getBarangaysInCityUseCase.call(
         params: DefaultValues.defaultRegionCode);
@@ -441,11 +451,13 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
             if (email != null && email.isNotEmpty) {
               repo.resendVerificationEmail(email: email);
             }
+            _track(const RegistrationSucceededEvent());
             emit(RegistrationSubmittedState(
                 registration: event.registration, formState: formState));
             await saveRegistrationToLocalUseCase.call(
                 params: event.registration);
           } else {
+            _track(const RegistrationFailedEvent(failureCode: 'api_error'));
             emit(RegistrationSubmittedFailedState(
               registration: event.registration,
               formState: formState,
@@ -453,6 +465,7 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
             ));
           }
         } catch (e) {
+          _track(const RegistrationFailedEvent(failureCode: 'exception'));
           emit(RegistrationSubmittedFailedState(
             registration: event.registration,
             formState: formState,

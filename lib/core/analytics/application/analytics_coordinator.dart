@@ -61,7 +61,14 @@ class AnalyticsCoordinator {
         return;
       }
 
-      // 2. Validation
+      // 2. Privacy filter — strip PII before any further processing
+      final (:clean, :violations) = _filter.filter(event);
+      if (violations.isNotEmpty && kDebugMode) {
+        debugPrint('[Analytics] PRIVACY violations in ${event.eventName}: '
+            '${violations.join(", ")}');
+      }
+
+      // 3. Validation
       final validation = _validator.validate(event);
       if (!validation.isValid) {
         if (kDebugMode) {
@@ -71,20 +78,13 @@ class AnalyticsCoordinator {
         return;
       }
 
-      // 3. Deduplication
+      // 4. Deduplication
       final key = event.dedupKey;
       if (key != null && _dedup.shouldSuppress(key)) {
         if (kDebugMode) {
           debugPrint('[Analytics] DEDUPED → ${event.eventName}');
         }
         return;
-      }
-
-      // 4. Privacy filter
-      final (:clean, :violations) = _filter.filter(event);
-      if (violations.isNotEmpty && kDebugMode) {
-        debugPrint('[Analytics] PRIVACY violations in ${event.eventName}: '
-            '${violations.join(", ")}');
       }
 
       // 5. Attach context (platform, version, environment)

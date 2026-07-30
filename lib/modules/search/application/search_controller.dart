@@ -4,6 +4,8 @@ import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
+import 'package:client/core/observability/performance_service.dart';
+import 'package:client/core/observability/trace_name_registry.dart';
 import 'package:client/core/analytics/events/search_events.dart';
 import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/data/search_local_data_source.dart';
@@ -63,7 +65,10 @@ class SearchController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
     final sw = Stopwatch()..start();
     try {
-      _allResults = await _repository.fetchCatalog(forceRefresh: forceRefresh);
+      _allResults = await dpLocator<PerformanceService>().traced(
+        TraceNames.searchRequest,
+        () async => _repository.fetchCatalog(forceRefresh: forceRefresh),
+      );
       _state = SearchLoadState.ready;
       _applyFilters();
       _track(SearchResultsLoadedEvent(

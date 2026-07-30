@@ -7,6 +7,7 @@ final class HomeViewedEvent extends AnalyticsEvent {
   final String accountState;
   @override String get eventName => 'home_viewed';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'home_viewed';
   @override Map<String, Object?> get properties =>
       {AnalyticsKeys.accountState: accountState};
 }

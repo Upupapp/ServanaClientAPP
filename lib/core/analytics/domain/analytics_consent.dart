@@ -22,11 +22,22 @@ class AnalyticsConsent {
 
   static const int currentPolicyVersion = 1;
 
+  // Default grants essential only — analytics/crash require explicit user opt-in
+  // (PDPA/GDPR: consent must be affirmative before non-essential tracking).
   static AnalyticsConsent defaultConsent() => AnalyticsConsent(
+        grantedCategories: const {ConsentCategory.essential},
+        policyVersion: currentPolicyVersion,
+        grantedAt: DateTime.now(),
+      );
+
+  // Full consent — call this after the user explicitly accepts in the consent
+  // dialog (when one is implemented). Until then analytics stays dark.
+  static AnalyticsConsent fullConsent() => AnalyticsConsent(
         grantedCategories: const {
           ConsentCategory.essential,
-          ConsentCategory.crashReporting,
           ConsentCategory.analytics,
+          ConsentCategory.crashReporting,
+          ConsentCategory.performance,
         },
         policyVersion: currentPolicyVersion,
         grantedAt: DateTime.now(),

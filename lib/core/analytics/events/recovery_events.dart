@@ -15,6 +15,7 @@ final class RecoveryConnectionRestoredEvent extends AnalyticsEvent {
   const RecoveryConnectionRestoredEvent();
   @override String get eventName => 'recovery_connection_restored';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'recovery_online';
   @override Map<String, Object?> get properties => {};
 }
 
@@ -75,5 +76,6 @@ final class RecoverySocketReconnectedEvent extends AnalyticsEvent {
   const RecoverySocketReconnectedEvent();
   @override String get eventName => 'recovery_socket_reconnected';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'recovery_socket_reconnected';
   @override Map<String, Object?> get properties => {};
 }

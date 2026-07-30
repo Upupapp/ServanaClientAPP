@@ -6,6 +6,7 @@ final class MessagesOpenedEvent extends AnalyticsEvent {
   const MessagesOpenedEvent();
   @override String get eventName => 'messages_opened';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'messages_opened';
   @override Map<String, Object?> get properties => {};
 }
 

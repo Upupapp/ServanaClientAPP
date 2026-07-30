@@ -16,12 +16,16 @@ abstract final class AnalyticsKeys {
   static const String screenClass = 'screen_class';
   static const String previousScreen = 'previous_screen';
   static const String entrySource = 'entry_source';
+  static const String launchType = 'launch_type';
   static const String navigationType = 'navigation_type';
   static const String deepLinkType = 'deep_link_type';
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   static const String authMethod = 'auth_method';
-  static const String identifierType = 'identifier_type';
+  static const String identifierType = 'identifier_type'; // reserved: email|phone
+  static const String hasSession = 'has_session';
+  static const String otpContext = 'otp_context';
+  static const String logoutTrigger = 'logout_trigger';
   static const String step = 'step';
   static const String stepNumber = 'step_number';
   static const String failureCode = 'failure_code';
@@ -76,7 +80,7 @@ abstract final class AnalyticsKeys {
   // ── Tracking ─────────────────────────────────────────────────────────────
   static const String trackingStatusCategory = 'tracking_status_category';
   static const String freshnessCategory = 'freshness_category';
-  static const String connectionState = 'connection_state';
+  static const String connectionState = 'connection_state'; // reserved: future use
 
   // ── Profile ───────────────────────────────────────────────────────────────
   static const String fieldCategory = 'field_category';
@@ -257,7 +261,7 @@ abstract final class CountBucketValues {
     if (count <= 3) return '2-3';
     if (count <= 5) return '4-5';
     if (count <= 10) return '6-10';
-    return '10+';
+    return '11+';
   }
 }
 

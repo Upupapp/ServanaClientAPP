@@ -1,6 +1,8 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/support_events.dart';
 import 'package:client/modules/support/data/support_repository.dart';
 import 'package:client/modules/support/domain/safety_incident.dart';
 import 'package:flutter/material.dart';
@@ -20,9 +22,16 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
   List<EmergencyLine>? _emergencyLines;
   bool _showReportForm = false;
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
+    _track(const SafetyEntryOpenedEvent());
     _loadEmergency();
   }
 
@@ -300,6 +309,12 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
   String? _error;
   bool _submitting = false;
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     _descCtrl.dispose();
@@ -317,6 +332,7 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
       _submitting = true;
       _error = null;
     });
+    _track(const SafetySubmissionAttemptedEvent());
     try {
       final repo = dpLocator<SupportRepository>();
       final clientIncidentId =
@@ -328,6 +344,7 @@ class _SafetyReportFormState extends State<_SafetyReportForm> {
         description: desc,
       );
       if (!mounted) return;
+      _track(const SafetySubmissionSucceededEvent());
       widget.onSubmitted();
     } catch (_) {
       if (!mounted) return;

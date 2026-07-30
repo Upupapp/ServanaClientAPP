@@ -6,6 +6,8 @@ import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/location_service.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/home_events.dart';
+import 'package:client/core/observability/performance_service.dart';
+import 'package:client/core/observability/trace_name_registry.dart';
 import 'package:client/modules/homepage/data/models/search_service_result.dart';
 import 'package:client/modules/homepage/data/repositories/home_repo.dart.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -80,7 +82,10 @@ abstract class _HomeStore with Store {
     session = await SessionService.getSession();
 
     try {
-      final res = await repo.getBookings();
+      final res = await dpLocator<PerformanceService>().traced(
+        TraceNames.homeLoad,
+        () async => repo.getBookings(),
+      );
       // Discard response if logout fired while we were awaiting — prevents
       // stale old-account data from writing into a reset store (LEAKSHIELD §7).
       if (_generation != gen) {

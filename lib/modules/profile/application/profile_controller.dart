@@ -1,5 +1,7 @@
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/observability/performance_service.dart';
+import 'package:client/core/observability/trace_name_registry.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/profile_events.dart';
 import 'package:client/modules/profile/application/address_controller.dart';
@@ -56,7 +58,10 @@ class ProfileController extends ChangeNotifier {
     _error = null;
     _notify();
     try {
-      _profile = await _repository.loadProfile();
+      _profile = await dpLocator<PerformanceService>().traced(
+        TraceNames.profileLoad,
+        () async => _repository.loadProfile(),
+      );
       _status = ProfileLoadStatus.loaded;
       // Keep local session in sync so other screens see the updated name/phone.
       if (_profile != null) await _syncSession(_profile!);
