@@ -2,6 +2,8 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/responsive/servana_responsive.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/message_events.dart';
 import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/messaging/data/models/message_model.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
@@ -76,6 +78,11 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
         _resolving = false;
       });
 
+      _track(const ConversationOpenedEvent(
+        bookingStatusCategory: 'unknown',
+        entrySource: 'chat_screen',
+      ));
+
       // Mark as read on open.
       _store.markRead(conv.id);
 
@@ -136,6 +143,12 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
     );
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   Future<void> _send() async {

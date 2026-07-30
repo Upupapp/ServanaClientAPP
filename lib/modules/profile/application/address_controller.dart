@@ -1,5 +1,8 @@
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/repositories/address_repository.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/profile_events.dart';
 import 'package:client/modules/profile/domain/customer_address.dart';
 import 'package:flutter/foundation.dart';
 
@@ -75,6 +78,7 @@ class AddressController extends ChangeNotifier {
               ))
           .toList();
       _isMutating = false;
+      _track(const AddressSetPrimaryEvent());
       _notify();
       return true;
     } catch (e) {
@@ -93,6 +97,7 @@ class AddressController extends ChangeNotifier {
       await _api.deleteAddress(addressId: addressId);
       _addresses = _addresses.where((a) => a.addressId != addressId).toList();
       _isMutating = false;
+      _track(const AddressDeletedEvent());
       _notify();
       return true;
     } catch (e) {
@@ -101,6 +106,12 @@ class AddressController extends ChangeNotifier {
       _notify();
       return false;
     }
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   void resetPrivateData() {

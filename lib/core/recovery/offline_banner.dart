@@ -1,3 +1,6 @@
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/recovery_events.dart';
 import 'package:client/core/recovery/connectivity_monitor.dart';
 import 'package:client/core/recovery/network_state.dart';
 import 'package:flutter/material.dart';
@@ -56,12 +59,20 @@ class _OfflineBannerState extends State<OfflineBanner>
     if (animate) {
       if (nowOffline) {
         _anim.forward();
+        _track(const RecoveryOfflineShownEvent());
       } else {
         _anim.reverse();
+        _track(const RecoveryConnectionRestoredEvent());
       }
     } else {
       _anim.value = nowOffline ? 1.0 : 0.0;
     }
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   @override

@@ -1,3 +1,6 @@
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/support_events.dart';
 import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/data/support_repository.dart';
 import 'package:client/modules/support/domain/support_ticket.dart';
@@ -77,6 +80,7 @@ class SupportTicketController extends ChangeNotifier {
       await loadTicket(ticketKey);
       _isReplying = false;
       _mutationError = null;
+      _track(const SupportReplySucceededEvent());
       // update parent list if needed
       _notify();
       return true;
@@ -121,6 +125,7 @@ class SupportTicketController extends ChangeNotifier {
       final updated = await _repository.closeTicket(_ticket!.ticketKey);
       _ticket = updated.copyWith(replies: _ticket!.replies);
       _isMutating = false;
+      _track(const SupportTicketClosedEvent());
       _notify();
       return true;
     } catch (e) {
@@ -140,6 +145,7 @@ class SupportTicketController extends ChangeNotifier {
       final updated = await _repository.reopenTicket(_ticket!.ticketKey);
       _ticket = updated.copyWith(replies: _ticket!.replies);
       _isMutating = false;
+      _track(const SupportTicketReopenedEvent());
       _notify();
       return true;
     } catch (e) {
@@ -148,6 +154,12 @@ class SupportTicketController extends ChangeNotifier {
       _notify();
       return false;
     }
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   void resetPrivateData() {

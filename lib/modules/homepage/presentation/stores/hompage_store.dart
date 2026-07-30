@@ -2,7 +2,10 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/data/models/merchant_light.dart';
 import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/location_service.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/home_events.dart';
 import 'package:client/modules/homepage/data/models/search_service_result.dart';
 import 'package:client/modules/homepage/data/repositories/home_repo.dart.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -88,6 +91,8 @@ abstract class _HomeStore with Store {
       // empty result shows a truthful empty state (LEAKSHIELD §9).
       bookings.clear();
       bookings.addAll(res);
+      _track(HomeViewedEvent(
+          accountState: session != null ? 'authenticated' : 'guest'));
     } catch (_) {
       // Backend error — keep existing list rather than showing empty.
     }
@@ -122,6 +127,12 @@ abstract class _HomeStore with Store {
     bookings.clear();
     merchants.clear();
     searchResults.clear();
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   /// Push a real API-created booking into the local list so it shows

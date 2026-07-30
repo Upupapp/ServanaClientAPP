@@ -1,4 +1,7 @@
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/profile_events.dart';
 import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/data/profile_repository.dart';
 import 'package:client/modules/profile/domain/account_completeness.dart';
@@ -83,11 +86,14 @@ class ProfileController extends ChangeNotifier {
       await loadProfile();
       _isSaving = false;
       _notify();
+      _track(const ProfileUpdateSucceededEvent(fieldCategory: 'basic_info'));
       return true;
     } catch (e) {
       _saveError = _sanitize(e);
       _isSaving = false;
       _notify();
+      _track(const ProfileUpdateFailedEvent(
+          fieldCategory: 'basic_info', failureCode: 'api_error'));
       return false;
     }
   }
@@ -96,11 +102,13 @@ class ProfileController extends ChangeNotifier {
     _isUploadingPhoto = true;
     _saveError = null;
     _notify();
+    _track(const ProfilePhotoStartedEvent());
     try {
       await _repository.uploadPhoto(photoDataUri);
       await loadProfile();
       _isUploadingPhoto = false;
       _notify();
+      _track(const ProfilePhotoSucceededEvent());
       return true;
     } catch (e) {
       _saveError = _sanitize(e);
@@ -126,6 +134,12 @@ class ProfileController extends ChangeNotifier {
       _notify();
       return false;
     }
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   void resetPrivateData() {

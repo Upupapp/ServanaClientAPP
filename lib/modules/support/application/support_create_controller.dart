@@ -1,4 +1,7 @@
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/support_events.dart';
 import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/modules/support/data/support_repository.dart';
@@ -165,11 +168,15 @@ class SupportCreateController extends ChangeNotifier {
       // Refresh ticket list
       _supportCtrl.loadTickets(refresh: true).ignore();
 
+      _track(SupportTicketSubmittedEvent(
+          supportCategory: _category.apiKey));
       _notify();
       return true;
     } catch (e) {
       _status = CreateTicketStatus.failed;
       _error = _sanitize(e);
+      _track(SupportTicketFailedEvent(
+          supportCategory: _category.apiKey, failureCode: 'api_error'));
       _notify();
       return false;
     }
@@ -190,6 +197,12 @@ class SupportCreateController extends ChangeNotifier {
 
   void resetPrivateData() {
     reset();
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   @override
