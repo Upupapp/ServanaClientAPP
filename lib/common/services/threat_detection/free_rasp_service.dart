@@ -11,7 +11,7 @@ class FreeRasp {
     final config = TalsecConfig(
       /// For Android
       androidConfig: AndroidConfig(
-        packageName: 'com.servana.merchant',
+        packageName: 'com.servana.serviceclient',
         supportedStores: ['com.android.vending'],
         signingCertHashes: [
           "ssaQxyc3v5MGw1TAFt/hRaX72HO0/7kHNDRiEKMPiTc=",

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
+
 import 'package:client/common/config/app_config.dart';
 import 'package:client/common/config/app_theme.dart';
 import 'package:client/core/analytics/application/analytics_context_provider.dart';
@@ -15,7 +16,9 @@ import 'package:client/modules/authentication/presentation/bloc/authentication_b
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
+import 'package:client/modules/notifications/data/notification_mapper.dart';
 import 'package:client/modules/notifications/presentation/foreground_notification_banner.dart';
+import 'package:client/common/services/threat_detection/free_rasp_service.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
@@ -71,6 +74,11 @@ Future<void> _bootstrap() async {
   final config = AppConfig.fromEnv();
   ColorPalette.applyBrand(config.brand);
   initInjector(config);
+
+  // C24: Start freeRASP runtime protection (Android-only until iOS team ID is set).
+  if (!kIsWeb) {
+    FreeRasp.initThreatDetection().ignore();
+  }
 
   // C21: Initialize analytics context (platform, version, environment).
   await AnalyticsContextProvider.instance.init(
@@ -139,12 +147,40 @@ class _MyAppState extends State<MyApp> {
     // then attach it to the WidgetsBinding.
     _lifecycleCoord = dpLocator<AppLifecycleCoordinator>();
     _lifecycleCoord.attach();
+
+    // STITCH FAIL-01: handle notification taps when app was terminated (cold start).
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final data = <String, dynamic>{
+          ...message.data,
+          'title': message.notification?.title ?? message.data['title'] as String? ?? '',
+          'body': message.notification?.body ?? message.data['body'] as String? ?? '',
+        };
+        final notification = mapFcmDataToNotification(data);
+        if (notification != null) _navCoord.navigateTo(context, notification);
+      });
+    });
+
+    // STITCH FAIL-01: handle notification taps when app was backgrounded.
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      if (!mounted) return;
+      final data = <String, dynamic>{
+        ...message.data,
+        'title': message.notification?.title ?? message.data['title'] as String? ?? '',
+        'body': message.notification?.body ?? message.data['body'] as String? ?? '',
+      };
+      final notification = mapFcmDataToNotification(data);
+      if (notification != null) _navCoord.navigateTo(context, notification);
+    });
   }
 
   @override
   void dispose() {
     _screenObserver.detach();
     _lifecycleCoord.detach();
+    _connectivity.dispose(); // STITCH WARN-03
     super.dispose();
   }
 

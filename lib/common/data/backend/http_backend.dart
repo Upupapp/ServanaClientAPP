@@ -246,41 +246,23 @@ class HttpBackend implements Backend {
   @override
   Future<({bool isSuccess, String? message})> makeAddressPrimary(
       {required String addressId}) async {
-    final uri = Uri.parse('$baseUrl/api/user/makeaddressprimary')
-        .replace(queryParameters: {'addressId': addressId});
-    final http.Response response;
+    // ALIGN FAIL-02: delegate to ServanaApiClient which uses PUT + auth token.
+    final api = ServanaApiClient(baseUrl: baseUrl);
     try {
-      response = await _client.get(uri);
+      await api.makeAddressPrimary(addressId: addressId);
+      return (isSuccess: true, message: 'Address set as primary.');
     } catch (e) {
+      if (e is ServanaApiException) {
+        return (
+          isSuccess: false,
+          message: 'Failed to set primary address (${e.statusCode}).',
+        );
+      }
       return (
         isSuccess: false,
         message: 'Could not reach server. Please check your connection.',
       );
     }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      String? message;
-      try {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        message = body['message'] as String?;
-      } catch (_) {}
-      return (
-        isSuccess: true,
-        message: message ?? 'Address set as primary.',
-      );
-    }
-
-    String errorMessage;
-    try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      errorMessage = body['message'] as String? ??
-          body['error'] as String? ??
-          'Failed to set primary address.';
-    } catch (_) {
-      errorMessage = 'Failed to set primary address (${response.statusCode}).';
-    }
-
-    return (isSuccess: false, message: errorMessage);
   }
 
   // ───────────────────── Services ─────────────────────
@@ -427,6 +409,27 @@ class HttpBackend implements Backend {
       case 'CANCELLED':
         jobStatus = JobOrderStatus.cancelled;
         statusLabel = 'Cancelled';
+        break;
+      // REPEAT P1-03: additional statuses that previously fell to `none`.
+      case 'AWAITING_COMPLETION':
+        jobStatus = JobOrderStatus.inProgress;
+        statusLabel = 'Awaiting Completion';
+        break;
+      case 'REVIEWED':
+        jobStatus = JobOrderStatus.completed;
+        statusLabel = 'Reviewed';
+        break;
+      case 'REFUNDED':
+        jobStatus = JobOrderStatus.cancelled;
+        statusLabel = 'Refunded';
+        break;
+      case 'EXPIRED':
+        jobStatus = JobOrderStatus.cancelled;
+        statusLabel = 'Expired';
+        break;
+      case 'FAILED':
+        jobStatus = JobOrderStatus.cancelled;
+        statusLabel = 'Failed';
         break;
       default:
         jobStatus = JobOrderStatus.none;

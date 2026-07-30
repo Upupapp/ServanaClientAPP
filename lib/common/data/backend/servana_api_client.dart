@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Thin, low-level client that wraps every Servana REST API endpoint.
@@ -43,10 +44,12 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> _decodeJson(http.Response response) async {
     final status = response.statusCode;
     if (status < 200 || status >= 300) {
-      dev.log(
-        'HTTP $status ${response.request?.method ?? ''} ${response.request?.url ?? ''}\n${response.body}',
-        name: 'ServanaApi',
-      );
+      if (kDebugMode) {
+        dev.log(
+          'HTTP $status ${response.request?.method ?? ''} ${response.request?.url ?? ''}\n${response.body}',
+          name: 'ServanaApi',
+        );
+      }
       throw ServanaApiException(
         statusCode: status,
         body: response.body,

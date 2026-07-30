@@ -141,6 +141,19 @@ class DraftRepository {
     }
   }
 
+  /// Clears ALL draft, idempotency, and payment context entries regardless of UID.
+  /// Used as a fallback during logout when the UID cannot be determined (LEAK M-1).
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final toRemove = prefs.getKeys().where((k) =>
+        k.startsWith(_kDraftPrefix) ||
+        k.startsWith(_kIdemPrefix) ||
+        k.startsWith(_kPaymentPrefix));
+    for (final k in toRemove) {
+      await prefs.remove(k);
+    }
+  }
+
   // ── Serialization ─────────────────────────────────────────────────────────
 
   static Map<String, dynamic> _draftToJson(BookingDraft d) => {

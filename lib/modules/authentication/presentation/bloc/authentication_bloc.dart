@@ -33,10 +33,12 @@ import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/core/accessibility/live_region_manager.dart';
+import 'package:client/common/constants/boxes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'authentication_event.dart';
@@ -261,6 +263,7 @@ class AuthenticationBloc
       }
       if (session != null && session.token.isNotEmpty) {
         _notifyFcmLogin(session.customerID);
+        _setAnalyticsUserContext(session.customerID); // STITCH WARN-01
         _notify(AuthStatus.authenticated);
         emit(AuthenticationAuthenticated());
       } else {
@@ -290,6 +293,14 @@ class AuthenticationBloc
       // Logout is best-effort; always clear local state.
     }
     await SessionService.deleteSession();
+    // LEAKSHIELD LEAK H-1: purge Hive registration box so the next user cannot
+    // see Customer A's PII pre-populated in the registration form.
+    try {
+      if (Hive.isBoxOpen(Boxes.registration)) {
+        await Hive.box(Boxes.registration).close();
+      }
+      await Hive.deleteBoxFromDisk(Boxes.registration);
+    } catch (_) {}
     // Reset all private-data singletons so no previous account's data
     // leaks to the next user of the device (LEAKSHIELD §5).
     try {
@@ -312,10 +323,13 @@ class AuthenticationBloc
       dpLocator<ReviewDetailController>().resetPrivateData();
     } catch (_) {}
     // C20 Recovery layer — clear all UID-scoped state to prevent cross-account leakage.
+    // LEAK M-1: clearAll() fallback covers the empty-UID case (session error at logout).
     try {
       if (logoutUid.isNotEmpty) {
         dpLocator<DraftRepository>().clearAllForAccount(logoutUid).ignore();
         dpLocator<OperationJournal>().clearForAccount(logoutUid).ignore();
+      } else {
+        dpLocator<DraftRepository>().clearAll().ignore();
       }
       dpLocator<SessionGenerationCoordinator>().advance();
     } catch (_) {}
@@ -351,7 +365,10 @@ class AuthenticationBloc
   void _notifyFcmLogin(String uid) {
     try {
       dpLocator<NotificationsController>().init(uid).ignore();
-      dpLocator<FcmCoordinator>().registerForAccount(uid).ignore();
+      // REPEAT FAIL-03: log FCM registration errors instead of silently swallowing them.
+      dpLocator<FcmCoordinator>().registerForAccount(uid).catchError((e) {
+        debugPrint('[AuthBloc] FCM registration: ${e.runtimeType}');
+      });
       dpLocator<MessagingStore>().initForSession().ignore();
     } catch (_) {}
   }

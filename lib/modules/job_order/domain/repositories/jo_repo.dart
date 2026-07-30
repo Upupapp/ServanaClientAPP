@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:client/common/data/models/job_order_item.dart';
+import 'package:flutter/foundation.dart';
 import 'package:client/common/data/models/merchant_model.dart';
 import 'package:client/common/data/backend/backend.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
@@ -77,7 +78,7 @@ class JonOrderRepository {
       "paymentType": 1,
       "createdDate": DateTime.now().toIso8601String(),
     };
-    log(jsonEncode(payload));
+    if (kDebugMode) log(jsonEncode(payload));
     return backend.insertJobOrder(
       merchantId: merchantId,
       address: address,

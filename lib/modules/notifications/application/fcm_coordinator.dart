@@ -82,6 +82,11 @@ class FcmCoordinator {
     try {
       await _repository.clearFcmToken();
     } catch (_) {}
+    // LEAK L-2: invalidate the FCM token on Firebase's side so the device
+    // cannot receive push notifications while signed out.
+    try {
+      await FirebaseMessaging.instance.deleteToken();
+    } catch (_) {}
   }
 
   /// Returns the stable installation ID, generating one on first call.

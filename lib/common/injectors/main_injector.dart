@@ -70,12 +70,16 @@ import 'package:client/modules/support/application/support_create_controller.dar
 import 'package:client/modules/support/application/support_ticket_controller.dart';
 import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/modules/support/data/support_repository.dart';
+import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final dpLocator = GetIt.instance;
 
 void initInjector(AppConfig config) {
   dpLocator.registerSingleton<AppConfig>(config);
+
+  // ── C24 Security / Threat Detection ──────────────────────────────────────
+  dpLocator.registerLazySingleton(() => ThreatDetectionProvider());
 
   // ── C21 Analytics & Observability ────────────────────────────────────────
   dpLocator.registerLazySingleton(() => FirebaseAnalyticsService());
@@ -100,9 +104,13 @@ void initInjector(AppConfig config) {
       connectivity: dpLocator(),
       // STITCH-C20-POST-002: refresh messaging state after app returns to
       // foreground — socket may have missed messages while backgrounded.
+      // STITCH WARN-02: guard with auth state so unauthenticated resume
+      // does not attempt to open a session-scoped socket.
       onResume: () {
         try {
-          dpLocator<MessagingStore>().initForSession().ignore();
+          if (dpLocator<AuthStateService>().isAuthenticated) {
+            dpLocator<MessagingStore>().initForSession().ignore();
+          }
         } catch (_) {}
       },
     ),

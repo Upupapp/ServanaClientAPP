@@ -1,3 +1,4 @@
+import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
 import 'package:client/modules/messaging/presentation/screens/booking_chat_screen.dart';
 import 'package:client/modules/messaging/presentation/screens/messages_inbox_screen.dart';
@@ -16,11 +17,26 @@ class NotificationNavigationCoordinator {
     if (target == null) return;
 
     switch (target) {
-      case BookingTarget():
-        context.pushNamed(BookingsScreen.routeName);
+      // ALIGN WARN-01: navigate to the specific booking, not just the list.
+      case BookingTarget(:final bookingId):
+        if (bookingId.isNotEmpty) {
+          context.pushNamed(
+            BookingDetailScreen.routeName,
+            pathParameters: {'bookingId': bookingId},
+          );
+        } else {
+          context.pushNamed(BookingsScreen.routeName);
+        }
 
-      case PaymentTarget():
-        context.pushNamed(BookingsScreen.routeName);
+      case PaymentTarget(:final bookingId):
+        if (bookingId.isNotEmpty) {
+          context.pushNamed(
+            BookingDetailScreen.routeName,
+            pathParameters: {'bookingId': bookingId},
+          );
+        } else {
+          context.pushNamed(BookingsScreen.routeName);
+        }
 
       case ConversationTarget(:final conversationId):
         // Navigate to the inbox. When a conversationId is present it is passed
@@ -38,15 +54,15 @@ class NotificationNavigationCoordinator {
       case CategoryTarget():
         context.go('/HomeScreen');
 
+      // ALIGN WARN-02: go to the settings hub, not the home screen.
       case SettingsTarget():
-        context.go('/HomeScreen');
+        context.push('/settings');
 
+      // REPEAT FAIL-04: use GoRouter so the auth guard applies.
       case SupportTicketTarget(:final ticketKey):
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) =>
-                SupportTicketDetailScreen(ticketKey: ticketKey),
-          ),
+        context.pushNamed(
+          SupportTicketDetailScreen.routeName,
+          pathParameters: {'ticketKey': ticketKey},
         );
 
       case UnknownTarget():
