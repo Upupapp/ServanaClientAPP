@@ -374,6 +374,7 @@ class _ConversationTile extends StatelessWidget {
       label: '$title, $statusLabel'
           '${unreadCount > 0 ? ", $unreadCount unread message${unreadCount > 1 ? 's' : ''}" : ""}',
       button: true,
+      excludeSemantics: true,
       child: Material(
         color: ColorPalette.secondaryBackground,
         borderRadius: BorderRadius.circular(15),

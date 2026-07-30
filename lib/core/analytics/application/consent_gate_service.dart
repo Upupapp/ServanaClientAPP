@@ -1,6 +1,7 @@
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_consent.dart';
 import 'package:client/core/analytics/presentation/analytics_consent_sheet.dart';
+import 'package:client/core/accessibility/focus_coordinator.dart';
 import 'package:flutter/material.dart';
 
 /// Guards the consent dialog so it shows exactly once per app install.
@@ -21,7 +22,9 @@ class ConsentGateService {
     final decided = await AnalyticsConsent.hasUserDecided();
     if (decided) return;
     if (!context.mounted) return;
+    final priorFocus = FocusScope.of(context).focusedChild;
     final accepted = await showAnalyticsConsentSheet(context);
+    FocusCoordinator.restoreToNode(priorFocus);
     final consent = accepted ? AnalyticsConsent.fullConsent() : AnalyticsConsent.defaultConsent();
     await coordinator.setConsent(consent);
   }

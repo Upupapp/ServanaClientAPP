@@ -1,5 +1,6 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/core/accessibility/semantics_labels.dart';
 import 'package:client/modules/review/domain/review_dimension.dart';
 import 'package:flutter/material.dart';
 
@@ -43,8 +44,9 @@ class ReviewDimensionRow extends StatelessWidget {
                 final val = i + 1;
                 final filled = val <= score;
                 return Semantics(
-                  label: '$label: $val of 5',
-                  button: true,
+                  label: '$label: ${SemanticsLabels.ratingLabel(val, 5, SemanticsLabels.ratingMeaning(val))}',
+                  hint: enabled ? SemanticsLabels.ratingHint(score) : null,
+                  button: enabled,
                   selected: score == val,
                   excludeSemantics: true,
                   child: GestureDetector(

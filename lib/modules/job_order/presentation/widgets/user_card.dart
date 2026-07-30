@@ -65,6 +65,7 @@ class UserCard extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: 'Chat with provider',
             onPressed: onChatTap,
             icon: Icon(
               Icons.chat_bubble_outline_rounded,

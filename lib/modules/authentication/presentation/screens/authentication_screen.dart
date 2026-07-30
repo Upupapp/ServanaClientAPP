@@ -119,6 +119,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
+                    tooltip: 'Go back',
                     onPressed: () {
                       context.goNamed(WelcomeScreen.routeName);
                     },

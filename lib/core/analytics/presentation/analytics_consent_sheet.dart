@@ -78,7 +78,6 @@ class _AnalyticsConsentSheetState extends State<_AnalyticsConsentSheet> {
             Semantics(
               header: true,
               focusable: true,
-              focused: true,
               child: Focus(
                 focusNode: _titleFocus,
                 child: Text(

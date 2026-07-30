@@ -79,6 +79,7 @@ class _ServanaHomeSearchState extends State<ServanaHomeSearch> {
         child: Semantics(
           label: 'Search for a service',
           button: true,
+          excludeSemantics: true,
           child: Row(
             children: [
               const SizedBox(width: 16),

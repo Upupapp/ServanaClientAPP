@@ -542,6 +542,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     '${_dateFormat.format(b.scheduleDate)}',
                 hint: 'Opens booking detail',
                 button: true,
+                excludeSemantics: true,
                 child: _BookingCard(
                   booking: b,
                   segment: seg,
@@ -679,6 +680,7 @@ class _SegmentChip extends StatelessWidget {
       button: true,
       selected: isSelected,
       label: '${segment.label}${count > 0 ? ", $count" : ""}',
+      excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,

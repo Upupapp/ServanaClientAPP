@@ -89,6 +89,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
+                    tooltip: 'Go back',
                     onPressed: () {
                       context.goNamed(WelcomeScreen.routeName);
                     },

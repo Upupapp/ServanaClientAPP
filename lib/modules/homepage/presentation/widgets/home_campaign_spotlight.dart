@@ -102,6 +102,7 @@ class _CampaignSpotlightPageState extends State<_CampaignSpotlightPage>
                       Semantics(
                         label: 'Close promotion',
                         button: true,
+                        excludeSemantics: true,
                         child: GestureDetector(
                           onTap: widget.onDismiss,
                           child: Container(

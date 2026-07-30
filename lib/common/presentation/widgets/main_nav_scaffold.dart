@@ -84,6 +84,7 @@ class MainNavScaffold extends StatelessWidget {
                     Semantics(
                       button: true,
                       label: 'Book a service',
+                      excludeSemantics: true,
                       child: GestureDetector(
                         onTap: () => QuickBookSheet.show(context),
                         child: Container(
@@ -156,6 +157,7 @@ class _NavItem extends StatelessWidget {
       button: true,
       selected: isActive,
       excludeSemantics: true,
+      liveRegion: badge > 0,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),

@@ -32,6 +32,7 @@ import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
+import 'package:client/core/accessibility/live_region_manager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -302,6 +303,7 @@ class AuthenticationBloc
       dpLocator<ProfileController>().resetPrivateData();
       dpLocator<AddressController>().resetPrivateData();
       dpLocator<SearchRepository>().clearCache();
+      LiveRegionManager.clearCache();
       dpLocator<SupportController>().resetPrivateData();
       dpLocator<SupportCreateController>().resetPrivateData();
       dpLocator<SupportTicketController>().resetPrivateData();

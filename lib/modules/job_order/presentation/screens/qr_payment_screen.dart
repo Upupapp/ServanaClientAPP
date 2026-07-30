@@ -42,6 +42,7 @@ class _QRPaymentScreenState extends State<QRPaymentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     IconButton(
+                      tooltip: 'Go back',
                       onPressed: () {
                         context.pop();
                       },

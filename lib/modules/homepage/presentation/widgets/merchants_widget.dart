@@ -22,7 +22,11 @@ class MerchantsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: 'View ${merchant.merchantName}',
+      excludeSemantics: true,
+      child: GestureDetector(
       onTap: () async {
         await context.pushNamed(StoreItemsScreen.routeName, extra: (
           merchantId: merchant.merchantID,
@@ -144,6 +148,7 @@ class MerchantsWidget extends StatelessWidget {
             )
           ],
         ),
+      ),
       ),
     );
   }

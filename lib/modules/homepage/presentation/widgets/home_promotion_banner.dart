@@ -41,6 +41,7 @@ class _ServanaPromotionBannerState extends State<ServanaPromotionBanner> {
     Widget banner = Semantics(
       label: promo.accessibilityDescription,
       button: true,
+      excludeSemantics: true,
       child: GestureDetector(
         onTapDown: (_) {
           setState(() => _pressed = true);
