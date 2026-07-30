@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/tracking_events.dart';
 import 'package:client/modules/tracking/data/tracking_repository.dart';
 import 'package:client/modules/tracking/domain/booking_tracking_state.dart';
 import 'package:flutter/foundation.dart';
@@ -122,6 +125,14 @@ abstract class _TrackingController with Store {
         _stopTimer();
         isPolling = false;
       }
+      final loc = snapshot.providerLocation;
+      final freshness = loc == null
+          ? 'unknown'
+          : loc.isStaleAt(DateTime.now()) ? 'stale' : 'fresh';
+      _track(TrackingSnapshotLoadedEvent(
+        freshnessCategory: freshness,
+        trackingStatusCategory: snapshot.bookingStatus.name,
+      ));
     } catch (e) {
       debugPrint('[TrackingController] fetch error: $e');
       if (_disposed || _generation != gen) return;
@@ -144,6 +155,12 @@ abstract class _TrackingController with Store {
   void _stopTimer() {
     _pollTimer?.cancel();
     _pollTimer = null;
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   void dispose() {

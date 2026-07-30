@@ -5,6 +5,8 @@ import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/payment_events.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -119,6 +121,10 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
     }
 
     _startPolling();
+    _track(const CheckoutOpenedEvent(
+      checkoutProvider: 'paymongo',
+      amountBand: 'unknown',
+    ));
   }
 
   @override
@@ -191,6 +197,10 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
       if (paid && mounted && !_dismissed) {
         _stopPolling();
         _dismissed = true;
+        _track(const PaymentSucceededObservedEvent(
+          paymentMethod: 'paymongo',
+          amountBand: 'unknown',
+        ));
         Navigator.of(context).pop(true);
       }
     } finally {
@@ -218,9 +228,16 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
   }
 
   Future<void> _verifyAndClose() async {
+    _track(const CheckoutReturnedEvent(paymentStatus: 'pending'));
     final paid = await _verifyPayment();
     if (!mounted || _dismissed) return;
     _dismissed = true;
+    if (paid) {
+      _track(const PaymentSucceededObservedEvent(
+        paymentMethod: 'paymongo',
+        amountBand: 'unknown',
+      ));
+    }
     Navigator.of(context).pop(paid);
   }
 
@@ -252,6 +269,12 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (mounted) setState(() => _launchedExternal = true);
     }
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   @override
