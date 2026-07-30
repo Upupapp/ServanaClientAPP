@@ -167,14 +167,11 @@ abstract class _MessagingStore with Store {
     isLoadingByConvId[conversationId] = true;
     final gen = _generation;
     try {
-      final messages = await dpLocator<PerformanceService>().traced(
-        TraceNames.conversationLoad,
-        () async => repository.getMessages(
-          conversationId: conversationId,
-          limit: 40,
-          before: refresh ? null : oldestIdByConvId[conversationId],
-        ),
-      );
+      final messages = await _perf(TraceNames.conversationLoad, () async => repository.getMessages(
+        conversationId: conversationId,
+        limit: 40,
+        before: refresh ? null : oldestIdByConvId[conversationId],
+      ));
       if (_generation != gen) return;
 
       final list = messagesByConvId.putIfAbsent(
@@ -443,5 +440,10 @@ abstract class _MessagingStore with Store {
     final ts = DateTime.now().millisecondsSinceEpoch;
     final rand = _rng.nextInt(0xFFFFFF);
     return '${ts.toRadixString(16)}-${rand.toRadixString(16)}';
+  }
+
+  Future<T> _perf<T>(String name, Future<T> Function() fn) async {
+    if (!dpLocator.isRegistered<PerformanceService>()) return fn();
+    return dpLocator<PerformanceService>().traced(name, fn);
   }
 }

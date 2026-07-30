@@ -65,10 +65,7 @@ class SearchController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
     final sw = Stopwatch()..start();
     try {
-      _allResults = await dpLocator<PerformanceService>().traced(
-        TraceNames.searchRequest,
-        () async => _repository.fetchCatalog(forceRefresh: forceRefresh),
-      );
+      _allResults = await _perf(TraceNames.searchRequest, () async => _repository.fetchCatalog(forceRefresh: forceRefresh));
       _state = SearchLoadState.ready;
       _applyFilters();
       _track(SearchResultsLoadedEvent(
@@ -193,6 +190,11 @@ class SearchController extends ChangeNotifier {
     if (len < 10) return '5-9';
     if (len < 20) return '10-19';
     return '20+';
+  }
+
+  Future<T> _perf<T>(String name, Future<T> Function() fn) async {
+    if (!dpLocator.isRegistered<PerformanceService>()) return fn();
+    return dpLocator<PerformanceService>().traced(name, fn);
   }
 
   @override

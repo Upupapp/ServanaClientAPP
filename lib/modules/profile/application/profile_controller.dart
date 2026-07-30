@@ -58,10 +58,7 @@ class ProfileController extends ChangeNotifier {
     _error = null;
     _notify();
     try {
-      _profile = await dpLocator<PerformanceService>().traced(
-        TraceNames.profileLoad,
-        () async => _repository.loadProfile(),
-      );
+      _profile = await _perf(TraceNames.profileLoad, () async => _repository.loadProfile());
       _status = ProfileLoadStatus.loaded;
       // Keep local session in sync so other screens see the updated name/phone.
       if (_profile != null) await _syncSession(_profile!);
@@ -186,6 +183,14 @@ class ProfileController extends ChangeNotifier {
     } catch (_) {
       // Ignore — session sync is a cache update, not required for profile display.
     }
+  }
+
+  // Runs [fn] with a Firebase Performance trace when PerformanceService is
+  // registered in GetIt. Falls back to calling fn() directly if it is not
+  // (e.g. in unit tests). Performance monitoring MUST NEVER block customer journeys.
+  Future<T> _perf<T>(String name, Future<T> Function() fn) async {
+    if (!dpLocator.isRegistered<PerformanceService>()) return fn();
+    return dpLocator<PerformanceService>().traced(name, fn);
   }
 
   String _sanitize(Object e) {
