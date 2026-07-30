@@ -4,7 +4,11 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/domain/analytics_property.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:mobx/mobx.dart';
 
@@ -351,11 +355,14 @@ abstract class _BwBookingStore with Store {
     if (isSubmitting) return;
     isSubmitting = true;
     submissionError = null;
+    _track(const BookingSubmittedEvent(serviceCategory: 'beauty_wellness'));
     try {
       final session = await SessionService.getSession();
       final userId = session?.customerID ?? '';
       if (userId.isEmpty) {
         submissionError = 'You must be signed in to create a booking.';
+        _track(const BookingFailedEvent(
+            serviceCategory: 'beauty_wellness', failureCode: 'unauthenticated'));
         return;
       }
 
@@ -396,9 +403,18 @@ abstract class _BwBookingStore with Store {
       workerCode =
           (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
       if (workerCode!.isEmpty) workerCode = null;
+      _track(BookingCreatedEvent(
+        serviceCategory: 'beauty_wellness',
+        paymentMethod: paymentMethod.toLowerCase(),
+        amountBand: AmountBandValues.forAmount(estimatedTotal),
+      ));
       // isSubmitting intentionally NOT reset on success.
     } catch (e) {
       submissionError = _errorMsg(e);
+      _track(const BookingFailedEvent(
+        serviceCategory: 'beauty_wellness',
+        failureCode: FailureCodeValues.networkError,
+      ));
       isSubmitting = false;
     }
   }
@@ -536,6 +552,12 @@ abstract class _BwBookingStore with Store {
             opt['optionName'] ??
             'Beauty & Wellness Service')
         .toString();
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   static String _uuidV4() {

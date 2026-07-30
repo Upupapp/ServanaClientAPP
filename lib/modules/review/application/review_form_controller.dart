@@ -1,4 +1,7 @@
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/review_events.dart';
 import 'package:client/modules/review/data/reviews_repository.dart';
 import 'package:client/modules/review/domain/review_dimension.dart';
 import 'package:client/modules/review/domain/review_draft.dart';
@@ -23,6 +26,7 @@ class ReviewFormController extends ChangeNotifier {
   ServanaReview? _submitted;
   String? _error;
   List<String> _dimensionKeys = ReviewDimensionSet.general;
+  String? _serviceCategory;
 
   ReviewFormStatus   get status       => _status;
   ReviewEligibility? get eligibility  => _eligibility;
@@ -41,6 +45,7 @@ class ReviewFormController extends ChangeNotifier {
     _submitted   = null;
     _notify();
 
+    _serviceCategory = serviceCategory;
     final gen = ++_generation;
     try {
       final eligibility = await _repo.getEligibility(bookingId);
@@ -116,6 +121,12 @@ class ReviewFormController extends ChangeNotifier {
       _submitted = review;
       _status    = ReviewFormStatus.succeeded;
       _notify();
+      _track(ReviewSubmittedEvent(
+        ratingBucket: '${d.overallRating}',
+        serviceCategory: _serviceCategory ?? 'unknown',
+        hasPublicComment: d.publicComment.trim().isNotEmpty,
+        hasPrivateFeedback: d.privateFeedback.trim().isNotEmpty,
+      ));
       return true;
     } catch (e) {
       if (_disposed || gen != _generation) return false;
@@ -128,12 +139,19 @@ class ReviewFormController extends ChangeNotifier {
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   void reset() {
-    _status      = ReviewFormStatus.idle;
-    _eligibility = null;
-    _draft       = null;
-    _submitted   = null;
-    _error       = null;
+    _status         = ReviewFormStatus.idle;
+    _eligibility    = null;
+    _draft          = null;
+    _submitted      = null;
+    _error          = null;
+    _serviceCategory = null;
     _notify();
   }
 

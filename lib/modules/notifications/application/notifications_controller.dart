@@ -1,3 +1,6 @@
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/notification_events.dart';
 import 'package:client/modules/notifications/application/notifications_state.dart';
 import 'package:client/modules/notifications/data/notifications_repository.dart';
 import 'package:client/modules/notifications/domain/servana_notification.dart';
@@ -166,9 +169,17 @@ class NotificationsController extends ChangeNotifier {
     _unreadCount += 1;
     _notifications = [notification, ..._notifications];
     notifyListeners();
+    _track(NotificationReceivedForegroundEvent(
+        notificationType: notification.type.name));
   }
 
   // ─── Logout / account switch ───────────────────────────────────────────────
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
 
   void clearOnLogout() {
     final uid = _activeUid;

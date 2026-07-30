@@ -4,6 +4,10 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/domain/analytics_property.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:mobx/mobx.dart';
 
@@ -370,11 +374,14 @@ abstract class _AirconBookingStore with Store {
     if (isSubmitting) return;
     isSubmitting = true;
     submissionError = null;
+    _track(const BookingSubmittedEvent(serviceCategory: 'aircon'));
     try {
       final session = await SessionService.getSession();
       final userId = session?.customerID ?? '';
       if (userId.isEmpty) {
         submissionError = 'You must be signed in to create a booking.';
+        _track(const BookingFailedEvent(
+            serviceCategory: 'aircon', failureCode: 'unauthenticated'));
         return;
       }
 
@@ -421,10 +428,19 @@ abstract class _AirconBookingStore with Store {
       workerCode =
           (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
       if (workerCode!.isEmpty) workerCode = null;
+      _track(BookingCreatedEvent(
+        serviceCategory: 'aircon',
+        paymentMethod: paymentMethod.toLowerCase(),
+        amountBand: AmountBandValues.forAmount(quotedTotal),
+      ));
       // isSubmitting intentionally NOT reset on success — keeps the button
       // permanently disabled after a booking is created.
     } catch (e) {
       submissionError = _errorMsg(e);
+      _track(BookingFailedEvent(
+        serviceCategory: 'aircon',
+        failureCode: FailureCodeValues.networkError,
+      ));
       // Reset on error only so the user can retry after a genuine failure.
       isSubmitting = false;
     }
@@ -588,5 +604,11 @@ abstract class _AirconBookingStore with Store {
             opt['optionName'] ??
             'Aircon Service')
         .toString();
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 }

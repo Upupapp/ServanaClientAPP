@@ -164,13 +164,22 @@ final class BookingSubmittedEvent extends AnalyticsEvent {
 }
 
 final class BookingCreatedEvent extends AnalyticsEvent {
-  const BookingCreatedEvent({required this.serviceCategory});
+  const BookingCreatedEvent({
+    required this.serviceCategory,
+    this.paymentMethod,
+    this.amountBand,
+  });
   final String serviceCategory;
+  final String? paymentMethod;
+  final String? amountBand;
   @override String get eventName => 'booking_created';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
   @override String? get dedupKey => 'booking_created:$serviceCategory';
-  @override Map<String, Object?> get properties =>
-      {AnalyticsKeys.serviceCategory: serviceCategory};
+  @override Map<String, Object?> get properties => {
+        AnalyticsKeys.serviceCategory: serviceCategory,
+        if (paymentMethod != null) AnalyticsKeys.paymentMethod: paymentMethod!,
+        if (amountBand != null) AnalyticsKeys.amountBand: amountBand!,
+      };
 }
 
 final class BookingFailedEvent extends AnalyticsEvent {
