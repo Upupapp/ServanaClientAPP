@@ -77,6 +77,7 @@ class _StoreItemsScreenState extends State<StoreItemsScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 IconButton(
+                  tooltip: 'Go back',
                   onPressed: () {
                     context.pop();
                   },

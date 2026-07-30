@@ -191,11 +191,16 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => context.pushNamed(NotificationsScreen.routeName),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 26),
+              Semantics(
+                label: 'View notifications',
+                button: true,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () => context.pushNamed(NotificationsScreen.routeName),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.notifications_outlined,
+                      color: Colors.white, size: 26),
+                ),
               ),
             ],
           ),
@@ -248,17 +253,22 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                   ),
                 ),
                 if (_searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.close,
-                          color: ColorPalette.secondaryText.withOpacity(0.5),
-                          size: 18),
+                  Semantics(
+                    label: 'Clear search',
+                    button: true,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(Icons.close,
+                            color: ColorPalette.secondaryText.withOpacity(0.5),
+                            size: 18),
+                      ),
                     ),
                   ),
               ],

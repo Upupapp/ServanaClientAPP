@@ -182,9 +182,14 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
                   final line2 = addr['postTown'] ?? '';
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: InkWell(
-                      onTap: () => store.selectAddress(addr),
-                      borderRadius: BorderRadius.circular(14),
+                    child: Semantics(
+                      label: 'Select ${label.toString().isNotEmpty ? label.toString() : line1.toString()} address',
+                      button: true,
+                      selected: isSelected,
+                      excludeSemantics: true,
+                      child: InkWell(
+                        onTap: () => store.selectAddress(addr),
+                        borderRadius: BorderRadius.circular(14),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.all(14),
@@ -247,6 +252,7 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
                         ),
                       ),
                     ),
+                  ),
                   );
                 }),
                 // Add new address button
@@ -287,36 +293,41 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
               // ──── Schedule ────
               const _SectionHeader(title: 'Schedule'),
               const SizedBox(height: 8),
-              InkWell(
-                onTap: _pickSchedule,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: ColorPalette.secondaryBackground,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: ColorPalette.border(.55)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_month_rounded,
-                          color: ColorPalette.primaryColorDark),
-                      const SizedBox(width: 12),
-                      Text(
-                        store.selectedSchedule != null
-                            ? DateFormat('EEE, MMM d yyyy – h:mm a')
-                                .format(store.selectedSchedule!)
-                            : 'Tap to select date & time',
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontWeight: FontWeight.w600,
-                          color: store.selectedSchedule != null
-                              ? ColorPalette.secondaryText
-                              : ColorPalette.accentText,
+              Semantics(
+                label: 'Choose service schedule',
+                button: true,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: _pickSchedule,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.secondaryBackground,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: ColorPalette.border(.55)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_month_rounded,
+                            color: ColorPalette.primaryColorDark),
+                        const SizedBox(width: 12),
+                        Text(
+                          store.selectedSchedule != null
+                              ? DateFormat('EEE, MMM d yyyy – h:mm a')
+                                  .format(store.selectedSchedule!)
+                              : 'Tap to select date & time',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w600,
+                            color: store.selectedSchedule != null
+                                ? ColorPalette.secondaryText
+                                : ColorPalette.accentText,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -594,42 +605,48 @@ class _PaymentMethodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: selected
-              ? ColorPalette.primaryColorDark
-              : ColorPalette.secondaryBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
+    return Semantics(
+      label: label,
+      button: true,
+      selected: selected,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
             color: selected
                 ? ColorPalette.primaryColorDark
-                : ColorPalette.border(.55),
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon,
-                size: 28,
-                color: selected
-                    ? ColorPalette.primaryText
-                    : ColorPalette.primaryColorDark),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontWeight: FontWeight.w700,
-                color: selected
-                    ? ColorPalette.primaryText
-                    : ColorPalette.secondaryText,
-              ),
+                : ColorPalette.secondaryBackground,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? ColorPalette.primaryColorDark
+                  : ColorPalette.border(.55),
             ),
-          ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon,
+                  size: 28,
+                  color: selected
+                      ? ColorPalette.primaryText
+                      : ColorPalette.primaryColorDark),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? ColorPalette.primaryText
+                      : ColorPalette.secondaryText,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

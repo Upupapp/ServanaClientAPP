@@ -228,35 +228,41 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 const SizedBox(height: 20),
                 _fieldLabel('Date of Birth'),
                 const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: _pickBirthdate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 15),
-                    decoration: BoxDecoration(
-                      color: ColorPalette.secondaryBackground,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: ColorPalette.border(.45)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _birthdate != null && _birthdate!.isNotEmpty
-                                ? _formatBirthdate(_birthdate!)
-                                : 'Select date of birth',
-                            style: TextStyle(
-                              fontFamily: FontPalette.primaryFontFamily,
-                              fontSize: 15,
-                              color: _birthdate != null && _birthdate!.isNotEmpty
-                                  ? ColorPalette.secondaryText
-                                  : ColorPalette.secondaryText.withOpacity(.35),
+                Semantics(
+                  label: 'Date of birth',
+                  button: true,
+                  hint: 'Opens date picker',
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: _pickBirthdate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 15),
+                      decoration: BoxDecoration(
+                        color: ColorPalette.secondaryBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: ColorPalette.border(.45)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _birthdate != null && _birthdate!.isNotEmpty
+                                  ? _formatBirthdate(_birthdate!)
+                                  : 'Select date of birth',
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontSize: 15,
+                                color: _birthdate != null && _birthdate!.isNotEmpty
+                                    ? ColorPalette.secondaryText
+                                    : ColorPalette.secondaryText.withOpacity(.35),
+                              ),
                             ),
                           ),
-                        ),
-                        Icon(Icons.calendar_today_outlined,
-                            size: 16, color: ColorPalette.accentText),
-                      ],
+                          Icon(Icons.calendar_today_outlined,
+                              size: 16, color: ColorPalette.accentText),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -446,32 +452,38 @@ class _GenderOption extends StatelessWidget {
       bottomLeft: bottomRadius ? const Radius.circular(14) : Radius.zero,
       bottomRight: bottomRadius ? const Radius.circular(14) : Radius.zero,
     );
-    return InkWell(
-      onTap: onTap,
-      borderRadius: radius,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                  color: ColorPalette.secondaryText,
+    return Semantics(
+      label: label,
+      button: true,
+      selected: selected,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    color: ColorPalette.secondaryText,
+                  ),
                 ),
               ),
-            ),
-            if (selected)
-              Icon(Icons.check_circle_rounded,
-                  size: 20, color: ColorPalette.primaryColorDark)
-            else
-              Icon(Icons.circle_outlined,
-                  size: 20,
-                  color: ColorPalette.secondaryText.withOpacity(.3)),
-          ],
+              if (selected)
+                Icon(Icons.check_circle_rounded,
+                    size: 20, color: ColorPalette.primaryColorDark)
+              else
+                Icon(Icons.circle_outlined,
+                    size: 20,
+                    color: ColorPalette.secondaryText.withOpacity(.3)),
+            ],
+          ),
         ),
       ),
     );

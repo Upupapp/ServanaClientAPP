@@ -176,6 +176,10 @@ class SettingsToggleTile extends StatelessWidget {
       toggled: value,
       label: title,
       hint: subtitle,
+      // excludeSemantics prevents the inner Switch from generating a duplicate
+      // accessibility node — only the outer Semantics fires for screen readers.
+      excludeSemantics: true,
+      onTap: saving ? null : () => onChanged(!value),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(

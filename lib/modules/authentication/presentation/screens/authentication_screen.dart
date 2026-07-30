@@ -218,20 +218,27 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                 label: 'Password',
                                 inputType: TextInputType.visiblePassword,
                                 obscureText: !_isPassVisible,
-                                trailing: InkWell(
-                                  onTap: () {
-                                    setState(
-                                        () => _isPassVisible = !_isPassVisible);
-                                  },
-                                  child: _isPassVisible
-                                      ? Icon(
-                                          Icons.visibility_off_rounded,
-                                          color: ColorPalette.primaryColorDark,
-                                        )
-                                      : Icon(
-                                          Icons.visibility_rounded,
-                                          color: ColorPalette.primaryColorDark,
-                                        ),
+                                trailing: Semantics(
+                                  label: _isPassVisible
+                                      ? 'Hide password'
+                                      : 'Show password',
+                                  button: true,
+                                  excludeSemantics: true,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(
+                                          () => _isPassVisible = !_isPassVisible);
+                                    },
+                                    child: _isPassVisible
+                                        ? Icon(
+                                            Icons.visibility_off_rounded,
+                                            color: ColorPalette.primaryColorDark,
+                                          )
+                                        : Icon(
+                                            Icons.visibility_rounded,
+                                            color: ColorPalette.primaryColorDark,
+                                          ),
+                                  ),
                                 ),
                                 onChange: (value) {
                                   setState(() => _password = value);
@@ -241,7 +248,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                               // Forgot password
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: GestureDetector(
+                                child: Semantics(
+                                  label: 'Forgot password',
+                                  button: true,
+                                  excludeSemantics: true,
+                                  child: GestureDetector(
                                   onTap: _showForgotPasswordInfo,
                                   behavior: HitTestBehavior.opaque,
                                   child: Padding(
@@ -258,6 +269,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                       ),
                                     ),
                                   ),
+                                ),
                                 ),
                               ),
 
@@ -475,36 +487,41 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                               ),
 
                               // Sign up link
-                              GestureDetector(
-                                onTap: () => context
-                                    .goNamed(CreateAccountScreen.routeName),
-                                behavior: HitTestBehavior.opaque,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 4),
-                                  child: Text.rich(
-                                    TextSpan(
-                                      text: "Don't have an account? ",
-                                      style: TextStyle(
-                                        fontFamily:
-                                            FontPalette.primaryFontFamily,
-                                        color: ColorPalette.secondaryText,
-                                        fontSize: 14,
-                                      ),
-                                      children: [
-                                        TextSpan(
-                                          text: 'Sign up',
-                                          style: TextStyle(
-                                            fontFamily:
-                                                FontPalette.primaryFontFamily,
-                                            color:
-                                                ColorPalette.primaryColorDark,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                              Semantics(
+                                label: 'Create an account',
+                                button: true,
+                                excludeSemantics: true,
+                                child: GestureDetector(
+                                  onTap: () => context
+                                      .goNamed(CreateAccountScreen.routeName),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 4),
+                                    child: Text.rich(
+                                      TextSpan(
+                                        text: "Don't have an account? ",
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          color: ColorPalette.secondaryText,
+                                          fontSize: 14,
                                         ),
-                                      ],
+                                        children: [
+                                          TextSpan(
+                                            text: 'Sign up',
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  FontPalette.primaryFontFamily,
+                                              color:
+                                                  ColorPalette.primaryColorDark,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),

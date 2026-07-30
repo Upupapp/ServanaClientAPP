@@ -44,19 +44,24 @@ class ServanaHomeHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Menu button
-          GestureDetector(
-            onTap: onMenuTap,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.menu_rounded,
-                color: Colors.white,
-                size: 22,
+          Semantics(
+            label: 'Open navigation menu',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: onMenuTap,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.menu_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
             ),
           ),
@@ -90,7 +95,13 @@ class ServanaHomeHeader extends StatelessWidget {
             ),
           ),
           // Notification bell
-          GestureDetector(
+          Semantics(
+            label: notificationCount > 0
+                ? 'View $notificationCount notifications'
+                : 'View notifications',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
             onTap: onNotificationTap,
             child: Stack(
               clipBehavior: Clip.none,
@@ -137,6 +148,7 @@ class ServanaHomeHeader extends StatelessWidget {
                   ),
               ],
             ),
+          ),
           ),
         ],
       ),

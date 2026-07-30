@@ -469,6 +469,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             IconButton(
               onPressed: _refreshBooking,
               icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Refresh booking',
             ),
         ],
       ),
@@ -503,10 +504,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => setState(() => _refreshError = null),
-                      child: const Icon(Icons.close_rounded,
-                          size: 18, color: ColorPalette.danger),
+                    Semantics(
+                      label: 'Dismiss error',
+                      button: true,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _refreshError = null),
+                        child: const Icon(Icons.close_rounded,
+                            size: 18, color: ColorPalette.danger),
+                      ),
                     ),
                   ],
                 ),

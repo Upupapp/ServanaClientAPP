@@ -42,14 +42,20 @@ class ReviewDimensionRow extends StatelessWidget {
               children: List.generate(5, (i) {
                 final val = i + 1;
                 final filled = val <= score;
-                return GestureDetector(
-                  onTap: enabled ? () => onScoreChanged(val) : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Icon(
-                      filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                      color: filled ? const Color(0xFFF59E0B) : const Color(0xFFD1D5DB),
-                      size: 22,
+                return Semantics(
+                  label: '$label: $val of 5',
+                  button: true,
+                  selected: score == val,
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: enabled ? () => onScoreChanged(val) : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Icon(
+                        filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                        color: filled ? const Color(0xFFF59E0B) : const Color(0xFFD1D5DB),
+                        size: 22,
+                      ),
                     ),
                   ),
                 );

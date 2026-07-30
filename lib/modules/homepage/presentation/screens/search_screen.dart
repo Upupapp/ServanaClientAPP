@@ -124,11 +124,16 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => context.pop(),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.arrow_back,
-                    color: Colors.white, size: 26),
+              Semantics(
+                label: 'Go back',
+                button: true,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () => context.pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.arrow_back,
+                      color: Colors.white, size: 26),
+                ),
               ),
               Expanded(
                 child: Text(
@@ -142,12 +147,17 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () =>
-                    context.pushNamed(NotificationsScreen.routeName),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 26),
+              Semantics(
+                label: 'View notifications',
+                button: true,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () =>
+                      context.pushNamed(NotificationsScreen.routeName),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.notifications_outlined,
+                      color: Colors.white, size: 26),
+                ),
               ),
             ],
           ),
@@ -322,12 +332,17 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: ColorPalette.secondaryText,
                     ),
                   ),
-                  trailing: GestureDetector(
-                    onTap: () => _ctrl.removeHistory(term),
-                    child: Icon(Icons.close,
-                        size: 16,
-                        color: ColorPalette.secondaryText
-                            .withOpacity(0.4)),
+                  trailing: Semantics(
+                    label: 'Remove "$term" from history',
+                    button: true,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      onTap: () => _ctrl.removeHistory(term),
+                      child: Icon(Icons.close,
+                          size: 16,
+                          color: ColorPalette.secondaryText
+                              .withOpacity(0.4)),
+                    ),
                   ),
                   onTap: () => _selectHistory(term),
                 );
@@ -420,35 +435,41 @@ class _SearchScreenState extends State<SearchScreen> {
                   final chip = _kChips[i];
                   final selected =
                       _ctrl.categoryFilter == chip.id;
-                  return GestureDetector(
-                    onTap: () =>
-                        _ctrl.setCategoryFilter(chip.id),
-                    behavior: HitTestBehavior.opaque,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? ColorPalette.primaryColorDark
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                  return Semantics(
+                    label: chip.label,
+                    button: true,
+                    selected: selected,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      onTap: () =>
+                          _ctrl.setCategoryFilter(chip.id),
+                      behavior: HitTestBehavior.opaque,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
                           color: selected
                               ? ColorPalette.primaryColorDark
-                              : Colors.black.withOpacity(0.08),
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: selected
+                                ? ColorPalette.primaryColorDark
+                                : Colors.black.withOpacity(0.08),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        chip.label,
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: selected
-                              ? Colors.white
-                              : ColorPalette.secondaryText,
+                        child: Text(
+                          chip.label,
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: selected
+                                ? Colors.white
+                                : ColorPalette.secondaryText,
+                          ),
                         ),
                       ),
                     ),
@@ -458,36 +479,41 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => _showSortSheet(context),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              height: 36,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: Colors.black.withOpacity(0.08)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.sort,
-                      size: 16,
-                      color: ColorPalette.secondaryText),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Sort',
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: ColorPalette.secondaryText,
+          Semantics(
+            label: 'Sort results',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: () => _showSortSheet(context),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 36,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: Colors.black.withOpacity(0.08)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.sort,
+                        size: 16,
+                        color: ColorPalette.secondaryText),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Sort',
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: ColorPalette.secondaryText,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

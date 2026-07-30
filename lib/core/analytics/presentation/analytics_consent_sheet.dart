@@ -1,4 +1,5 @@
 import 'package:client/common/constants/color_palette.dart';
+import 'package:client/core/accessibility/focus_coordinator.dart';
 import 'package:flutter/material.dart';
 
 /// Shows the analytics consent bottom sheet and returns true if the user
@@ -19,8 +20,27 @@ Future<bool> showAnalyticsConsentSheet(BuildContext context) async {
   return result ?? false;
 }
 
-class _AnalyticsConsentSheet extends StatelessWidget {
+class _AnalyticsConsentSheet extends StatefulWidget {
   const _AnalyticsConsentSheet();
+
+  @override
+  State<_AnalyticsConsentSheet> createState() => _AnalyticsConsentSheetState();
+}
+
+class _AnalyticsConsentSheetState extends State<_AnalyticsConsentSheet> {
+  final FocusNode _titleFocus = FocusCoordinator.createModalTrap();
+
+  @override
+  void initState() {
+    super.initState();
+    FocusCoordinator.requestFocusPostFrame(context, node: _titleFocus);
+  }
+
+  @override
+  void dispose() {
+    _titleFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,24 +61,34 @@ class _AnalyticsConsentSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: ColorPalette.secondaryBorder,
-                  borderRadius: BorderRadius.circular(2),
+            // Drag handle — decorative, hidden from accessibility tree
+            ExcludeSemantics(
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: ColorPalette.secondaryBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
             ),
-            Text(
-              'Help us improve Servana',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: ColorPalette.secondaryText,
+            Semantics(
+              header: true,
+              focusable: true,
+              focused: true,
+              child: Focus(
+                focusNode: _titleFocus,
+                child: Text(
+                  'Help us improve Servana',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: ColorPalette.secondaryText,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -160,7 +190,9 @@ class _ConsentPoint extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: ColorPalette.primaryColorDark),
+          ExcludeSemantics(
+            child: Icon(icon, size: 20, color: ColorPalette.primaryColorDark),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

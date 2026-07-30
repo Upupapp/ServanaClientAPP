@@ -118,7 +118,12 @@ class _HomeCategoryTileState extends State<_HomeCategoryTile> {
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
-    return GestureDetector(
+    return Semantics(
+      label: widget.data.label,
+      button: true,
+      hint: 'Browse ${widget.data.label} services',
+      excludeSemantics: true,
+      child: GestureDetector(
       onTapDown: (_) {
         if (!reduced) setState(() => _pressed = true);
       },
@@ -190,6 +195,7 @@ class _HomeCategoryTileState extends State<_HomeCategoryTile> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

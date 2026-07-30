@@ -22,7 +22,9 @@ class TrackingStatusBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = _configForStatus(status);
 
-    return Container(
+    return Semantics(
+      liveRegion: true,
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -71,6 +73,7 @@ class TrackingStatusBar extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

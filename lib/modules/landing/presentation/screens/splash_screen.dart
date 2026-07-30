@@ -310,16 +310,18 @@ class _SplashScreenState extends State<SplashScreen>
                 children: [
                   // ── Portal: Scene 1 background expands from logo center ──────
                   if (_showPortal && portalRadius > 0)
-                    ClipOval(
-                      clipper: _CircleClipper(
-                        center: Offset(lcx, lcy),
-                        radius: portalRadius,
-                      ),
-                      child: const SizedBox.expand(
-                        child: Image(
-                          image: AssetImage(
-                              'assets/images/welcome/page_1_bg.png'),
-                          fit: BoxFit.cover,
+                    ExcludeSemantics(
+                      child: ClipOval(
+                        clipper: _CircleClipper(
+                          center: Offset(lcx, lcy),
+                          radius: portalRadius,
+                        ),
+                        child: const SizedBox.expand(
+                          child: Image(
+                            image: AssetImage(
+                                'assets/images/welcome/page_1_bg.png'),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
@@ -331,11 +333,13 @@ class _SplashScreenState extends State<SplashScreen>
                       top: petalRects[i].top,
                       width: petalRects[i].width,
                       height: petalRects[i].height,
-                      child: Opacity(
-                        opacity: i == 6 ? v7OpT : 1.0,
-                        child: Image.asset(
-                          'assets/images/splash/vector_${i + 1}.png',
-                          fit: BoxFit.fill,
+                      child: ExcludeSemantics(
+                        child: Opacity(
+                          opacity: i == 6 ? v7OpT : 1.0,
+                          child: Image.asset(
+                            'assets/images/splash/vector_${i + 1}.png',
+                            fit: BoxFit.fill,
+                          ),
                         ),
                       ),
                     ),
@@ -347,11 +351,13 @@ class _SplashScreenState extends State<SplashScreen>
                       top: blueLogo.top,
                       width: blueLogo.width,
                       height: blueLogo.height,
-                      child: Opacity(
-                        opacity: blueT,
-                        child: SvgPicture.asset(
-                          'assets/images/splash/logo_blue.svg',
-                          fit: BoxFit.fill,
+                      child: ExcludeSemantics(
+                        child: Opacity(
+                          opacity: blueT,
+                          child: SvgPicture.asset(
+                            'assets/images/splash/logo_blue.svg',
+                            fit: BoxFit.fill,
+                          ),
                         ),
                       ),
                     ),
@@ -363,11 +369,13 @@ class _SplashScreenState extends State<SplashScreen>
                       top: chevronRect.top,
                       width: chevronRect.width,
                       height: chevronRect.height,
-                      child: Opacity(
-                        opacity: chevronOpT,
-                        child: SvgPicture.asset(
-                          'assets/images/splash/logo_orange.svg',
-                          fit: BoxFit.fill,
+                      child: ExcludeSemantics(
+                        child: Opacity(
+                          opacity: chevronOpT,
+                          child: SvgPicture.asset(
+                            'assets/images/splash/logo_orange.svg',
+                            fit: BoxFit.fill,
+                          ),
                         ),
                       ),
                     ),

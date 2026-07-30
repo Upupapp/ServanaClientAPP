@@ -140,6 +140,7 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 IconButton(
+                  tooltip: 'Go back',
                   onPressed: () {
                     context.pop();
                   },
@@ -212,6 +213,7 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Edit schedule',
                   onPressed: () async {
                     final selectedDate = await showDatePicker(
                       context: context,
@@ -286,6 +288,7 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Edit service location',
                   onPressed: () async {
                     final res = await _openLocationDetailsScreen();
                     if (!mounted || res == null) return;
@@ -532,34 +535,39 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                 builder: (context, state) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: GestureDetector(
-                      onTap: () async {
-                        // final bloc = BlocProvider.of<JobOrderBloc>(context);
-                        await context.pushNamed(
-                            AddAdditionalItemMenuScreen.routeName,
-                            pathParameters: {
-                              "id": widget.merchantId,
-                              "name": widget.merchantName
-                            });
-                        // bloc.add(LoadJOEvent(bloc.jobOrderId!));
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_circle_rounded,
-                            color: ColorPalette.primaryColorDark,
-                            size: 22,
-                          ),
-                          const Gap(5),
-                          Text(
-                            "Add Service",
-                            style: TextStyle(
-                                color: ColorPalette.primaryColorDark,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ],
+                    child: Semantics(
+                      label: 'Add service',
+                      button: true,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        onTap: () async {
+                          // final bloc = BlocProvider.of<JobOrderBloc>(context);
+                          await context.pushNamed(
+                              AddAdditionalItemMenuScreen.routeName,
+                              pathParameters: {
+                                "id": widget.merchantId,
+                                "name": widget.merchantName
+                              });
+                          // bloc.add(LoadJOEvent(bloc.jobOrderId!));
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_circle_rounded,
+                              color: ColorPalette.primaryColorDark,
+                              size: 22,
+                            ),
+                            const Gap(5),
+                            Text(
+                              "Add Service",
+                              style: TextStyle(
+                                  color: ColorPalette.primaryColorDark,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -650,38 +658,44 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
               ],
             ),
             const Gap(15),
-            GestureDetector(
-              onTap: () {
-                context.pushNamed(SelectPaymentMethodScreen.routeName);
-              },
-              child: Row(
-                children: [
-                  const Gap(25),
-                  SvgPicture.asset(
-                    "assets/payment_icons/visa_icon.svg",
-                    height: 30,
-                  ),
-                  const Gap(10),
-                  Text(
-                    "************1396",
-                    style: TextStyle(
-                      color: ColorPalette.secondaryText,
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
+            Semantics(
+              label: 'Select payment method',
+              button: true,
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: () {
+                  context.pushNamed(SelectPaymentMethodScreen.routeName);
+                },
+                child: Row(
+                  children: [
+                    const Gap(25),
+                    SvgPicture.asset(
+                      "assets/payment_icons/visa_icon.svg",
+                      height: 30,
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () {
-                      context.pushNamed(SelectPaymentMethodScreen.routeName);
-                    },
-                    icon: Icon(
-                      Icons.chevron_right,
-                      size: 35,
-                      color: ColorPalette.primaryColorDark,
+                    const Gap(10),
+                    Text(
+                      "************1396",
+                      style: TextStyle(
+                        color: ColorPalette.secondaryText,
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'View payment details',
+                      onPressed: () {
+                        context.pushNamed(SelectPaymentMethodScreen.routeName);
+                      },
+                      icon: Icon(
+                        Icons.chevron_right,
+                        size: 35,
+                        color: ColorPalette.primaryColorDark,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             Row(
@@ -703,6 +717,7 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                 ),
                 const Spacer(),
                 IconButton(
+                  tooltip: 'Apply voucher',
                   onPressed: () {},
                   icon: Icon(
                     Icons.chevron_right,

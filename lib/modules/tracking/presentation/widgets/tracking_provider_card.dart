@@ -164,7 +164,7 @@ class _LastSeenLabel extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(Icons.circle, size: 8, color: color),
+        ExcludeSemantics(child: Icon(Icons.circle, size: 8, color: color)),
         const SizedBox(width: 4),
         Text(
           'Last seen ${_label()}',

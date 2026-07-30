@@ -170,6 +170,7 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
+          tooltip: 'Go back',
           icon: Icon(Icons.chevron_left,
               color: ColorPalette.primaryColorDark, size: 32),
         ),
@@ -544,17 +545,22 @@ class _MessageBubble extends StatelessWidget {
                 ],
               ),
               if (message.isFailed && onRetry != null)
-                GestureDetector(
-                  onTap: onRetry,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Tap to retry',
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        color: Colors.red.shade300,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                Semantics(
+                  label: 'Retry sending message',
+                  button: true,
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: onRetry,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Tap to retry',
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          color: Colors.red.shade300,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

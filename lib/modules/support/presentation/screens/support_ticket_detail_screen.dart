@@ -352,25 +352,28 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: ColorPalette.danger.withOpacity(.08),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline_rounded,
-              color: ColorPalette.danger, size: 14),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryFontFamily,
-                fontSize: 12,
-                color: ColorPalette.danger,
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        color: ColorPalette.danger.withOpacity(.08),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded,
+                color: ColorPalette.danger, size: 14),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 12,
+                  color: ColorPalette.danger,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

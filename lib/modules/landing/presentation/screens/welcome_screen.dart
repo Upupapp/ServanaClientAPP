@@ -6,7 +6,6 @@ import 'package:client/common/presentation/widgets/servana_primary_button.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/common/services/motion_tokens.dart';
 import 'package:client/common/services/onboarding_state_service.dart';
-import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/home_events.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';

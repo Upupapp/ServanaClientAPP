@@ -126,32 +126,35 @@ class _TrackingMapState extends State<TrackingMap> {
         ),
         child: Stack(
           children: [
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: _initialCameraTarget(),
-                zoom: 15,
+            Semantics(
+              label: 'Live tracking map. Provider location and route shown visually.',
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: _initialCameraTarget(),
+                  zoom: 15,
+                ),
+                markers: _buildMarkers(),
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                onMapCreated: (ctrl) {
+                  _mapController = ctrl;
+                  // Fit both markers if available.
+                  final loc = widget.state.providerLocation;
+                  if (loc != null) {
+                    Timer(const Duration(milliseconds: 300), () {
+                      if (!mounted) return;
+                      _mapController?.animateCamera(
+                        CameraUpdate.newLatLng(loc.latLng),
+                      );
+                    });
+                  }
+                },
+                onCameraMoveStarted: () {
+                  // Mark camera as user-moved so we stop auto-panning.
+                  if (!_cameraMoved) setState(() => _cameraMoved = true);
+                },
               ),
-              markers: _buildMarkers(),
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              mapToolbarEnabled: false,
-              onMapCreated: (ctrl) {
-                _mapController = ctrl;
-                // Fit both markers if available.
-                final loc = widget.state.providerLocation;
-                if (loc != null) {
-                  Timer(const Duration(milliseconds: 300), () {
-                    if (!mounted) return;
-                    _mapController?.animateCamera(
-                      CameraUpdate.newLatLng(loc.latLng),
-                    );
-                  });
-                }
-              },
-              onCameraMoveStarted: () {
-                // Mark camera as user-moved so we stop auto-panning.
-                if (!_cameraMoved) setState(() => _cameraMoved = true);
-              },
             ),
 
             // Re-centre button (shown after the user pans away).
@@ -197,21 +200,26 @@ class _MapButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Tooltip(
-        message: tooltip ?? '',
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(.18), blurRadius: 8),
-            ],
+    return Semantics(
+      label: 'Centre map on provider',
+      button: true,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Tooltip(
+          message: tooltip ?? '',
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(.18), blurRadius: 8),
+              ],
+            ),
+            child: Icon(icon, size: 20, color: ColorPalette.primaryColorDark),
           ),
-          child: Icon(icon, size: 20, color: ColorPalette.primaryColorDark),
         ),
       ),
     );

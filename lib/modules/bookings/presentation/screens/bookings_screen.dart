@@ -229,6 +229,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 builder: (_) => _countBadge(
                     s, _countForSegment(store.bookings.toList(), s)),
               ),
+              countValueFor: (s) =>
+                  _countForSegment(store.bookings.toList(), s),
             ),
             Expanded(
               child: Observer(
@@ -563,11 +565,13 @@ class _GradientHeader extends StatelessWidget {
     required this.selectedSegment,
     required this.onSelect,
     required this.countFor,
+    required this.countValueFor,
   });
 
   final _BookingSegment selectedSegment;
   final ValueChanged<_BookingSegment> onSelect;
   final Widget Function(_BookingSegment) countFor;
+  final int Function(_BookingSegment) countValueFor;
 
   @override
   Widget build(BuildContext context) {
@@ -609,12 +613,17 @@ class _GradientHeader extends StatelessWidget {
               SizedBox(
                 width: 44,
                 height: 44,
-                child: GestureDetector(
-                  onTap: () => context.pushNamed(NotificationsScreen.routeName),
-                  behavior: HitTestBehavior.opaque,
-                  child: const Center(
-                    child: Icon(Icons.notifications_outlined,
-                        color: Colors.white, size: 26),
+                child: Semantics(
+                  label: 'View notifications',
+                  button: true,
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: () => context.pushNamed(NotificationsScreen.routeName),
+                    behavior: HitTestBehavior.opaque,
+                    child: const Center(
+                      child: Icon(Icons.notifications_outlined,
+                          color: Colors.white, size: 26),
+                    ),
                   ),
                 ),
               ),
@@ -629,11 +638,14 @@ class _GradientHeader extends StatelessWidget {
                 for (final seg in _BookingSegment.values)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: _SegmentChip(
-                      segment: seg,
-                      isSelected: seg == selectedSegment,
-                      countWidget: countFor(seg),
-                      onTap: () => onSelect(seg),
+                    child: Observer(
+                      builder: (_) => _SegmentChip(
+                        segment: seg,
+                        isSelected: seg == selectedSegment,
+                        count: countValueFor(seg),
+                        countWidget: countFor(seg),
+                        onTap: () => onSelect(seg),
+                      ),
                     ),
                   ),
               ],
@@ -651,12 +663,14 @@ class _SegmentChip extends StatelessWidget {
     required this.segment,
     required this.isSelected,
     required this.countWidget,
+    required this.count,
     required this.onTap,
   });
 
   final _BookingSegment segment;
   final bool isSelected;
   final Widget countWidget;
+  final int count;
   final VoidCallback onTap;
 
   @override
@@ -664,7 +678,7 @@ class _SegmentChip extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isSelected,
-      label: segment.label,
+      label: '${segment.label}${count > 0 ? ", $count" : ""}',
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,

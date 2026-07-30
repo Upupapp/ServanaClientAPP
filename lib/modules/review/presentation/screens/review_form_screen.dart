@@ -365,10 +365,15 @@ class _VisibilitySelector extends StatelessWidget {
     return Column(
       children: ReviewVisibility.values.map((v) {
         final selected = v == value;
-        return InkWell(
-          onTap: onChanged != null ? () => onChanged!(v) : null,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
+        return Semantics(
+          label: v.displayLabel,
+          button: true,
+          selected: selected,
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: onChanged != null ? () => onChanged!(v) : null,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -409,6 +414,7 @@ class _VisibilitySelector extends StatelessWidget {
               ],
             ),
           ),
+        ),
         );
       }).toList(),
     );

@@ -281,7 +281,11 @@ class _ProfileHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Photo circle with camera overlay
-          GestureDetector(
+          Semantics(
+            label: 'Change profile photo',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
             onTap: onPhotoTap,
             child: Stack(
               children: [
@@ -330,6 +334,7 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -410,8 +415,12 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       if (isEmailVerified)
-                        const Icon(Icons.verified_rounded,
-                            size: 14, color: Colors.white70)
+                        Semantics(
+                          label: 'Email verified',
+                          excludeSemantics: true,
+                          child: const Icon(Icons.verified_rounded,
+                              size: 14, color: Colors.white70),
+                        )
                       else
                         Semantics(
                           button: true,

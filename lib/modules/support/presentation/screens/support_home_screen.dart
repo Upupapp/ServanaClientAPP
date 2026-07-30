@@ -288,7 +288,7 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'My support requests',
+      label: 'My support requests${unreadCount > 0 ? ", $unreadCount unread" : ""}',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
