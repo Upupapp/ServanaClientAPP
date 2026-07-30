@@ -15,13 +15,12 @@ class ConsentGateService {
   /// Safe to call from multiple screens — only fires once per install.
   Future<void> maybeShow(BuildContext context, AnalyticsCoordinator coordinator) async {
     if (_shown) return;
-    final decided = await AnalyticsConsent.hasUserDecided();
-    if (decided) {
-      _shown = true;
-      return;
-    }
-    if (!context.mounted) return;
+    // Set before first await — prevents concurrent callers from both passing the
+    // guard during the hasUserDecided() suspension window.
     _shown = true;
+    final decided = await AnalyticsConsent.hasUserDecided();
+    if (decided) return;
+    if (!context.mounted) return;
     final accepted = await showAnalyticsConsentSheet(context);
     final consent = accepted ? AnalyticsConsent.fullConsent() : AnalyticsConsent.defaultConsent();
     await coordinator.setConsent(consent);
