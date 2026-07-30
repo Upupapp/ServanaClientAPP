@@ -89,7 +89,7 @@ AddressController _makeAddressCtrl() => AddressController(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-final _profile = CustomerProfile(
+const _profile = CustomerProfile(
   id: 'uid-1',
   firstName: 'Maria',
   lastName: 'Cruz',
@@ -334,12 +334,12 @@ void main() {
     });
 
     test('displayName returns first only when last absent', () {
-      final p = CustomerProfile(id: '1', firstName: 'Maria', email: 'x@y.com');
+      const p = CustomerProfile(id: '1', firstName: 'Maria', email: 'x@y.com');
       expect(p.displayName, 'Maria');
     });
 
     test('displayName falls back to email prefix when name absent', () {
-      final p = CustomerProfile(id: '1', email: 'maria@example.com');
+      const p = CustomerProfile(id: '1', email: 'maria@example.com');
       expect(p.displayName, 'maria');
     });
 
@@ -348,7 +348,7 @@ void main() {
     });
 
     test('initials returns single letter for single-word name', () {
-      final p = CustomerProfile(id: '1', firstName: 'Maria', email: 'x@y.com');
+      const p = CustomerProfile(id: '1', firstName: 'Maria', email: 'x@y.com');
       expect(p.initials, 'M');
     });
 
@@ -357,7 +357,7 @@ void main() {
     });
 
     test('hasPhoto is false when photoUrl is null', () {
-      final p = CustomerProfile(id: '1', email: 'x@y.com');
+      const p = CustomerProfile(id: '1', email: 'x@y.com');
       expect(p.hasPhoto, isFalse);
     });
   });

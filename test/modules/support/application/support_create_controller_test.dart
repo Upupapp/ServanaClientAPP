@@ -42,7 +42,7 @@ void main() {
   late MockSupportController supportCtrl;
   late SupportCreateController ctrl;
 
-  SupportTicket makeCreatedTicket() => SupportTicket(
+  SupportTicket makeCreatedTicket() => const SupportTicket(
         ticketKey: 'new-ticket-key',
         category: SupportTicketCategory.booking,
         status: SupportTicketStatus.submitted,

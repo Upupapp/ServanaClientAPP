@@ -241,7 +241,7 @@ class _CreateSupportTicketScreenState extends State<CreateSupportTicketScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Subject (optional)
-                _SectionLabel('Subject (optional)'),
+                const _SectionLabel('Subject (optional)'),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _subjectCtrl,
@@ -262,7 +262,7 @@ class _CreateSupportTicketScreenState extends State<CreateSupportTicketScreen> {
                 // Booking reference for relevant categories
                 if (_ctrl.category.requiresBooking ||
                     _ctrl.category.isPaymentRelated) ...[
-                  _SectionLabel('Booking reference (optional)'),
+                  const _SectionLabel('Booking reference (optional)'),
                   const SizedBox(height: 6),
                   TextField(
                     controller: _bookingCtrl,
@@ -278,7 +278,7 @@ class _CreateSupportTicketScreenState extends State<CreateSupportTicketScreen> {
                   const SizedBox(height: 14),
                 ],
                 // Description — required
-                _SectionLabel('Describe your issue'),
+                const _SectionLabel('Describe your issue'),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _descCtrl,

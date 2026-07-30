@@ -96,7 +96,7 @@ class SupportReplyBubble extends StatelessWidget {
                   ],
                   if (reply.isFailed) ...[
                     const SizedBox(width: 4),
-                    Icon(Icons.error_outline_rounded,
+                    const Icon(Icons.error_outline_rounded,
                         size: 12, color: ColorPalette.danger),
                     const SizedBox(width: 2),
                     TextButton(

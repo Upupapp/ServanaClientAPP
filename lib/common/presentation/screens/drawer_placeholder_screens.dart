@@ -17,7 +17,6 @@ import 'package:location_picker_flutter_map/location_picker_flutter_map.dart'
     show LatLong;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RewardsScreen extends StatelessWidget {

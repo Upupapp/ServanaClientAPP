@@ -204,7 +204,7 @@ void main() {
   });
 
   group('CustomerAddress helpers', () {
-    final addr = CustomerAddress(
+    const addr = CustomerAddress(
       addressId: 'a1',
       userId: 'u1',
       addressOne: '123 Rizal Avenue',
@@ -219,7 +219,7 @@ void main() {
     });
 
     test('displayLabel falls back to "Address" when label is null', () {
-      final a =
+      const a =
           CustomerAddress(addressId: 'a', userId: 'u', addressOne: '1 Main St');
       expect(a.displayLabel, 'Address');
     });

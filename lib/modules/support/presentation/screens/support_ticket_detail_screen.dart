@@ -359,7 +359,7 @@ class _ErrorBanner extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            Icon(Icons.error_outline_rounded,
+            const Icon(Icons.error_outline_rounded,
                 color: ColorPalette.danger, size: 14),
             const SizedBox(width: 6),
             Expanded(
