@@ -8,6 +8,7 @@ final class RecoveryOfflineShownEvent extends AnalyticsEvent {
   const RecoveryOfflineShownEvent();
   @override String get eventName => 'recovery_offline_shown';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'recovery_offline_shown';
   @override Map<String, Object?> get properties => {};
 }
 

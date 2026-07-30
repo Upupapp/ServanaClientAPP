@@ -205,10 +205,10 @@ final class AnalyticsPrivacyFilter {
     AnalyticsKeys.appLanguage,
     AnalyticsKeys.deviceLocale,
     // Extra allowed for auth/lifecycle events
-    'has_session',
-    'otp_context',
-    'logout_trigger',
-    'launch_type',
+    AnalyticsKeys.hasSession,
+    AnalyticsKeys.otpContext,
+    AnalyticsKeys.logoutTrigger,
+    AnalyticsKeys.launchType,
   };
 
   // Returns a filtered copy of the event's properties.

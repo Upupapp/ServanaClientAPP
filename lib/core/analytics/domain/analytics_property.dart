@@ -261,7 +261,7 @@ abstract final class CountBucketValues {
     if (count <= 3) return '2-3';
     if (count <= 5) return '4-5';
     if (count <= 10) return '6-10';
-    return '11+';
+    return '10+';
   }
 }
 

@@ -1,4 +1,5 @@
 import 'analytics_consent.dart';
+import 'analytics_property.dart';
 
 // Base class for all typed analytics events.
 // Features never call Firebase directly — they create an AnalyticsEvent
@@ -44,8 +45,8 @@ final class ScreenViewEvent extends AnalyticsEvent {
 
   @override
   Map<String, Object?> get properties => {
-        'screen_name': screenName,
-        if (previousScreen != null) 'previous_screen': previousScreen,
+        AnalyticsKeys.screenName: screenName,
+        if (previousScreen != null) AnalyticsKeys.previousScreen: previousScreen,
       };
 }
 
@@ -73,9 +74,9 @@ final class ExperimentExposedEvent extends AnalyticsEvent {
 
   @override
   Map<String, Object?> get properties => {
-        'experiment_key': experimentKey,
-        'variant_key': variantKey,
-        'surface': surface,
+        AnalyticsKeys.experimentKey: experimentKey,
+        AnalyticsKeys.variantKey: variantKey,
+        AnalyticsKeys.surface: surface,
       };
 }
 
@@ -102,8 +103,8 @@ final class FeatureFlagEvaluatedEvent extends AnalyticsEvent {
 
   @override
   Map<String, Object?> get properties => {
-        'flag_key': flagKey,
-        'resolved_value': resolvedValue,
-        'evaluation_source': evaluationSource,
+        AnalyticsKeys.flagKey: flagKey,
+        AnalyticsKeys.resolvedValue: resolvedValue,
+        AnalyticsKeys.evaluationSource: evaluationSource,
       };
 }

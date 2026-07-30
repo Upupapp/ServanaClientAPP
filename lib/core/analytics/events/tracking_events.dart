@@ -34,6 +34,7 @@ final class TrackingLiveConnectedEvent extends AnalyticsEvent {
   const TrackingLiveConnectedEvent();
   @override String get eventName => 'tracking_live_connected';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'tracking_live_connected';
   @override Map<String, Object?> get properties => {};
 }
 
@@ -41,6 +42,7 @@ final class TrackingReconnectingEvent extends AnalyticsEvent {
   const TrackingReconnectingEvent();
   @override String get eventName => 'tracking_reconnecting';
   @override ConsentCategory get consentCategory => ConsentCategory.analytics;
+  @override String? get dedupKey => 'tracking_reconnecting';
   @override Map<String, Object?> get properties => {};
 }
 

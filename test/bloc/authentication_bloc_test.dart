@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:client/core/recovery/session_generation_coordinator.dart';
+import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/auth/auth_token_exchanger.dart';
@@ -539,5 +541,101 @@ void main() {
         expect(result.session!.emailAddress, equals('maria@example.com'));
       },
     );
+  });
+
+  // F7 (P1): AuthCheckSession — covers _onCheckSession and the
+  // SessionGenerationCoordinator.isValid() guard added in STITCH-C20-POST-003.
+  //
+  // SessionService.getSession() uses flutter_secure_storage and is not
+  // injectable, so we can't exercise the happy path or the isValid() guard
+  // in a pure unit test. What we CAN verify:
+  //   1. The catch path fires and emits AuthenticationGuest when the platform
+  //      channel is unavailable (unit test environment).
+  //   2. The guard logic itself is tested separately via
+  //      SessionGenerationCoordinator.isValid() unit contract.
+  group('AuthCheckSession (F7)', () {
+    setUp(() {
+      // Register SessionGenerationCoordinator if not already present.
+      // This lets _onCheckSession proceed past the dpLocator call and hit
+      // SessionService.getSession(), which then throws because
+      // flutter_secure_storage has no platform channel in unit tests.
+      if (!dpLocator.isRegistered<SessionGenerationCoordinator>()) {
+        dpLocator.registerLazySingleton(() => SessionGenerationCoordinator());
+      }
+    });
+
+    tearDown(() {
+      if (dpLocator.isRegistered<SessionGenerationCoordinator>()) {
+        dpLocator.unregister<SessionGenerationCoordinator>();
+      }
+    });
+
+    test(
+        'emits AuthenticationGuest when SessionService throws (platform channel unavailable)',
+        () async {
+      // In unit tests, flutter_secure_storage throws MissingPluginException.
+      // _onCheckSession wraps the entire body in try/catch, so the catch fires
+      // and emits AuthenticationGuest — same as if no session existed.
+      final bloc = AuthenticationBloc(repo: repo);
+      bloc.add(AuthCheckSession());
+
+      await expectLater(
+        bloc.stream,
+        emitsThrough(isA<AuthenticationGuest>()),
+        reason:
+            '_onCheckSession catch block must emit AuthenticationGuest on any exception',
+      );
+      await bloc.close();
+    });
+
+    test(
+      'isValid() guard discards stale response when generation advances (requires injectable SessionService)',
+      () async {
+        // To test the race: dispatch AuthCheckSession, then advance() the
+        // coordinator before getSession() resolves — the isValid() check
+        // should return false and the handler must return without emitting.
+        // This requires SessionService to be injectable so the mock can delay
+        // the response long enough for advance() to fire.
+        // Track in ANALYTICS_GAPS.md as GAP-SESSION-RACE-001.
+      },
+      skip:
+          'Requires injectable SessionService — promote to integration_test or refactor SessionService to accept an override',
+    );
+  });
+
+  // SessionGenerationCoordinator contract — pure unit tests, no DI required.
+  group('SessionGenerationCoordinator', () {
+    test('isValid returns true when captured generation matches current', () {
+      final coord = SessionGenerationCoordinator();
+      final captured = coord.current; // 0
+      expect(coord.isValid(captured), true);
+    });
+
+    test('isValid returns false after advance()', () {
+      final coord = SessionGenerationCoordinator();
+      final captured = coord.current; // 0
+      coord.advance(); // generation becomes 1
+      expect(coord.isValid(captured), false,
+          reason:
+              'Captured generation 0 must be invalid after advance() moves to 1');
+    });
+
+    test('advance increments generation monotonically', () {
+      final coord = SessionGenerationCoordinator();
+      expect(coord.current, 0);
+      coord.advance();
+      expect(coord.current, 1);
+      coord.advance();
+      expect(coord.current, 2);
+    });
+
+    test('resetForTesting resets generation to 0', () {
+      final coord = SessionGenerationCoordinator();
+      coord.advance();
+      coord.advance();
+      expect(coord.current, 2);
+      coord.resetForTesting();
+      expect(coord.current, 0);
+    });
   });
 }
