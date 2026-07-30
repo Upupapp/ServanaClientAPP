@@ -265,9 +265,10 @@ class AuthenticationBloc
       if (session != null && session.token.isNotEmpty) {
         _notifyFcmLogin(session.customerID);
         _setAnalyticsUserContext(session.customerID); // STITCH WARN-01
-        _notify(AuthStatus.authenticated);
-        emit(AuthenticationAuthenticated());
-        // STITCH B2: check for payment interrupted by process kill.
+        // STITCH B2: load payment context BEFORE emitting so the BlocListener
+        // in home_screen.dart can call consume() and see the value.
+        // If emit() fires first, the async gap lets the listener run before
+        // setPending(), meaning consume() always returns null.
         try {
           final ctx = await dpLocator<DraftRepository>()
               .loadPaymentContext(session.customerID);
@@ -275,6 +276,8 @@ class AuthenticationBloc
             dpLocator<PendingPaymentService>().setPending(ctx);
           }
         } catch (_) {}
+        _notify(AuthStatus.authenticated);
+        emit(AuthenticationAuthenticated());
       } else {
         _notify(AuthStatus.guest);
         emit(AuthenticationGuest());
@@ -302,6 +305,11 @@ class AuthenticationBloc
       // Logout is best-effort; always clear local state.
     }
     await SessionService.deleteSession();
+    // Set guest status immediately after session deletion so that any 401 fired
+    // by subsequent cleanup API calls (e.g. FCM token deactivation) does NOT
+    // trigger onUnauthorized → AuthStatus.expired, which would show "Session
+    // expired" UI during a voluntary logout.
+    _notify(AuthStatus.guest);
     // LEAKSHIELD LEAK H-1: purge Hive registration box so the next user cannot
     // see Customer A's PII pre-populated in the registration form.
     try {
@@ -334,11 +342,13 @@ class AuthenticationBloc
     // C20 Recovery layer — clear all UID-scoped state to prevent cross-account leakage.
     // LEAK M-1: clearAll() fallback covers the empty-UID case (session error at logout).
     try {
+      dpLocator<PendingPaymentService>().clear();
       if (logoutUid.isNotEmpty) {
         dpLocator<DraftRepository>().clearAllForAccount(logoutUid).ignore();
         dpLocator<OperationJournal>().clearForAccount(logoutUid).ignore();
       } else {
         dpLocator<DraftRepository>().clearAll().ignore();
+        dpLocator<OperationJournal>().clearAll().ignore();
       }
       dpLocator<SessionGenerationCoordinator>().advance();
     } catch (_) {}

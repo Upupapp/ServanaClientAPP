@@ -204,7 +204,7 @@ class _$UserSessionImpl extends _UserSession {
 
   @override
   String toString() {
-    return 'UserSession(customerID: $customerID, mobileNumber: $mobileNumber, referralCode: $referralCode, fullname: $fullname, emailAddress: $emailAddress, token: $token)';
+    return 'UserSession(customerID: $customerID, mobileNumber: $mobileNumber, referralCode: $referralCode, fullname: $fullname, emailAddress: $emailAddress, token: [REDACTED])';
   }
 
   @override

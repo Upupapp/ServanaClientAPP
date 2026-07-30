@@ -116,6 +116,16 @@ class OperationJournal {
     await _storage.delete(key: _key(uid));
   }
 
+  /// Clears ALL journal entries regardless of UID.
+  /// Used as a fallback during logout when the UID cannot be determined (LEAK M-1).
+  Future<void> clearAll() async {
+    final all = await _storage.readAll();
+    final toDelete = all.keys.where((k) => k.startsWith(_kPrefix)).toList();
+    for (final k in toDelete) {
+      await _storage.delete(key: k);
+    }
+  }
+
   // ── Internal ─────────────────────────────────────────────────────────────
 
   Future<void> _persist(String uid, List<JournaledOperation> ops) async {

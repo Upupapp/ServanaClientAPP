@@ -160,7 +160,7 @@ void initInjector(AppConfig config) {
   dpLocator.registerLazySingleton<Backend>(
     () => config.mockBackend
         ? MockBackend()
-        : HttpBackend(baseUrl: config.baseUrl),
+        : HttpBackend(baseUrl: config.baseUrl, apiClient: dpLocator()),
   );
 
   // Repositories

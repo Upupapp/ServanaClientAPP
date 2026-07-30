@@ -152,10 +152,9 @@ jobs:
             --split-debug-info=build/debug-info
 
       - name: Verify signing
+        # apksigner is APK-only; use jarsigner to verify AAB is signed.
         run: |
-          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools/ | sort -V | tail -1)
-          $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner verify \
-            --verbose \
+          jarsigner -verify -verbose \
             build/app/outputs/bundle/release/app-release.aab
 
       - name: Compute SHA-256 checksum

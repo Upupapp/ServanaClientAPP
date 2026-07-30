@@ -22,6 +22,7 @@ class PendingPaymentService extends ChangeNotifier {
   PendingPaymentContext? consume() {
     final ctx = _pending;
     _pending = null;
+    notifyListeners();
     return ctx;
   }
 

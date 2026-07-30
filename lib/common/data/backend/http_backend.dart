@@ -29,8 +29,18 @@ class HttpBackend implements Backend {
   final String baseUrl;
   final http.Client _client;
 
-  HttpBackend({required this.baseUrl, http.Client? client})
-      : _client = _BackendTimeoutClient(client ?? http.Client(), _kTimeout);
+  /// Shared [ServanaApiClient] injected at construction so that methods which
+  /// delegate to it (e.g. [makeAddressPrimary], [getBookings]) use the
+  /// singleton with [onUnauthorized] wired — fixing P2-1 where ad-hoc
+  /// instances bypassed the 401→AuthStatus.expired callback.
+  final ServanaApiClient? _apiClient;
+
+  HttpBackend({
+    required this.baseUrl,
+    http.Client? client,
+    ServanaApiClient? apiClient,
+  })  : _client = _BackendTimeoutClient(client ?? http.Client(), _kTimeout),
+        _apiClient = apiClient;
 
   // ───────────────────────── Auth ─────────────────────────
 
@@ -247,7 +257,8 @@ class HttpBackend implements Backend {
   Future<({bool isSuccess, String? message})> makeAddressPrimary(
       {required String addressId}) async {
     // ALIGN FAIL-02: delegate to ServanaApiClient which uses PUT + auth token.
-    final api = ServanaApiClient(baseUrl: baseUrl);
+    // Use the injected singleton (with onUnauthorized wired) when available.
+    final api = _apiClient ?? ServanaApiClient(baseUrl: baseUrl);
     try {
       await api.makeAddressPrimary(addressId: addressId);
       return (isSuccess: true, message: 'Address set as primary.');
@@ -325,7 +336,8 @@ class HttpBackend implements Backend {
 
   @override
   Future<List<JobOrder>> getBookings({required String customerId}) async {
-    final api = ServanaApiClient(baseUrl: baseUrl);
+    // Use the injected singleton (with onUnauthorized wired) when available.
+    final api = _apiClient ?? ServanaApiClient(baseUrl: baseUrl);
     try {
       final res = await api.getUserBookings(userId: customerId);
       final List<dynamic> list = res['bookings'] ?? res['data'] ?? [];

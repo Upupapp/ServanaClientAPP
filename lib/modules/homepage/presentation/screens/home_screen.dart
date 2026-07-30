@@ -182,10 +182,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 duration: const Duration(seconds: 10),
                 action: SnackBarAction(
                   label: 'Resume',
-                  onPressed: () => launchUrl(
-                    Uri.parse(paymentCtx.checkoutUrl),
-                    mode: LaunchMode.externalApplication,
-                  ),
+                  onPressed: () async {
+                    final ok = await launchUrl(
+                      Uri.parse(paymentCtx.checkoutUrl),
+                      mode: LaunchMode.externalApplication,
+                    );
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Could not open payment page. Try again later.'),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
             );
