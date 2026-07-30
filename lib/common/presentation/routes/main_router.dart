@@ -122,9 +122,10 @@ class MainRouter {
         final loc = state.matchedLocation;
 
         // Protected routes require a signed-in session.
-        final isProtected = loc.startsWith('/settings') ||
+        final isProtected = loc.startsWith(SettingsScreen.route) || // '/Settings'
             loc.startsWith(BookingsScreen.route) || // "/Bookings" tab
             loc.startsWith('/bookings') || // "/bookings/:id" detail routes
+            loc.startsWith('/booking/') || // legacy "/booking/:id" singular alias
             loc.startsWith(MessagesInboxScreen.route) ||
             loc.startsWith(ProfileScreen.route) ||
             loc.startsWith('/support') ||
@@ -132,7 +133,11 @@ class MainRouter {
             loc.startsWith('/BookingChat') || // /BookingChat/:jobOrderId
             loc.startsWith('/SavedAddresses') ||
             loc.startsWith('/Rewards') ||
-            loc.startsWith('/Favourites');
+            loc.startsWith('/Favourites') ||
+            loc.startsWith(NotificationsScreen.route) || // '/Notifications'
+            loc.startsWith(BookingCalendarScreen.route) || // '/Calendar'
+            loc.startsWith('/JobOrderSummaryScreen') || // '/JobOrderSummaryScreen/:id'
+            loc.startsWith(LanguageScreen.route); // '/Language'
 
         if (isProtected && !authState.isAuthenticated) {
           // Always land on WelcomeScreen — post-logout and unauthenticated

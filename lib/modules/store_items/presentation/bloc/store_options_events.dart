@@ -3,7 +3,7 @@ import 'package:client/common/data/models/merchant_service_option.dart';
 sealed class StoreOptionsEvent {
   const StoreOptionsEvent();
   // TODO: implement props
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => const [];
 }
 
 class AddStoreOptionsEvent extends StoreOptionsEvent {

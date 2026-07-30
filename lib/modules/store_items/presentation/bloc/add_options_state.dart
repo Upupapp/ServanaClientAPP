@@ -3,7 +3,7 @@ import 'package:client/modules/store_items/data/models/store_option_items.dart';
 sealed class AddOptionState {
   const AddOptionState();
 
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => const [];
 }
 
 class InitialAddOptionState extends AddOptionState {
