@@ -1,5 +1,7 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
@@ -71,6 +73,17 @@ class _HomeScreenState extends State<HomeScreen> {
     airconStore.ensureOptionsLoaded(serviceId: 1);
     _restoreDraftIfPending();
     _scheduleSpotlight();
+    _maybeShowConsentGate();
+  }
+
+  void _maybeShowConsentGate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      dpLocator<ConsentGateService>().maybeShow(
+        context,
+        dpLocator<AnalyticsCoordinator>(),
+      );
+    });
   }
 
   // STITCH-C05-001 / LEAK-C05-001: restores a pending BookingDraft after the

@@ -1,5 +1,7 @@
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/servana_banner.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/common/presentation/widgets/servana_primary_button.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/common/services/motion_tokens.dart';
@@ -58,6 +60,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _ctrl = WelcomeExperienceController(motionMode: mode);
     _track(const OnboardingStartedEvent(entrySource: 'app_launch'));
     _track(const OnboardingCardViewedEvent(cardKey: 'scene_0', stepNumber: 0));
+    _maybeShowConsentGate();
+  }
+
+  void _maybeShowConsentGate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      dpLocator<ConsentGateService>().maybeShow(
+        context,
+        dpLocator<AnalyticsCoordinator>(),
+      );
+    });
   }
 
   @override

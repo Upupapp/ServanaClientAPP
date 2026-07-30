@@ -61,6 +61,18 @@ class AnalyticsConsent {
       );
 
   static const _keyPrefix = 'analytics_consent_v1_';
+  static const _decidedKey = '${_keyPrefix}decided';
+
+  /// Returns true if the user has ever made an explicit consent choice
+  /// (accept or essential-only). False means the dialog has never been shown.
+  static Future<bool> hasUserDecided() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_decidedKey) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<void> persist() async {
     final prefs = await SharedPreferences.getInstance();
@@ -71,6 +83,7 @@ class AnalyticsConsent {
     await prefs.setInt('${_keyPrefix}policy_version', policyVersion);
     await prefs.setString(
         '${_keyPrefix}granted_at', grantedAt.toIso8601String());
+    await prefs.setBool(_decidedKey, true);
   }
 
   static Future<AnalyticsConsent> load() async {

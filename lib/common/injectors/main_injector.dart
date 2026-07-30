@@ -1,4 +1,5 @@
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/core/analytics/application/experiment_coordinator.dart';
 import 'package:client/core/analytics/data/firebase_analytics_service.dart';
 import 'package:client/core/observability/crashlytics_service.dart';
@@ -86,6 +87,8 @@ void initInjector(AppConfig config) {
   );
   dpLocator.registerLazySingleton(() => CrashlyticsService());
   dpLocator.registerLazySingleton(() => PerformanceService());
+  // C24: Consent gate — singleton so dialog fires exactly once per install.
+  dpLocator.registerLazySingleton(() => ConsentGateService());
 
   // ── C20 Recovery layer ────────────────────────────────────────────────────
   dpLocator.registerLazySingleton(() => ConnectivityMonitor());
