@@ -84,6 +84,10 @@ class HttpBackend implements Backend {
           emailAddress:
               (data['email'] ?? data['emailAddress'] ?? email).toString(),
           token: token,
+          // ecf65fa added this to the sign-in response; dropping it left
+          // email/password sessions unable to renew and therefore dead after
+          // an hour.
+          refreshToken: (data['refreshToken'] ?? '').toString(),
         ),
         error: null,
       );

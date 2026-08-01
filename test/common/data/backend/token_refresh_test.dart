@@ -28,6 +28,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/data/models/user_session.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
@@ -194,6 +195,87 @@ void main() {
       // SessionService.getSession() here would restore the original bug while
       // looking like a fix.
       expect(reg.contains('SessionService.getSession'), isFalse);
+    });
+  });
+
+  group('email/password sessions can refresh too', () {
+    // The first version of this fix only covered SOCIAL sign-in. Email/password
+    // sign-in is performed by the BACKEND calling Firebase server-side, so
+    // FirebaseAuth.currentUser is null on the device and the injected provider
+    // always yields null. Those sessions fell back to the stored ID token and
+    // died after an hour — the exact bug the provider was added to fix, still
+    // live for everyone who did not use Google or Facebook.
+
+    test('the persisted model accepts a session with no refresh token', () {
+      // Every currently signed-in user has one of these. A non-nullable field
+      // would have made the Hive adapter emit `fields[59] as String`, which
+      // throws "Null is not a subtype of String" on cold start after release —
+      // compiles fine, passes every new-session test, breaks only real devices.
+      const s = UserSession(
+        customerID: 'c1',
+        mobileNumber: '0917',
+        fullname: 'Juan',
+        token: 'tok',
+      );
+      expect(s.refreshToken, isNull);
+    });
+
+    test('the generated Hive adapter reads field 59 as nullable', () {
+      final gen = File('lib/common/data/models/user_session.g.dart')
+          .readAsStringSync();
+      expect(gen, contains('refreshToken: fields[59] as String?'));
+      expect(gen, isNot(contains('refreshToken: fields[59] as String,')));
+    });
+
+    test('a refresh token round-trips through copyWith', () {
+      const s = UserSession(
+        customerID: 'c1',
+        mobileNumber: '0917',
+        fullname: 'Juan',
+        token: 'old',
+      );
+      final updated = s.copyWith(token: 'new', refreshToken: 'r2');
+      expect(updated.token, 'new');
+      expect(updated.refreshToken, 'r2');
+    });
+
+    test('the client exchanges at the documented endpoint, unauthenticated', () {
+      // The exchange must NOT go through _headers(): that calls _resolveToken,
+      // which is what asked for the refresh — it would recurse.
+      final src = File('lib/common/data/backend/servana_api_client.dart')
+          .readAsStringSync();
+      final fn = src.substring(src.indexOf('_exchangeRefreshToken'));
+      expect(fn, contains("_uri('/api/auth/refresh')"));
+      expect(fn, contains("'Content-Type': 'application/json'"));
+      expect(fn.substring(0, fn.indexOf('Future<Map<String, String>> _headers')),
+          isNot(contains('await _headers()')));
+    });
+
+    test('a 401 ends the session but a 502 does not', () {
+      final src = File('lib/common/data/backend/servana_api_client.dart')
+          .readAsStringSync();
+      final fn = src.substring(
+        src.indexOf('_exchangeRefreshToken'),
+        src.indexOf('Future<Map<String, String>> _headers'),
+      );
+      // 401 = the refresh token is genuinely dead. Anything else is transient,
+      // and treating it as fatal would sign out every user during a blip.
+      expect(fn, contains('if (res.statusCode == 401) onUnauthorized?.call()'));
+      expect(fn, isNot(contains('onUnauthorized?.call();\n      return null;\n    }\n    }')));
+    });
+
+    test('refreshes are single-flight', () {
+      final src = File('lib/common/data/backend/servana_api_client.dart')
+          .readAsStringSync();
+      expect(src, contains('_refreshInFlight ??='));
+      expect(src, contains('whenComplete(() => _refreshInFlight = null)'));
+    });
+
+    test('a token with an unreadable exp is not refreshed every request', () {
+      final src = File('lib/common/data/backend/servana_api_client.dart')
+          .readAsStringSync();
+      final fn = src.substring(src.indexOf('static bool _isExpiringSoon'));
+      expect(fn.substring(0, 700), contains('return false'));
     });
   });
 }

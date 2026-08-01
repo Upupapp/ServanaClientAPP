@@ -311,6 +311,21 @@ class AuthenticationBloc
     // trigger onUnauthorized → AuthStatus.expired, which would show "Session
     // expired" UI during a voluntary logout.
     _notify(AuthStatus.guest);
+    // End the FIREBASE session too, not just the Servana one.
+    //
+    // Nothing in this app signed out of Firebase, so FirebaseAuth.currentUser
+    // survived a logout. That was a latent leak on shared devices; it became a
+    // live cross-user path once the API client began preferring the Firebase
+    // token — customer A signs in with Google, logs out, customer B signs in
+    // with email and password, and B's requests would carry A's credential.
+    //
+    // Best-effort: a failure here must not block a logout the customer asked
+    // for. The API client independently refuses a Firebase token whose subject
+    // does not match the active session, so this is one of two defences.
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (_) {}
+
     // LEAKSHIELD LEAK H-1: purge Hive registration box so the next user cannot
     // see Customer A's PII pre-populated in the registration form.
     try {

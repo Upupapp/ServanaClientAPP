@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as dev;
 
+import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -64,20 +65,132 @@ class ServanaApiClient {
     );
   }
 
+  /// In-flight refresh, so a burst of parallel requests performs ONE exchange.
+  /// Google rotates refresh tokens, so without this every request but the first
+  /// would present one that had just been replaced.
+  static Future<String?>? _refreshInFlight;
+
   Future<String?> _resolveToken() async {
+    final session = await SessionService.getSession();
+    final stored = session?.token;
+
+    // 1. Firebase SDK, for SOCIAL sign-in. getIdToken() renews when near expiry.
     final provider = tokenProvider;
     if (provider != null) {
       try {
         final fresh = await provider();
-        if (fresh != null && fresh.isNotEmpty) return fresh;
+        // The uid check is not paranoia. Logout never signed out of Firebase,
+        // so FirebaseAuth.currentUser survives it. Customer A signs in with
+        // Google, logs out, customer B signs in with email and password — the
+        // Servana session is B's, but the Firebase session is still A's, and
+        // preferring the Firebase token would send A's credential for B's
+        // requests and return A's data. Binding the token to the session that
+        // is actually active closes that regardless of what Firebase holds.
+        if (fresh != null && fresh.isNotEmpty && _matchesSession(fresh, session)) {
+          return fresh;
+        }
       } catch (_) {
-        // Never let a refresh failure become a request failure: fall through to
-        // the stored token. A stale token yields a 401 the caller already
-        // handles, which is strictly better than an exception from a getter.
+        // Never let a refresh failure become a request failure: fall through.
       }
     }
-    final session = await SessionService.getSession();
-    return session?.token;
+
+    if (stored == null || stored.isEmpty) return stored;
+
+    // 2. EMAIL/PASSWORD sign-in reaches here, and this is the case the first
+    //    version of this fix missed. Those sessions are established by the
+    //    BACKEND calling Firebase server-side, so FirebaseAuth.currentUser is
+    //    null on this device and step 1 always yields null. The stored ID token
+    //    then expires after an hour and the app signs the customer out —
+    //    exactly the bug the Firebase provider was added to fix, still live for
+    //    everyone who did not use Google or Facebook.
+    if (!_isExpiringSoon(stored)) return stored;
+
+    final refresh = session?.refreshToken ?? '';
+    if (refresh.isEmpty) return stored;
+
+    _refreshInFlight ??= _exchangeRefreshToken(refresh, session!)
+        .whenComplete(() => _refreshInFlight = null);
+    // Fall back to the stale token if the exchange fails: the server answers
+    // 401 and onUnauthorized decides, so one place owns sign-out.
+    return (await _refreshInFlight) ?? stored;
+  }
+
+  /// True when [jwt] belongs to the customer whose session is active.
+  ///
+  /// Compares the token's subject to the stored customerID. A token with no
+  /// readable subject is accepted — the alternative is refusing to authenticate
+  /// on an unparseable-but-possibly-fine token, which breaks more than it fixes.
+  static bool _matchesSession(String jwt, UserSession? session) {
+    final expected = session?.customerID;
+    if (expected == null || expected.isEmpty) return true;
+    final claims = _claimsOf(jwt);
+    final subject = (claims?['user_id'] ?? claims?['sub'])?.toString();
+    if (subject == null || subject.isEmpty) return true;
+    return subject == expected;
+  }
+
+  static Map<String, dynamic>? _claimsOf(String jwt) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length < 2) return null;
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      payload += '=' * ((4 - payload.length % 4) % 4);
+      final decoded = jsonDecode(utf8.decode(base64.decode(payload)));
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// True when [jwt] expires within two minutes, or is already expired.
+  ///
+  /// A token whose `exp` cannot be read is treated as healthy — guessing it is
+  /// expired would refresh on every single request.
+  static bool _isExpiringSoon(String jwt) {
+    final exp = _claimsOf(jwt)?['exp'];
+    if (exp is! int) return false;
+    final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+    return expiry.isBefore(DateTime.now().add(const Duration(minutes: 2)));
+  }
+
+  Future<String?> _exchangeRefreshToken(
+    String refreshToken,
+    UserSession session,
+  ) async {
+    try {
+      // Deliberately does NOT go through _headers(): that would call back into
+      // _resolveToken and recurse.
+      final res = await _client.post(
+        _uri('/api/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+      final body = jsonDecode(res.body);
+
+      if (res.statusCode != 200) {
+        // 401 means the refresh token is genuinely dead — expired, revoked, or
+        // the account disabled. Anything else (502, a network blip) is
+        // transient and must not end a working session.
+        if (res.statusCode == 401) onUnauthorized?.call();
+        return null;
+      }
+
+      final data = body is Map ? body['data'] : null;
+      final token = data is Map ? data['token'] : null;
+      if (token is! String || token.isEmpty) return null;
+
+      final rotated = data is Map ? data['refreshToken'] : null;
+      await SessionService.saveSession(
+        session.copyWith(
+          token: token,
+          refreshToken:
+              rotated is String && rotated.isNotEmpty ? rotated : refreshToken,
+        ),
+      );
+      return token;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<Map<String, String>> _headers() async {

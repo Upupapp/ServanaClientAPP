@@ -33,6 +33,23 @@ mixin _$UserSession {
   @HiveField(58)
   String get token => throw _privateConstructorUsedError;
 
+  /// Buys a new [token] when it expires.
+  ///
+  /// [token] is a Firebase ID token and lives ONE HOUR — the backend validates
+  /// it with admin.auth().verifyIdToken(). Social sign-in can renew via the
+  /// Firebase SDK, but email/password sign-in happens SERVER-side, so
+  /// FirebaseAuth.currentUser is null on this device and there is nothing for
+  /// the SDK to refresh. Those sessions redeem this at POST /api/auth/refresh.
+  ///
+  /// NULLABLE on purpose. A non-nullable field with a default generates
+  /// `fields[59] as String` in the Hive adapter, which throws
+  /// "Null is not a subtype of String" for every session persisted BEFORE
+  /// this field existed — i.e. every currently signed-in user. The code
+  /// compiles and new-session tests pass; only real devices with existing
+  /// data break, on cold start, after release.
+  @HiveField(59)
+  String? get refreshToken => throw _privateConstructorUsedError;
+
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   $UserSessionCopyWith<UserSession> get copyWith =>
@@ -51,7 +68,8 @@ abstract class $UserSessionCopyWith<$Res> {
       @HiveField(53) String? referralCode,
       @HiveField(54) String fullname,
       @HiveField(56) String? emailAddress,
-      @HiveField(58) String token});
+      @HiveField(58) String token,
+      @HiveField(59) String? refreshToken});
 }
 
 /// @nodoc
@@ -73,6 +91,7 @@ class _$UserSessionCopyWithImpl<$Res, $Val extends UserSession>
     Object? fullname = null,
     Object? emailAddress = freezed,
     Object? token = null,
+    Object? refreshToken = freezed,
   }) {
     return _then(_value.copyWith(
       customerID: null == customerID
@@ -99,6 +118,10 @@ class _$UserSessionCopyWithImpl<$Res, $Val extends UserSession>
           ? _value.token
           : token // ignore: cast_nullable_to_non_nullable
               as String,
+      refreshToken: freezed == refreshToken
+          ? _value.refreshToken
+          : refreshToken // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -117,7 +140,8 @@ abstract class _$$UserSessionImplCopyWith<$Res>
       @HiveField(53) String? referralCode,
       @HiveField(54) String fullname,
       @HiveField(56) String? emailAddress,
-      @HiveField(58) String token});
+      @HiveField(58) String token,
+      @HiveField(59) String? refreshToken});
 }
 
 /// @nodoc
@@ -137,6 +161,7 @@ class __$$UserSessionImplCopyWithImpl<$Res>
     Object? fullname = null,
     Object? emailAddress = freezed,
     Object? token = null,
+    Object? refreshToken = freezed,
   }) {
     return _then(_$UserSessionImpl(
       customerID: null == customerID
@@ -163,6 +188,10 @@ class __$$UserSessionImplCopyWithImpl<$Res>
           ? _value.token
           : token // ignore: cast_nullable_to_non_nullable
               as String,
+      refreshToken: freezed == refreshToken
+          ? _value.refreshToken
+          : refreshToken // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -176,7 +205,8 @@ class _$UserSessionImpl extends _UserSession {
       @HiveField(53) this.referralCode,
       @HiveField(54) required this.fullname,
       @HiveField(56) this.emailAddress,
-      @HiveField(58) this.token = ''})
+      @HiveField(58) this.token = '',
+      @HiveField(59) this.refreshToken})
       : super._();
 
   factory _$UserSessionImpl.fromJson(Map<String, dynamic> json) =>
@@ -202,9 +232,27 @@ class _$UserSessionImpl extends _UserSession {
   @HiveField(58)
   final String token;
 
+  /// Buys a new [token] when it expires.
+  ///
+  /// [token] is a Firebase ID token and lives ONE HOUR — the backend validates
+  /// it with admin.auth().verifyIdToken(). Social sign-in can renew via the
+  /// Firebase SDK, but email/password sign-in happens SERVER-side, so
+  /// FirebaseAuth.currentUser is null on this device and there is nothing for
+  /// the SDK to refresh. Those sessions redeem this at POST /api/auth/refresh.
+  ///
+  /// NULLABLE on purpose. A non-nullable field with a default generates
+  /// `fields[59] as String` in the Hive adapter, which throws
+  /// "Null is not a subtype of String" for every session persisted BEFORE
+  /// this field existed — i.e. every currently signed-in user. The code
+  /// compiles and new-session tests pass; only real devices with existing
+  /// data break, on cold start, after release.
+  @override
+  @HiveField(59)
+  final String? refreshToken;
+
   @override
   String toString() {
-    return 'UserSession(customerID: $customerID, mobileNumber: $mobileNumber, referralCode: $referralCode, fullname: $fullname, emailAddress: $emailAddress, token: [REDACTED])';
+    return 'UserSession(customerID: $customerID, mobileNumber: $mobileNumber, referralCode: $referralCode, fullname: $fullname, emailAddress: $emailAddress, token: $token, refreshToken: $refreshToken)';
   }
 
   @override
@@ -222,13 +270,15 @@ class _$UserSessionImpl extends _UserSession {
                 other.fullname == fullname) &&
             (identical(other.emailAddress, emailAddress) ||
                 other.emailAddress == emailAddress) &&
-            (identical(other.token, token) || other.token == token));
+            (identical(other.token, token) || other.token == token) &&
+            (identical(other.refreshToken, refreshToken) ||
+                other.refreshToken == refreshToken));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, customerID, mobileNumber,
-      referralCode, fullname, emailAddress, token);
+      referralCode, fullname, emailAddress, token, refreshToken);
 
   @JsonKey(ignore: true)
   @override
@@ -251,7 +301,8 @@ abstract class _UserSession extends UserSession {
       @HiveField(53) final String? referralCode,
       @HiveField(54) required final String fullname,
       @HiveField(56) final String? emailAddress,
-      @HiveField(58) final String token}) = _$UserSessionImpl;
+      @HiveField(58) final String token,
+      @HiveField(59) final String? refreshToken}) = _$UserSessionImpl;
   const _UserSession._() : super._();
 
   factory _UserSession.fromJson(Map<String, dynamic> json) =
@@ -275,6 +326,24 @@ abstract class _UserSession extends UserSession {
   @override
   @HiveField(58)
   String get token;
+  @override
+
+  /// Buys a new [token] when it expires.
+  ///
+  /// [token] is a Firebase ID token and lives ONE HOUR — the backend validates
+  /// it with admin.auth().verifyIdToken(). Social sign-in can renew via the
+  /// Firebase SDK, but email/password sign-in happens SERVER-side, so
+  /// FirebaseAuth.currentUser is null on this device and there is nothing for
+  /// the SDK to refresh. Those sessions redeem this at POST /api/auth/refresh.
+  ///
+  /// NULLABLE on purpose. A non-nullable field with a default generates
+  /// `fields[59] as String` in the Hive adapter, which throws
+  /// "Null is not a subtype of String" for every session persisted BEFORE
+  /// this field existed — i.e. every currently signed-in user. The code
+  /// compiles and new-session tests pass; only real devices with existing
+  /// data break, on cold start, after release.
+  @HiveField(59)
+  String? get refreshToken;
   @override
   @JsonKey(ignore: true)
   _$$UserSessionImplCopyWith<_$UserSessionImpl> get copyWith =>
