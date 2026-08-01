@@ -480,7 +480,25 @@ class _HomeScreenState extends State<HomeScreen> {
           .map((o) => _FeaturedItem(raw: o, isAircon: false));
       final airconItems = airconStore.bookableOptions
           .map((o) => _FeaturedItem(raw: o, isAircon: true));
-      final all = [...bwItems, ...airconItems].take(12).toList();
+      // Interleaved, not concatenated-then-truncated.
+      //
+      // This was `[...bwItems, ...airconItems].take(12)`. Beauty & Wellness
+      // alone seeds well over twelve options (migrations 002-005 add Massage,
+      // Nails, Hair, Facial and Beauty Drip under service_id 2), so the window
+      // filled before it ever reached the aircon items and "Featured Services"
+      // could never feature an aircon service. The cap looked like a display
+      // limit; it was acting as a category filter.
+      //
+      // Alternating draws from both lists keeps the same twelve-item budget
+      // while guaranteeing each category is represented when it has anything to
+      // show.
+      final bw = bwItems.toList();
+      final ac = airconItems.toList();
+      final all = <_FeaturedItem>[];
+      for (var i = 0; all.length < 12 && (i < bw.length || i < ac.length); i++) {
+        if (i < bw.length) all.add(bw[i]);
+        if (all.length < 12 && i < ac.length) all.add(ac[i]);
+      }
       final isLoading = bwStore.isLoading || airconStore.isLoading;
 
       if (all.isEmpty && isLoading) {

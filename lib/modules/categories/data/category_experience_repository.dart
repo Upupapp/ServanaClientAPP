@@ -35,7 +35,26 @@ class CategoryExperienceRepository {
     if (allowList == null && pattern == null) return true;
     final level2 = (option['level2'] ?? '').toString().toLowerCase();
     if (level2.isEmpty) return true; // include options with no category tag
-    if (allowList != null) return allowList.contains(level2);
+
+    // Substring, not equality.
+    //
+    // The allow-list holds short keys ('drip', 'facial') while the backend
+    // sends the full level_2 label, which for Beauty & Wellness is
+    // 'Beauty Drip' and 'Beauty Drip Add Ons' (migration 005). Exact membership
+    // could never match either, so all 10 Beauty Drip treatments were filtered
+    // out of the category screen and only Facial survived.
+    //
+    // This was masked until recently: the backend was dropping level2 from
+    // /services/full entirely, so `level2` was always empty and the early
+    // return above included everything. Fixing the catalog to send names is
+    // what made this filter start excluding — the bug was always here, it just
+    // had nothing to act on.
+    //
+    // Substring also keeps the list robust to the label drift that caused this:
+    // a future 'Beauty Drip Premium' matches 'drip' without another edit here.
+    if (allowList != null) {
+      return allowList.any((allowed) => level2.contains(allowed));
+    }
     if (pattern != null)
       return RegExp(pattern, caseSensitive: false).hasMatch(level2);
     return true;

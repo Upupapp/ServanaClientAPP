@@ -31,8 +31,12 @@ class CategoryExperienceController extends ChangeNotifier {
   List<ServiceOptionSummary> get visibleOptions {
     if (_selectedLevel2Value == null) return List.unmodifiable(_allOptions);
     final needle = _selectedLevel2Value!.toLowerCase();
+    // Substring, for the same reason the repository's allow-list uses one: the
+    // chip carries a short key ('drip') and categoryKey is the full level_2
+    // label ('Beauty Drip'). Equality meant the Drip chip selected nothing and
+    // the screen showed its empty state over ten live treatments.
     return _allOptions
-        .where((o) => o.categoryKey.toLowerCase() == needle)
+        .where((o) => o.categoryKey.toLowerCase().contains(needle))
         .toList();
   }
 

@@ -1,6 +1,7 @@
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
 import 'package:flutter/material.dart';
+import 'package:client/common/domain/pricing/catalog_price.dart';
 
 // ── Color / visual identity tokens ────────────────────────────────────────
 
@@ -110,15 +111,12 @@ abstract final class ServiceOptionSummaryMapper {
     );
   }
 
-  static double? _extractPrice(Map<String, dynamic> o) {
-    for (final key in ['basePrice', 'base_price', 'price', 'amount']) {
-      final v = o[key];
-      if (v == null) continue;
-      if (v is num) return v.toDouble();
-      if (v is String) return double.tryParse(v);
-    }
-    return null;
-  }
+  /// Delegates to the shared resolver so this screen and search cannot drift
+  /// apart on what a row costs. They already had: search read one spelling and
+  /// defaulted to 0, this read four and parsed strings, so the same option
+  /// could show a price here and "Get a quote" there.
+  static double? _extractPrice(Map<String, dynamic> o) =>
+      extractCatalogPricePesos(o);
 
   static String _formatPrice(double? price) {
     if (price == null) return 'Price varies';
