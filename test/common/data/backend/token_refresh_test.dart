@@ -221,8 +221,8 @@ void main() {
     });
 
     test('the generated Hive adapter reads field 59 as nullable', () {
-      final gen = File('lib/common/data/models/user_session.g.dart')
-          .readAsStringSync();
+      final gen =
+          File('lib/common/data/models/user_session.g.dart').readAsStringSync();
       expect(gen, contains('refreshToken: fields[59] as String?'));
       expect(gen, isNot(contains('refreshToken: fields[59] as String,')));
     });
@@ -239,7 +239,8 @@ void main() {
       expect(updated.refreshToken, 'r2');
     });
 
-    test('the client exchanges at the documented endpoint, unauthenticated', () {
+    test('the client exchanges at the documented endpoint, unauthenticated',
+        () {
       // The exchange must NOT go through _headers(): that calls _resolveToken,
       // which is what asked for the refresh — it would recurse.
       final src = File('lib/common/data/backend/servana_api_client.dart')
@@ -247,7 +248,8 @@ void main() {
       final fn = src.substring(src.indexOf('_exchangeRefreshToken'));
       expect(fn, contains("_uri('/api/auth/refresh')"));
       expect(fn, contains("'Content-Type': 'application/json'"));
-      expect(fn.substring(0, fn.indexOf('Future<Map<String, String>> _headers')),
+      expect(
+          fn.substring(0, fn.indexOf('Future<Map<String, String>> _headers')),
           isNot(contains('await _headers()')));
     });
 
@@ -261,7 +263,10 @@ void main() {
       // 401 = the refresh token is genuinely dead. Anything else is transient,
       // and treating it as fatal would sign out every user during a blip.
       expect(fn, contains('if (res.statusCode == 401) onUnauthorized?.call()'));
-      expect(fn, isNot(contains('onUnauthorized?.call();\n      return null;\n    }\n    }')));
+      expect(
+          fn,
+          isNot(contains(
+              'onUnauthorized?.call();\n      return null;\n    }\n    }')));
     });
 
     test('refreshes are single-flight', () {

@@ -86,7 +86,9 @@ class ServanaApiClient {
         // preferring the Firebase token would send A's credential for B's
         // requests and return A's data. Binding the token to the session that
         // is actually active closes that regardless of what Firebase holds.
-        if (fresh != null && fresh.isNotEmpty && _matchesSession(fresh, session)) {
+        if (fresh != null &&
+            fresh.isNotEmpty &&
+            _matchesSession(fresh, session)) {
           return fresh;
         }
       } catch (_) {

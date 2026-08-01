@@ -67,7 +67,8 @@ void main() {
 
     test('garbage does not throw', () {
       expect(extractCatalogPricePesos({'base_price': 'n/a'}), isNull);
-      expect(extractCatalogPricePesos({'base_price': <String, dynamic>{}}), isNull);
+      expect(extractCatalogPricePesos({'base_price': <String, dynamic>{}}),
+          isNull);
     });
   });
 
@@ -116,7 +117,9 @@ void main() {
     // service. A cap that reads as a display limit was acting as a filter.
     List<String> featured(List<String> bw, List<String> ac, {int cap = 12}) {
       final all = <String>[];
-      for (var i = 0; all.length < cap && (i < bw.length || i < ac.length); i++) {
+      for (var i = 0;
+          all.length < cap && (i < bw.length || i < ac.length);
+          i++) {
         if (i < bw.length) all.add(bw[i]);
         if (all.length < cap && i < ac.length) all.add(ac[i]);
       }
@@ -134,7 +137,8 @@ void main() {
     });
 
     test('the old concatenate-then-take showed zero aircon items', () {
-      final old = [...List.generate(30, (i) => 'bw$i'), 'ac0'].take(12).toList();
+      final old =
+          [...List.generate(30, (i) => 'bw$i'), 'ac0'].take(12).toList();
       expect(old.any((s) => s.startsWith('ac')), isFalse);
     });
 

@@ -495,7 +495,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final bw = bwItems.toList();
       final ac = airconItems.toList();
       final all = <_FeaturedItem>[];
-      for (var i = 0; all.length < 12 && (i < bw.length || i < ac.length); i++) {
+      for (var i = 0;
+          all.length < 12 && (i < bw.length || i < ac.length);
+          i++) {
         if (i < bw.length) all.add(bw[i]);
         if (all.length < 12 && i < ac.length) all.add(ac[i]);
       }

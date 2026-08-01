@@ -28,8 +28,8 @@ String jwtFor(String uid, {String claim = 'user_id'}) {
 }
 
 void main() {
-  final client =
-      File('lib/common/data/backend/servana_api_client.dart').readAsStringSync();
+  final client = File('lib/common/data/backend/servana_api_client.dart')
+      .readAsStringSync();
   final bloc = File(
     'lib/modules/authentication/presentation/bloc/authentication_bloc.dart',
   ).readAsStringSync();
@@ -95,7 +95,8 @@ void main() {
     });
 
     test('the sub claim is honoured as well as user_id', () {
-      expect(matches(jwtFor('customer-A', claim: 'sub'), 'customer-B'), isFalse);
+      expect(
+          matches(jwtFor('customer-A', claim: 'sub'), 'customer-B'), isFalse);
       expect(matches(jwtFor('customer-B', claim: 'sub'), 'customer-B'), isTrue);
     });
 
