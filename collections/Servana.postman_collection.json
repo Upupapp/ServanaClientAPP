@@ -17,7 +17,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"firstName\": \"Technician\",\r\n    \"lastName\": \"Account\",\r\n    \"role\": 2\r\n}\r\n// super/dev - 0\r\n// admin - 1\r\n// technician - 2\r\n// customer - 3",
+              "raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"firstName\": \"Technician\",\r\n    \"lastName\": \"Account\",\r\n    \"role\": 2\r\n}\r\n// super/dev - 0\r\n// admin - 1\r\n// technician - 2\r\n// customer - 3",
               "options": {
                 "raw": {
                   "language": "json"
@@ -44,7 +44,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"firstName\": \"Technician\",\r\n    \"lastName\": \"Account\",\r\n    \"role\": 2\r\n}\r\n// super/dev - 0\r\n// admin - 1\r\n// technician - 2\r\n// customer - 3",
+                  "raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"firstName\": \"Technician\",\r\n    \"lastName\": \"Account\",\r\n    \"role\": 2\r\n}\r\n// super/dev - 0\r\n// admin - 1\r\n// technician - 2\r\n// customer - 3",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -97,7 +97,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"dbRegister\": {\n            \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n            \"email\": \"bitolak355@deposin.com\",\n            \"firstName\": \"Technician\",\n            \"lastName\": \"Account\",\n            \"role\": \"2\",\n            \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n            \"phoneNumber\": null\n        },\n        \"verify\": \"https://servana-59bee.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=xtr3cWvZua1wLjJP6QhFNnWdV-wwZhF2734N6xaDP-sAAAGcSOvn7w&apiKey=AIzaSyByFnVC6Dw-ecoxLuJMj9bZATfv7P0qf0w&lang=en\"\n    }\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"dbRegister\": {\n            \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n            \"email\": \"user@example.com\",\n            \"firstName\": \"Technician\",\n            \"lastName\": \"Account\",\n            \"role\": \"2\",\n            \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n            \"phoneNumber\": null\n        },\n        \"verify\": \"https://servana-59bee.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=xtr3cWvZua1wLjJP6QhFNnWdV-wwZhF2734N6xaDP-sAAAGcSOvn7w&apiKey={{firebaseApiKey}}&lang=en\"\n    }\n}"
             }
           ]
         },
@@ -122,7 +122,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"fcmToken\": \"\"\r\n} ",
+              "raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"fcmToken\": \"\"\r\n} ",
               "options": {
                 "raw": {
                   "language": "json"
@@ -149,7 +149,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"email\": \"bitolak355@deposin.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"fcmToken\": \"\"\r\n} ",
+                  "raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"password\": \"Asdf@1234\",\r\n    \"fcmToken\": \"\"\r\n} ",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -202,7 +202,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IjRiMTFjYjdhYjVmY2JlNDFlOTQ4MDk0ZTlkZjRjNWI1ZWNhMDAwOWUiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiVGVjaG5pY2lhbiBBY2NvdW50IiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3NlcnZhbmEtNTliZWUiLCJhdWQiOiJzZXJ2YW5hLTU5YmVlIiwiYXV0aF90aW1lIjoxNzcwNzQ5OTk5LCJ1c2VyX2lkIjoicG4zYlp1T3VkRWUySEtkTUJ4Y2lQTXVYUDNEMyIsInN1YiI6InBuM2JadU91ZEVlMkhLZE1CeGNpUE11WFAzRDMiLCJpYXQiOjE3NzA3NDk5OTksImV4cCI6MTc3MDc1MzU5OSwiZW1haWwiOiJiaXRvbGFrMzU1QGRlcG9zaW4uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYml0b2xhazM1NUBkZXBvc2luLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bOkARcn4wcsvI-_NNvQpZ5gJ2FjDjX2nJyfB2aTx5pSrg8HuPwEzDon5sTZG_ozRs2VIbr5kD6bIl6Qn_Ll_Vl9n6NpaHpVganfDz4GnaXV0iQsAHBVTXbhxVAp4yBUwiBDXAl18D9lnobJZlPr_5EQSvKx8udi18V4ptxYnc2-KTIgh7FqSRF-NPIrVIdr-kGF0Elkdx7o6nCSsdeRayBQ0lgkQbCsbhomiTTV01ZQ-8upmpJMO7Hhs168Epvo5hY__28gxv_YfIa7kyx7Zu3YGFIQosc2BCHzCFIpI5ufvAcY2kZ5SjMynVda878AMQGONyGTuP7_S6UBNT3kBBg\",\n        \"refreshToken\": \"AMf-vBwheOlkQD23Cy1Ms5TQtL_AiB_CuOxjVo87tERzn2YvB5YXYmrZ7OyB72AkRPWtH_Qx2cqpauOIobWFU1Q-aNFuGeQ2EG1hIFzUzQVwpWENZGIGMppXahaOkj1SgDxAWH4LFyxMvCwZuqsnpIoq1m9JfjDMhFsQMqTYcM9B_gr6lKdz4Jk2jUDbP3ZvJ9y-VcuewsrOEluOBStloHUGtBdBfBF4RMNv9KsudaR5gT7UZPgPLVQ\",\n        \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"email\": \"bitolak355@deposin.com\",\n        \"firstName\": \"Technician\",\n        \"lastName\": \"Account\",\n        \"role\": \"2\",\n        \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n        \"phoneNumber\": null\n    }\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"token\": \"{{token}}\",\n        \"refreshToken\": \"{{refreshToken}}\",\n        \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"email\": \"user@example.com\",\n        \"firstName\": \"Technician\",\n        \"lastName\": \"Account\",\n        \"role\": \"2\",\n        \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n        \"phoneNumber\": null\n    }\n}"
             }
           ]
         },
@@ -223,7 +223,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"idToken\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYWM0MWY3NTA4OGZlOGUwOWEwN2Q0NDRjZmQ2YjhjZTQ4MTJhMzEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiVGVjaG5pY2lhbiBBY2NvdW50IiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3NlcnZhbmEtNTliZWUiLCJhdWQiOiJzZXJ2YW5hLTU5YmVlIiwiYXV0aF90aW1lIjoxNzczMTY2NTY3LCJ1c2VyX2lkIjoicG4zYlp1T3VkRWUySEtkTUJ4Y2lQTXVYUDNEMyIsInN1YiI6InBuM2JadU91ZEVlMkhLZE1CeGNpUE11WFAzRDMiLCJpYXQiOjE3NzMxNjY1NjcsImV4cCI6MTc3MzE3MDE2NywiZW1haWwiOiJiaXRvbGFrMzU1QGRlcG9zaW4uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYml0b2xhazM1NUBkZXBvc2luLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bF35JlHseSVyHwPlNkiWg274BZQ89GFanCC9zGQnUt5gjbpGLPm7QXee77q9fNV7DU1IWIY8WSgnIh84QbhewKO8HdYLpfrUrwJmOF9YA3Glg9mvBM_pHbO5cL_0WfHmCS3VMydy-uLZgRZPRIExMFJ09cdU0fK6wzG2e-dz9yHaY4-McIipTnGUQtQi8QqF_wV5d7BahxeNlV6KBhVBB26ataPtxhGC4Mr6k2kYteb6Z2FuMAPeFvfGjeNQZaezaRxKcT9gd2B-g_669IEJAxH1qiWtslwNetvFmNOiS5wkj7-YnCaANgnXLIc5ZGIyHigENgY33YxcbYBMXXArRg\"\n}",
+              "raw": "{\n    \"idToken\": \"{{token}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -257,7 +257,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"idToken\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYWM0MWY3NTA4OGZlOGUwOWEwN2Q0NDRjZmQ2YjhjZTQ4MTJhMzEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiVGVjaG5pY2lhbiBBY2NvdW50IiwiaXNzIjoiaHR0cHM6Ly9zZWN1cmV0b2tlbi5nb29nbGUuY29tL3NlcnZhbmEtNTliZWUiLCJhdWQiOiJzZXJ2YW5hLTU5YmVlIiwiYXV0aF90aW1lIjoxNzczMTY2NTY3LCJ1c2VyX2lkIjoicG4zYlp1T3VkRWUySEtkTUJ4Y2lQTXVYUDNEMyIsInN1YiI6InBuM2JadU91ZEVlMkhLZE1CeGNpUE11WFAzRDMiLCJpYXQiOjE3NzMxNjY1NjcsImV4cCI6MTc3MzE3MDE2NywiZW1haWwiOiJiaXRvbGFrMzU1QGRlcG9zaW4uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYml0b2xhazM1NUBkZXBvc2luLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bF35JlHseSVyHwPlNkiWg274BZQ89GFanCC9zGQnUt5gjbpGLPm7QXee77q9fNV7DU1IWIY8WSgnIh84QbhewKO8HdYLpfrUrwJmOF9YA3Glg9mvBM_pHbO5cL_0WfHmCS3VMydy-uLZgRZPRIExMFJ09cdU0fK6wzG2e-dz9yHaY4-McIipTnGUQtQi8QqF_wV5d7BahxeNlV6KBhVBB26ataPtxhGC4Mr6k2kYteb6Z2FuMAPeFvfGjeNQZaezaRxKcT9gd2B-g_669IEJAxH1qiWtslwNetvFmNOiS5wkj7-YnCaANgnXLIc5ZGIyHigENgY33YxcbYBMXXArRg\"\n}",
+                  "raw": "{\n    \"idToken\": \"{{token}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -310,7 +310,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"message\": \"Authenticated successfully\",\n    \"dbRegister\": {\n        \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"email\": \"bitolak355@deposin.com\",\n        \"firstName\": \"Technician\",\n        \"lastName\": \"Account\",\n        \"role\": \"2\",\n        \"createdDate\": \"2026-03-10T10:32:09.825Z\",\n        \"isArchived\": false,\n        \"phoneNumber\": 441234567890\n    },\n    \"firebase\": {\n        \"uid\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"phoneNumber\": null,\n        \"email\": \"bitolak355@deposin.com\"\n    }\n}"
+              "body": "{\n    \"message\": \"Authenticated successfully\",\n    \"dbRegister\": {\n        \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"email\": \"user@example.com\",\n        \"firstName\": \"Technician\",\n        \"lastName\": \"Account\",\n        \"role\": \"2\",\n        \"createdDate\": \"2026-03-10T10:32:09.825Z\",\n        \"isArchived\": false,\n        \"phoneNumber\": 441234567890\n    },\n    \"firebase\": {\n        \"uid\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n        \"phoneNumber\": null,\n        \"email\": \"user@example.com\"\n    }\n}"
             }
           ]
         },
@@ -320,7 +320,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{api_url}}/api/auth/resendverification?email=bitolak355@deposin.com",
+              "raw": "{{api_url}}/api/auth/resendverification?email=user@example.com",
               "host": [
                 "{{api_url}}"
               ],
@@ -332,7 +332,7 @@
               "query": [
                 {
                   "key": "email",
-                  "value": "bitolak355@deposin.com"
+                  "value": "user@example.com"
                 }
               ]
             }
@@ -835,7 +835,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n            \"email\": \"bitolak355@deposin.com\",\n            \"firstName\": \"Technician\",\n            \"lastName\": \"Account\",\n            \"role\": \"2\",\n            \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n            \"isArchived\": false,\n            \"phoneNumber\": null\n        }\n    ]\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"pn3bZuOudEe2HKdMBxciPMuXP3D3\",\n            \"email\": \"user@example.com\",\n            \"firstName\": \"Technician\",\n            \"lastName\": \"Account\",\n            \"role\": \"2\",\n            \"createdDate\": \"2026-02-10T10:52:45.549Z\",\n            \"isArchived\": false,\n            \"phoneNumber\": null\n        }\n    ]\n}"
             }
           ]
         }
@@ -1299,7 +1299,7 @@
               "raw": ""
             },
             "url": {
-              "raw": "{{api_url}}/api/:id/confirm-otp?otp=712801",
+              "raw": "{{api_url}}/api/:id/confirm-otp?otp=000000",
               "host": [
                 "{{api_url}}"
               ],
