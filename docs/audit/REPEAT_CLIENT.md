@@ -8,11 +8,11 @@ Endpoint equivalence and the canonical capability registry — duplicated domain
 | Backend | `servana_api` @ `870fd28` (canonical, §3) |
 | Also inspected | admin portal `101016d`, provider web `42fbec9`, provider mobile `451eaf6` |
 | Customer web | **UNAVAILABLE** — repo has 0 committed files |
-| Findings | 20 |
+| Findings | 26 |
 
-**P0: 2 · P1: 14 · P2: 4**
+**P0: 2 · P1: 17 · P2: 6 · P3: 1**
 
-## SC-012 · CUSTOMER.BOOKING.LIST joins guest_customers on a column that does not exist (gc.phone_number) — **FIXED** in `880d5bc`
+## SC-017 · CUSTOMER.BOOKING.LIST joins guest_customers on a column that does not exist (gc.phone_number) — **FIXED** in `880d5bc`
 
 **P0** · rule §0.10 / §7 / §8 / §9 · fix in **backend** · protected release: **no**
 
@@ -26,7 +26,7 @@ GET /api/users/:userId/bookings — the sole endpoint behind the customer app's 
 
 **Recommendation.** Replace the phone subquery in bookingService.ts:352-361 with the canonical linked_customer_uid predicate, matching adminGuestService.linkGuestToClient. Add a request-level regression test that a client whose phone equals a guest's phone but who has no link row receives none of that guest's bookings. Backend-only; ServanaClient is unchanged.
 
-## SC-013 · PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and every other customer's name — **FIXED** in `65b4337`
+## SC-018 · PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and every other customer's name — **FIXED** in `65b4337`
 
 **P0** · rule §11 / §58 / §0.5 · fix in **backend** · protected release: **no**
 
@@ -40,7 +40,7 @@ Class C violation: one endpoint, one response shape, three audiences. Any unauth
 
 **Recommendation.** Add verifyAuth to technician.routes.ts:13 and return a projection selected by the caller's resolved relationship (reuse bookingAccessService.resolveBookingAccess). Both mobile clients already send a bearer token — verified above — so this closes the hole with zero protected-client change (§2).
 
-## SC-060 · Booking lifecycle status and assignment status are collapsed into one wire field; the customer app maps WORKER_ASSIGNED to 'en route' and never reads workerStatus
+## SC-077 · Booking lifecycle status and assignment status are collapsed into one wire field; the customer app maps WORKER_ASSIGNED to 'en route' and never reads workerStatus
 
 **P1** · rule §13 / §9 / §22 · fix in **backend** · protected release: **no**
 
@@ -56,7 +56,7 @@ There is no canonicalisation on the customer path, so the app cannot distinguish
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-061 · BOOKING.ADDONS: relational booking_addons rows are written only by the admin path — add-ons the customer paid for are invisible to provider and admin
+## SC-078 · BOOKING.ADDONS: relational booking_addons rows are written only by the admin path — add-ons the customer paid for are invisible to provider and admin
 
 **P1** · rule §9 / §10 / §30 · fix in **backend** · protected release: **no**
 
@@ -71,7 +71,7 @@ Two representations of the same business fact. A customer books a Beauty & Welln
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-062 · BOOKING.ADDRESS: customer bookings hold a mutable FK instead of a booking-time snapshot, so editing a saved address rewrites past bookings
+## SC-079 · BOOKING.ADDRESS: customer bookings hold a mutable FK instead of a booking-time snapshot, so editing a saved address rewrites past bookings
 
 **P1** · rule §41 / §9 · fix in **backend** · protected release: **no**
 
@@ -86,7 +86,7 @@ Two address realities for one booking entity. Admin-created bookings carry an im
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-063 · BOOKING.CREATE: app-originated bookings write no timeline or audit event, so Admin Booking 360 shows two different histories depending on origin
+## SC-080 · BOOKING.CREATE: app-originated bookings write no timeline or audit event, so Admin Booking 360 shows two different histories depending on origin
 
 **P1** · rule §15 / §16 / §10 · fix in **backend** · protected release: **no**
 
@@ -102,7 +102,7 @@ Every booking created from the customer app has an empty timeline and no audit r
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-064 · BOOKING.CREATE: the customer path ignores X-Idempotency-Key while the admin path has a full idempotency table
+## SC-081 · BOOKING.CREATE: the customer path ignores X-Idempotency-Key while the admin path has a full idempotency table
 
 **P1** · rule §17 / §19 / §0.8 · fix in **backend** · protected release: **no**
 
@@ -117,7 +117,18 @@ One capability, two implementations, only one safe to retry. The customer app al
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-065 · BOOKING.OWNERSHIP.RESOLVE is implemented twice with different rules — the list endpoint returns bookings the detail endpoint then refuses
+## SC-082 · BOOKING.DETAIL.READ has no audience projection — the sibling 65b4337 missed; the assigned provider receives the customer's OTP and GCash payment evidence
+
+**P1** · rule §58 privacy · §43 payment evidence · §9 no duplicate reality · REPEAT Class C · fix in **?** · protected release: **no**
+
+65b4337 fixed PROVIDER.PROFILE.READ by adding projectProviderProfile — one canonical service, three authorised projections. The identical Class C defect on BOOKING.DETAIL.READ was left in place: GET /api/:id selects `b.*` and the formatter spreads every column, so all three audiences (customer, actively-assigned provider, admin) receive one identical, maximal object. That object carries `otpCode` and the customer's GCash reference number and payment-proof URL.
+
+
+**Recommendation.** Add projectBooking(booking, audience) beside providerProfileProjection.ts and reuse the audience resolver that already exists — assertBookingAccess (bookingAccessService.ts:101) already returns the role, so bookingController.ts:92 can pass it straight through instead of discarding it. Follow the same explicit-list discipline as providerProfileProjection.ts:52-56: withhold by default so a new column added to `b.*` is not silently published. Minimum withheld set for audience 'provider': otpCode, proofUrl, referenceNo. Drop proof_url from the getBookingsByUserId and getTracking SELECTs entirely (bookingService.ts:284, :329) — no caller reads it.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-083 · BOOKING.OWNERSHIP.RESOLVE is implemented twice with different rules — the list endpoint returns bookings the detail endpoint then refuses
 
 **P1** · rule §9 / §10 / §11 · fix in **backend** · protected release: **no**
 
@@ -132,7 +143,7 @@ Two independent answers to 'is this booking this customer's'. The list query del
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-066 · BOOKING.PROVIDER.ASSIGN has four independent implementations with different guards, different side effects and different prices
+## SC-084 · BOOKING.PROVIDER.ASSIGN has four independent implementations with different guards, different side effects and different prices
 
 **P1** · rule §10 / §14 / §22 / §29 · fix in **backend** · protected release: **no**
 
@@ -147,7 +158,18 @@ Four assignment implementations, each with a different subset of guards and effe
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-067 · LOCATION.ID is derived in four places, and the admin path coerces the canonical loc_<lat>_<lon> string to a Number so it is always null
+## SC-085 · legacyRouteTelemetry records no uid on 30 of the 36 legacy routes, and its test injects the field Express cannot supply
+
+**P1** · rule §60 run the checks · §34 observability · REPEAT §35 deprecation · fix in **?** · protected release: **no**
+
+The telemetry added in 65b4337 exists to produce the traffic numbers that gate step 4 of the worker-route migration and to detect uid enumeration. Because it is mounted as router.use() middleware, req.params is empty when it runs, so it can only see a uid on the four routes that pass ?workerUid= in the query string. The two routes the migration doc names as highest-risk — GET /workers/location/:uid and GET /workers/:workerId/job-cards — carry their uid in the path and are therefore logged as claimsUid=no and never counted toward the enumeration threshold.
+
+
+**Recommendation.** Parse the uid from the URL rather than from req.params, which is the only source available at .use() time — e.g. match `req.path` against /^\/(?:location\/)?([^/]+)/ after the /workers mount, or move the middleware to a router.param('uid') plus router.param('workerId') registration, which does run with params bound. Then close the self-test gap the way the LAGDA probe rule prescribes: mount the real middleware on a real Express router in the test and drive it with supertest against `/api/workers/location/:uid`, so a positive fixture exists for a path-parameterised route and a regression cannot pass. Until this is fixed, treat any 'legacy traffic is low' reading as unmeasured, and do not let it satisfy step 4 of docs/WORKER_ROUTE_MIGRATION.md.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-086 · LOCATION.ID is derived in four places, and the admin path coerces the canonical loc_<lat>_<lon> string to a Number so it is always null
 
 **P1** · rule §38 / §39 / §42 / §0.12 · fix in **backend** · protected release: **no**
 
@@ -163,7 +185,7 @@ Four implementations of one derivation, split across a protected client and the 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-068 · NOTIFICATION.CUSTOMER.EMIT: the app understands 21 notification types, the backend produces exactly one, and the two route shapes are incompatible
+## SC-087 · NOTIFICATION.CUSTOMER.EMIT: the app understands 21 notification types, the backend produces exactly one, and the two route shapes are incompatible
 
 **P1** · rule §45 / §9 / §10 · fix in **backend** · protected release: **no**
 
@@ -178,7 +200,7 @@ The customer notification capability is implemented on the client and in the not
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-069 · PAYMENT.RECORD.RESOLVE: the booking↔payment join is scoped by additional_request_id in the provider read model but not in the customer or payment-mutation paths
+## SC-088 · PAYMENT.RECORD.RESOLVE: the booking↔payment join is scoped by additional_request_id in the provider read model but not in the customer or payment-mutation paths
 
 **P1** · rule §43 / §9 / §18 · fix in **backend** · protected release: **no**
 
@@ -193,7 +215,7 @@ Once an additional-work request exists there are two payments rows sharing one b
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-070 · PAYMENT.SETTLE has four implementations that leave the system in four different states
+## SC-089 · PAYMENT.SETTLE has four implementations that leave the system in four different states
 
 **P1** · rule §9 / §10 / §43 / §15 · fix in **backend** · protected release: **no**
 
@@ -208,7 +230,18 @@ Whether a settled booking shows as paid in the customer app, reaches the finance
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-071 · SERVICE.OPTIONS.LIST is the one route in service.route.ts registered outside the /services family, and the only live caller 404s
+## SC-090 · PROVIDER.LOCATION.READ has three response shapes and ServanaClient parses none — live tracking never shows the provider
+
+**P1** · rule §9 no duplicate reality · §4 additive compatibility · §20 no ghost success · REPEAT Class A/C · fix in **?** · protected release: **no**
+
+One capability, two backend routes, three envelope shapes, and the customer app's parser matches none of them. GeoPositionSnapshot.fromApiMap returns null on every real response, so the live-tracking map silently never renders the provider marker. The unit tests are green because their fixtures were written against a shape the backend does not emit — the same failure mode the options-with-addons fix was written to call out, recurring one module over.
+
+
+**Recommendation.** Two moves, in this order. (1) Backend, additive, no client release: have the legacy handler also emit the document under the key the client already probes — `res.json({ success: true, location: toCamel(doc), data: toCamel(doc) })` at technicianController.ts:177. tracking_data_source.dart:34 checks `result['data']` first, so this alone restores the marker on the installed base. (2) Converge the two shapes: make the successor return `location: toCamel(doc)` so the family has one projection, then point the client at `GET /booking/:bookingId/provider-location` in the next release. That migration is now nearly free — the client's parser needs a fix either way, and fixing it once against `result['location'] ?? result['data'] ?? result` satisfies both routes. Add a fixture to geo_position_snapshot_test.dart copied verbatim from a real response body of each route, not hand-written.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-091 · SERVICE.OPTIONS.LIST is the one route in service.route.ts registered outside the /services family, and the only live caller 404s
 
 **P1** · rule §0.5 / §4 · fix in **backend** · protected release: **no**
 
@@ -223,7 +256,7 @@ A route-family inconsistency that breaks the capability outright: the customer a
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-072 · The customer app re-parses a human display label as if it were a canonical status code
+## SC-092 · The customer app re-parses a human display label as if it were a canonical status code
 
 **P1** · rule §9 / §10 / §13 · fix in **client-mobile** · protected release: **yes**
 
@@ -238,7 +271,7 @@ Two status models inside one app, chained lossily. 'Worker Assigned' → 'WORKER
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-073 · Two complete booking read stacks inside the customer app — the canonical model, mapper and repository are dead code
+## SC-093 · Two complete booking read stacks inside the customer app — the canonical model, mapper and repository are dead code
 
 **P1** · rule §9 / §10 · fix in **client-mobile** · protected release: **yes**
 
@@ -252,7 +285,7 @@ The app carries two full representations of the booking entity. The richer, alia
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-105 · ADDRESS.CREATE has three client implementations and one endpoint that silently doubles as ADDRESS.UPDATE
+## SC-139 · ADDRESS.CREATE has three client implementations and one endpoint that silently doubles as ADDRESS.UPDATE
 
 **P2** · rule §10 / §0.12 · fix in **backend** · protected release: **no**
 
@@ -267,7 +300,7 @@ One capability, three client paths (one unauthenticated and therefore always 401
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-106 · AUTH.SIGN_IN returns two different session shapes, reconciled by scattered client-side fallback chains
+## SC-140 · AUTH.SIGN_IN returns two different session shapes, reconciled by scattered client-side fallback chains
 
 **P2** · rule §0.12 / §7 · fix in **backend** · protected release: **no**
 
@@ -282,7 +315,7 @@ Two sign-in endpoints for one capability emit disjoint session shapes, and the a
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-107 · Class F: otp_code and worker_code are produced by one generator but mean two different things, and the app carries both names for one field
+## SC-141 · Class F: otp_code and worker_code are produced by one generator but mean two different things, and the app carries both names for one field
 
 **P2** · rule §0.11 (Class F) / §17 · fix in **backend** · protected release: **no**
 
@@ -297,7 +330,29 @@ Same generator, same 6-digit shape, two unrelated business meanings, and the cus
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-108 · The existing REPEAT parity test suite covers only provider capabilities — no customer capability has a parity test
+## SC-142 · createBooking returns the plaintext booking OTP to the caller as otpDevOnly, with no environment guard
+
+**P2** · rule §58 privacy · §11 fail closed · fix in **?** · protected release: **no**
+
+The booking-creation response includes the OTP that was just emailed to the customer, under a field name asserting it is development-only. Nothing gates it on NODE_ENV. It defeats the point of mailing the code — possession of the mailbox is no longer required to confirm the booking — and it puts an OTP into every client log, crash report and proxy that captures the response body.
+
+
+**Recommendation.** Delete `otpDevOnly` from the bookingService.ts:127 return. If a development affordance is genuinely wanted, gate it the way verifyAuth.ts:54-59 gates its bypass — `...(process.env.NODE_ENV !== 'production' ? { otpDevOnly: otp } : {})` — so production cannot emit it regardless of caller.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-143 · JOB_CARD.READ has two independent formatters over one canonical query, and they disagree on address.instructions
+
+**P2** · rule §10 no duplicated domain logic · §9 no duplicate reality · §58 privacy · fix in **?** · protected release: **no**
+
+The legacy and successor job-card endpoints share the canonical read (technicianService.getJobCardsByWorker) but each hand-rolls its own response object. The shapes have drifted: the unauthenticated legacy route publishes the customer's delivery instructions and the authenticated successor does not. The migration doc lists this pair under 'Already available — the app can move today', which is true only because nothing consumes the extra field.
+
+
+**Recommendation.** Collapse the two formatters into one exported function used by both controllers — the canonical read is already shared, so only the projection needs consolidating (§10). Resolve the field deliberately in one place rather than by omission: since no client reads delivery_instructions, drop it from the legacy shape too. That is the cheapest item on the migration doc's own 'Interim hardening' list, it removes customer access information from an unauthenticated endpoint, and it needs no protected release because the field has no consumer.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-144 · The existing REPEAT parity test suite covers only provider capabilities — no customer capability has a parity test
 
 **P2** · rule §60 / REPEAT §30-32 · fix in **backend** · protected release: **no**
 
@@ -309,6 +364,17 @@ Every finding above concerns a customer capability, and none could have been cau
 - **Test gap:** Zero customer-capability parity coverage; zero request-level (as opposed to source-text) parity coverage.
 
 **Recommendation.** Extend tests/repeat-parity.test.js with customer-capability cases mirroring the provider ones — assert one writer per canonical table (booking_addons, booking_timeline_events, booking_audit_events), assert the payments join carries the additional_request_id discriminator everywhere, and assert list/detail ownership agreement. Then add the four live integration tests already listed in the TODO plus their customer equivalents.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-163 · Class F confirmed still live at 799b6aa: otp_code and worker_code are one generator behind two business meanings, and the assignment service returns worker_code under the key otpCode
+
+**P3** · rule §0.12 alias conflicts · REPEAT Class F · fix in **?** · protected release: **no**
+
+Carried forward from the first pass (masterlist SC-107). Re-verified rather than re-reported, because the two secrets now travel in the same response object and the collision is one careless fallback away from showing a customer the wrong code. The client has already absorbed the cost in a hand-written warning comment.
+
+
+**Recommendation.** Rename the return key at technicianService.ts:694 from `otpCode` to `workerCode` so the wire name matches the column and the meaning. Register both names in the field alias registry (src/utils/fieldParity.ts already hosts this kind of entry) with an explicit conflict policy stating they are distinct entities and must never be merged, per §0.12. Then remove `otpCode` from the customer booking projection entirely as part of REP-02, which retires the collision rather than documenting it.
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 

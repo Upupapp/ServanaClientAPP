@@ -8,11 +8,11 @@ Cross-platform field parity — what the client reads and writes versus what the
 | Backend | `servana_api` @ `870fd28` (canonical, §3) |
 | Also inspected | admin portal `101016d`, provider web `42fbec9`, provider mobile `451eaf6` |
 | Customer web | **UNAVAILABLE** — repo has 0 committed files |
-| Findings | 15 |
+| Findings | 21 |
 
-**P1: 8 · P2: 4 · P3: 3**
+**P1: 10 · P2: 6 · P3: 5**
 
-## SC-016 · 'Pay Now' CTA is unreachable on booking detail — `_needsPayment` can never be true
+## SC-021 · 'Pay Now' CTA is unreachable on booking detail — `_needsPayment` can never be true
 
 **P1** · rule §43 / §20 · fix in **backend** · protected release: **no**
 
@@ -28,7 +28,7 @@ A customer with an unpaid GCash/PayMongo booking has no way to complete payment 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-017 · `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404) — **FIXED** in `65b4337`
+## SC-022 · `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404) — **FIXED** in `65b4337`
 
 **P1** · rule §4 (route contract) / §61 · fix in **backend** · protected release: **no**
 
@@ -42,7 +42,7 @@ The aircon add-on picker, the Beauty & Wellness add-on picker and the Category E
 
 **Recommendation.** Backend, additive and release-free: register the missing alias `router.get("/services/:serviceId/options-with-addons", serviceController.listOptionsWithAddons)` in servana_api-main/src/routes/service.route.ts alongside line 12. Keep the existing 2-segment route registered — per SEO/protected-endpoint policy it must not be removed until telemetry proves no client uses it.
 
-## SC-018 · `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method`
+## SC-023 · `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method`
 
 **P1** · rule §43 (payment status/method/evidence are distinct concepts) / §13 (no per-platform status models) · fix in **backend** · protected release: **no**
 
@@ -58,7 +58,7 @@ Three consumers (customer mobile, provider mobile, admin portal) all branch on `
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-019 · `totalAmount` is not a registered alias of `finalPrice` — customer booking detail renders ₱0.00 for every booking
+## SC-024 · `totalAmount` is not a registered alias of `finalPrice` — customer booking detail renders ₱0.00 for every booking
 
 **P1** · rule §4 (additive compatibility) / §9 (no duplicate reality) · fix in **backend** · protected release: **no**
 
@@ -74,7 +74,7 @@ The customer app reads the booking amount under the name `totalAmount`. No backe
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-020 · Booking response carries no `latitude`/`longitude` — live-tracking destination pin resolves to (0,0)
+## SC-025 · Booking response carries no `latitude`/`longitude` — live-tracking destination pin resolves to (0,0)
 
 **P1** · rule §39 (do not fabricate coordinates) / §3 · fix in **backend** · protected release: **no**
 
@@ -90,7 +90,7 @@ The tracking screen reads the service destination coordinates from the booking d
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-021 · Bookings list invents the service name — every booking without addons is labelled 'Beauty & Wellness'
+## SC-026 · Bookings list invents the service name — every booking without addons is labelled 'Beauty & Wellness'
 
 **P1** · rule §3 (frontend must not establish authoritative business state) · fix in **client-mobile** · protected release: **yes**
 
@@ -106,7 +106,7 @@ An aircon booking with no add-ons is displayed in the customer's Bookings list a
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-022 · Customer booking payload omits `serviceName`/`serviceCategory` — admin and provider get them, customer does not
+## SC-027 · Customer booking payload omits `serviceName`/`serviceCategory` — admin and provider get them, customer does not
 
 **P1** · rule §9 (no duplicate reality) / §3 (backend is canonical) · fix in **backend** · protected release: **no**
 
@@ -122,7 +122,7 @@ The backend already resolves the booking's service name for the admin portal and
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-023 · Customer notification taxonomy: client recognises 22 types, backend emits exactly 1
+## SC-028 · Customer notification taxonomy: client recognises 22 types, backend emits exactly 1
 
 **P1** · rule §45 (notification canonical pattern) / §9 · fix in **backend** · protected release: **no**
 
@@ -138,7 +138,27 @@ The backend already resolves the booking's service name for the admin portal and
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-082 · Booking reference diverges between the app's own two screens: list shows `BK-<id>`, detail shows `SVN-000<id>`
+## SC-029 · Linked guest bookings appear in the customer's list but 403 on tap — 880d5bc fixed the query and left the access check behind — **FIXED** in `a062ef9`
+
+**P1** · rule §8 guest customer / §9 no duplicate reality / §11 fail closed · fix in **?** · protected release: **no**
+
+880d5bc made the bookings list correctly surface admin-linked guest bookings, but resolveBookingAccess still authorises only on bookings.user_id, so every one of those bookings returns 403 the moment the customer taps it.
+
+
+**Recommendation.** Extend resolveBookingAccess in servana_api-main/src/services/bookingAccessService.ts:66-75 with the same linkage the list query uses: after the user_id check, `SELECT 1 FROM guest_customers gc JOIN bookings b ON b.guest_customer_id = gc.guest_customer_id WHERE b.id = $1 AND gc.linked_customer_uid = $2` and return 'customer' on a hit. Use the audited link column only (linked_customer_uid, set at adminGuestService.ts alongside linked_at/linked_by_admin_uid) — never phone. Backend-only, no protected release. Add an authorization test that a linked guest booking is readable by the linked customer and a non-linked one is not, so list and detail cannot drift apart again.
+
+## SC-030 · Provider live-location response nests the GPS doc under `location`; the client only accepts it at the root or under `data` — the tracking map's provider pin is null on every fetch
+
+**P1** · rule §9 no duplicate reality / §3 backend canonical / §20 no ghost success · fix in **?** · protected release: **no**
+
+GET /api/workers/location/:uid returns the GPS doc under `location`, but GeoPositionSnapshot.fromApiMap only reads `loc` at the root or under `data`, so the client's provider-location parse returns null on every call and the live-tracking map never shows a provider pin.
+
+
+**Recommendation.** Backend-only and additive, no protected release (§2). In servana_api-main/src/controllers/technicianController.ts:177-180 spread the camel-cased doc alongside the existing wrapper — `res.json({ success: true, location: doc, ...doc })` — so `loc`, `uid`, `isOnline` and `updatedAt` also appear at the root where geo_position_snapshot.dart:47 already looks. Keep the `location` key so any other consumer is unaffected (§4). Then fix servana_client-main/test/modules/tracking/domain/geo_position_snapshot_test.dart to feed the real `{success, location:{...}}` envelope, otherwise the suite will keep certifying the break. Consider registering a parity group `loc → [location, position, geo]` so the two names converge for future readers.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-108 · Booking reference diverges between the app's own two screens: list shows `BK-<id>`, detail shows `SVN-000<id>`
 
 **P2** · rule §9 (no duplicate reality) / §3 · fix in **client-mobile** · protected release: **yes**
 
@@ -154,7 +174,7 @@ The customer sees `BK-123` in their Bookings list and `SVN-000123` on the detail
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-083 · Customer app reads five booking fields that no backend response anywhere produces
+## SC-109 · Customer app reads five booking fields that no backend response anywhere produces
 
 **P2** · rule §9 / §56 · fix in **backend** · protected release: **no**
 
@@ -170,7 +190,7 @@ Five aliases the customer app reads are dead everywhere in the system. The provi
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-084 · Customer mobile generates the canonical `locationId` and supplies raw coordinates the backend persists unvalidated
+## SC-110 · Customer mobile generates the canonical `locationId` and supplies raw coordinates the backend persists unvalidated
 
 **P2** · rule §38 / §39 / §42 · fix in **backend** · protected release: **no**
 
@@ -186,7 +206,7 @@ Five aliases the customer app reads are dead everywhere in the system. The provi
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-085 · Parity registry mirrors are out of sync — `token` and `email` groups exist only in the backend
+## SC-111 · Parity registry mirrors are out of sync — `token` and `email` groups exist only in the backend
 
 **P2** · rule SWEEP Registry sync (command_servana_seo.md step 5) / §61 · fix in **admin** · protected release: **no**
 
@@ -202,7 +222,29 @@ The SWEEP procedure requires the two frontend mirrors to stay byte-for-byte in s
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-114 · `currency` is invented client-side on customer bookings while every other platform receives it from the backend
+## SC-112 · Parity registry mirrors remain two groups behind the backend and there is still no CI check
+
+**P2** · rule SWEEP registry sync (command_servana_seo.md step 5) / §61 · fix in **?** · protected release: **no**
+
+The two Angular parity-registry mirrors still omit the backend's `email` and `token` groups (58 vs 56), and no automated check yet exists to stop the next edit from widening the gap.
+
+
+**Recommendation.** Copy the `token` and `email` groups from servana_api-main/src/utils/fieldParity.ts:36-47 into both mirror files, then run `npx tsc --noEmit` in all three repos (§60). Fold this into the same edit as the totalAmount alias above. Add a CI meta-test that extracts the canonical-name list from all three files and fails on any difference — the first pass flagged this drift as silent, and it is still silent.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-113 · The authenticated successor route repeats the same `location` wrapper, so the worker-route migration cannot be completed without a protected client release
+
+**P2** · rule §2 protected release / §4 additive compatibility / §61 · fix in **?** · protected release: **yes**
+
+GET /api/booking/:bookingId/provider-location uses the same unparseable `location` wrapper as the legacy route it is meant to replace, so migrating the customer app off the unauthenticated route requires a protected mobile release the migration plan assumes it can avoid.
+
+
+**Recommendation.** Apply the same root-level spread to providerLocationAccessController.ts:85 that SW2-01 recommends for the legacy handler, so both routes emit an identical, client-parseable body and the client can be repointed by URL alone at a future scheduled release. Keep `assigned` as an additive top-level flag. Until then, record in docs/WORKER_ROUTE_MIGRATION.md that step 4 is blocked on a customer-mobile release, rather than on telemetry.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-156 · `currency` is invented client-side on customer bookings while every other platform receives it from the backend
 
 **P3** · rule §59 (canonical currency) / §3 · fix in **backend** · protected release: **no**
 
@@ -218,7 +260,18 @@ The customer booking model hard-codes PHP because the customer booking payload i
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-115 · `fullname` is bridged by ad-hoc service code instead of the parity registry, and splits names naively
+## SC-157 · `formatBooking` is applied to booking_tracking rows, fabricating `bookingCode: "SVN-undefined"` on the customer tracking response
+
+**P3** · rule §3 backend canonical / SWEEP formatter rule (command_servana_seo.md step 2) · fix in **?** · protected release: **no**
+
+The customer tracking endpoint runs booking_tracking rows through formatBooking, which unconditionally synthesises a booking code from an undefined primary key and emits the literal string "SVN-undefined" on every tracking event.
+
+
+**Recommendation.** In servana_api-main/src/controllers/bookingController.ts:161 stop reusing the booking formatter for tracking rows — return `tracking.map(toCamel)`, or add a dedicated `formatTrackingEvent`. Defensively, guard line 508 the same way line 507 is guarded so `bookingCode` is omitted rather than fabricated when there is no PK. Purely additive removal of a bogus field; no client reads it.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-158 · `fullname` is bridged by ad-hoc service code instead of the parity registry, and splits names naively
 
 **P3** · rule SWEEP Registry audit (step 1) · fix in **backend** · protected release: **no**
 
@@ -234,7 +287,18 @@ The `fullname ↔ firstName/lastName` bridge works but lives outside the registr
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-116 · Three more booking fields fabricated by the customer app: `downPayment`, `numberOfPersonnel`, `distanceFromOffice`
+## SC-159 · Provider-profile projection drops `email`, removing the last name fallback on the booking detail screen
+
+**P3** · rule §58 privacy (the removal is correct) / §4 (the client-visible delta is new) · fix in **?** · protected release: **no**
+
+65b4337 correctly withholds the provider's email from customers, which as a side effect kills the third rung of the client's provider-name fallback chain, so a provider with blank name fields now displays as 'Technician'.
+
+
+**Recommendation.** No backend change; do not re-add email. If a display name is wanted for name-blank providers, the correct fix is the one already recommended under first-pass SC-083: return `worker_name` inline on the booking read model (join user_credentials on bookings.worker_uid in servana_api-main/src/services/bookingService.ts:209-225) and register a `workerName → [worker_name, providerName, provider_name]` parity group. That also removes the extra round-trip booking_detail_screen.dart:287 makes purely to learn a name.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-160 · Three more booking fields fabricated by the customer app: `downPayment`, `numberOfPersonnel`, `distanceFromOffice`
 
 **P3** · rule §3 · fix in **none** · protected release: **no**
 

@@ -10,7 +10,7 @@ import collections
 SCRATCH = pathlib.Path(__file__).parent
 OUT = pathlib.Path('C:/Users/paulg/OneDrive/Desktop/servana_client-main/docs/audit')
 
-d = json.loads((SCRATCH / 'client_findings.json').read_text(encoding='utf-8'))
+d = json.loads((SCRATCH / '_findings.json').read_text(encoding='utf-8'))
 findings = d['findings']
 unverified = d.get('unverified', [])
 stats = d.get('stats', {})
@@ -34,14 +34,53 @@ PASS_INTENT = {
 }
 
 # Items closed during this session, keyed by a substring of the finding title.
+#
+# ORDER MATTERS: the first key that appears in a title wins, so specific keys
+# must precede general ones. 'cancel' is broad enough to swallow the round-2
+# guest-cancellation findings and misattribute them to bd8c355, which is the
+# commit that did NOT fix them.
 CLOSED = {
+    # 9a07330 — booking lifecycle identity from the token.
+    'accept,start,complete,decline': '9a07330',
+    'workers/bookings/:id/{accept': '9a07330',
+
+    # a062ef9 — the four P0s the six-pass re-run found.
+    'cancel any guest booking': 'a062ef9',
+    'cancelled by any authenticated': 'a062ef9',
+    'Guest-owned bookings can be cancelled': 'a062ef9',
+    'Guest bookings can be cancelled': 'a062ef9',
+    'guest booking LIST but not': 'a062ef9',
+    'sibling ownership resolver': 'a062ef9',
+    '403 on tap': 'a062ef9',
+    'workers/role': 'a062ef9',
+    'role/3': 'a062ef9',
+    'role/:role': 'a062ef9',
+    'job-cards': 'a062ef9',
+    '/api/additional': 'a062ef9',
+    'additional/* family': 'a062ef9',
+    "excludes 'CANCELED'": 'a062ef9',
+    'payment retry job excludes': 'a062ef9',
+    # NOT a bare 'CANCELED' key. It matched "Cancelled bookings still occupy the
+    # provider's calendar", a separate defect in providerAvailabilityEngine that
+    # a062ef9 does not touch — marking an open bug closed is the one error a
+    # masterlist must not make.
+    'Residual fail-open ownership shape': 'a062ef9',
+    'fail-open ownership': 'a062ef9',
+
     'approve` and `mark-cash-paid`': '6d78313',
-    'approve': '6d78313',
-    'mark-cash-paid': '6d78313',
+    # Was 'approve' — matched 6 titles including the payment-idempotency and
+    # webhook-notification findings, which 6d78313 does not address.
+    ':bookingId/approve': '6d78313',
+    # Was 'mark-cash-paid' — also matched the payment-idempotency finding and
+    # the assertBookingAccess test-coverage gap, neither of which is fixed.
+    ':bookingId/mark-cash-paid': '6d78313',
     'addUserAddress': '6d78313',
     'updateUserAddress': '6d78313',
     'leak-isolation.test.js pins three address': '6d78313',
-    'cancel': 'bd8c355',
+    # Was 'cancel' — which matched 11 titles, of which bd8c355 fixed 2. It
+    # closed the provider-calendar bug, the cancellation-notification gap, the
+    # duplicate-timeline bug and more, all of which are still open.
+    'bookings/:id/cancel': 'bd8c355',
     'users/:userId/bookings': 'bd8c355',
     'user/:userId/addresses': 'bd8c355',
     'gc.phone_number': '880d5bc',
@@ -130,10 +169,30 @@ M = ['# Masterlist — Pending Items, Servana Customer Mobile App', '',
      '**Maintenance rule.** Update at the end of every command. Add new findings, '
      'move resolved ones to Closed with the commit that closed them, and move '
      'disproved ones to Corrections. **Never delete a row.**', '',
-     '- **Last updated:** 2026-08-01, six-pass audit (SWEEP/STITCH/ALIGN/LEAK/REPEAT/TEST)',
-     '- **App:** `Heatclift/ServanaClient` @ `bab66e4` — 983 tests, analyzer 0 errors / 46 infos',
-     '- **Backend:** `servana_api` @ `870fd28` + 4 local security commits',
-     '- **Per-finding detail:** `docs/audit/<PASS>_CLIENT.md`', '']
+     '- **Last updated:** 2026-08-01, six-pass RE-RUN (round 2)',
+     '- **App:** `Heatclift/ServanaClient` @ `4868aca` — 983 tests, analyzer 0 errors / 46 infos',
+     '- **Backend:** `servana_api` @ `9a07330` — 1317 tests, 11 local security commits',
+     '- **Per-finding detail:** `docs/audit/<PASS>_CLIENT.md`', '',
+     '## Correction to the round-1 numbers', '',
+     'The first run of this file reported **95 open / 25 closed**. That closed '
+     'count was too high. Closure is matched by substring against the finding '
+     'title, and three keys were single words — `cancel`, `approve`, '
+     '`mark-cash-paid`. `cancel` alone matched 11 findings when the commit it '
+     'pointed at fixed 2, sweeping in the provider-calendar bug, the '
+     'cancellation-notification gap and the duplicate-timeline bug, none of '
+     'which were touched. Those rows are open again and the keys are now '
+     'specific. **A masterlist that reports an open bug as fixed is worse than '
+     'no masterlist**, so the number going up here is the file working.', '',
+     'Round 2 was scoped to verify the eleven prior fixes rather than re-audit '
+     'from scratch: 32 held, 19 partial, 3 unchanged-since-round-1, 6 not '
+     'checkable from the repositories. Rows carry `round` and, where the agent '
+     'said so, `isNew`. Nine round-2 rows self-declare as pre-existing without '
+     'matching a round-1 row automatically — some are restatements, some are '
+     'new findings in a known area. They are kept as separate rows rather than '
+     'silently merged, because guessing wrong in either direction loses '
+     'information.', '',
+     '**Three of the five P0s closed in round 2 were introduced or missed by '
+     'the round-1 remediation itself** — see `a062ef9` and `9a07330`.', '']
 
 M += ['## At a glance', '',
       '| Severity | Open | Closed this session |', '| --- | ---: | ---: |']

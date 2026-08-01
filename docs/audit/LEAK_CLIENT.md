@@ -8,11 +8,11 @@ Server-side authorization and cross-user isolation. The backend was inspectable,
 | Backend | `servana_api` @ `870fd28` (canonical, §3) |
 | Also inspected | admin portal `101016d`, provider web `42fbec9`, provider mobile `451eaf6` |
 | Customer web | **UNAVAILABLE** — repo has 0 committed files |
-| Findings | 16 |
+| Findings | 22 |
 
-**P0: 7 · P1: 5 · P2: 2 · info: 2**
+**P0: 9 · P1: 5 · P2: 4 · P3: 1 · info: 3**
 
-## SC-005 · ANSWER TO OPEN QUESTION — PUT /api/workers/bookings/:id/{accept,start,complete,decline} has NO auth middleware and the ?workerUid= query param is never validated against any JWT — **CONFIRMED**
+## SC-008 · ANSWER TO OPEN QUESTION — PUT /api/workers/bookings/:id/{accept,start,complete,decline} has NO auth middleware and the ?workerUid= query param is never validated against any JWT — **FIXED** in `9a07330`
 
 **P0** · rule §11, §12, §7, §22 · fix in **backend** · protected release: **no**
 
@@ -25,7 +25,7 @@ Definitive answer: the backend does NOT validate ?workerUid= against the JWT sub
 
 **Recommendation.** Backend-only fix. Add `verifyAuth` to technician.routes.ts:18-21 and change the four controllers to derive `const workerUid = (req as any).user.uid`, keeping the `?workerUid=` param accepted-but-ignored with a non-PII drift warning — exactly the pattern already proven in bookingController.createBooking (bookingController.ts:16-22). Then assert the actor holds an active booking_workers row for the booking, reusing `assertBookingAccess` (bookingAccessService.ts:101) and requiring role 'provider'. Critically: ServanaWorker already sends a bearer token on these exact calls via a global interceptor, so this closes the hole with NO provider-mobile release. The "do NOT add auth" comment at technician.routes.ts:9 is stale and should be deleted so it stops blocking future fixes.
 
-## SC-006 · GET /api/user/:userId/addresses — identical anonymous-bypass; unauthenticated read of any customer's saved home addresses — **FIXED** in `bd8c355`
+## SC-009 · GET /api/user/:userId/addresses — identical anonymous-bypass; unauthenticated read of any customer's saved home addresses — **FIXED** in `bd8c355`
 
 **P0** · rule §11, §12, §58 · fix in **backend** · protected release: **no**
 
@@ -37,7 +37,7 @@ Same anti-pattern as the bookings route, on more sensitive data. Any anonymous c
 
 **Recommendation.** Backend-only. Promote user.route.ts:15 to `verifyAuth` and scope to the token uid (allow role 1 to pass a different userId if the admin portal needs it — verify first). Remove the "mobile may call without token" comment at user.route.ts:14, which is stale for ServanaClient.
 
-## SC-007 · GET /api/users/:userId/bookings — ownership check is skipped entirely when the caller omits the Authorization header — **FIXED** in `bd8c355`
+## SC-010 · GET /api/users/:userId/bookings — ownership check is skipped entirely when the caller omits the Authorization header — **FIXED** in `bd8c355`
 
 **P0** · rule §11, §12 · fix in **backend** · protected release: **no**
 
@@ -49,7 +49,16 @@ Sending NO token is strictly more privileged than sending a valid one. Any anony
 
 **Recommendation.** Backend-only. Change booking.routes.ts:17 to `verifyAuth` and drop the `userId` path segment as an identity source: derive from the token and treat the param as a to-be-ignored legacy alias (same pattern as bookingController.ts:16-22), returning 403 on mismatch for non-admins. ServanaClient already sends the token so no protected release is needed. Delete the stale "unauthenticated mobile calls pass through" comment at booking.routes.ts:15-16.
 
-## SC-008 · POST /api/:bookingId/approve — any authenticated user can mark any booking PAID (no ownership assertion, unlike its sibling payment routes) — **FIXED** in `6d78313`
+## SC-011 · GET /api/workers/:workerId/job-cards is unauthenticated and returns every customer's name, phone and full street address — **FIXED** in `a062ef9`
+
+**P0** · rule §11 cross-user access / §12 backend authorization / §58 privacy · fix in **?** · protected release: **no**
+
+The legacy job-cards route takes its subject from the URL and has no auth. Its payload is the customer-facing side of the booking: uid, full name, phone number, address line 1 and 2, city, zip, country and free-text delivery instructions, for every booking that worker has ever been assigned. Worker uids are handed out by the equally-unauthenticated /workers/all next door, so the two chain into a full walk of Servana's customer address book by an attacker with no credentials at all. a85978e built authenticated successors for the schedule and location members of this family and left this one — the member that actually carries customer PII.
+
+
+**Recommendation.** Add `verifyAuth, verifyOwnership` to technician.routes.ts:39. verifyOwnership (servana_api-main/src/middleware/verifyOwnership.ts:6) already reads req.params.workerId, so it drops in unchanged and the route keeps working for the real worker while refusing everyone else. Keep legacyRouteTelemetry mounted so the retirement decision in docs/WORKER_ROUTE_MIGRATION.md still has numbers. Apply the same treatment to /workers/:workerId/schedule (:38) and /workers/location/:uid (:37), whose successors already exist at provider.routes.ts:177-178.
+
+## SC-012 · POST /api/:bookingId/approve — any authenticated user can mark any booking PAID (no ownership assertion, unlike its sibling payment routes) — **FIXED** in `6d78313`
 
 **P0** · rule §11, §12, §43 · fix in **backend** · protected release: **no**
 
@@ -61,7 +70,7 @@ The route comment at payment.routes.ts:7 claims "the controller asserts the call
 
 **Recommendation.** Backend-only, one line: add `await assertBookingAccess(bookingId, (req as any).user?.uid)` at the top of paymentController.approve (paymentController.ts:30) and `if (sendBookingAccessError(res, e)) return;` in the catch — copying gcashSubmit verbatim. Better still, require role 'admin' here: approving a payment is a staff action, and a customer self-approving their own GCash submission defeats the point of §43's evidence/verification split.
 
-## SC-009 · POST /api/:bookingId/mark-cash-paid — same missing ownership assertion; any authenticated user can force any booking to CASH/PAID — **FIXED** in `6d78313`
+## SC-013 · POST /api/:bookingId/mark-cash-paid — same missing ownership assertion; any authenticated user can force any booking to CASH/PAID — **FIXED** in `6d78313`
 
 **P0** · rule §11, §12, §43 · fix in **backend** · protected release: **no**
 
@@ -73,7 +82,7 @@ Distinct from the approve issue because it also rewrites `method` to CASH, erasi
 
 **Recommendation.** Backend-only. Add `assertBookingAccess` + `sendBookingAccessError` to paymentController.markCashPaid (paymentController.ts:40), and gate to role 'admin' or the actively-assigned provider — recording cash receipt is not a customer-initiated action. Also add a state guard so an already-PAID payment cannot have its method rewritten.
 
-## SC-010 · POST /api/bookings/:id/cancel — an anonymous caller can cancel any customer's booking, and the audit row records a NULL actor — **FIXED** in `bd8c355`
+## SC-014 · POST /api/bookings/:id/cancel — an anonymous caller can cancel any customer's booking, and the audit row records a NULL actor — **FIXED** in `bd8c355`
 
 **P0** · rule §11, §12, §15, §16 · fix in **backend** · protected release: **no**
 
@@ -85,7 +94,7 @@ Booking-state corruption reachable with no credentials at all. Any anonymous cal
 
 **Recommendation.** Backend-only. Promote booking.routes.ts:22 to `verifyAuth`, then replace the conditional guard in bookingService.ts:546 with an unconditional `assertBookingAccess(bookingId, actorUid)` (bookingAccessService.ts:101) restricted to role 'customer' or 'admin'. Fail closed: a null actorUid must be rejected, never treated as permission. Persist the real actor_uid on the timeline row.
 
-## SC-011 · POST /api/user/adduseraddress with an addressId performs a cross-user UPDATE — the owner uid is never in the WHERE clause — **FIXED** in `6d78313`
+## SC-015 · POST /api/user/adduseraddress with an addressId performs a cross-user UPDATE — the owner uid is never in the WHERE clause — **FIXED** in `6d78313`
 
 **P0** · rule §11, §12, §41 · fix in **backend** · protected release: **no**
 
@@ -97,7 +106,16 @@ A genuine cross-user WRITE. Any authenticated customer who supplies another cust
 
 **Recommendation.** Backend-only, one line: change address.service.ts:60 to `WHERE address_id = $11 AND uid = $12` and bind uid, then treat a zero-row result as 403/404 rather than the current generic `throw "Failed to update address"`. Separately, per §41 confirm that editing a profile address does not rewrite the address snapshot on historical bookings.
 
-## SC-055 · All six /api/additional/* customer-and-worker lifecycle routes are completely unauthenticated, including a booking-scoped read
+## SC-016 · The whole /api/additional/* family is unauthenticated — anyone can read a booking's extra charges, invent new ones in any customer's name, and trigger a payment email — **FIXED** in `a062ef9`
+
+**P0** · rule §11 fail closed / §7 route params are not identity / §43 payment / §12 backend authorization · fix in **?** · protected release: **no**
+
+Six routes, no verifyAuth. GET /additional/booking/:bookingId returns every additional-work request and amount for any booking id. POST /additional/request/:userId writes a charge row attributed to whatever userId is in the URL, against whatever bookingId is in the body — §7's exact prohibition, and money-affecting. POST /additional/:id/payment mints a PayMongo checkout URL for someone else's request and emails it to that booking's real customer, so an attacker can drive a payment prompt at an arbitrary customer. Only the admin approve step is guarded.
+
+
+**Recommendation.** Put verifyAuth on all six and derive identity from the token, not the URL: drop the :userId segment from createRequest and use (req as any).user.uid, and gate every one of them on assertBookingAccess(bookingId, uid) (servana_api-main/src/services/bookingAccessService.ts:101) — for the :id routes, resolve booking_id from booking_additional_requests first. Also stop trusting item.unitPrice from the body (additional.service.ts:36) and price from the catalog. UNVERIFIED whether the provider web portal calls the legacy paths; that repo is not local, but it is §1-editable so no protected release is at stake either way.
+
+## SC-072 · All six /api/additional/* customer-and-worker lifecycle routes are completely unauthenticated, including a booking-scoped read — **FIXED** in `a062ef9`
 
 **P1** · rule §11, §12, §43 · fix in **backend** · protected release: **no**
 
@@ -109,9 +127,7 @@ Unauthenticated read of additional-work line items and pricing for any bookingId
 
 **Recommendation.** Backend-only. Add `verifyAuth` to additional.routes.ts:9-16, derive the customer from the token in createRequest instead of `:userId`, and gate every handler with `assertBookingAccess` (bookingAccessService.ts:101) — customer-role for request/payment, provider-role for worker-decision/withdraw/confirm-proceed. Before shipping, confirm ServanaWorker's usage of these paths; it sends a bearer token globally (ServanaWorker/lib/core/api/servana_api_config.dart:74-78), so a release is very unlikely to be required.
 
-> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
-
-## SC-056 · Client — the 401/session-expiry path deletes the session but does not reset any private-data store, so the next account signing in on the same device sees the previous customer's cached data
+## SC-073 · Client — the 401/session-expiry path deletes the session but does not reset any private-data store, so the next account signing in on the same device sees the previous customer's cached data
 
 **P1** · rule §11 (cached data must clear on logout AND account switch) · fix in **client-mobile** · protected release: **yes**
 
@@ -125,7 +141,7 @@ Cross-account data exposure on a shared device. Sequence: Customer A's token exp
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-057 · POST /api/admin/admin-users/bootstrap-super-admin is callable with any customer's Firebase token and fails OPEN when no active super admin exists
+## SC-074 · POST /api/admin/admin-users/bootstrap-super-admin is callable with any customer's Firebase token and fails OPEN when no active super admin exists
 
 **P1** · rule §11, §12, §6 · fix in **backend** · protected release: **no**
 
@@ -139,7 +155,7 @@ The authorization decision is a mutable DB count, not an identity check. The win
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-058 · Socket.IO root namespace join_room — a client-supplied `type` label bypasses the booking ownership check, allowing any authenticated identity into any private room — **CONFIRMED**
+## SC-075 · Socket.IO root namespace join_room — a client-supplied `type` label bypasses the booking ownership check, allowing any authenticated identity into any private room — **CONFIRMED**
 
 **P1** · rule §11, §26 · fix in **backend** · protected release: **no**
 
@@ -151,7 +167,7 @@ The comment's premise — that non-booking rooms are UUID-keyed and therefore un
 
 **Recommendation.** Backend-only. Derive authorization from the roomKey, never from the type label: parse the key prefix and dispatch on that (`provider:` → must equal providerRoomKey(actor.uid); `booking:` → DB check; anything else → verify the UUID exists and that the actor is a member, or reject). Fail closed on an unrecognised prefix rather than joining. Neither mobile app relies on the permissive branch for correctness, so this is release-free.
 
-## SC-059 · verifyAuthOptional silently downgrades an invalid or expired token to anonymous, making "no credentials" the most privileged state on all three routes that use it
+## SC-076 · verifyAuthOptional silently downgrades an invalid or expired token to anonymous, making "no credentials" the most privileged state on all three routes that use it
 
 **P1** · rule §11 (fail closed) · fix in **backend** · protected release: **no**
 
@@ -165,7 +181,18 @@ This is the shared root cause behind the three anonymous-bypass P0s above, and i
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-103 · Booking conversation is created on the customer's first access with no assigned/confirmed state gate (§24)
+## SC-135 · Admin-linked guest bookings are listed to the linked customer but cannot be opened — assertBookingAccess ignores the link
+
+**P2** · rule §8 guest customer / §9 no duplicate reality / §20 no ghost success · fix in **?** · protected release: **no**
+
+880d5bc correctly made the list query surface guest bookings through gc.linked_customer_uid. But the booking-detail authorization primitive only ever compares bookings.user_id, which is NULL on those rows. So the customer sees the booking in their list and gets a 403 the moment they tap it. Not a leak — the failure is closed — but it is a half-wired feature that will read as a bug in production, and any future 'fix' applied at the wrong layer is how the NULL-owner class of hole gets reintroduced.
+
+
+**Recommendation.** Extend resolveBookingAccess to accept the same explicit link: after the user_id comparison, check `SELECT 1 FROM guest_customers WHERE guest_customer_id = <booking.guest_customer_id> AND linked_customer_uid = $actorUid`. Return 'customer' on a hit. Keep it to that one audited column — never fall back to phone matching, which is the bug 880d5bc removed. Then update the stale comment at bookingAccessService.ts:52-57.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-136 · Booking conversation is created on the customer's first access with no assigned/confirmed state gate (§24)
 
 **P2** · rule §24, §25 · fix in **backend** · protected release: **unknown**
 
@@ -179,7 +206,7 @@ This is NOT a cross-user leak — access is properly gated and the customer is a
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-104 · Client router guard is case-sensitive — six /settings/* routes and /HelpSupport fall outside the isProtected prefix list
+## SC-137 · Client router guard is case-sensitive — six /settings/* routes and /HelpSupport fall outside the isProtected prefix list
 
 **P2** · rule §12 (explicitly: this is NOT authorization) · fix in **client-mobile** · protected release: **yes**
 
@@ -193,7 +220,40 @@ Listed for completeness and explicitly de-escalated: per §12, a redirect is not
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-119 · VERIFIED CLEAN — guest (guestCustomerId) cannot read a booking or become a registered customer through any client-reachable route
+## SC-138 · FCM token deactivation on logout always 401s — the session is deleted before the call that needs it
+
+**P2** · rule §45 notification / §58 privacy / §20 no ghost success · fix in **?** · protected release: **yes**
+
+AuthLogout deletes the Hive session at step 3 and calls FcmCoordinator.deactivateOnLogout() at step 7. That coordinator's DELETE /api/user/fcm-token goes through ServanaApiClient, which builds its headers by reading the session that no longer exists — so the request ships with no Authorization header, verifyAuth rejects it, and the server keeps user A's device token bound to user A. The exception is swallowed, so the app reports a clean logout. Rated P2 rather than P0 only because FirebaseMessaging.instance.deleteToken() on the next line kills the token registration on Firebase's side; that call is itself best-effort and swallowed, so on a device that is offline at logout the stale server-side binding is the only thing left.
+
+
+**Recommendation.** Move the FCM deactivation above the session delete in authentication_bloc.dart — capture the token, call deactivateOnLogout(), then SessionService.deleteSession(). The 'set guest status before cleanup so a 401 does not show Session expired' comment at :309-313 is why the order is what it is; keep that property by suppressing onUnauthorized for the logout window rather than by deleting the session first. ServanaClient is protected (§1), so this needs authorization and a release — or, if a release is unacceptable, make the backend accept the deletion when the caller presents a still-valid Firebase ID token via the existing verifyAuth path before local teardown.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-162 · A provider removed from a booking keeps the conversation in their chat inbox
+
+**P3** · rule §11 removed provider → future messages / §22 reassignment revokes access · fix in **?** · protected release: **no**
+
+Message bodies are properly protected — every read path re-derives access from booking_workers with an active-status filter, so a declined or reassigned provider gets 403 on the conversation and its messages. But the inbox listing is driven off chat_participants, and participant rows are only ever upserted, never removed when an assignment ends. The removed provider therefore keeps seeing the conversation row and its unread counter. Metadata only: chat_conversations carries booking_id, is_closed and last_message_at, not message text.
+
+
+**Recommendation.** Either delete the participant row when an assignment is revoked (in the reassign/decline paths), or — safer and additive — have listConversationsForUser re-derive membership the same way the read paths do, e.g. by intersecting the participant join with resolveAccessForBooking's predicate rather than trusting the participant table alone. The service must remain the single source of membership truth (§9).
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-167 · Stale comments claim no customer cancel endpoint exists, while the client already calls one
+
+**info** · rule §62 completion reports must reflect actual results · fix in **?** · protected release: **no**
+
+Two ServanaClient comments assert that cancellation hits an admin-only route and will 403 for customer tokens. The client actually posts to the customer route, which exists and is authenticated. Harmless today, but it is exactly the kind of drift that leads a future reader to 'fix' authorization in the wrong direction.
+
+
+**Recommendation.** Delete the two BACKEND_GAP-C15-001 comments. Documentation-only; batch it into whatever the next authorized ServanaClient release is rather than cutting one for it.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-168 · VERIFIED CLEAN — guest (guestCustomerId) cannot read a booking or become a registered customer through any client-reachable route
 
 **info** · rule §7, §8 · fix in **none** · protected release: **no**
 
@@ -207,7 +267,7 @@ Positive result for the §7/§8 half of this pass. Guests hold no Firebase crede
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-120 · VERIFIED CLEAN — push payloads carry no protected content readable pre-auth, and notification/support/review/chat reads are all token-scoped
+## SC-169 · VERIFIED CLEAN — push payloads carry no protected content readable pre-auth, and notification/support/review/chat reads are all token-scoped
 
 **info** · rule §45, §58, §11 · fix in **none** · protected release: **no**
 

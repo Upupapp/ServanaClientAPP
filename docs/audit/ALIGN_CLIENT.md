@@ -8,11 +8,11 @@ Canonical contract alignment — status, catalog, identity, auth, payment, notif
 | Backend | `servana_api` @ `870fd28` (canonical, §3) |
 | Also inspected | admin portal `101016d`, provider web `42fbec9`, provider mobile `451eaf6` |
 | Customer web | **UNAVAILABLE** — repo has 0 committed files |
-| Findings | 23 |
+| Findings | 32 |
 
-**P0: 2 · P1: 11 · P2: 9 · P3: 1**
+**P0: 4 · P1: 16 · P2: 10 · P3: 1 · info: 1**
 
-## SC-003 · `POST /api/:bookingId/approve` and `/mark-cash-paid` skip the booking-access check their sibling payment routes enforce — **FIXED** in `6d78313`
+## SC-004 · `POST /api/:bookingId/approve` and `/mark-cash-paid` skip the booking-access check their sibling payment routes enforce — **FIXED** in `6d78313`
 
 **P0** · rule §11, §12, §43 · fix in **backend** · protected release: **no**
 
@@ -26,7 +26,7 @@ The payment router was hardened correctly for two of its four booking-scoped rou
 
 **Recommendation.** Backend-only, one line each: add `await assertBookingAccess(bookingId, (req as any).user?.uid)` at the top of `approve` and `markCashPaid`, exactly as gcashSubmit does at paymentController.ts:13, and map the error through `sendBookingAccessError`. Then tighten further — approving a payment is a finance action, so gate it to admin (`verifyRoles([1])`) or to the assigned provider for cash collection; a customer should never be able to declare their own booking PAID (§43 separates declaration from verification). ServanaClient's approve methods are dead code (zero call sites in lib/ or test/), so no client behaviour changes.
 
-## SC-004 · `POST /api/bookings/:id/cancel` is auth-optional and its ownership check short-circuits for anonymous callers — cancellation is unauthenticated and unattributable — **FIXED** in `bd8c355`
+## SC-005 · `POST /api/bookings/:id/cancel` is auth-optional and its ownership check short-circuits for anonymous callers — cancellation is unauthenticated and unattributable — **FIXED** in `bd8c355`
 
 **P0** · rule §11, §12, §15, §16 · fix in **backend** · protected release: **no**
 
@@ -40,7 +40,34 @@ Every other booking route in this router was promoted to `verifyAuth` with a con
 
 **Recommendation.** Backend-only. Change booking.routes.ts:22 to `verifyAuth` and replace the conditional in bookingService.ts:546 with `assertBookingAccess(bookingId, actorUid)` (bookingAccessService.ts:101-114), matching the pattern the sibling routes already use. Make `actor_uid` NOT NULL on the timeline insert. ServanaClient already authenticates this call, so no protected release is required — this is the same reasoning already recorded in the comment at booking.routes.ts:23-27.
 
-## SC-044 · `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register — **FIXED** in `65b4337`
+## SC-006 · Guest bookings can be cancelled by ANY authenticated customer — the cancel guard short-circuits on a NULL owner, and the timeline records the wrong actor — **FIXED** in `a062ef9`
+
+**P0** · rule §11 fail closed / IDs are not authorization, §12 backend authorization, §8 guest identity, §15/§16 audit · fix in **servana_api-main/src/services/bookingService.ts:541-559 (and the `customerUid: string | null` signature at :544)** · protected release: **no**
+
+bd8c355 hardened the ROUTE but left the fail-open ownership predicate inside customerCancelBooking untouched. `if (customerUid && ownerId && ownerId !== customerUid)` now always has a non-null customerUid (verifyAuth guarantees it), but `ownerId` is NULL for every guest booking, so the guard still short-circuits. Any authenticated customer can POST a guest booking id to /cancel and it succeeds — and the timeline row is stamped with the attacker's uid as the cancelling 'customer'. This is exactly the sibling-missed pattern: the same guard shape was fixed at the route but not at the service, and one layer deeper it is reachable today.
+
+
+**Recommendation.** Backend-only, no protected release. Replace the conditional at bookingService.ts:557 with `await assertBookingAccess(bookingId, customerUid)` (bookingAccessService.ts:101-114), which already fails closed on a NULL owner, and make `customerUid` a required non-nullable parameter of customerCancelBooking so the fail-open shape cannot be reconstructed. Add a request-level test: customer B cancels a guest booking → 403, bookings.status unchanged, no timeline row.
+
+## SC-007 · The newly-revived payment retry job excludes 'CANCELED' while every cancel writes 'CANCELLED' — Servana emails a live PayMongo checkout link for a cancelled booking — **FIXED** in `a062ef9`
+
+**P0** · rule §13 canonical status, §43 payment separation, §18 stale state, §17 idempotency · fix in **servana_api-main/src/scheduler.ts:103 and src/services/paymentService.ts:155-170** · protected release: **no**
+
+799b6aa created payments.updated_at, which until now made runPaymentRetries raise 42703 on every run — the job had never executed. It is now live, and its booking-state exclusion list uses the single-L spelling `'CANCELED'`, while every writer of bookings.status on cancellation writes the double-L `'CANCELLED'`. A cancelled booking whose PayMongo payment FAILED is therefore still eligible: the job resets payments.status FAILED→PENDING, calls createCheckoutSession (which has no booking-state guard at all) and emails the customer a payable link for a service that will never be delivered. If they pay, the webhook writes bookings.status='PAID' with no state predicate (first-pass SC-053, still open), resurrecting the cancelled booking as paid.
+
+
+**Recommendation.** Backend-only, two lines. (1) scheduler.ts:103 → `AND b.status NOT IN ('COMPLETED','CANCELLED','CANCELED','PAID')`, matching the both-spellings convention adminBookingService already uses. (2) Add a state guard inside createCheckoutSession (paymentService.ts:156-167): select b.status and refuse when it is CANCELLED/CANCELED/COMPLETED/PAID with a safe domain code — that also closes the customer-facing route below. (3) Register the canonical cancelled vocabulary in one shared constant so a third spelling cannot be introduced. Add a test asserting a CANCELLED booking with a FAILED PAYMONGO payment yields zero retry rows.
+
+## SC-056 · 880d5bc repaired the guest booking LIST but not the sibling ownership resolver — an admin-linked guest booking appears in the customer's list and 403s on tap — **FIXED** in `a062ef9`
+
+**P1** · rule §10 one canonical capability, §9 no duplicate reality, §8 guest identity, §20 no ghost success · fix in **servana_api-main/src/services/bookingAccessService.ts:59-92** · protected release: **no**
+
+BOOKING.OWNERSHIP.RESOLVE is still implemented twice with different rules — the first pass recorded this and 880d5bc changed only one of the two. The list query now widens to guest bookings via the audited `gc.linked_customer_uid` link (correct, §8). resolveBookingAccess, which gates detail, tracking, gcash-submit and paymongo/create, knows nothing about that link: it grants 'customer' only when `bookings.user_id === actorUid`, and guest bookings have NULL user_id. So the exact bookings the admin deliberately linked to a client render in that client's Bookings tab and then return 403 BOOKING_ACCESS_DENIED on open. The defect survived the fix in a new form rather than being closed.
+
+
+**Recommendation.** Backend-only, additive: teach resolveBookingAccess the same link the list already trusts — after the user_id comparison at bookingAccessService.ts:75, add `SELECT 1 FROM guest_customers gc JOIN bookings b ON b.guest_customer_id = gc.guest_customer_id WHERE b.id = $1 AND gc.linked_customer_uid = $2` and return 'customer' on a hit. That makes one capability out of two and removes the tap-then-403. Update the docblock at :53-57, which now states the opposite of the list's behaviour. Add a contract test asserting: every booking id returned by getBookingsByUserId(u) satisfies resolveBookingAccess(id, u) !== null.
+
+## SC-057 · `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register — **FIXED** in `65b4337`
 
 **P1** · rule §4, §30, ALIGN §0.4 · fix in **backend** · protected release: **no**
 
@@ -54,7 +81,7 @@ The provider mobile app and the ALIGN protected-route list both use the 2-segmen
 
 **Recommendation.** Add one alias route in the backend: `router.get("/services/:serviceId/options-with-addons", serviceController.listOptionsWithAddons)` immediately after service.route.ts:12. Purely additive, does not touch the 2-segment route ServanaWorker depends on, and repairs three customer screens with no protected release. Do not remove the 2-segment route.
 
-## SC-045 · `X-Idempotency-Key` is sent on booking creation and read by nothing — the customer path has no idempotency while the admin path has a full implementation
+## SC-058 · `X-Idempotency-Key` is sent on booking creation and read by nothing — the customer path has no idempotency while the admin path has a full implementation
 
 **P1** · rule §17, §10 · fix in **backend** · protected release: **no**
 
@@ -70,7 +97,7 @@ The customer app does everything right: it generates a stable idempotency key, p
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-046 · Admin read model places `guestCustomerId` inside `customerUid` — direct §7 violation
+## SC-059 · Admin read model places `guestCustomerId` inside `customerUid` — direct §7 violation
 
 **P1** · rule §7, §8 · fix in **backend** · protected release: **no**
 
@@ -86,7 +113,7 @@ The customer app does everything right: it generates a stable idempotency key, p
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-047 · Bookings list hardcodes every booking's service as "Beauty & Wellness"
+## SC-060 · Bookings list hardcodes every booking's service as "Beauty & Wellness"
 
 **P1** · rule §3, §30 · fix in **client-mobile** · protected release: **yes**
 
@@ -102,7 +129,18 @@ The customer app does everything right: it generates a stable idempotency key, p
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-048 · Customer booking read model omits canonical service identity — booking detail shows an empty service name
+## SC-061 · Cancelled bookings still occupy the provider's calendar — three availability queries match only the single-L 'CANCELED'
+
+**P1** · rule §13 canonical status, §29 provider eligibility, §9 no duplicate reality · fix in **servana_api-main/src/services/technicianService.ts:577, :831, :901; src/services/bookingService.ts:443** · protected release: **no**
+
+Same status-vocabulary split as the payment-retry finding, with a different blast radius. Three conflict/busy queries exclude `'COMPLETED','CANCELED'` from bookings.status, but cancellation writes `'CANCELLED'`. A cancelled booking therefore permanently marks its provider busy for a ±2h window: auto-assignment filters them out, and admin assignment throws 'Worker is not available at ...'. Cancelling a booking silently destroys that slot's capacity forever. This compounds the still-open first-pass finding that assignNearestWorker returning {assigned:false} is silently discarded — the customer's next booking in that window is stranded at CONFIRMED with no provider and no error.
+
+
+**Recommendation.** Backend-only, additive. Introduce one exported constant (e.g. `TERMINAL_BOOKING_STATUSES = ['COMPLETED','CANCELLED','CANCELED']`) and use it at technicianService.ts:577, :831, :901, bookingService.ts:443 and scheduler.ts:103. Do not change the stored value — 'CANCELLED' is what both mobile apps and the admin portal read (§4). Add a test: cancel a booking, then assert the same provider is returned as available for that time window.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-062 · Customer booking read model omits canonical service identity — booking detail shows an empty service name
 
 **P1** · rule §30, §5, §9 · fix in **backend** · protected release: **no**
 
@@ -118,7 +156,7 @@ The admin booking read model carries `serviceId`, `serviceOptionId`, `serviceNam
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-049 · Customer booking surface receives no §13 canonical status; `statusLower` is a false normalisation
+## SC-063 · Customer booking surface receives no §13 canonical status; `statusLower` is a false normalisation
 
 **P1** · rule §13, §9 · fix in **backend** · protected release: **no**
 
@@ -133,7 +171,7 @@ The backend has exactly one §13 canonical status mapper (`mapOperationsStatus`,
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-050 · Customer notifications have one producer for a client that implements 22 types and 9 deep-link targets
+## SC-064 · Customer notifications have one producer for a client that implements 22 types and 9 deep-link targets
 
 **P1** · rule §45, §9, ALIGN §9 · fix in **backend** · protected release: **no**
 
@@ -149,7 +187,7 @@ The backend has exactly one §13 canonical status mapper (`mapOperationsStatus`,
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-051 · Email-OTP verification is permanently broken on customer mobile — the backend requires `email` in the body, the client sends only the token
+## SC-065 · Email-OTP verification is permanently broken on customer mobile — the backend requires `email` in the body, the client sends only the token
 
 **P1** · rule §4, §7, ALIGN §7 · fix in **backend** · protected release: **no**
 
@@ -165,7 +203,18 @@ Both OTP routes derive identity from a body field the customer app never sends. 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-052 · No customer-originated mutation produces a backend audit event
+## SC-066 · Live provider tracking never plots the provider — the backend wraps the location doc under `location`, the client only unwraps `data` or the root
+
+**P1** · rule §4 additive compatibility, §9 no duplicate reality, §20 no ghost success · fix in **servana_api-main/src/controllers/technicianController.ts:177-180 (and providerLocationAccessController.ts:75,82,85 for the successor)** · protected release: **yes**
+
+GET /api/workers/location/:uid returns `{success:true, location:{uid,isOnline,loc,updatedAt}}`. The customer app's parser looks for `loc` at the root, then falls back to `map['data']` — it never looks under `location`. So `raw['loc']` is always null and GeoPositionSnapshot.fromApiMap returns null on every successful 200. getProviderLocation is the ONLY source of the provider marker, so the live-tracking map silently renders with no provider position and no error — the customer is shown a tracking screen that structurally cannot work. Note this is the same envelope-vs-parser class as the options-with-addons 404 that 65b4337 fixed, one route over.
+
+
+**Recommendation.** Fix on the backend so no protected release is needed: at technicianController.ts:177-180 emit the doc's own keys alongside the envelope — `res.json({ success: true, location: doc, ...doc })` or, cleaner, add `data: doc` which the client's existing `result['data']` branch already handles. Purely additive; ServanaWorker and any other consumer keep reading `location`. Then, when the customer app is next opened, migrate it to the authenticated booking-scoped successor GET /api/booking/:bookingId/provider-location (provider.routes.ts:178), whose envelope is `{success, assigned, location}` — note that route has the identical unwrapping problem, so fix the shape once and use it for both.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-067 · No customer-originated mutation produces a backend audit event
 
 **P1** · rule §15, §16, ALIGN §11 · fix in **backend** · protected release: **no**
 
@@ -181,7 +230,7 @@ The backend has a proper audit capability (`auditFire`/adminAuditService) and ap
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-053 · PayMongo webhook overwrites `bookings.status` with `PAID`, regressing an in-progress or completed booking
+## SC-068 · PayMongo webhook overwrites `bookings.status` with `PAID`, regressing an in-progress or completed booking
 
 **P1** · rule §13, §18, §43 · fix in **backend** · protected release: **no**
 
@@ -197,7 +246,29 @@ The webhook branch for `checkout_session.payment.paid` writes `bookings.status =
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-054 · Two parallel booking timelines — the customer's own cancellation is written to the table the customer cannot read — **FIXED** in `bd8c355`
+## SC-069 · POST /api/:bookingId/paymongo/create is now authorized but still has no booking-state guard — a customer can mint a live checkout for their own cancelled or already-paid booking
+
+**P1** · rule §43 payment separation, §18 stale state, §17 idempotency, ALIGN §8 · fix in **servana_api-main/src/services/paymentService.ts:155-170** · protected release: **no**
+
+52667b3 correctly answered 'whose booking is this' with assertBookingAccess. It did not answer 'is this booking still payable'. createCheckoutSession selects only id and final_price, so the route happily returns a live PayMongo checkout_url for a booking the customer already cancelled, or already paid. Every call also creates a brand-new session for the same booking with no idempotency, so a double-tap or a retry after the client's 30s timeout produces two payable links for one intent. Paying either lands on the webhook, which writes bookings.status='PAID' with no state predicate.
+
+
+**Recommendation.** Backend-only, no protected release. In createCheckoutSession select b.status and throw a safe domain error (e.g. BOOKING_NOT_PAYABLE, 409) for CANCELLED/CANCELED/COMPLETED, and for a payments row already at PAID. Reuse any existing non-expired provider_payment_id for the same booking instead of creating a second session, which gives the route idempotency without a client change. The same guard also fixes the scheduler path in the P0 above — one function, two callers.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-070 · POST /api/:bookingId/resend-otp still does not exist — the OTP screen's only recovery path always fails
+
+**P1** · rule §4 additive compatibility, §20 no ghost success, ALIGN §0.4 · fix in **servana_api-main/src/routes/booking.routes.ts:36 and src/controllers/bookingController.ts** · protected release: **no**
+
+Re-verified on the current backend: a grep of the whole of src/ for resend-otp / resendOtp returns nothing, and no router registers a POST matching /api/:id/resend-otp (booking.routes.ts registers only confirm-otp, :id and :id/tracking under that shape). The client's 'Resend code' button is live and reachable. The customer's only recourse when the OTP email does not arrive is a button that always errors, leaving the booking stranded in PENDING_OTP. Reported in the first pass (STITCH) and untouched by any of the nine commits; recording it here because it is a live customer-contract mismatch inside the ALIGN remit and the flow it blocks (booking confirmation) is primary.
+
+
+**Recommendation.** Backend-only, additive: register `router.post('/:id/resend-otp', verifyAuth, bookingController.resendOtp)` in booking.routes.ts (before the /:id wildcard), have the controller call assertBookingAccess then re-send the existing bookings.otp_code via the same mailer the create path uses, rate-limited and idempotent on (bookingId, 60s). No protected release — the client already calls exactly this path. Separately correct the screen copy, which tells the customer the code was sent by SMS while the backend emails it (first-pass STITCH P2).
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-071 · Two parallel booking timelines — the customer's own cancellation is written to the table the customer cannot read
 
 **P1** · rule §9, §16, ALIGN §11 · fix in **backend** · protected release: **no**
 
@@ -211,7 +282,9 @@ Servana keeps two timeline stores for one booking. `booking_tracking` receives t
 
 **Recommendation.** Backend-only, additive: keep both tables (destructive migration is forbidden, §57) and make `getTracking` return the UNION, normalised to the tracking row shape `{status, note, createdAt}` and ordered by createdAt. Simultaneously dual-write the customer cancellation to `booking_tracking` so the union is correct even for old rows. The client already renders whatever rows it receives (booking_repository.dart:97-101), so this needs no release.
 
-## SC-094 · `approvePayment` / `markCashPaid` have no state guard and no idempotency — replay resets paid_at and re-fires the provider payout notification — **FIXED** in `6d78313`
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-125 · `approvePayment` / `markCashPaid` have no state guard and no idempotency — replay resets paid_at and re-fires the provider payout notification
 
 **P2** · rule §17, §18, §43, §45 · fix in **backend** · protected release: **no**
 
@@ -225,7 +298,9 @@ Distinct from the authorization gap on the same two routes: even for a correctly
 
 **Recommendation.** Backend-only: add `AND status <> 'PAID'` to both UPDATEs and emit the provider notification only when `rowCount > 0`, so a replay is a no-op rather than a second payout signal. For `markCashPaid`, add `AND method = 'CASH'` (or refuse when a GCASH reference/proof already exists) so a cash settlement can never overwrite submitted GCASH evidence.
 
-## SC-095 · `booking_tracking.status` is an undeclared fourth status vocabulary, and its free-text `note` is returned verbatim to customers
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-126 · `booking_tracking.status` is an undeclared fourth status vocabulary, and its free-text `note` is returned verbatim to customers
 
 **P2** · rule §13, §21, §58 · fix in **backend** · protected release: **no**
 
@@ -241,7 +316,7 @@ Distinct from the authorization gap on the same two routes: even for a correctly
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-096 · `GET /api/:id/tracking` runs timeline rows through the booking formatter, stamping every event with `bookingCode: "SVN-undefined"`
+## SC-127 · `GET /api/:id/tracking` runs timeline rows through the booking formatter, stamping every event with `bookingCode: "SVN-undefined"`
 
 **P2** · rule §4, §9 · fix in **backend** · protected release: **no**
 
@@ -257,7 +332,7 @@ Distinct from the authorization gap on the same two routes: even for a correctly
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-097 · `POST /api/auth/logout` exists but the customer app never calls it — no server-side session termination
+## SC-128 · `POST /api/auth/logout` exists but the customer app never calls it — no server-side session termination
 
 **P2** · rule §4, ALIGN §7 · fix in **client-mobile** · protected release: **yes**
 
@@ -273,7 +348,7 @@ The backend implemented `POST /api/auth/logout` behind `verifyAuth` (auth.route.
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-098 · `WORKER_ASSIGNED` renders as "On the way" on customer mobile but "assigned" in admin — same row, two realities
+## SC-129 · `WORKER_ASSIGNED` renders as "On the way" on customer mobile but "assigned" in admin — same row, two realities
 
 **P2** · rule §13, §9 · fix in **client-mobile** · protected release: **yes**
 
@@ -289,7 +364,7 @@ The backend implemented `POST /api/auth/logout` behind `verifyAuth` (auth.route.
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-099 · Booking conversation is created before a provider is assigned or confirmed
+## SC-130 · Booking conversation is created before a provider is assigned or confirmed
 
 **P2** · rule §24, §25 · fix in **backend** · protected release: **no**
 
@@ -305,7 +380,7 @@ The backend implemented `POST /api/auth/logout` behind `verifyAuth` (auth.route.
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-100 · Guest bookings are linked to a client account by an unverified, non-unique phone number — any customer can harvest another party's guest bookings — **FIXED** in `880d5bc`
+## SC-131 · Guest bookings are linked to a client account by an unverified, non-unique phone number — any customer can harvest another party's guest bookings — **FIXED** in `880d5bc`
 
 **P2** · rule §7, §8, §11, §37 · fix in **backend** · protected release: **no**
 
@@ -319,7 +394,7 @@ The backend implemented `POST /api/auth/logout` behind `verifyAuth` (auth.route.
 
 **Recommendation.** Backend-only. Gate the guest join on verified ownership: require `uc.is_phone_verified = TRUE` in the subquery at bookingService.ts:352-361, and add an explicit `guest_customers.linked_customer_uid` column set only by a deliberate, audited link action (§8 'may later be linked'). Separately, make `updateUserPhoneNumber` refuse to change a phone number without an OTP challenge and clear `is_phone_verified` on any change. Both are backend changes; ServanaClient already calls the same endpoint and is unaffected. Until the OTP flow exists, the interim fix is to drop the phone-equality branch entirely — guest bookings are served by phone/Messenger and have no app surface (bookingAccessService.ts:53-57 already states this).
 
-## SC-101 · Notification `route` payload has two incompatible shapes and neither is in the parity registry
+## SC-132 · Notification `route` payload has two incompatible shapes and neither is in the parity registry
 
 **P2** · rule §46, ALIGN §9 · fix in **backend** · protected release: **no**
 
@@ -335,7 +410,7 @@ The same `route` JSONB column carries two mutually unintelligible shapes: `{rout
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-102 · Payment response envelopes diverge three ways on one surface, and `checkout_url` is the only snake_case key in the customer contract
+## SC-133 · Payment response envelopes diverge three ways on one surface, and `checkout_url` is the only snake_case key in the customer contract
 
 **P2** · rule §4, ALIGN §0.7 · fix in **backend** · protected release: **no**
 
@@ -351,7 +426,16 @@ Four routes on one router return three different envelopes: `gcashSubmit` → `{
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-117 · Client resolves customer identity with the canonical `customerUid` last in precedence
+## SC-134 · Residual fail-open ownership shape and stale comments survive bd8c355 in listUserBookings — **FIXED** in `a062ef9`
+
+**P2** · rule §11 fail closed, §12 backend authorization · fix in **servana_api-main/src/controllers/bookingController.ts:133-137; src/controllers/user.controller.ts:168; src/middleware/verifyAuthOptional.ts** · protected release: **no**
+
+The route is now hard verifyAuth so this is unreachable today, but the controller still guards with the `actor?.uid &&` shape the removed middleware was paired with, and its comment asserts the opposite of current behaviour ('Mobile clients call without a token — unauthenticated path is unchanged for parity'). A future reader restoring an optional-auth variant, or mounting this handler on another router, reintroduces the anonymous bypass. The same shape in customerCancelBooking is not merely latent — see the P0 above.
+
+
+**Recommendation.** Backend-only cleanup, zero behaviour change: rewrite both guards as `if (!actor?.uid || actor.uid !== userId) return 403` so the check is fail-closed on its own terms, delete the stale comments, and delete src/middleware/verifyAuthOptional.ts now that nothing imports it (bd8c355 already removed every usage).
+
+## SC-161 · Client resolves customer identity with the canonical `customerUid` last in precedence
 
 **P3** · rule §7, ALIGN §0.7 · fix in **client-mobile** · protected release: **yes**
 
@@ -364,6 +448,17 @@ PARITY_REGISTRY declares `customerUid` canonical and `customerId` a legacy alias
 - **Test gap:** None required while the backend derives all aliases from one column; add a producer-side test asserting customerId === customerUid in formatBooking output.
 
 **Recommendation.** No backend change needed and no release should be spent on this alone. Record the inversion in the alias precedence documentation, and when the client is next opened for the status/serviceName work, flip both chains to canonical-first: `customerUid ?? customerId ?? userId` and `providerUid ?? workerUid ?? worker_uid`. Meanwhile keep `formatBooking` deriving all aliases from one column so they cannot diverge.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-166 · Verified still open and unchanged: 17 of the 19 unfixed first-pass ALIGN findings
+
+**info** · rule §13, §30, §45, §15, §17, §4 · fix in **see docs/audit/ALIGN_CLIENT.md in servana_client-main for the per-finding targets** · protected release: **no**
+
+Re-checked against the current backend so the parent agent does not have to. All still stand exactly as first reported; none was accidentally fixed or worsened by the nine commits. Listing with fresh line numbers rather than re-filing them as findings.
+
+
+**Recommendation.** No new action beyond the first pass's recommendations. Priority order given the new findings: land the shared cancelled-status constant (fixes my P0-2 and P1-2 together), then the state guard in createCheckoutSession (fixes my P1-5 and hardens P0-2), then assertBookingAccess in customerCancelBooking (my P0-1), then SC-053's conditional webhook UPDATE, which is the last step in the pay-a-cancelled-booking chain.
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 

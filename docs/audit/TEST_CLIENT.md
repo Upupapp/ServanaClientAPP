@@ -8,11 +8,11 @@ Coverage against the critical paths, and whether the gates that exist actually g
 | Backend | `servana_api` @ `870fd28` (canonical, §3) |
 | Also inspected | admin portal `101016d`, provider web `42fbec9`, provider mobile `451eaf6` |
 | Customer web | **UNAVAILABLE** — repo has 0 committed files |
-| Findings | 16 |
+| Findings | 30 |
 
-**P0: 2 · P1: 8 · P2: 5 · P3: 1**
+**P0: 2 · P1: 14 · P2: 11 · P3: 2 · info: 1**
 
-## SC-014 · leak-isolation.test.js pins three address operations but omits updateUserAddress, whose UPDATE has no uid predicate (cross-user address overwrite) — **FIXED** in `6d78313`
+## SC-019 · leak-isolation.test.js pins three address operations but omits updateUserAddress, whose UPDATE has no uid predicate (cross-user address overwrite) — **FIXED** in `6d78313`
 
 **P0** · rule §11, §12, §60 · fix in **backend** · protected release: **no**
 
@@ -25,7 +25,7 @@ The repo has a dedicated cross-user-isolation regression suite that pins every a
 
 **Recommendation.** Backend: add `AND uid = $12` to the UPDATE at src/services/address.service.ts:57-60 and bind uid, returning 0 rows -> 403/404 (fail closed, §11). Then add to tests/leak-isolation.test.js a source-text assertion mirroring lines 49-59 that updateUserAddress's WHERE clause contains `uid = $`, plus a dbQuery-mocked unit test (same style as tests/booking-access.test.ts) asserting customer B cannot update customer A's addressId.
 
-## SC-015 · The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green — **FIXED** in `65b4337`
+## SC-020 · The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green — **FIXED** in `65b4337`
 
 **P0** · rule §4, §2, §60 · fix in **backend** · protected release: **no**
 
@@ -39,7 +39,7 @@ servana_api_client_test.dart is the suite's only API-contract test (4 of 990 tes
 
 **Recommendation.** Fix on the BACKEND, additively (§4, no protected release): add `router.get("/services/:serviceId/options-with-addons", serviceController.listOptionsWithAddons)` alongside the existing 2-segment route in src/routes/service.route.ts, so both mobile shapes resolve. Then correct the client assertion in test/common/data/backend/servana_api_client_test.dart:87 to pin the shape the backend actually serves, and remove 'catalog-service\\.test\\.ts$' from testPathIgnorePatterns in jest.config.js:5 after rewriting it as real jest tests (see separate finding on its vacuous asserts).
 
-## SC-074 · Backend contract tests catalog-service.test.ts and admin-dedup.test.ts are excluded from jest and pass vacuously when no server is running
+## SC-094 · Backend contract tests catalog-service.test.ts and admin-dedup.test.ts are excluded from jest and pass vacuously when no server is running
 
 **P1** · rule §60 · fix in **backend** · protected release: **no**
 
@@ -53,7 +53,7 @@ Two files named *.test.ts are excluded from the test runner, and the excluded ca
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-075 · Backend production deploy runs no tests, no typecheck and no contract guard — 22 jest suites gate nothing
+## SC-095 · Backend production deploy runs no tests, no typecheck and no contract guard — 22 jest suites gate nothing
 
 **P1** · rule §60, §62 · fix in **backend** · protected release: **no**
 
@@ -67,7 +67,25 @@ Every push to main deploys straight to PM2 on the production Linode without exec
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-076 · Entire messaging module has 0% test coverage; ConversationMapper's unguarded `as num?` cast on a COUNT(*)-derived field silently empties the Messages inbox
+## SC-096 · CI never runs the test suite — all 1280 tests, including the nine new security regression suites, are unenforced on deploy
+
+**P1** · rule — · fix in **servana_api-main/.github/workflows/deploy.yml:44 (insert before), :161** · protected release: **no**
+
+
+**Recommendation.** Add a `- name: Test` step running `npm run verify` (typecheck + test:ci) and a `- name: Guard protected contracts` step running `npm run guard:protected-contracts`, both BEFORE `Run pending DB migrations` at deploy.yml:44 — not merely before Build, so a red suite cannot leave the database migrated. `node scripts/guard-protected-contracts.mjs` currently exits 0 in 1s, so neither step is costly.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-097 · createBooking's identity-from-token fix — the core of 52667b3 for the customer app — has no test of any kind
+
+**P1** · rule — · fix in **servana_api-main/tests/create-booking-identity.test.ts (new); covers src/controllers/bookingController.ts:9-52** · protected release: **no**
+
+
+**Recommendation.** Add to tests/booking-access.test.ts or a new tests/create-booking-identity.test.ts: mock bookingService and notification.service, then assert (a) `bookingService.createBooking` receives the token uid when `?userId=` is absent; (b) it receives the TOKEN uid, not the query uid, when they differ, and a warning is logged containing no uid (§58); (c) it receives the token uid unchanged when `?userId=` matches — the compatibility case ServanaClient exercises; (d) a request with `req.user` undefined returns 401 UNAUTHENTICATED and never calls the service.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-098 · Entire messaging module has 0% test coverage; ConversationMapper's unguarded `as num?` cast on a COUNT(*)-derived field silently empties the Messages inbox
 
 **P1** · rule §20, §25, §60 · fix in **backend** · protected release: **no**
 
@@ -82,7 +100,16 @@ Every push to main deploys straight to PM2 on the production Linode without exec
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-077 · guard-protected-contracts.mjs cannot detect removal of any route ServanaClient actually calls, and is not wired to CI
+## SC-099 · Five of seven assertBookingAccess call sites have no controller test, and there is no catch-all that would have caught the original approve/mark-cash-paid miss
+
+**P1** · rule — · fix in **servana_api-main/tests/booking-access.test.ts (extend); targets src/controllers/bookingController.ts:71,92,153 and src/controllers/paymentController.ts:14,80** · protected release: **no**
+
+
+**Recommendation.** Extend tests/booking-access.test.ts (or a new tests/booking-scoped-handlers.test.ts) with two layers. (1) A describe.each over all five handlers, mocking bookingAccessService the way payment-settlement-access.test.ts:17-39 does, asserting each: refuses when the guard rejects, does not call its service when refused, and calls the guard BEFORE the service (the mockImplementation-ordering trick at payment-settlement-access.test.ts:135-138). (2) A source-level catch-all in the spirit of leak-isolation.test.js:75-85: parse src/routes/booking.routes.ts and src/routes/payment.routes.ts, and for every non-webhook handler they name, assert the exported function body in the corresponding controller contains `assertBookingAccess` — so a new booking-scoped route cannot ship unguarded.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-100 · guard-protected-contracts.mjs cannot detect removal of any route ServanaClient actually calls, and is not wired to CI
 
 **P1** · rule §5, §4, §60 · fix in **backend** · protected release: **no**
 
@@ -96,7 +123,16 @@ The only mechanism the backend has for protecting mobile-authoritative contracts
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-078 · Logout is entirely untested — all six skipped tests defer to an integration_test harness that does not exist
+## SC-101 · leak-isolation.test.js still green-asserts the vulnerability bd8c355 removed, and passes only because of a comment
+
+**P1** · rule — · fix in **servana_api-main/tests/leak-isolation.test.js:117-146; tests/anonymous-bypass.test.ts:89-94** · protected release: **no**
+
+
+**Recommendation.** Delete tests/leak-isolation.test.js:117-146 (both stale describes) and delete src/middleware/verifyAuthOptional.ts. Replace the two `actor?.uid &&` assertions at leak-isolation.test.js:120 and anonymous-bypass.test.ts:93 with an assertion of the fail-closed shape, and change the controllers to match. Add to tests/anonymous-bypass.test.ts a test that verifyAuthOptional.ts does not exist on disk, replacing the one that asserts it does.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-102 · Logout is entirely untested — all six skipped tests defer to an integration_test harness that does not exist
 
 **P1** · rule §58, §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -110,7 +146,7 @@ The suite reports 983 passing but the six deferred tests are exactly the securit
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-079 · No test asserts the Authorization header is sent, and onUnauthorized (which wipes the session globally on any 401) has zero coverage
+## SC-103 · No test asserts the Authorization header is sent, and onUnauthorized (which wipes the session globally on any 401) has zero coverage
 
 **P1** · rule §11, §60 · fix in **client-mobile** · protected release: **no**
 
@@ -125,7 +161,7 @@ The backend has just moved every booking and payment route the customer app call
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-080 · No test asserts X-Idempotency-Key is sent, and the backend does not read it for customer booking creation — double-submit creates two bookings
+## SC-104 · No test asserts X-Idempotency-Key is sent, and the backend does not read it for customer booking creation — double-submit creates two bookings
 
 **P1** · rule §17, §19, §60 · fix in **backend** · protected release: **no**
 
@@ -141,7 +177,16 @@ The customer app implements its half of the idempotency contract and the test su
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-081 · The auth-guard test re-implements the router's guard instead of executing it, and explicitly asserts the /settings deep-link gap is correct
+## SC-105 · resolveProviderAudience is untested — the projection tests prove the filter works but never that it is applied to the right callers
+
+**P1** · rule — · fix in **servana_api-main/tests/provider-profile-projection.test.ts:111 (extend); covers src/controllers/technicianController.ts:1022-1038** · protected release: **no**
+
+
+**Recommendation.** Add a describe block to tests/provider-profile-projection.test.ts mocking ../src/db/dbQuery and ../src/config: (a) undefined actorUid → 'other' with NO query issued; (b) actorUid === subjectUid → 'self' with no query issued; (c) role 1 → 'admin'; (d) role 2 and role 3 → 'other'; (e) zero rows → 'other'; (f) dbQuery.query rejecting → 'other', not 'admin'. Then one integration-shaped test over getByUid itself asserting that a role-2 caller's response body contains none of WITHHELD_FROM_OTHERS.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-106 · The auth-guard test re-implements the router's guard instead of executing it, and explicitly asserts the /settings deep-link gap is correct
 
 **P1** · rule §12, §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -155,7 +200,16 @@ The guard test asserts against a hand-copied duplicate of the guard, so it canno
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-109 · CI collects coverage but enforces no threshold — measured line coverage is 17.10%, and 149 of 470 lib files have no coverage record at all
+## SC-107 · verifyAuth.ts — the single middleware all nine security fixes rest on — has zero behavioural tests, including its production TEMP_ID kill-switch
+
+**P1** · rule — · fix in **servana_api-main/tests/verify-auth.test.ts (new); covers src/middleware/verifyAuth.ts:8-63** · protected release: **no**
+
+
+**Recommendation.** New file tests/verify-auth.test.ts: mock firebase-admin/auth and ../src/config, then cover — (a) no header, no cookie → 401 UNAUTHENTICATED and next() NOT called; (b) `__session` cookie alone authenticates; (c) `Bearer ` with empty token → 401, not a pass-through; (d) verifyIdToken rejecting with auth/id-token-expired → 401 TOKEN_EXPIRED, any other error → 401 INVALID_TOKEN; (e) tempId set with NODE_ENV='production' → process.exit called (spy on process.exit) and req.user NOT populated; (f) tempId set with NODE_ENV='test' → req.user = {uid: tempId}.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-145 · CI collects coverage but enforces no threshold — measured line coverage is 17.10%, and 149 of 470 lib files have no coverage record at all
 
 **P2** · rule §60, §62 · fix in **client-mobile** · protected release: **no**
 
@@ -168,7 +222,7 @@ The '~983 tests' headline is not a coverage claim. Real line coverage is 17.1% o
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-110 · CustomerBooking.fromApiMap silently substitutes DateTime.now() for a missing schedule and no test pins that fallback
+## SC-146 · CustomerBooking.fromApiMap silently substitutes DateTime.now() for a missing schedule and no test pins that fallback
 
 **P2** · rule §3, §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -182,7 +236,16 @@ If the backend ever stops emitting the schedule aliases, or emits an unparseable
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-111 · http_backend.dart is 0% covered and holds a second divergent status mapper plus an unauthenticated address write
+## SC-147 · guard-protected-contracts checks route prefixes, not the specific routes ServanaClient calls — and never runs
+
+**P2** · rule — · fix in **servana_api-main/scripts/guard-protected-contracts.mjs:53-56; .github/workflows/deploy.yml:44** · protected release: **no**
+
+
+**Recommendation.** Replace the two prefix regexes at scripts/guard-protected-contracts.mjs:53-56 with the explicit route list ServanaClient and ServanaWorker actually call, extracted from servana_client-main/lib/common/data/backend/servana_api_client.dart and ServanaWorker/lib/core/api/servana_api.dart:310-355 — at minimum /workers/role/:role, /workers/:uid, /workers/location/:uid, /workers/location, /workers/:workerId/job-cards, /workers/bookings/:bookingId/{accept,start,complete,decline}. Then add the guard step to deploy.yml so the check is enforced rather than advisory.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-148 · http_backend.dart is 0% covered and holds a second divergent status mapper plus an unauthenticated address write
 
 **P2** · rule §9, §42, §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -196,7 +259,7 @@ An entire parallel HTTP surface and a second booking-status vocabulary exist wit
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-112 · No payment-state tests: PayMongo WebView, pending-payment recovery and the payment chips are all 0% covered
+## SC-149 · No payment-state tests: PayMongo WebView, pending-payment recovery and the payment chips are all 0% covered
 
 **P2** · rule §20, §43, §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -210,7 +273,7 @@ The money path — create checkout session, hand off to the PayMongo WebView, re
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-113 · No session-expiry or token-validity test; splash and the auth bloc disagree on what counts as a valid session and neither branch is tested
+## SC-150 · No session-expiry or token-validity test; splash and the auth bloc disagree on what counts as a valid session and neither branch is tested
 
 **P2** · rule §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -224,7 +287,52 @@ Two independent cold-start paths apply different definitions of a valid session 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-118 · Canonical §13 statuses `new` and `disputed` are unmapped and untested; unknown statuses are grouped under cancelled — **FIXED** in `bd8c355`
+## SC-151 · No test enforces auth coverage across the route surface — 65 routes register without verifyAuth, 35 of them on the technician router
+
+**P2** · rule — · fix in **servana_api-main/tests/route-auth-inventory.test.ts (new); src/routes/technician.routes.ts:18-19,57; src/routes/additional.routes.ts:11-16** · protected release: **no**
+
+
+**Recommendation.** Add tests/route-auth-inventory.test.ts: parse every file in src/routes, resolve spread aliases and router.use(), and snapshot the list of routes lacking verifyAuth against an explicit ALLOWED_UNAUTHENTICATED array with a one-line justification per entry. New unauthenticated routes then fail the build until someone writes down why. Seed the allow-list with the current 65 so it is non-blocking on day one, and let the LEAK pass drain technician.routes.ts and additional.routes.ts from it.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-152 · ServanaClient has zero tests for the /workers/:uid contract that 65b4337 reshaped, and the backend test's claim about the client's field list is incomplete
+
+**P2** · rule — · fix in **servana_api-main/tests/provider-profile-projection.test.ts:44-52; servana_client-main/test/modules/bookings/worker_profile_parse_test.dart (new)** · protected release: **no**
+
+
+**Recommendation.** Two changes. In servana_api-main/tests/provider-profile-projection.test.ts:44-52, add `name` and `email` to the asserted contract explicitly — `name` present, `email` absent — and cite the exact client line for each. In servana_client-main, add test/modules/bookings/worker_profile_parse_test.dart feeding _loadWorkerProfile's parsing the exact projected payload the backend now returns (uid, firstName, lastName, name, phoneNumber, photoUrl, roleName, services) and asserting name and phone resolve and nothing throws on the absent keys.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-153 · ServanaClient's six skipped tests defer to an integration_test/ directory that does not exist, and they cover exactly the token lifecycle this session made load-bearing
+
+**P2** · rule — · fix in **servana_client-main/test/common/data/backend/api_client_headers_test.dart (new); test/bloc/authentication_bloc_test.dart:123,139,168,283,317,602** · protected release: **no**
+
+
+**Recommendation.** Either create integration_test/ and port the six cases, or — cheaper and sufficient for the risk introduced this session — add test/common/data/backend/api_client_headers_test.dart faking SessionService and asserting: a populated token yields the Authorization header; a null session and an empty-string token both yield NO Authorization header (documenting the state that now 401s); and a 401 response invokes onUnauthorized exactly once. Four tests, no platform channel required.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-154 · The column-does-not-exist defect class hit twice this session; the check that would catch it exists but is scoped to one alias in one function
+
+**P2** · rule — · fix in **servana_api-main/tests/sql-column-contract.test.ts (new); generalizes tests/guest-booking-link.test.ts:50-66** · protected release: **no**
+
+
+**Recommendation.** New tests/sql-column-contract.test.ts: build a table→columns map by parsing every `CREATE TABLE IF NOT EXISTS ${...}.<table> (...)` and `ADD COLUMN IF NOT EXISTS <col>` in src/, then scan every template-literal SQL string in src/services and src/controllers, resolve `FROM <table> <alias>` / `JOIN <table> <alias>` bindings, and assert each `<alias>.<col>` reference resolves. Start it in report-only mode against a known-offenders allow-list so the existing surface does not block the build, then drive that list to zero. This one test retroactively catches both bugs and is the single highest-leverage addition in this pass after the CI step.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-155 · Two test suites are silently excluded from jest, and they are the only ones that exercise real HTTP routes
+
+**P2** · rule — · fix in **servana_api-main/jest.config.js:5; tests/route-contract.test.ts (new)** · protected release: **no**
+
+
+**Recommendation.** Add supertest, and create tests/route-contract.test.ts mounting the express app with firebase-admin and the pg pool mocked. Port the assertions from catalog-service.test.ts:137-163 there first (options-with-addons on both the bare and /services-prefixed paths returns non-404), since that is a live protected-client contract. Then move the two ts-node scripts to scripts/smoke/ so their exclusion from jest is explicit rather than a config line nobody reads.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-164 · Canonical §13 statuses `new` and `disputed` are unmapped and untested; unknown statuses are grouped under cancelled
 
 **P3** · rule §13, §60 · fix in **client-mobile** · protected release: **yes**
 
@@ -235,4 +343,24 @@ Latent rather than live: the customer contract still carries PENDING_OTP/WORKER_
 - **Test gap:** No test asserts the client understands the canonical §13 vocabulary; no test asserts the grouping of an unrecognised status.
 
 **Recommendation.** Add cases to test/domain/booking_status_test.dart for all eight §13 values (new, awaiting_assignment, assigned, accepted, in_progress, completed, cancelled, disputed) asserting each maps to a distinct non-unknown status, and change booking_status.dart:405 so unknown groups under `needsAttention` rather than `cancelled` — surfacing an unrecognised status is safer than hiding it in a terminal bucket.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-165 · No test covers the §21 safe-error boundary, and several hardened controllers return raw exception text
+
+**P3** · rule — · fix in **servana_api-main/tests/booking-access.test.ts:167 (extend); src/controllers/bookingController.ts:51, src/controllers/paymentController.ts:25, src/controllers/technicianController.ts:97** · protected release: **no**
+
+
+**Recommendation.** Add a describe to tests/booking-access.test.ts, or fold into the tests/booking-scoped-handlers.test.ts proposed above: for each hardened handler, make the mocked service reject with a realistic pg error (`error: column \"foo\" does not exist` with `code: '42703'`) and assert the response body contains neither the driver text nor the code — only a safe domain message. This is the same shape as the BookingAccessError test at :167-181, applied one layer out where the leak actually is.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-170 · Coverage shape of the nine new suites: strong where the fix is a pure function, thin where it is a wiring decision
+
+**info** · rule — · fix in **servana_api-main/tests/route-contract.test.ts (new)** · protected release: **no**
+
+
+**Recommendation.** No action on its own; this is the through-line explaining the six findings above. The structural remedy is the supertest harness proposed in the jest-exclusion finding: one mounted app with firebase-admin and pg mocked converts the whole source-regex tier into behavioural tests and closes the comment-satisfies-assertion class permanently.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 

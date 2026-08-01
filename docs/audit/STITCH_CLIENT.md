@@ -8,9 +8,9 @@ End-to-end workflow tracing — client to API to persistence to notification to 
 | Backend | `servana_api` @ `870fd28` (canonical, §3) |
 | Also inspected | admin portal `101016d`, provider web `42fbec9`, provider mobile `451eaf6` |
 | Customer web | **UNAVAILABLE** — repo has 0 committed files |
-| Findings | 30 |
+| Findings | 39 |
 
-**P0: 2 · P1: 20 · P2: 8**
+**P0: 3 · P1: 25 · P2: 11**
 
 ## SC-001 · `addUserAddress` update branch overwrites any address by ID — the authenticated uid is never used in the WHERE clause — **FIXED** in `6d78313`
 
@@ -25,7 +25,16 @@ The sibling operations were scoped correctly (`makeAddressPrimary` and `deleteAd
 
 **Recommendation.** Change the WHERE clause to `WHERE address_id = $11 AND uid = $12` and pass the token uid. Keep the existing `rows.length == 0 → throw` so a mismatched owner fails closed as 'Failed to update address'.
 
-## SC-002 · Payment settlement handlers `approve` and `mark-cash-paid` skip the booking-ownership check — any authenticated user can mark any booking PAID — **FIXED** in `6d78313`
+## SC-002 · Guest-owned bookings can be cancelled by any authenticated user — POST /api/bookings/:id/cancel fails open when bookings.user_id is NULL — **FIXED** in `a062ef9`
+
+**P0** · rule §11, §12, §15, §8 · fix in **?** · protected release: **no**
+
+bd8c355 hardened the cancel route to `verifyAuth`, but the ownership guard one layer deeper was left in its fail-open shape. Admin-created guest bookings carry `user_id = NULL`, so the guard short-circuits and never denies. Any Servana account holder can cancel any guest booking by iterating sequential booking ids, and the audit trail records them as the customer who did it.
+
+
+**Recommendation.** Add `await assertBookingAccess(bookingId, (req as any).user?.uid)` as the first statement in `cancelBooking` (bookingController.ts:187) and route errors through `sendBookingAccessError`, exactly as getBooking/getTracking do. Independently, delete the fail-open shape in the service: make `customerCancelBooking` require a non-null `customerUid` AND a non-null `ownerId` that matches, and throw 403 otherwise, so a NULL owner denies rather than permits. Backend-only; ServanaClient sends a Bearer token on this call already (servana_api_client.dart:471-486), so no protected release.
+
+## SC-003 · Payment settlement handlers `approve` and `mark-cash-paid` skip the booking-ownership check — any authenticated user can mark any booking PAID — **FIXED** in `6d78313`
 
 **P0** · rule §11, §12, §43 · fix in **backend** · protected release: **no**
 
@@ -38,7 +47,7 @@ A hardening pass added `assertBookingAccess` to three of the five payment handle
 
 **Recommendation.** Add `await assertBookingAccess(bookingId, (req as any).user?.uid)` as the first statement in both handlers (paymentController.ts:30 and :40) and route errors through `sendBookingAccessError`, mirroring gcashSubmit. Additionally restrict these two to admin/provider actors — a customer should never be able to self-declare a cash payment settled. Both client methods are dead code, so no mobile release is involved.
 
-## SC-024 · 'Resend code' on the booking OTP screen calls a route that does not exist, leaving the OTP step with no recovery path
+## SC-031 · 'Resend code' on the booking OTP screen calls a route that does not exist, leaving the OTP step with no recovery path
 
 **P1** · rule §20 · fix in **backend** · protected release: **no**
 
@@ -53,7 +62,7 @@ The booking OTP is generated once at creation (bookingService.ts:71) and emailed
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-025 · 'Resend email OTP' sends no request body at all, so it always returns 400
+## SC-032 · 'Resend email OTP' sends no request body at all, so it always returns 400
 
 **P1** · rule §4, §20 · fix in **backend** · protected release: **no**
 
@@ -68,7 +77,7 @@ Combined with the verify-email-otp defect, the customer has no working path to v
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-026 · `AssignmentPollResult.isAssigned` can never be true for a real assignment, so both confirmation screens always run the full 60 s poll and then report a timeout
+## SC-033 · `AssignmentPollResult.isAssigned` can never be true for a real assignment, so both confirmation screens always run the full 60 s poll and then report a timeout
 
 **P1** · rule §20, §3 · fix in **client-mobile** · protected release: **yes**
 
@@ -83,7 +92,7 @@ The only window in which `isAssigned` could evaluate true is a booking that has 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-027 · `assignNearestWorker` returning `{assigned:false}` is silently discarded — the booking is stranded at CONFIRMED with no worker, no notification and no escalation
+## SC-034 · `assignNearestWorker` returning `{assigned:false}` is silently discarded — the booking is stranded at CONFIRMED with no worker, no notification and no escalation
 
 **P1** · rule §3, §20, §45 · fix in **backend** · protected release: **no**
 
@@ -99,7 +108,7 @@ When no provider is online or every candidate is busy within the ±2 h window, t
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-028 · `confirmOtp` is non-atomic: the booking is set CONFIRMED before worker assignment, so an assignment failure is reported to the customer as an invalid OTP and cannot be retried
+## SC-035 · `confirmOtp` is non-atomic: the booking is set CONFIRMED before worker assignment, so an assignment failure is reported to the customer as an invalid OTP and cannot be retried
 
 **P1** · rule §19, §20, §21 · fix in **backend** · protected release: **no**
 
@@ -114,7 +123,7 @@ There is no transaction around confirmOtp. Once the UPDATE at bookingService.ts:
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-029 · `POST /api/bookings` has no idempotency — the client sends `X-Idempotency-Key` and the backend never reads it — **CONFIRMED**
+## SC-036 · `POST /api/bookings` has no idempotency — the client sends `X-Idempotency-Key` and the backend never reads it — **CONFIRMED**
 
 **P1** · rule §17, §10 · fix in **backend** · protected release: **no**
 
@@ -128,7 +137,7 @@ The 30-second client timeout (servana_api_client.dart:14, :890-897) converts a s
 
 **Recommendation.** Read `X-Idempotency-Key` in `bookingController.createBooking` and reuse the proven admin pattern: a `booking_create_idempotency (idempotency_key, actor_uid, booking_id)` table with a UNIQUE constraint, checked pre-flight and inside the transaction (adminCreateBookingService.ts:501-506, :636-648, :764-770). Return the original booking on replay. This is purely additive — the client already sends the header.
 
-## SC-030 · `WORKER_ASSIGNED` maps to `enRoute`, so the customer is told 'Your service professional is on the way' the instant a provider is assigned — potentially days before the appointment
+## SC-037 · `WORKER_ASSIGNED` maps to `enRoute`, so the customer is told 'Your service professional is on the way' the instant a provider is assigned — potentially days before the appointment
 
 **P1** · rule §13, §9 · fix in **client-mobile** · protected release: **yes**
 
@@ -143,7 +152,7 @@ Assignment and departure are collapsed into one client-side state. Because assig
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-031 · A booking chat conversation is created the moment the customer opens the screen, with no provider-assignment or confirmation gate
+## SC-038 · A booking chat conversation is created the moment the customer opens the screen, with no provider-assignment or confirmation gate
 
 **P1** · rule §24 · fix in **backend** · protected release: **no**
 
@@ -158,7 +167,7 @@ Assignment and departure are collapsed into one client-side state. Because assig
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-032 · Address coordinates are supplied by the client and written verbatim — they then drive service-area eligibility and transport-fee pricing
+## SC-039 · Address coordinates are supplied by the client and written verbatim — they then drive service-area eligibility and transport-fee pricing
 
 **P1** · rule §38, §39, §42 · fix in **backend** · protected release: **no**
 
@@ -174,7 +183,7 @@ Assignment and departure are collapsed into one client-side state. Because assig
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-033 · Address save shows 'Address saved!' while the coordinate write is fire-and-forget; a failed Mongo write makes the address silently unbookable forever
+## SC-040 · Address save shows 'Address saved!' while the coordinate write is fire-and-forget; a failed Mongo write makes the address silently unbookable forever
 
 **P1** · rule §19, §20, §21 · fix in **backend** · protected release: **no**
 
@@ -189,7 +198,7 @@ An address is a two-store write (Postgres row + MongoDB GeoJSON document) with n
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-034 · Chat messages emit a Socket.IO event but never an FCM push, so a backgrounded customer never learns a provider replied
+## SC-041 · Chat messages emit a Socket.IO event but never an FCM push, so a backgrounded customer never learns a provider replied
 
 **P1** · rule §25, §45 · fix in **backend** · protected release: **no**
 
@@ -204,7 +213,7 @@ An address is a two-store write (Postgres row + MongoDB GeoJSON document) with n
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-035 · Customer cancellation does not notify the assigned provider — the provider can travel to a job that was cancelled hours earlier — **FIXED** in `bd8c355`
+## SC-042 · Customer cancellation does not notify the assigned provider — the provider can travel to a job that was cancelled hours earlier
 
 **P1** · rule §45, §22, §3 · fix in **backend** · protected release: **no**
 
@@ -218,7 +227,9 @@ The cancellation itself persists correctly and is ownership-checked, but the fan
 
 **Recommendation.** After the two UPDATEs in `customerCancelBooking`, look up the affected `worker_uid` and call `createNotification(workerUid, {type:'booking_cancelled', severity:'warning', route:{page:'jobs', bookingId}, notificationKey:'bk<id>-cancelled'})`, plus a matching `createCustomerNotification` for the customer's own record. Emit the existing provider-gateway event to the booking room so a connected provider app updates live.
 
-## SC-036 · Editing a saved address is implemented as delete-then-recreate, so a failure between the two calls destroys the customer's address
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-043 · Editing a saved address is implemented as delete-then-recreate, so a failure between the two calls destroys the customer's address
 
 **P1** · rule §19, §20 · fix in **backend** · protected release: **yes**
 
@@ -234,7 +245,7 @@ A network drop, a 401 from an expired token (see the token-refresh finding), or 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-037 · In-app email verification is permanently broken: the client posts `{otp}` but the backend requires `{email, otp}`
+## SC-044 · In-app email verification is permanently broken: the client posts `{otp}` but the backend requires `{email, otp}`
 
 **P1** · rule §4, §20 · fix in **backend** · protected release: **no**
 
@@ -249,7 +260,18 @@ Every in-app email-verification attempt returns 400 'Missing required parameters
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-038 · Logout never calls `POST /api/auth/logout`, so the Firebase token is never revoked server-side — the stale credential stays valid after sign-out
+## SC-045 · Logout is still purely local — the client never calls POST /api/auth/logout, and the FCM clear that would work fires after the session is deleted
+
+**P1** · rule §11, §58 · fix in **?** · protected release: **yes**
+
+First-pass SC-038 and SC-086, both re-verified unchanged — no lib/ code shipped between the passes. The backend endpoint the client's TODO is waiting for has existed the whole time. A token captured before sign-out stays valid until natural expiry, and the device's FCM token is never cleared server-side because the teardown call is made after the bearer is gone.
+
+
+**Recommendation.** Replace the no-op with a real `POST /api/auth/logout` call and move both it and `deactivateOnLogout()` above `SessionService.deleteSession()` (authentication_bloc.dart:308), wrapped in try/catch so a network failure still clears local state. Remove the stale TODO and the 401-normalising comment. Client-side; folds into the next scheduled release.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-046 · Logout never calls `POST /api/auth/logout`, so the Firebase token is never revoked server-side — the stale credential stays valid after sign-out
 
 **P1** · rule §11, §20 · fix in **client-mobile** · protected release: **yes**
 
@@ -264,7 +286,29 @@ Logout is purely local. The Hive session is deleted and every in-memory store is
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-039 · The bookings list returns guest bookings matched by phone number, but the detail route refuses them — tapping such a booking always 403s
+## SC-047 · ServanaClient @4868aca cannot be built from a clean checkout — main.dart imports a file that is no longer tracked
+
+**P1** · rule §60, §20 · fix in **?** · protected release: **unknown**
+
+The credential-scrub commits untracked the Firebase CLIENT configuration and left only `.example` templates. Firebase client config is not a secret, so this bought no security — but `lib/main.dart` still imports the deleted file and the Android Gradle Google Services plugin still requires `google-services.json`. A fresh clone, and therefore CI and any release build, fails at compile time.
+
+
+**Recommendation.** Re-track all three files (`git add -f`), since Firebase client config is public by design — it ships inside every APK/IPA. If a policy of templating them is kept anyway, then CI must materialise them from a secret before `flutter build`, and that step must exist and be proven green before the next release is cut (§60). Right now neither is true.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-048 · The booking OTP step still has no recovery: Resend calls a route that does not exist, and confirmOtp is still non-atomic so an assignment failure is reported as a bad code
+
+**P1** · rule §19, §20, §21 · fix in **?** · protected release: **no**
+
+First-pass SC-024 and SC-028, both re-verified unchanged. Together they make PENDING_OTP a one-way street: if the emailed code goes astray the only escape is broken, and if anything downstream of the status transition throws, the customer is told their correct code is wrong — permanently, because the UPDATE is guarded on a status that no longer matches.
+
+
+**Recommendation.** Backend-only and unchanged from the first pass: add `POST /api/:id/resend-otp` with verifyAuth + assertBookingAccess, rate-limited and gated on PENDING_OTP (the client's path string already matches, so this closes with no release); wrap the status transition and tracking insert in a transaction and move assignNearestWorker out of the request-failure path; make confirmOtp idempotent so a repeated correct code on an already-CONFIRMED booking returns success; and normalise thrown strings to Error objects so §21 messages survive.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-049 · The bookings list returns guest bookings matched by phone number, but the detail route refuses them — tapping such a booking always 403s
 
 **P1** · rule §7, §8, §9 · fix in **backend** · protected release: **no**
 
@@ -279,7 +323,7 @@ The list and detail endpoints disagree about who owns a guest booking. A custome
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-040 · The entire customer notification system has exactly one producer — nothing notifies the customer of assignment, payment, completion or cancellation — **FIXED** in `bd8c355`
+## SC-050 · The entire customer notification system has exactly one producer — nothing notifies the customer of assignment, payment, completion or cancellation
 
 **P1** · rule §45, §3 · fix in **backend** · protected release: **no**
 
@@ -293,7 +337,9 @@ ServanaClient ships a complete notification stack — in-app inbox, unread badge
 
 **Recommendation.** Add `createCustomerNotification` calls alongside the existing email sends, reusing the notification's idempotency key so retries collapse: assignment (technicianService.ts:656, type `booking_assigned`, route `{routeKey:'BOOKING_DETAILS', resourceId}`), payment paid (paymentService.ts:493), job started/completed (technicianService.ts:1139, :1204), customer cancellation (bookingService.ts:554). Pass an explicit `notificationKey` (e.g. `bk<id>-assigned`) so the ON CONFLICT dedupe at notification.service.ts:766-776 engages. Purely additive; the client already renders all of these types.
 
-## SC-041 · The Firebase ID token is stored as the Servana session token and never refreshed — sessions die roughly hourly with no recovery
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-051 · The Firebase ID token is stored as the Servana session token and never refreshed — sessions die roughly hourly with no recovery
 
 **P1** · rule §20, §3 · fix in **client-mobile** · protected release: **yes**
 
@@ -308,7 +354,18 @@ Nothing in the client decodes `exp`, watches `idTokenChanges`, or calls `getIdTo
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-042 · The PayMongo webhook confirms payment in the database but notifies neither the customer nor the provider, unlike the manual `approve` path — **FIXED** in `6d78313`
+## SC-052 · The first-pass remediation record is wrong — five findings are annotated 'FIXED in <commit>' but are demonstrably still open, three of them client-side fixes a backend commit could not have made
+
+**P1** · rule §60, §62 · fix in **?** · protected release: **no**
+
+docs/audit/STITCH_CLIENT.md carries FIXED annotations that do not correspond to code. Two of the P0s (SC-001, SC-002) really were fixed and are correctly marked. But SC-035, SC-040, SC-042, SC-043 and SC-091 are all marked FIXED and none of them are. SC-091 is a Flutter widget attributed to a backend commit, and no lib/ file changed at all between the two passes. Anyone triaging from this document will believe the notification and cancellation chains are closed.
+
+
+**Recommendation.** Regenerate the FIXED annotations from actual code evidence rather than commit adjacency (docs/audit/_generate.py + _findings.json are the source). A fix marker must cite the line that changed. Until then treat every FIXED marker in these six documents as unverified — SC-001 and SC-002 are the only two I confirmed by reading the code.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-053 · The PayMongo webhook confirms payment in the database but notifies neither the customer nor the provider, unlike the manual `approve` path
 
 **P1** · rule §45, §9 · fix in **backend** · protected release: **no**
 
@@ -321,7 +378,20 @@ The same business event — 'this booking is paid' — produces a provider notif
 
 **Recommendation.** In the webhook's paid branch, after the booking UPDATE, call `createCustomerNotification(customerUid, {type:'payment_paid', notificationKey:'bk<id>-paid', route:{routeKey:'BOOKING_DETAILS', resourceId}})` and `createNotification(workerUid, ...)` using the same idempotency key, so webhook retries collapse. Additive and it lets a future client release drop the aggressive poll.
 
-## SC-043 · Two parallel timeline tables: the customer's own cancellation is written to `booking_timeline_events` but the customer app reads `booking_tracking`, so it is invisible to them — **FIXED** in `bd8c355`
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-054 · The typed booking-error layer is dead code — BookingErrorMapper and BookingSubmissionResult have zero production call sites, so the now-reachable 401 on POST /api/bookings has no categorised recovery
+
+**P1** · rule §20, §21 · fix in **?** · protected release: **yes**
+
+The client ships a complete error taxonomy for booking creation — including an `authenticationRequired` category — and never uses it. The booking stores instead surface the backend's raw `message`, or the raw Dart exception text for anything that is not a ServanaApiException. 52667b3 made 401 a live outcome of booking creation for the first time, and it lands on this unhandled path: the customer sees the backend string while the global 401 hook simultaneously expires their session and the router bounces them to /welcome, with no explanation and no resume.
+
+
+**Recommendation.** Route the booking stores' catch through `BookingErrorMapper.fromException` and hold the result as a `BookingSubmissionResult`, so `authenticationRequired` gets a distinct 'Please sign in again — your booking details are saved' presentation and `e.toString()` never reaches the UI. Give `AuthStatus.expired` its own router branch (main_router.dart:144) instead of collapsing it into the unauthenticated redirect, and report the mapped category in BookingFailedEvent. Client-side; folds into the next scheduled release.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-055 · Two parallel timeline tables: the customer's own cancellation is written to `booking_timeline_events` but the customer app reads `booking_tracking`, so it is invisible to them
 
 **P1** · rule §9, §16 · fix in **backend** · protected release: **no**
 
@@ -335,7 +405,20 @@ One booking has two histories. The customer-visible tracking feed records OTP co
 
 **Recommendation.** Pick `booking_timeline_events` as canonical (it carries actor_uid, actor_type, reason and metadata, which `booking_tracking` lacks) and have `getTracking` read from it via a compatibility projection that emits the existing `{status, note, created_at}` shape so the mobile contract is unchanged. Dual-write from the six `booking_tracking` writers during migration. This is entirely backend-side and preserves the wire shape.
 
-## SC-086 · Logout deletes the session before calling `DELETE /api/user/fcm-token`, so the request 401s and the device token is never cleared server-side
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-114 · confirmOtp is the one route that got assertBookingAccess without sendBookingAccessError — a 403 collapses to 400 and the OTP screen renders 'You do not have access to this booking' as an OTP error
+
+**P2** · rule §21, §11 · fix in **?** · protected release: **no**
+
+52667b3 added the authorization call to five handlers and the error mapper to four of them. confirmOtp was missed, so an access denial leaves the handler through the generic catch as HTTP 400 with the access message in the body. The client cannot distinguish 'wrong code' from 'not your booking', and shows the authorization text on the code-entry field with no recovery path.
+
+
+**Recommendation.** Add `if (sendBookingAccessError(res, e)) return;` as the first line of the confirmOtp catch, matching the other six handlers. One line, backend-only.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-115 · Logout deletes the session before calling `DELETE /api/user/fcm-token`, so the request 401s and the device token is never cleared server-side
 
 **P2** · rule §58, §45 · fix in **client-mobile** · protected release: **yes**
 
@@ -350,7 +433,7 @@ Push delivery does stop in practice, because `FirebaseMessaging.instance.deleteT
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-087 · Notification deep link for `SettingsTarget` pushes `/settings`, which is not a registered route
+## SC-116 · Notification deep link for `SettingsTarget` pushes `/settings`, which is not a registered route
 
 **P2** · rule §49, §20 · fix in **client-mobile** · protected release: **yes**
 
@@ -365,7 +448,18 @@ GoRouter has no matching route for `/settings`, so the push resolves to the rout
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-088 · PayMongo verification falls back from `paymentStatus` to booking status, so a null payment status makes a merely-CONFIRMED booking read as paid
+## SC-117 · Payment settlement is not idempotent — approve and mark-cash-paid re-fire the provider's 'Payment Received' notification and reset paid_at on every retry
+
+**P2** · rule §17, §43 · fix in **?** · protected release: **no**
+
+6d78313 correctly restricted who may settle, but the settle itself has no state guard. A provider double-tapping Mark as paid, or ServanaWorker retrying after a timeout, rewrites paid_at and sends a second earnings notification for money that arrived once. The first pass noted the notification as an impact of the P0; the replay behaviour survives the P0's closure.
+
+
+**Recommendation.** Add `AND status <> 'PAID'` to both UPDATEs and treat zero rows as a successful no-op returning the existing payment row (replay-safe, not an error). Pass `notificationKey: 'bk<id>-paid'` to both createNotification calls so a duplicate never reaches the provider. Backend-only; ServanaWorker is unaffected because a replay keeps returning success.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-118 · PayMongo verification falls back from `paymentStatus` to booking status, so a null payment status makes a merely-CONFIRMED booking read as paid
 
 **P2** · rule §20, §43 · fix in **client-mobile** · protected release: **yes**
 
@@ -380,7 +474,7 @@ GoRouter has no matching route for `/settings`, so the push resolves to the rout
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-089 · Submitting a review overwrites `bookings.status` with `REVIEWED`, which can remove a still-active paid job from the provider's list
+## SC-119 · Submitting a review overwrites `bookings.status` with `REVIEWED`, which can remove a still-active paid job from the provider's list
 
 **P2** · rule §13, §9, §14 · fix in **backend** · protected release: **no**
 
@@ -396,7 +490,18 @@ Review existence is being stored in the booking status column, destroying whatev
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-090 · The booking OTP screen tells the customer the code was sent by SMS; the backend emails it
+## SC-120 · The authenticated successor routes have zero adopters in either mobile app, so the legacy-retirement gate can never be met and customer tracking still rides an unauthenticated route
+
+**P2** · rule §9, §11 · fix in **?** · protected release: **yes**
+
+a85958e added `GET /worker/schedule` and `GET /booking/:bookingId/provider-location` as authenticated, subject-from-token successors, and documented retirement of the legacy family as gated on legacy traffic reaching zero. Nothing calls the successors. The customer app's live tracking still calls the legacy unauthenticated worker-location route, so legacy traffic can never reach zero without a protected release of both apps.
+
+
+**Recommendation.** Either sequence the successor adoption into the next scheduled ServanaClient/ServanaWorker releases (no unscheduled release — the legacy routes keep working meanwhile, §2), or accept that `/api/workers/location/:uid` cannot be retired and instead scope it server-side: require a bearer token and return a location only when the caller holds an active booking with that worker, reusing the exact logic in providerLocationAccessController.ts:60-85. The second option needs no client change and closes the hole now.
+
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-121 · The booking OTP screen tells the customer the code was sent by SMS; the backend emails it
 
 **P2** · rule §20 · fix in **client-mobile** · protected release: **yes**
 
@@ -411,7 +516,7 @@ The customer waits for a text message that will never arrive while the code sits
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-091 · The cancellation sheet collapses every backend error into one message, discarding actionable state and authorization errors — **FIXED** in `bd8c355`
+## SC-122 · The cancellation sheet collapses every backend error into one message, discarding actionable state and authorization errors
 
 **P2** · rule §21, §20 · fix in **client-mobile** · protected release: **yes**
 
@@ -424,7 +529,9 @@ The backend produces exactly the actionable, safe error messages §21 asks for, 
 
 **Recommendation.** Decode `ServanaApiException.body` and surface `message` when present (the pattern already used by lib/common/presentation/screens/booking_otp_screen.dart:164-173 and aircon_booking_store.dart:576-588), falling back to the generic string only for network/parse failures. Delete the stale BACKEND_GAP-C15-001 comment.
 
-## SC-092 · The operation journal and the persisted booking idempotency key are written but never read — crash recovery for booking creation does not exist
+> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
+
+## SC-123 · The operation journal and the persisted booking idempotency key are written but never read — crash recovery for booking creation does not exist
 
 **P2** · rule §17, §20 · fix in **client-mobile** · protected release: **yes**
 
@@ -439,7 +546,7 @@ The recovery layer is half-built. `aircon_booking_store.dart:417-429` journals t
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-093 · User/address controllers return raw exception text to the client and mutate module-level shared response objects
+## SC-124 · User/address controllers return raw exception text to the client and mutate module-level shared response objects
 
 **P2** · rule §21, §58 · fix in **backend** · protected release: **no**
 
