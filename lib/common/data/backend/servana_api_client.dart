@@ -7,9 +7,31 @@ import 'package:http/http.dart' as http;
 
 /// Thin, low-level client that wraps every Servana REST API endpoint.
 ///
-/// Auth is handled automatically: on each request the client reads the current
-/// session from [SessionService] and attaches a `Bearer` token if one exists.
+/// Auth is handled automatically: on each request the client resolves a token
+/// via [tokenProvider] and attaches it as a `Bearer` header if one exists.
 /// Callers never need to pass tokens manually.
+///
+/// ## Why [tokenProvider] exists
+///
+/// This used to read `SessionService.getSession()?.token` directly — a token
+/// persisted once at sign-in and never renewed. The backend verifies it with
+/// `admin.auth().verifyIdToken()` (servana_api/src/middleware/verifyAuth.ts:36),
+/// so it is a **Firebase ID token, which expires after one hour**; the backend
+/// has an explicit `auth/id-token-expired` branch that answers
+/// `TOKEN_EXPIRED — Session expired. Please log in again.`
+///
+/// The result was that every authenticated route started returning 401 an hour
+/// after sign-in, and `onUnauthorized` then dropped the session — so the app
+/// signed the customer out roughly hourly, mid-journey. That stayed invisible
+/// while only rarely used routes required auth. It stopped being invisible when
+/// the core booking flow was authenticated (52667b3) and the customer's booking
+/// list, addresses, cancellation and payment calls all moved behind `verifyAuth`.
+///
+/// `FirebaseAuth.currentUser.getIdToken()` renews automatically when the token
+/// is expired or close to it, and is a cheap in-memory read otherwise, so the
+/// fix is to ask per request rather than to cache at sign-in. It is injected
+/// rather than imported so this low-level client keeps no Firebase dependency
+/// and stays constructible in tests without initialising Firebase.
 class ServanaApiClient {
   static const Duration _kTimeout = Duration(seconds: 30);
 
@@ -20,10 +42,18 @@ class ServanaApiClient {
   /// Wire this in GetIt to update [AuthStateService] and clear the session.
   final void Function()? onUnauthorized;
 
+  /// Resolves the bearer token for each request.
+  ///
+  /// Defaults to the stored session token, which preserves the previous
+  /// behaviour for tests and for any caller constructing this directly. The
+  /// app wires a refreshing provider in `main_injector.dart`.
+  final Future<String?> Function()? tokenProvider;
+
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
     this.onUnauthorized,
+    this.tokenProvider,
   }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
@@ -34,9 +64,24 @@ class ServanaApiClient {
     );
   }
 
-  Future<Map<String, String>> _headers() async {
+  Future<String?> _resolveToken() async {
+    final provider = tokenProvider;
+    if (provider != null) {
+      try {
+        final fresh = await provider();
+        if (fresh != null && fresh.isNotEmpty) return fresh;
+      } catch (_) {
+        // Never let a refresh failure become a request failure: fall through to
+        // the stored token. A stale token yields a 401 the caller already
+        // handles, which is strictly better than an exception from a getter.
+      }
+    }
     final session = await SessionService.getSession();
-    final token = session?.token;
+    return session?.token;
+  }
+
+  Future<Map<String, String>> _headers() async {
+    final token = await _resolveToken();
     if (token != null && token.isNotEmpty) {
       return {
         'Content-Type': 'application/json',

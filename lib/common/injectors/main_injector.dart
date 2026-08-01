@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/core/analytics/application/experiment_coordinator.dart';
@@ -146,6 +148,18 @@ void initInjector(AppConfig config) {
   dpLocator.registerLazySingleton(
     () => ServanaApiClient(
       baseUrl: config.baseUrl,
+      // The backend verifies a Firebase ID token, which lives one hour. The
+      // session token is written once at sign-in and never renewed, so every
+      // authenticated call used to start 401ing an hour in — and onUnauthorized
+      // below would then sign the customer out mid-journey.
+      //
+      // getIdToken() returns the cached token and only performs a network
+      // refresh when it is expired or nearly so, so this is cheap per request.
+      tokenProvider: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return null;
+        return user.getIdToken();
+      },
       // STITCH B1: force session expiry on any 401 so the router redirects to login.
       onUnauthorized: () {
         try {
