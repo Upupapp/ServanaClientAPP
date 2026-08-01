@@ -54,11 +54,14 @@ class _FakeProfileRepo extends Fake implements ProfileRepository {
     if (_error != null) throw _error!;
   }
 
+  // Both now take the email: the backend looks the OTP row up by address, and
+  // these routes are unauthenticated because an unverified customer cannot sign
+  // in to obtain a token.
   @override
-  Future<void> resendEmailVerification() async {}
+  Future<void> resendEmailVerification(String email) async {}
 
   @override
-  Future<void> verifyEmailOtp(String otp) async {}
+  Future<void> verifyEmailOtp(String email, String otp) async {}
 }
 
 // ── Fake AddressController ────────────────────────────────────────────────────

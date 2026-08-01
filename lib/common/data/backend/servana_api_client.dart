@@ -374,18 +374,46 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> verifyEmailOtp({required String otp}) async {
+  /// Verifies the emailed OTP.
+  ///
+  /// `email` is REQUIRED by the backend — auth.service.verifyEmailOtp rejects a
+  /// body without it ("Missing required parameters"), and the OTP row is looked
+  /// up by email, not by token. This client omitted it, so in-app verification
+  /// could never succeed for anyone. It cannot be derived server-side either:
+  /// these routes are unauthenticated by necessity, since a customer who has
+  /// not verified cannot sign in to obtain a token.
+  Future<Map<String, dynamic>> verifyEmailOtp({
+    required String email,
+    required String otp,
+  }) async {
     final uri = _uri('/api/auth/verify-email-otp');
     final res = await _client.post(
       uri,
       headers: await _headers(),
-      body: jsonEncode({'otp': otp}),
+      body: jsonEncode({'email': email, 'otp': otp}),
     );
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> resendEmailOtp() async {
+  /// Resends the verification OTP. `email` is required for the same reason.
+  Future<Map<String, dynamic>> resendEmailOtp({required String email}) async {
     final uri = _uri('/api/auth/resend-email-otp');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'email': email}),
+    );
+    return _decodeJson(res);
+  }
+
+  /// Ends the session server-side.
+  ///
+  /// POST /api/auth/logout revokes the Firebase refresh tokens and clears the
+  /// stored FCM token. Without it a logout was purely local: the refresh token
+  /// stayed valid, so anyone holding it could keep minting ID tokens, and the
+  /// device kept receiving that customer's push notifications.
+  Future<Map<String, dynamic>> logout() async {
+    final uri = _uri('/api/auth/logout');
     final res = await _client.post(uri, headers: await _headers());
     return _decodeJson(res);
   }
