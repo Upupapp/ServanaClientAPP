@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "320379709991",
+    "project_id": "servana-59bee",
+    "storage_bucket": "servana-59bee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320379709991:android:c3ec0648a70fb5081bfc02",
+        "android_client_info": {
+          "package_name": "com.servana.serviceclient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.servana.client"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320379709991:android:80f91ea87a1d1f0b1bfc02",
+        "android_client_info": {
+          "package_name": "com.servana.worker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.servana.client"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
