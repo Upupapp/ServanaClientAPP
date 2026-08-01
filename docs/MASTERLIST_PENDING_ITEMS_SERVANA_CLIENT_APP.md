@@ -14,30 +14,27 @@ Every open finding for ServanaClient. Companion to the worker app list at
 
 | Severity | Open | Closed this session |
 | --- | ---: | ---: |
-| **P0** | 3 | 12 |
-| **P1** | 61 | 5 |
+| **P0** | 1 | 14 |
+| **P1** | 59 | 7 |
 | **P2** | 29 | 3 |
 | **P3** | 4 | 1 |
 | **info** | 2 | 0 |
 
-**99 open · 21 closed.**
+**95 open · 25 closed.**
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 102 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P0 — open (3)
+## P0 — open (1)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
 | SC-005 | LEAK | ANSWER TO OPEN QUESTION — PUT /api/workers/bookings/:id/{accept,start,complete,decline} has NO auth middleware and the ?workerUid= query param is neve | backend | no | **yes** |
-| SC-013 | REPEAT | PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and  | backend | no | **yes** |
-| SC-015 | TEST | The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green | backend | no | **yes** |
 
-## P1 — open (61)
+## P1 — open (59)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
 | SC-016 | SWEEP | 'Pay Now' CTA is unreachable on booking detail — `_needsPayment` can never be true | backend | no | agent |
-| SC-017 | SWEEP | `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404) | backend | no | agent |
 | SC-018 | SWEEP | `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method` | backend | no | agent |
 | SC-019 | SWEEP | `totalAmount` is not a registered alias of `finalPrice` — customer booking detail renders ₱0.00 for every booking | backend | no | agent |
 | SC-020 | SWEEP | Booking response carries no `latitude`/`longitude` — live-tracking destination pin resolves to (0,0) | backend | no | agent |
@@ -60,7 +57,6 @@ Every open finding for ServanaClient. Companion to the worker app list at
 | SC-038 | STITCH | Logout never calls `POST /api/auth/logout`, so the Firebase token is never revoked server-side — the stale credential stays valid after sign-out | client-mobile | yes | agent |
 | SC-039 | STITCH | The bookings list returns guest bookings matched by phone number, but the detail route refuses them — tapping such a booking always 403s | backend | no | agent |
 | SC-041 | STITCH | The Firebase ID token is stored as the Servana session token and never refreshed — sessions die roughly hourly with no recovery | client-mobile | yes | agent |
-| SC-044 | ALIGN | `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register | backend | no | agent |
 | SC-045 | ALIGN | `X-Idempotency-Key` is sent on booking creation and read by nothing — the customer path has no idempotency while the admin path has a full implementat | backend | no | agent |
 | SC-046 | ALIGN | Admin read model places `guestCustomerId` inside `customerUid` — direct §7 violation | backend | no | agent |
 | SC-047 | ALIGN | Bookings list hardcodes every booking's service as "Beauty & Wellness" | client-mobile | yes | agent |
@@ -156,11 +152,15 @@ Every open finding for ServanaClient. Companion to the worker app list at
 | SC-010 | POST /api/bookings/:id/cancel — an anonymous caller can cancel any customer's booking, and the audit row records a NULL actor | `bd8c355` |
 | SC-011 | POST /api/user/adduseraddress with an addressId performs a cross-user UPDATE — the owner uid is never in the WHERE clause | `6d78313` |
 | SC-012 | CUSTOMER.BOOKING.LIST joins guest_customers on a column that does not exist (gc.phone_number) | `880d5bc` |
+| SC-013 | PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and  | `65b4337` |
 | SC-014 | leak-isolation.test.js pins three address operations but omits updateUserAddress, whose UPDATE has no uid predicate (cross-user address overwrite) | `6d78313` |
+| SC-015 | The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green | `65b4337` |
+| SC-017 | `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404) | `65b4337` |
 | SC-035 | Customer cancellation does not notify the assigned provider — the provider can travel to a job that was cancelled hours earlier | `bd8c355` |
 | SC-040 | The entire customer notification system has exactly one producer — nothing notifies the customer of assignment, payment, completion or cancellation | `bd8c355` |
 | SC-042 | The PayMongo webhook confirms payment in the database but notifies neither the customer nor the provider, unlike the manual `approve` path | `6d78313` |
 | SC-043 | Two parallel timeline tables: the customer's own cancellation is written to `booking_timeline_events` but the customer app reads `booking_tracking`, s | `bd8c355` |
+| SC-044 | `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register | `65b4337` |
 | SC-054 | Two parallel booking timelines — the customer's own cancellation is written to the table the customer cannot read | `bd8c355` |
 | SC-091 | The cancellation sheet collapses every backend error into one message, discarding actionable state and authorization errors | `bd8c355` |
 | SC-094 | `approvePayment` / `markCashPaid` have no state guard and no idempotency — replay resets paid_at and re-fires the provider payout notification | `6d78313` |

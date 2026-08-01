@@ -47,6 +47,9 @@ CLOSED = {
     'gc.phone_number': '880d5bc',
     'guest_customers on a column that does not exist': '880d5bc',
     'Guest bookings are linked to a client account by an unverified': '880d5bc',
+    'PROVIDER.PROFILE.READ': '65b4337',
+    'contract test pins a URL the backend does not serve': '65b4337',
+    'options-with-addons': '65b4337',
 }
 
 

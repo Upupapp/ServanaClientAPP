@@ -40,7 +40,7 @@ Every other booking route in this router was promoted to `verifyAuth` with a con
 
 **Recommendation.** Backend-only. Change booking.routes.ts:22 to `verifyAuth` and replace the conditional in bookingService.ts:546 with `assertBookingAccess(bookingId, actorUid)` (bookingAccessService.ts:101-114), matching the pattern the sibling routes already use. Make `actor_uid` NOT NULL on the timeline insert. ServanaClient already authenticates this call, so no protected release is required — this is the same reasoning already recorded in the comment at booking.routes.ts:23-27.
 
-## SC-044 · `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register
+## SC-044 · `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register — **FIXED** in `65b4337`
 
 **P1** · rule §4, §30, ALIGN §0.4 · fix in **backend** · protected release: **no**
 
@@ -53,8 +53,6 @@ The provider mobile app and the ALIGN protected-route list both use the 2-segmen
 - **Test gap:** No route-contract test enumerates the paths ServanaClient actually calls against the registered router table. Add a generated cross-check from servana_api_client.dart URIs to the Express route list.
 
 **Recommendation.** Add one alias route in the backend: `router.get("/services/:serviceId/options-with-addons", serviceController.listOptionsWithAddons)` immediately after service.route.ts:12. Purely additive, does not touch the 2-segment route ServanaWorker depends on, and repairs three customer screens with no protected release. Do not remove the 2-segment route.
-
-> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
 ## SC-045 · `X-Idempotency-Key` is sent on booking creation and read by nothing — the customer path has no idempotency while the admin path has a full implementation
 

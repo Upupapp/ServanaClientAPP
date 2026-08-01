@@ -28,7 +28,7 @@ A customer with an unpaid GCash/PayMongo booking has no way to complete payment 
 
 > Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
-## SC-017 · `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404)
+## SC-017 · `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404) — **FIXED** in `65b4337`
 
 **P1** · rule §4 (route contract) / §61 · fix in **backend** · protected release: **no**
 
@@ -41,8 +41,6 @@ The aircon add-on picker, the Beauty & Wellness add-on picker and the Category E
 - **Test gap:** No route test exercises the exact URL string the mobile client builds. Add a customer-mobile-contract test that asserts 200 for every literal path in servana_api_client.dart.
 
 **Recommendation.** Backend, additive and release-free: register the missing alias `router.get("/services/:serviceId/options-with-addons", serviceController.listOptionsWithAddons)` in servana_api-main/src/routes/service.route.ts alongside line 12. Keep the existing 2-segment route registered — per SEO/protected-endpoint policy it must not be removed until telemetry proves no client uses it.
-
-> Agent-reported. Only P0 claims went through adversarial verification; re-read the cited files before acting.
 
 ## SC-018 · `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method`
 

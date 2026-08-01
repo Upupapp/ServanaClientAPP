@@ -26,7 +26,7 @@ GET /api/users/:userId/bookings — the sole endpoint behind the customer app's 
 
 **Recommendation.** Replace the phone subquery in bookingService.ts:352-361 with the canonical linked_customer_uid predicate, matching adminGuestService.linkGuestToClient. Add a request-level regression test that a client whose phone equals a guest's phone but who has no link row receives none of that guest's bookings. Backend-only; ServanaClient is unchanged.
 
-## SC-013 · PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and every other customer's name — **CONFIRMED**
+## SC-013 · PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and every other customer's name — **FIXED** in `65b4337`
 
 **P0** · rule §11 / §58 / §0.5 · fix in **backend** · protected release: **no**
 

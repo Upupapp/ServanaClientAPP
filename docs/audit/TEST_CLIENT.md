@@ -25,7 +25,7 @@ The repo has a dedicated cross-user-isolation regression suite that pins every a
 
 **Recommendation.** Backend: add `AND uid = $12` to the UPDATE at src/services/address.service.ts:57-60 and bind uid, returning 0 rows -> 403/404 (fail closed, §11). Then add to tests/leak-isolation.test.js a source-text assertion mirroring lines 49-59 that updateUserAddress's WHERE clause contains `uid = $`, plus a dbQuery-mocked unit test (same style as tests/booking-access.test.ts) asserting customer B cannot update customer A's addressId.
 
-## SC-015 · The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green — **CONFIRMED**
+## SC-015 · The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green — **FIXED** in `65b4337`
 
 **P0** · rule §4, §2, §60 · fix in **backend** · protected release: **no**
 
