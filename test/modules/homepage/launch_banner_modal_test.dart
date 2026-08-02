@@ -88,9 +88,37 @@ Future<void> _open(
   await tester.binding.setSurfaceSize(surface);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(host);
+
+  // Decode the artwork before opening, exactly as Home does (§31 precache).
+  //
+  // Without this the impression assertion races the decode. The impression
+  // fires from Image.asset's frameBuilder once a frame exists, and
+  // pumpAndSettle does NOT wait on real image I/O — so on a slower machine the
+  // assertion runs first and sees zero. That passed on a fast local machine
+  // and failed in CI, which is the worst way for a test to be wrong.
+  //
+  // runAsync is required: real async work is disallowed inside the fake-async
+  // zone a widget test normally runs in.
+  //
+  // Skipped for the fallback tests: they point at an asset that deliberately
+  // does not exist, and precaching it would report a Flutter error the test
+  // binding treats as a failure — drowning the condition actually under test.
+  if (_hostAsset(host) == _realAsset) {
+    await tester.runAsync(() async {
+      await precacheImage(
+        const AssetImage(_realAsset),
+        tester.element(find.text('open')),
+      );
+    });
+    await tester.pump();
+  }
+
   await tester.tap(find.text('open'));
   await tester.pumpAndSettle();
 }
+
+/// The asset the host was configured with, so precache targets the right one.
+String _hostAsset(Widget host) => host is _Host ? host.assetPath : _realAsset;
 
 void main() {
   group('artwork presentation (real asset, normal text)', () {
