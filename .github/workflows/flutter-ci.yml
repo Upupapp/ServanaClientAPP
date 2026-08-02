@@ -230,6 +230,10 @@ jobs:
             exit 1
           fi
           echo "Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          # Exported so later steps can tag artifacts with them, which
+          # RELEASE_ARTIFACTS.md requires for symbol files.
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
           echo "flutter.versionName=$VERSION_NAME" >> android/local.properties
@@ -304,7 +308,79 @@ jobs:
       - name: Upload obfuscation symbols
         uses: actions/upload-artifact@v4
         with:
-          name: servana-client-debug-symbols-${{ github.sha }}
-          path: build/debug-info/
+          # RELEASE_ARTIFACTS.md requires symbols be tagged with version, build
+          # number and commit SHA. versionCode is exported by the build step.
+          name: servana-client-symbols-${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}-${{ github.sha }}
+          path: |
+            build/debug-info/
+            build/app/outputs/mapping/release/mapping.txt
+          # 90 is the GitHub ceiling without an org-level increase.
+          # RELEASE_ARTIFACTS.md asks for "supported release + 12 months", so
+          # these must ALSO be archived off-CI before day 90 or the retention
+          # policy is not actually met. Tracked in that doc.
           retention-days: 90
           if-no-files-found: error
+
+      # Runs AFTER the artifacts are uploaded, deliberately: a bundle Play will
+      # reject is still useful for internal distribution, so the signed AAB and
+      # its symbols stay downloadable even when this step goes red.
+      #
+      # targetSdkVersion is 36, and Play requires 16 KB page-size support for
+      # anything targeting API 35+. Discovering that in Play Console costs an
+      # upload cycle; the ELF program headers say it in seconds.
+      - name: Verify 16 KB page alignment
+        run: |
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          rm -rf /tmp/aabcheck && mkdir -p /tmp/aabcheck
+          unzip -q -o "$AAB" 'base/lib/arm64-v8a/*' -d /tmp/aabcheck || true
+          python3 - <<'PY'
+          import os, struct, sys
+
+          REQUIRED = 16384
+          root = '/tmp/aabcheck/base/lib/arm64-v8a'
+          if not os.path.isdir(root):
+              print('::error::Could not find arm64-v8a libraries in the AAB.')
+              sys.exit(1)
+
+          def load_aligns(path):
+              with open(path, 'rb') as f:
+                  h = f.read(64)
+                  if h[:4] != b'\x7fELF' or h[4] != 2:
+                      return None
+                  phoff  = struct.unpack_from('<Q', h, 0x20)[0]
+                  phentsz= struct.unpack_from('<H', h, 0x36)[0]
+                  phnum  = struct.unpack_from('<H', h, 0x38)[0]
+                  f.seek(phoff)
+                  ph = f.read(phentsz * phnum)
+              out = []
+              for i in range(phnum):
+                  o = i * phentsz
+                  if struct.unpack_from('<I', ph, o)[0] == 1:      # PT_LOAD
+                      out.append(struct.unpack_from('<Q', ph, o + 0x30)[0])
+              return out
+
+          bad = []
+          for name in sorted(os.listdir(root)):
+              a = load_aligns(os.path.join(root, name))
+              if a and min(a) < REQUIRED:
+                  bad.append((name, hex(min(a))))
+
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
+          if bad:
+              lines = ['### 16 KB alignment: FAILED', '',
+                       '`targetSdkVersion 36` requires 16 KB support. '
+                       'Play will reject this bundle.', '',
+                       '| library | LOAD p_align |', '|---|---|']
+              lines += ['| `%s` | `%s` |' % b for b in bad]
+              lines += ['', 'Fix: freerasp -> 8.0.0 (owns 5 of these), rive -> 0.14.10.']
+              if summary:
+                  open(summary, 'a').write('\n'.join(lines) + '\n')
+              for n, al in bad:
+                  print('::error::%s has LOAD p_align %s, needs >= 16384' % (n, al))
+              print('::error::%d arm64 libraries are not 16 KB aligned.' % len(bad))
+              sys.exit(1)
+
+          if summary:
+              open(summary, 'a').write('### 16 KB alignment: OK\n')
+          print('All arm64 libraries are 16 KB aligned.')
+          PY
