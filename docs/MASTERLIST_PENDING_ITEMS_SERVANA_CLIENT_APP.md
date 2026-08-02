@@ -37,7 +37,7 @@ whose output no code reads — has been shipping that way for some time.
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P1 — open (87)
+## P1 — open (86)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -127,7 +127,6 @@ whose output no code reads — has been shipping that way for some time.
 | SC-174 | RELEASE | **Google Sign-In cannot work in any build.** The Firebase Android app `com.servana.serviceclient` has NO SHA certificate fingerprints registered, so `android/app/google-services.json` contains only a WEB oauth client (`client_type: 3`) and no ANDROID one (`client_type: 1`). The app ships `google_sign_in: ^6.2.1` and constructs `GoogleSignIn()` at `authentication_bloc.dart:54` with no `serverClientId`, which requires the ANDROID client — it fails with `ApiException: 10` (DEVELOPER_ERROR) in debug AND release. This predates the sign-up social buttons; those simply surfaced it on a second screen. Fix: register the debug SHA-1 `92:6E:B8:…:91:33`, the upload SHA-1 `38:40:B7:…:25:FF`, and (after the first Play upload) Play's app-signing SHA-1, then **re-download google-services.json and commit it** — adding fingerprints does not update the file already in the repo. | Firebase Console + client-mobile | yes | **verified — oauth_client inspected, only type 3 present** |
 | SC-176 | RELEASE | The Dart and native layers initialise Firebase with **different API keys**. `lib/firebase_options.dart:53` carries the Android key `AIzaSyA5lwcYyg…`, while the `google-services.json` regenerated on 2026-08-02 carries `AIzaSyAJhIszBq…`. Both exist and are active in GCP Credentials ("Android key" Jul 4, "New Android key" Jul 30), so nothing breaks today — but `firebase_options.dart` is a stale artifact of an older FlutterFire generation, and if the older key is ever restricted or deleted, Dart-side Firebase init fails while native keeps working, which is a confusing way to find out. Fix: re-run `flutterfire configure` to regenerate `firebase_options.dart` from current project state, then re-verify iOS too since that command rewrites every platform. | client-mobile | yes | **verified — keys compared across both files** |
 | SC-180 | RELEASE | **The app hangs on the splash screen in a debug build.** Observed for 4+ minutes on emulator-5554 with no Dart error, no crash, and working network (ping to api.servana.com.ph succeeds, ~500ms). Firebase initialises and Talsec starts. The same emulator reached Home earlier the same day, before the freerasp 6.12→8.0 bump and the firebase_remote_config addition, so one of those is a candidate — but this was NOT bisected and the cause is unconfirmed. Splash's `_checkSession()` unbounded awaits are a known prior suspect. Blocks any end-to-end on-device verification of Home features. | client-mobile | yes | **verified — reproduced, cause NOT isolated** |
-| SC-173 | RELEASE | The upload keystore has never been matched against Play. If ServanaClient is already published, its SHA-256 must equal Play Console → App integrity → *Upload key certificate*, or every upload is rejected regardless of a green pipeline. Not checkable from the repositories. | Play Console | no | unverified |
 
 ## P2 — open (48)
 
@@ -205,6 +204,22 @@ drops a wrong row teaches nobody why it was wrong.
 | ID | Original claim | What investigation found |
 | --- | --- | --- |
 | SC-175 | `com.servana.worker` may have the same missing-ANDROID-oauth-client defect as SC-174 | **Disproved.** ServanaWorker does not depend on `google_sign_in` at all — it is absent from its `pubspec.yaml` and `GoogleSignIn(` appears nowhere in its `lib/`. The missing ANDROID oauth client in its `google-services.json` is therefore inert. The row was written as a conditional ("if ServanaWorker uses Google Sign-In"), and the condition is false. |
+
+## Closed — Play signing chain (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-173 | The upload keystore had never been matched against Play. If it differed, every upload would be rejected regardless of a green pipeline. | **Verified identical.** Play Console → App signing → Upload key certificate reports SHA-256 `70:28:36:3C:…:68:29`, byte for byte the SHA-256 of `Desktop/keys/upload-keystore.jks` (alias `upload`). No key reset needed. |
+| SC-182 | **Google Sign-In would have failed for every Play install.** Play App Signing re-signs the bundle with Google's key, so a Play-installed build presents `EA:3D:E8:C6:…:EF:E0`, which `google-services.json` had never been told about → `ApiException: 10`. It worked perfectly for App Distribution testers. | Play app-signing SHA-1 registered in Firebase and `google-services.json` regenerated — three ANDROID oauth clients now (debug, upload, Play). `9e990d4` |
+| SC-183 | **Maps would have rendered grey for every Play install**, same root cause: the Maps API key was Android-restricted to the upload fingerprint only. | Play app-signing SHA-1 added to the key's Android restrictions alongside the upload fingerprint. |
+| SC-184 | **versionCode 35 was already burned.** Play had `35 (1.0.0)` in the internal testing track from 27 Jul, and Play rejects a versionCode present in ANY track — the next upload would have been refused before anything else was examined. | Bumped to `1.0.0+36`. First bump since versionCode stopped being hardcoded in the workflow, so editing pubspec is now genuinely sufficient. `0bf483c` |
+
+**The pattern worth remembering.** Three of these four fail *only* on the Play
+channel and work perfectly through Firebase App Distribution — the channel used
+for testing. A build can pass on every tester's device and still break Sign-In,
+maps and integrity checks for every real customer, because Google re-signs the
+bundle and the app has never seen that certificate. Any future credential
+pinned to a signing key needs **both** fingerprints, not just the upload one.
 
 ## Closed — freeRASP hardening (2026-08-02)
 
