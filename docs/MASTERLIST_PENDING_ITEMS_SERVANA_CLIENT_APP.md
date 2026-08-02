@@ -37,10 +37,11 @@ whose output no code reads — has been shipping that way for some time.
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P1 — open (84)
+## P1 — open (85)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
+| SC-185 | RELEASE | **Every legal page the app links to returns 404.** Verified by request: `servana.com.ph` → 200, but `/terms`, `/privacy`, `/cancellation` and `/refunds` all → 404. The app links to them from 13 places across 5 files — sign-in, create-account, pending-approval, About and Privacy & Legal. **This very likely blocks Play review**: a working privacy policy URL is mandatory for any app that collects personal data, and this one collects location, contact details and payment data. It is also the most plausible explanation for the "Issues found with your changes" banner in Play Console. Fix is on the marketing site, not in this repo — the four pages must be published before submission. | servana.com.ph (website) | no | **verified — HTTP status checked for all five URLs** |
 | SC-021 | SWEEP | 'Pay Now' CTA is unreachable on booking detail — `_needsPayment` can never be true | backend | no | agent |
 | SC-023 | SWEEP | `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method` | backend | no | agent |
 | SC-024 | SWEEP | `totalAmount` is not a registered alias of `finalPrice` — customer booking detail renders ₱0.00 for every booking | backend | no | agent |
