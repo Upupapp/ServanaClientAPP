@@ -46,10 +46,21 @@ class FreeRasp {
   /// meaningless. Debug builds run with `isProd: false`, where freeRASP relaxes
   /// these checks anyway.
   static const List<String> _signingCertHashes = <String>[
-    // upload-keystore.jks, alias `upload`
+    // Play app-signing certificate (classical), SHA-256
+    // 79:D9:1D:63:A5:2C:70:58:...:29:1D:B1 — from Play Console > App signing.
+    // This is what a Play-installed build actually presents, because Google
+    // re-signs the bundle with its own key. Listing only the upload key would
+    // flag every Play customer as tampered.
+    'edkdY6UscFjH0pf2nd2b18P8nuq9bYK6S1fJQpgpHbE=',
+    // upload-keystore.jks, alias `upload`, SHA-256
+    // 70:28:36:3C:6E:8D:BF:A3:...:DF:68:29. Still required: builds delivered
+    // through Firebase App Distribution are signed with this key and never
+    // pass through Play, so testers present this certificate, not the one
+    // above.
     'cCg2PG6Nv6NgZHnkPOyST2M/z/OO1qDWavjF36bfaCk=',
-    // TODO(SC-167): add the Play app-signing certificate hash after the first
-    // upload. Until then a Play-distributed build reports appIntegrity.
+    // NOTE: the classical fingerprints are the ones that matter. Play also
+    // shows post-quantum key fingerprints; those are not what the app presents
+    // at runtime, and using them here would look correct and always fail.
   ];
 
   static Future<void> initThreatDetection() async {

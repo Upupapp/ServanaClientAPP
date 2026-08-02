@@ -120,11 +120,29 @@ void main() {
       expect(src, isNot(contains(debugHash)));
     });
 
-    test('the Play app-signing gap is recorded, not silently ignored', () {
-      // With Play App Signing the runtime certificate is Google's, not ours.
-      // Enforcement must not be switched on before that hash is added.
-      expect(src, contains('SC-167'));
-      expect(src.toLowerCase(), contains('play app signing'));
+    test('the Play app-signing certificate is trusted too', () {
+      // Google re-signs the bundle, so a Play install presents ITS certificate,
+      // not the upload key. Trusting only the upload key would flag every Play
+      // customer as tampered.
+      const play = 'edkdY6UscFjH0pf2nd2b18P8nuq9bYK6S1fJQpgpHbE=';
+      expect(src, contains(play));
+
+      final bytes = base64Decode(play);
+      expect(bytes.length, 32);
+      final hex = bytes
+          .map((b) => b.toRadixString(16).padLeft(2, '0'))
+          .join(':')
+          .toUpperCase();
+      expect(hex.startsWith('79:D9:1D:63'), isTrue);
+      expect(hex.endsWith('1D:B1'), isTrue);
+    });
+
+    test('both delivery channels are covered', () {
+      // Play installs present the app-signing cert; Firebase App Distribution
+      // builds never pass through Play and present the upload cert. Dropping
+      // either breaks that channel.
+      expect(src, contains('edkdY6UscFjH0pf2nd2b18P8nuq9bYK6S1fJQpgpHbE='));
+      expect(src, contains('cCg2PG6Nv6NgZHnkPOyST2M/z/OO1qDWavjF36bfaCk='));
     });
   });
 
