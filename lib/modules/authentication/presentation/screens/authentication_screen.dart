@@ -1,4 +1,4 @@
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:client/common/domain/auth/auth_identifier.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -302,17 +302,15 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
                                     if (isUnverifiedEmail &&
                                         _identifier.isNotEmpty) {
-                                      AwesomeDialog(
+                                      ServanaAlertDialog.show(
                                         context: context,
-                                        animType: AnimType.bottomSlide,
-                                        headerAnimationLoop: false,
-                                        dialogType: DialogType.warning,
+                                        type: ServanaAlertType.warning,
                                         title: 'Verify your email',
-                                        desc:
+                                        message:
                                             'We sent a verification link to $_identifier. '
                                             'Open it from your inbox, then come back to sign in.',
-                                        btnOkText: 'Resend link',
-                                        btnOkOnPress: () {
+                                        okText: 'Resend link',
+                                        onOk: () {
                                           BlocProvider.of<RegistrationBloc>(
                                                   context)
                                               .add(
@@ -326,20 +324,16 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                                     'Verification link sent. Check your inbox.')),
                                           );
                                         },
-                                        btnCancelText: 'Close',
-                                        btnCancelOnPress: () {},
-                                      ).show();
+                                        cancelText: 'Close',
+                                      );
                                     } else {
-                                      AwesomeDialog(
+                                      ServanaAlertDialog.show(
                                         context: context,
-                                        animType: AnimType.bottomSlide,
-                                        headerAnimationLoop: false,
-                                        dialogType: DialogType.error,
+                                        type: ServanaAlertType.error,
                                         title: 'Sign In Failed',
-                                        desc: state.message ??
+                                        message: state.message ??
                                             'The email or password is incorrect.',
-                                        btnOkOnPress: () {},
-                                      ).show();
+                                      );
                                     }
                                   }
                                 },
