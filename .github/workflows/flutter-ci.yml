@@ -118,11 +118,72 @@ jobs:
         run: |
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;28.2.13676358" > /dev/null 2>&1 || true
 
+      # Fail here, in seconds, rather than twenty minutes deep in Gradle.
+      #
+      # The build step sets CM_KEYSTORE_PATH unconditionally, so
+      # android/app/build.gradle:63 ALWAYS takes the Codemagic branch and signs
+      # with whatever is at that path. Its comment claiming "GitHub Actions: no
+      # signing config set — release uses debug anyway" is not true for this
+      # workflow.
+      #
+      # So an unset CM_KEYSTORE_BASE64 does not fall back to a debug key: it
+      # writes an EMPTY file, and `bundleRelease` fails at the very end with a
+      # keystore error that names neither the secret nor this workflow. That is
+      # what a 21-minute red build was reporting.
+      - name: Require Android signing secrets
+        env:
+          CM_KEYSTORE_BASE64: ${{ secrets.CM_KEYSTORE_BASE64 }}
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$CM_KEYSTORE_BASE64" ]   && missing="$missing CM_KEYSTORE_BASE64"
+          [ -z "$CM_KEYSTORE_PASSWORD" ] && missing="$missing CM_KEYSTORE_PASSWORD"
+          [ -z "$CM_KEY_ALIAS" ]         && missing="$missing CM_KEY_ALIAS"
+          [ -z "$CM_KEY_PASSWORD" ]      && missing="$missing CM_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing Android signing secrets:$missing"
+            echo "Set them on the 'production' environment this job declares:"
+            echo "  Settings > Environments > production > Environment secrets"
+            echo "CM_KEYSTORE_BASE64 is the upload keystore, base64 encoded:"
+            echo "  base64 -w0 upload-keystore.jks"
+            exit 1
+          fi
+
       - name: Decode keystore
         env:
           CM_KEYSTORE_BASE64: ${{ secrets.CM_KEYSTORE_BASE64 }}
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
         run: |
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > /tmp/upload-keystore.jks
+
+          # A truncated or wrongly-encoded secret decodes to something, and
+          # Gradle only discovers it is not a keystore after the whole app has
+          # compiled. keytool answers in milliseconds.
+          if [ ! -s /tmp/upload-keystore.jks ]; then
+            echo "::error::CM_KEYSTORE_BASE64 decoded to an empty file."
+            exit 1
+          fi
+          if ! keytool -list -keystore /tmp/upload-keystore.jks                  -storepass "$CM_KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::The decoded keystore is unreadable. Either"
+            echo "CM_KEYSTORE_BASE64 is not a valid base64 JKS, or"
+            echo "CM_KEYSTORE_PASSWORD does not open it."
+            exit 1
+          fi
+          echo "Keystore decoded and opened successfully."
+
+      # The build step rewrites this placeholder in place. If it is already
+      # gone, the key was committed — which is worth failing over, since it
+      # would ship a live Maps key in the repository.
+      - name: Check the Maps key placeholder is intact
+        run: |
+          if ! grep -q REPLACE_WITH_GOOGLE_MAPS_API_KEY                  android/app/src/main/res/values/strings.xml; then
+            echo "::error::The Google Maps placeholder is missing from strings.xml."
+            echo "A real key may have been committed. It must stay a placeholder"
+            echo "and be substituted at build time from GOOGLE_MAPS_API_KEY."
+            exit 1
+          fi
 
       - name: Write local.properties for release
         run: |
