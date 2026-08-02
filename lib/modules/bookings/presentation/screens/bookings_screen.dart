@@ -286,6 +286,16 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   Widget _buildLoadError() {
     return ListView(
+      // Explicit, not decorative. A vertical BoxScrollView with `padding:
+      // null` adopts MediaQuery.padding — and the top inset is still live
+      // here: the shell Scaffold has a bottomNavigationBar but no appBar, so
+      // it strips only the BOTTOM inset, and _GradientHeader consumes the top
+      // one visually without removing it from the MediaQuery it is a sibling
+      // of. This list would therefore re-apply the status-bar height as a gap
+      // below a header that had already cleared it. The populated state uses
+      // a CustomScrollView, which performs no such substitution — so only the
+      // empty and error states drifted.
+      padding: EdgeInsets.zero,
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 80),
@@ -330,6 +340,16 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   Widget _buildEmpty() {
     return ListView(
+      // Explicit, not decorative. A vertical BoxScrollView with `padding:
+      // null` adopts MediaQuery.padding — and the top inset is still live
+      // here: the shell Scaffold has a bottomNavigationBar but no appBar, so
+      // it strips only the BOTTOM inset, and _GradientHeader consumes the top
+      // one visually without removing it from the MediaQuery it is a sibling
+      // of. This list would therefore re-apply the status-bar height as a gap
+      // below a header that had already cleared it. The populated state uses
+      // a CustomScrollView, which performs no such substitution — so only the
+      // empty and error states drifted.
+      padding: EdgeInsets.zero,
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 80),
@@ -388,6 +408,16 @@ class _BookingsScreenState extends State<BookingsScreen> {
   /// True empty state — customer has zero bookings at all (not a filter result).
   Widget _buildGlobalEmpty() {
     return ListView(
+      // Explicit, not decorative. A vertical BoxScrollView with `padding:
+      // null` adopts MediaQuery.padding — and the top inset is still live
+      // here: the shell Scaffold has a bottomNavigationBar but no appBar, so
+      // it strips only the BOTTOM inset, and _GradientHeader consumes the top
+      // one visually without removing it from the MediaQuery it is a sibling
+      // of. This list would therefore re-apply the status-bar height as a gap
+      // below a header that had already cleared it. The populated state uses
+      // a CustomScrollView, which performs no such substitution — so only the
+      // empty and error states drifted.
+      padding: EdgeInsets.zero,
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 60),
@@ -635,6 +665,10 @@ class _GradientHeader extends StatelessWidget {
           SizedBox(
             height: 44,
             child: ListView(
+              // Horizontal, so the substitution would adopt the LEFT/RIGHT
+              // insets: zero in portrait, non-zero in landscape on a cutout
+              // device, where the segment strip would gain a leading gap.
+              padding: EdgeInsets.zero,
               scrollDirection: Axis.horizontal,
               children: [
                 for (final seg in _BookingSegment.values)

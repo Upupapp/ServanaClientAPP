@@ -23,12 +23,12 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 | Severity | Open | Closed (round 2) | Closed (release session) |
 | --- | ---: | ---: | ---: |
 | **P0** | 0 | 20 | 0 |
-| **P1** | 86 | 5 | 6 |
-| **P2** | 49 | 2 | 5 |
-| **P3** | 11 | 0 | 2 |
+| **P1** | 88 | 5 | 6 |
+| **P2** | 48 | 2 | 5 |
+| **P3** | 10 | 0 | 2 |
 | **info** | 5 | 0 | 0 |
 
-**151 open · 27 closed (round 2) · 13 closed (release session, `SC-R01`–`SC-R13`).**
+**151 open (146 + 5 info) · 27 closed (round 2) · 13 closed (release session, `SC-R01`–`SC-R13`) · 3 closed + 1 disproved (local-fixes session).**
 
 Open went **up** by 8 while 13 were closed. That is the file working: the
 release-pipeline session opened SC-166 through SC-173, most of which were
@@ -37,7 +37,7 @@ whose output no code reads — has been shipping that way for some time.
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P1 — open (89)
+## P1 — open (88)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -128,10 +128,9 @@ whose output no code reads — has been shipping that way for some time.
 | SC-169 | RELEASE | JobOrder submission has no backend endpoint. `HttpBackend.insertJobOrder` (`http_backend.dart:571`) is a stub returning false; `servana_api` exposes no job-order route. `da02f94` made the failure honest — it no longer fabricates a booking — but the flow is now visibly non-functional on a path customers can reach from Store Items and the category tiles. Decide: wire an endpoint, route through `POST /api/bookings`, or remove the entry points. | backend + client-mobile | no | **verified — flow traced end to end** |
 | SC-174 | RELEASE | **Google Sign-In cannot work in any build.** The Firebase Android app `com.servana.serviceclient` has NO SHA certificate fingerprints registered, so `android/app/google-services.json` contains only a WEB oauth client (`client_type: 3`) and no ANDROID one (`client_type: 1`). The app ships `google_sign_in: ^6.2.1` and constructs `GoogleSignIn()` at `authentication_bloc.dart:54` with no `serverClientId`, which requires the ANDROID client — it fails with `ApiException: 10` (DEVELOPER_ERROR) in debug AND release. This predates the sign-up social buttons; those simply surfaced it on a second screen. Fix: register the debug SHA-1 `92:6E:B8:…:91:33`, the upload SHA-1 `38:40:B7:…:25:FF`, and (after the first Play upload) Play's app-signing SHA-1, then **re-download google-services.json and commit it** — adding fingerprints does not update the file already in the repo. | Firebase Console + client-mobile | yes | **verified — oauth_client inspected, only type 3 present** |
 | SC-176 | RELEASE | The Dart and native layers initialise Firebase with **different API keys**. `lib/firebase_options.dart:53` carries the Android key `AIzaSyA5lwcYyg…`, while the `google-services.json` regenerated on 2026-08-02 carries `AIzaSyAJhIszBq…`. Both exist and are active in GCP Credentials ("Android key" Jul 4, "New Android key" Jul 30), so nothing breaks today — but `firebase_options.dart` is a stale artifact of an older FlutterFire generation, and if the older key is ever restricted or deleted, Dart-side Firebase init fails while native keeps working, which is a confusing way to find out. Fix: re-run `flutterfire configure` to regenerate `firebase_options.dart` from current project state, then re-verify iOS too since that command rewrites every platform. | client-mobile | yes | **verified — keys compared across both files** |
-| SC-175 | RELEASE | The same missing-fingerprint check has not been done for `com.servana.worker` (Firebase display name `servana_cleaner_mobile`). If ServanaWorker uses Google Sign-In it has the identical defect, and its signing key may differ from the client's. | ServanaWorker | no | unverified |
 | SC-173 | RELEASE | The upload keystore has never been matched against Play. If ServanaClient is already published, its SHA-256 must equal Play Console → App integrity → *Upload key certificate*, or every upload is rejected regardless of a green pipeline. Not checkable from the repositories. | Play Console | no | unverified |
 
-## P2 — open (49)
+## P2 — open (48)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -182,10 +181,9 @@ whose output no code reads — has been shipping that way for some time.
 | SC-154 | TEST | The column-does-not-exist defect class hit twice this session; the check that would catch it exists but is scoped to one alias in one function | servana_api-main/tests/sql-column-contract.test.ts (new); generalizes tests/guest-booking-link.test.ts:50-66 | no | agent |
 | SC-155 | TEST | Two test suites are silently excluded from jest, and they are the only ones that exercise real HTTP routes | servana_api-main/jest.config.js:5; tests/route-contract.test.ts (new) | no | agent |
 | SC-168 | RELEASE | freeRASP has never started on iOS. `iosConfig` is commented out at `free_rasp_service.dart:23-26`, and freeRASP throws `ConfigurationException` when it is absent — which `main.dart` discarded with `.ignore()`. `da02f94` reports the failure to Crashlytics instead of swallowing it, so it is now visible, but iOS still has no RASP. Needs the bundle ID and team ID. | client-mobile | yes | **verified** |
-| SC-171 | MOBILEVIEW | Beauty & Wellness category header renders the subtitle "Feel refreshed, confident, and cared for." *underneath* the back arrow — the same text-over-control defect class as the welcome-screen chip, reproducible on every load of that screen. | client-mobile | yes | **verified — observed on emulator-5554** |
 | SC-172 | RELEASE | Symbol retention cannot meet its own policy from CI alone. `RELEASE_ARTIFACTS.md` requires "duration of supported release + 12 months"; GitHub caps artifacts at 90 days without an org-level increase. Symbols must be downloaded and archived off-CI before day 90 or the artifact silently disappears and every crash from that release becomes unreadable. | process | n/a | **verified** |
 
-## P3 — open (11)
+## P3 — open (10)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -199,7 +197,31 @@ whose output no code reads — has been shipping that way for some time.
 | SC-163 | REPEAT | Class F confirmed still live at 799b6aa: otp_code and worker_code are one generator behind two business meanings, and the assignment service returns w | ? | no | agent |
 | SC-164 | TEST | Canonical §13 statuses `new` and `disputed` are unmapped and untested; unknown statuses are grouped under cancelled | client-mobile | yes | agent |
 | SC-165 | TEST | No test covers the §21 safe-error boundary, and several hardened controllers return raw exception text | servana_api-main/tests/booking-access.test.ts:167 (extend); src/controllers/bookingController.ts:51, src/controllers/paymentController.ts:25, src/controllers/technicianController.ts:97 | no | agent |
-| SC-170 | MOBILEVIEW | `search_screen.dart:419` has the same `padding: null` scroll-view defect as the category grid. It is *horizontal*, so it inherits the left/right insets — 0 in portrait, non-zero in landscape on a cutout device. Latent, not currently visible. | client-mobile | yes | **verified** |
+
+## Corrections — findings disproved on investigation
+
+Kept rather than deleted, per the maintenance rule. A masterlist that quietly
+drops a wrong row teaches nobody why it was wrong.
+
+| ID | Original claim | What investigation found |
+| --- | --- | --- |
+| SC-175 | `com.servana.worker` may have the same missing-ANDROID-oauth-client defect as SC-174 | **Disproved.** ServanaWorker does not depend on `google_sign_in` at all — it is absent from its `pubspec.yaml` and `GoogleSignIn(` appears nowhere in its `lib/`. The missing ANDROID oauth client in its `google-services.json` is therefore inert. The row was written as a conditional ("if ServanaWorker uses Google Sign-In"), and the condition is false. |
+
+## Closed — local fixes session (2026-08-02, while CI ran)
+
+| ID | Finding | Commit |
+| --- | --- | --- |
+| SC-171 | Category hero subtitle rendered underneath the back arrow. Root cause is more specific than first recorded: `_HeroBackground` is the `FlexibleSpaceBar` **background**, whose origin is the raw top of the app bar — above the status bar. A fixed `top: 60` therefore lands inside the toolbar band on any device where `statusBar + kToolbarHeight > 60`, which is nearly all of them. Now derived from `MediaQuery.paddingOf(context).top + kToolbarHeight + 8`, with `maxLines: 2` so large text cannot overflow the fixed 180pt hero. 6 tests assert the clearance across the 0–59pt inset range, because a single-viewport widget test would have passed against the OLD code at a 0pt inset. | see below |
+| SC-170 | `search_screen.dart` chip row inherited the left/right insets via `padding: null` | see below |
+| SC-177 | **Bookings empty and error states gained a phantom top gap.** Three vertical `ListView`s (`_buildLoadError`, `_buildEmpty`, `_buildGlobalEmpty`) omitted `padding`, so each adopted `MediaQuery.padding.top`. The inset was still live at that point: the shell Scaffold has a `bottomNavigationBar` but no `appBar`, so it strips only the BOTTOM inset, and `_GradientHeader` consumes the top one *visually* without removing it from the MediaQuery it is a sibling of. The status-bar height was therefore applied twice — once by the header, once invisibly by the list. The populated state uses a `CustomScrollView`, which performs no such substitution, so only the empty and error states drifted. A fourth, horizontal `ListView` (segment strip) had the landscape-only variant. | see below |
+
+**Swept for the class, not just the instances.** All 10 padding-less scroll
+views in `lib/` were classified by tracing each one's ancestors: 4 defects (all
+in `bookings_screen.dart`), 6 correct as-is. The 6 sit under a `Scaffold` with
+an `appBar` or inside a `SafeArea`, both of which consume the inset before it
+arrives — and for a page-body list, adopting the *bottom* inset is desirable,
+since it keeps content clear of the gesture bar. Blanket-applying
+`EdgeInsets.zero` would have broken those.
 
 ## Closed — release-pipeline session (2026-08-02)
 

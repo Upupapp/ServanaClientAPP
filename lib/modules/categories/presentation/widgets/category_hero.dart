@@ -80,9 +80,30 @@ class _HeroBackground extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
+            // This is the FlexibleSpaceBar *background*, so its origin is the
+            // raw top of the app bar — above the status bar, not below it.
+            // A fixed `top: 60` therefore landed inside the toolbar band on any
+            // device where the status bar plus toolbar exceeds 60, and the
+            // subtitle rendered underneath the back button. It is
+            // device-dependent, which is why it looked fine on some screens.
+            //
+            // Clearing the inset plus the toolbar puts it below the back button
+            // on every device. When the bar collapses, the subtitle falls
+            // outside the remaining height and is clipped, which is what should
+            // happen — the pinned title carries the meaning at that point.
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+              20,
+              0,
+            ),
             child: Text(
               config.revealSubtext,
+              // Expanded height is fixed at 180, so unbounded growth at large
+              // text sizes would overflow the hero rather than reflow it. The
+              // headline above carries the meaning; this line is supporting.
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 13,

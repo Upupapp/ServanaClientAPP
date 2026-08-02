@@ -417,6 +417,12 @@ class _SearchScreenState extends State<SearchScreen> {
             child: SizedBox(
               height: 36,
               child: ListView.separated(
+                // A BoxScrollView with `padding: null` adopts MediaQuery
+                // padding. Horizontal, that means the left/right device insets
+                // — zero in portrait, non-zero in landscape on a cutout
+                // device, where the chip row would gain a phantom leading gap.
+                // Same defect the Home category grid had vertically.
+                padding: EdgeInsets.zero,
                 scrollDirection: Axis.horizontal,
                 itemCount: _kChips.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
