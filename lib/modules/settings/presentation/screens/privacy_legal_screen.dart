@@ -1,3 +1,4 @@
+import 'package:client/common/constants/servana_urls.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -91,26 +92,24 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                     title: 'Terms of Service',
                     subtitle: 'Effective January 1, 2024',
                     onTap: () =>
-                        _launch(context, 'https://servana.com.ph/terms'),
+                        _launch(context, ServanaUrls.termsAndConditions),
                   ),
                   SettingsNavTile(
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
                     subtitle: 'How we use your data',
-                    onTap: () =>
-                        _launch(context, 'https://servana.com.ph/privacy'),
+                    onTap: () => _launch(context, ServanaUrls.privacyPolicy),
                   ),
                   SettingsNavTile(
                     icon: Icons.cancel_outlined,
                     title: 'Cancellation Policy',
                     onTap: () =>
-                        _launch(context, 'https://servana.com.ph/cancellation'),
+                        _launch(context, ServanaUrls.cancellationPolicy),
                   ),
                   SettingsNavTile(
                     icon: Icons.payments_outlined,
                     title: 'Refund Policy',
-                    onTap: () =>
-                        _launch(context, 'https://servana.com.ph/refunds'),
+                    onTap: () => _launch(context, ServanaUrls.refundPolicy),
                   ),
                 ]),
                 SettingsSectionHeader('Your Data'),

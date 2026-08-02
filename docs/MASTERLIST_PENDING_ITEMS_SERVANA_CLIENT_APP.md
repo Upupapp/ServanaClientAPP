@@ -37,11 +37,10 @@ whose output no code reads — has been shipping that way for some time.
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P1 — open (85)
+## P1 — open (84)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
-| SC-185 | RELEASE | **Every legal page the app links to returns 404.** Verified by request: `servana.com.ph` → 200, but `/terms`, `/privacy`, `/cancellation` and `/refunds` all → 404. The app links to them from 13 places across 5 files — sign-in, create-account, pending-approval, About and Privacy & Legal. **This very likely blocks Play review**: a working privacy policy URL is mandatory for any app that collects personal data, and this one collects location, contact details and payment data. It is also the most plausible explanation for the "Issues found with your changes" banner in Play Console. Fix is on the marketing site, not in this repo — the four pages must be published before submission. | servana.com.ph (website) | no | **verified — HTTP status checked for all five URLs** |
 | SC-021 | SWEEP | 'Pay Now' CTA is unreachable on booking detail — `_needsPayment` can never be true | backend | no | agent |
 | SC-023 | SWEEP | `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method` | backend | no | agent |
 | SC-024 | SWEEP | `totalAmount` is not a registered alias of `finalPrice` — customer booking detail renders ₱0.00 for every booking | backend | no | agent |
@@ -203,6 +202,24 @@ drops a wrong row teaches nobody why it was wrong.
 | ID | Original claim | What investigation found |
 | --- | --- | --- |
 | SC-175 | `com.servana.worker` may have the same missing-ANDROID-oauth-client defect as SC-174 | **Disproved.** ServanaWorker does not depend on `google_sign_in` at all — it is absent from its `pubspec.yaml` and `GoogleSignIn(` appears nowhere in its `lib/`. The missing ANDROID oauth client in its `google-services.json` is therefore inert. The row was written as a conditional ("if ServanaWorker uses Google Sign-In"), and the condition is false. |
+
+## Closed — dead legal links (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-185 | **Every legal link in the app 404'd.** It pointed at `servana.com.ph/privacy`, `/terms`, `/cancellation` and `/refunds`; the real pages are `www.servana.com.ph/privacy-policy` and `/terms-and-conditions`. 13 literals across 5 files — sign-in, create-account, pending-approval, About, Privacy & Legal. A customer tapping "Privacy Policy" during sign-up reached a dead end, and a reachable privacy policy is mandatory for Play review. | All 13 replaced with `ServanaUrls` constants. Cancellation and refunds now resolve to the T&C, whose section 8 is "Cancellations and Refunds" — there is no standalone page, and inventing those two paths is what produced two of the four 404s. Both live URLs verified 200. |
+
+### Why nothing caught it
+
+`launchUrl` to a 404 is not an error. The browser opens, the page says "not
+found", and the app never learns — there is no exception, no log line, and no
+failing test. The only way to find it is to open the link, which no automated
+check did.
+
+A test now asserts the constants point at the surviving paths, that none ends
+with a dead one, and that no file re-introduces a hard-coded marketing URL.
+Deliberately offline: a test that hits the network fails whenever the marketing
+site is slow, and a legal-link check that cries wolf is one people stop reading.
 
 ## Closed — startup hang (2026-08-02)
 

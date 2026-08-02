@@ -1,3 +1,4 @@
+import 'package:client/common/constants/servana_urls.dart';
 import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -43,9 +44,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final bloc = BlocProvider.of<RegistrationBloc>(context);
     _toolTipController = TooltipController();
     _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.termsAndConditions));
     _privacyRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.privacyPolicy));
 
     final existing = (bloc.registration.ownerName ?? '').trim();
     if (existing.isNotEmpty) {

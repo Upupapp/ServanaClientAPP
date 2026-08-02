@@ -1,3 +1,4 @@
+import 'package:client/common/constants/servana_urls.dart';
 import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:client/common/domain/auth/auth_identifier.dart';
 import 'package:flutter/gestures.dart';
@@ -47,9 +48,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   void initState() {
     super.initState();
     _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.termsAndConditions));
     _privacyRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.privacyPolicy));
   }
 
   @override

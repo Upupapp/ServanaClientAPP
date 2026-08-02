@@ -1,3 +1,4 @@
+import 'package:client/common/constants/servana_urls.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/modules/settings/presentation/widgets/settings_tile.dart';
@@ -74,17 +75,17 @@ class _AboutScreenState extends State<AboutScreen> {
               icon: Icons.language_rounded,
               title: 'Official Website',
               subtitle: 'servana.com.ph',
-              onTap: () => _launch('https://servana.com.ph'),
+              onTap: () => _launch(ServanaUrls.home),
             ),
             SettingsNavTile(
               icon: Icons.description_outlined,
               title: 'Terms of Service',
-              onTap: () => _launch('https://servana.com.ph/terms'),
+              onTap: () => _launch(ServanaUrls.termsAndConditions),
             ),
             SettingsNavTile(
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
-              onTap: () => _launch('https://servana.com.ph/privacy'),
+              onTap: () => _launch(ServanaUrls.privacyPolicy),
             ),
           ]),
 
