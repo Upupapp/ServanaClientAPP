@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "320379709991-ftnq17kfj0k336kbn0aarcs3ac55qbf3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.servana.serviceclient",
+            "certificate_hash": "ea3de8c6c9e398ffc630ecc42227a7f8c0c8efe0"
+          }
+        },
+        {
           "client_id": "320379709991-pn23soa201hvq9eieku2muqivluujc7b.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
