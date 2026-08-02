@@ -1,40 +1,93 @@
-import 'package:client/common/constants/color_palette.dart';
-import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/presentation/navigation/servana_curved_main_navigation.dart';
+import 'package:client/common/presentation/navigation/servana_nav_motion.dart';
 import 'package:client/common/presentation/shell/core_tab.dart';
 import 'package:client/common/presentation/shell/quick_book_sheet.dart';
 import 'package:client/common/services/app_haptics.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/domain/analytics_event.dart';
+import 'package:client/core/analytics/events/navigation_events.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
 
-class MainNavScaffold extends StatelessWidget {
+/// Shell for the four primary branches plus the central Book action.
+///
+/// Owns navigation, haptics and analytics. The chrome is
+/// [ServanaCurvedMainNavigation], which knows nothing about routing — keeping
+/// branch handling here is what lets GoRouter remain the single source of
+/// truth for which tab is selected (§1, §21).
+class MainNavScaffold extends StatefulWidget {
   const MainNavScaffold({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  static const _navBlue = Color(0xFF1F44F2);
-  static const _navGrey = Color(0xFF6D717F);
-  static const _strokeColor = Color(0xFFE7E9EF);
+  @override
+  State<MainNavScaffold> createState() => _MainNavScaffoldState();
+}
 
-  void _onTap(BuildContext context, int index) {
-    // Only fire haptic when the tab actually changes (§64: centralised haptics).
-    if (index != navigationShell.currentIndex) {
-      AppHaptics.selection();
+class _MainNavScaffoldState extends State<MainNavScaffold> {
+  // §11/§22/§24 — passive branch changes must not produce user feedback.
+  //
+  // No "was this the user?" flag is tracked, because the structure makes the
+  // question unnecessary: haptics and analytics live ONLY inside
+  // _onTabSelected, which is reachable only from a tap. A deep link, a
+  // notification route or a cold-start restore moves currentIndex without ever
+  // entering this method, so it cannot fire feedback even by accident. A flag
+  // would have to be kept correct forever; this cannot go wrong.
+
+  void _track(AnalyticsEvent event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {
+      // Analytics must never break navigation.
     }
-    navigationShell.goBranch(
-      index,
-      // Re-selecting the active tab pops to its root (reselection behavior).
-      initialLocation: index == navigationShell.currentIndex,
-    );
   }
 
-  /// Returns the number of bookings that require immediate user action
-  /// (OTP verification or payment). Used for the Bookings tab badge.
+  void _onTabSelected(CoreTab tab) {
+    final index = tab.index;
+    final current = widget.navigationShell.currentIndex;
+
+    if (index != current) {
+      AppHaptics.selection();
+      _track(MainTabSelectedEvent(
+        tabKey: tab.name,
+        previousTabKey: CoreTab.values
+            .firstWhere((t) => t.index == current, orElse: () => CoreTab.home)
+            .name,
+      ));
+      widget.navigationShell.goBranch(index, initialLocation: false);
+      return;
+    }
+
+    // Reselection. §10: the haptic and the event are earned only if the branch
+    // ACTUALLY pops. A tap on a tab already at its root did nothing, and
+    // pretending otherwise trains the customer to distrust the feedback.
+    final navigator = Navigator.maybeOf(context);
+    final willPop = navigator?.canPop() ?? false;
+
+    widget.navigationShell.goBranch(index, initialLocation: true);
+
+    if (willPop) {
+      AppHaptics.light();
+      _track(MainTabReselectedEvent(tabKey: tab.name));
+    }
+  }
+
+  Future<void> _onBookPressed() async {
+    if (!mounted) return;
+    _track(const QuickBookOpenedEvent(entrySource: 'main_nav'));
+    // The medium haptic lives inside QuickBookSheet.show (§7). Calling it only
+    // when still mounted is what stops the haptic firing for a sheet that
+    // cannot open.
+    await QuickBookSheet.show(context);
+  }
+
+  /// Bookings needing immediate action — OTP or payment.
   int _actionCount(List<JobOrder> bookings) {
     return bookings.where((b) {
       final s = BookingStatusMapper.fromString(b.jobOrderStatusToString);
@@ -47,184 +100,69 @@ class MainNavScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final homeStore = dpLocator<HomeStore>();
     final msgStore = dpLocator<MessagingStore>();
-    final current = navigationShell.currentIndex;
 
     return Scaffold(
-      body: navigationShell,
+      // extendBody is deliberately OFF.
+      //
+      // Turning it on let the page scroll under the bar's rounded corners,
+      // which looks better and buries the last item on every scrolling screen
+      // behind the navigation — reported from the emulator: the bottom of Home
+      // was unreachable. §30 is explicit that the navigation must not cover
+      // content, and that outranks the corner treatment.
+      body: _BranchTransition(
+        index: widget.navigationShell.currentIndex,
+        child: widget.navigationShell,
+      ),
       bottomNavigationBar: Observer(
-        builder: (_) {
-          final bookingBadge = _actionCount(homeStore.bookings.toList());
-          final msgBadge = msgStore.totalUnread;
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: _strokeColor)),
-            ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                height: 68,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const SizedBox(width: 4),
-                    _NavItem(
-                      tab: CoreTab.home,
-                      current: current,
-                      badge: 0,
-                      onTap: () => _onTap(context, CoreTab.home.index),
-                    ),
-                    _NavItem(
-                      tab: CoreTab.bookings,
-                      current: current,
-                      badge: bookingBadge,
-                      onTap: () => _onTap(context, CoreTab.bookings.index),
-                    ),
-                    // Central Book action — not a navigation branch.
-                    Semantics(
-                      button: true,
-                      label: 'Book a service',
-                      excludeSemantics: true,
-                      child: GestureDetector(
-                        onTap: () => QuickBookSheet.show(context),
-                        child: Container(
-                          width: 49,
-                          height: 49,
-                          decoration: BoxDecoration(
-                            color: _navBlue,
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _navBlue.withOpacity(.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 26,
-                          ),
-                        ),
-                      ),
-                    ),
-                    _NavItem(
-                      tab: CoreTab.messages,
-                      current: current,
-                      badge: msgBadge,
-                      onTap: () => _onTap(context, CoreTab.messages.index),
-                    ),
-                    _NavItem(
-                      tab: CoreTab.profile,
-                      current: current,
-                      badge: 0,
-                      onTap: () => _onTap(context, CoreTab.profile.index),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+        // Observer wraps ONLY the badge-dependent chrome (§23). The branch
+        // content above is outside it, so an unread count arriving never
+        // rebuilds the page the customer is reading.
+        builder: (_) => ServanaCurvedMainNavigation(
+          currentIndex: widget.navigationShell.currentIndex,
+          bookingsBadge: _actionCount(homeStore.bookings.toList()),
+          messagesBadge: msgStore.totalUnread,
+          onTabSelected: _onTabSelected,
+          onBookPressed: _onBookPressed,
+        ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.tab,
-    required this.current,
-    required this.badge,
-    required this.onTap,
-  });
+/// Fade, rise and settle for branch content (§9).
+///
+/// Wraps the shell rather than replacing it: `StatefulShellRoute.indexedStack`
+/// still owns every branch's navigator, so scroll offsets, list filters and
+/// nested routes survive a tab change. Swapping in a rebuilt list of screens
+/// would animate more cheaply and destroy all of it (§9, §21).
+class _BranchTransition extends StatelessWidget {
+  const _BranchTransition({required this.index, required this.child});
 
-  final CoreTab tab;
-  final int current;
-  final int badge;
-  final VoidCallback onTap;
+  final int index;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final isActive = tab.index == current;
-    final color =
-        isActive ? MainNavScaffold._navBlue : MainNavScaffold._navGrey;
+    if (ServanaNavMotion.reduced(context)) return child;
 
-    return Semantics(
-      label: tab.semanticLabel(badge: badge),
-      button: true,
-      selected: isActive,
-      excludeSemantics: true,
-      liveRegion: badge > 0,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive
-                ? MainNavScaffold._navBlue.withOpacity(.09)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    isActive ? tab.activeIcon : tab.icon,
-                    color: color,
-                    size: 24,
-                  ),
-                  if (badge > 0)
-                    Positioned(
-                      right: -5,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: ColorPalette.danger,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          badge > 9 ? '9+' : '$badge',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                tab.label,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 10,
-                  color: color,
-                  letterSpacing: -0.4,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
+    return TweenAnimationBuilder<double>(
+      // Keyed on the branch index so the tween restarts on each change.
+      key: ValueKey(index),
+      tween: Tween(begin: 0, end: 1),
+      duration: ServanaNavMotion.pageFor(context),
+      curve: ServanaNavMotion.pageCurve,
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0, 1),
+        child: Transform.translate(
+          offset: Offset(0, ServanaNavMotion.pageRiseOffset * (1 - t)),
+          child: Transform.scale(
+            scale: ServanaNavMotion.pageStartScale +
+                ((1 - ServanaNavMotion.pageStartScale) * t),
+            child: child,
           ),
         ),
       ),
+      child: child,
     );
   }
 }

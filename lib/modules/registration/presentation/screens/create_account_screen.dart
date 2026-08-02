@@ -1,6 +1,8 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+
+import 'package:client/modules/authentication/presentation/widgets/social_auth_buttons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -367,9 +369,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       );
                                     },
                             ),
-                            const SizedBox(
-                              height: 20,
+                            const SizedBox(height: 20),
+
+                            // Social sign-up. The sign-in screen has offered
+                            // Google and Facebook since it was written and this
+                            // screen never did, so a customer who signs up
+                            // socially had to first tap "Sign in" — on a screen
+                            // titled Create your Account. Same widget, same
+                            // events; social auth upserts the account, so
+                            // signing up and signing in are one action.
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: SocialAuthButtons(
+                                isLoading: isLoading,
+                                verb: 'Sign up',
+                              ),
                             ),
+
+                            const SizedBox(height: 20),
                             GestureDetector(
                               onTap: () => context
                                   .goNamed(AuthenticationScreen.routeName),

@@ -103,19 +103,11 @@ class _ServanaPromotionBannerState extends State<ServanaPromotionBanner> {
                     ),
                   ),
                 ),
-                // Orange accent line (bottom-left)
-                Positioned(
-                  left: 20,
-                  bottom: 20,
-                  child: Container(
-                    height: 2,
-                    width: 48,
-                    decoration: BoxDecoration(
-                      color: ColorPalette.primaryColor.withOpacity(0.60),
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                ),
+                // The 48x2 orange accent line that used to sit at (20, 20) is
+                // removed. It was pinned to the banner's bottom-left, which is
+                // exactly where the CTA pill sits — so it read as a stray
+                // underline hanging off the button rather than as an accent,
+                // and it did so on every banner.
                 // Content
                 Padding(
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),

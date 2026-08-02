@@ -34,7 +34,6 @@ import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_atmosphere.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_benefit_section.dart';
-import 'package:client/modules/homepage/presentation/widgets/home_campaign_spotlight.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_category_grid.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_header.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_promotion_banner.dart';
@@ -64,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final _notifCtrl = dpLocator<NotificationsController>();
   final _scaffoldKey = GlobalKey<ScaffoldState>(debugLabel: "scaffoldKey");
 
-  final _campaignCtrl = HomeCampaignController();
   final _promoRepo = HomePromotionRepository();
 
   @override
@@ -74,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
     bwStore.ensureOptionsLoaded(serviceId: 2);
     airconStore.ensureOptionsLoaded(serviceId: 1);
     _restoreDraftIfPending();
-    _scheduleSpotlight();
     _maybeShowConsentGate();
   }
 
@@ -103,39 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _scheduleSpotlight() {
-    Future.delayed(const Duration(seconds: 1), () async {
-      if (!mounted) return;
-      final hasCritical = store.bookings.any(
-        (b) =>
-            b.jobOrderStatus != JobOrderStatus.completed &&
-            b.jobOrderStatus != JobOrderStatus.cancelled &&
-            b.jobOrderStatus != JobOrderStatus.none,
-      );
-      final eligible = await _campaignCtrl.isSpotlightEligible(
-        campaign: HomePromotionRepository.defaultSpotlight,
-        hasCriticalBooking: hasCritical,
-      );
-      if (!mounted || !eligible) return;
-      await _campaignCtrl.markSeen(HomePromotionRepository.defaultSpotlight);
-      if (!mounted) return;
-      showCampaignSpotlight(
-        context: context,
-        campaign: HomePromotionRepository.defaultSpotlight,
-        onDismiss: () => _campaignCtrl.markDismissed(
-          HomePromotionRepository.defaultSpotlight,
-        ),
-        onCtaTap: () {
-          _campaignCtrl.markCtaCompleted(
-            HomePromotionRepository.defaultSpotlight,
-          );
-          _handlePromotionTap(
-            HomePromotionRepository.defaultSpotlight.ctaTarget,
-          );
-        },
-      );
-    });
-  }
+  // _scheduleSpotlight was removed with the "One app. More ways to get things
+  // done." campaign overlay. It interrupted every launch with a full-screen
+  // modal a second after Home appeared, before the customer had read anything,
+  // and its only action duplicated the Explore Services CTA already on the
+  // page. The campaign controller, eligibility rules and the spotlight widget
+  // are left in place so a future campaign can use them deliberately.
 
   void _handlePromotionTap(HomePromotionTarget target) {
     switch (target) {

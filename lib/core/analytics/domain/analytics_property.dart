@@ -16,6 +16,12 @@ abstract final class AnalyticsKeys {
   static const String screenClass = 'screen_class';
   static const String previousScreen = 'previous_screen';
   static const String entrySource = 'entry_source';
+
+  // Main navigation (MOVEUPNAV+ §24). The allow-list is exactly tab_key,
+  // previous_tab_key and entry_source — no customer id, booking id, message
+  // content or badge resource id may travel with these events.
+  static const String tabKey = 'tab_key';
+  static const String previousTabKey = 'previous_tab_key';
   static const String launchType = 'launch_type';
   static const String navigationType = 'navigation_type';
   static const String deepLinkType = 'deep_link_type';
