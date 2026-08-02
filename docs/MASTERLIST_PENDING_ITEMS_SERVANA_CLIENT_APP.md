@@ -5,10 +5,10 @@ Every open finding for ServanaClient. Companion to the worker app list at
 
 **Maintenance rule.** Update at the end of every command. Add new findings, move resolved ones to Closed with the commit that closed them, and move disproved ones to Corrections. **Never delete a row.**
 
-- **Last updated:** 2026-08-01, six-pass RE-RUN (round 2)
-- **App:** `Heatclift/ServanaClient` @ `4868aca` — 983 tests, analyzer 0 errors / 46 infos
+- **Last updated:** 2026-08-02, release-pipeline session
+- **App:** `Heatclift/ServanaClient` @ `da02f94` (branch `chore/16kb-alignment`; `dbe636e` on main) — 1095 tests, `flutter analyze --no-fatal-infos` exit 0
 - **Backend:** `servana_api` @ `9a07330` — 1317 tests, 11 local security commits
-- **Per-finding detail:** `docs/audit/<PASS>_CLIENT.md`
+- **Per-finding detail:** `docs/audit/<PASS>_CLIENT.md`; release-path detail in `docs/DEPLOYMENT_ERRORS.md` and `docs/SIXTEEN_KB_ALIGNMENT.md`
 
 ## Correction to the round-1 numbers
 
@@ -20,19 +20,24 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 
 ## At a glance
 
-| Severity | Open | Closed this session |
-| --- | ---: | ---: |
-| **P0** | 0 | 20 |
-| **P1** | 82 | 5 |
-| **P2** | 46 | 2 |
-| **P3** | 10 | 0 |
-| **info** | 5 | 0 |
+| Severity | Open | Closed (round 2) | Closed (release session) |
+| --- | ---: | ---: | ---: |
+| **P0** | 0 | 20 | 0 |
+| **P1** | 86 | 5 | 6 |
+| **P2** | 49 | 2 | 5 |
+| **P3** | 11 | 0 | 2 |
+| **info** | 5 | 0 | 0 |
 
-**143 open · 27 closed.**
+**151 open · 27 closed (round 2) · 13 closed (release session, `SC-R01`–`SC-R13`).**
+
+Open went **up** by 8 while 13 were closed. That is the file working: the
+release-pipeline session opened SC-166 through SC-173, most of which were
+always true and simply had nobody looking. SC-166 in particular — a RASP SDK
+whose output no code reads — has been shipping that way for some time.
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P1 — open (82)
+## P1 — open (86)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -118,8 +123,12 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 | SC-105 | TEST | resolveProviderAudience is untested — the projection tests prove the filter works but never that it is applied to the right callers | servana_api-main/tests/provider-profile-projection.test.ts:111 (extend); covers src/controllers/technicianController.ts:1022-1038 | no | agent |
 | SC-106 | TEST | The auth-guard test re-implements the router's guard instead of executing it, and explicitly asserts the /settings deep-link gap is correct | client-mobile | yes | agent |
 | SC-107 | TEST | verifyAuth.ts — the single middleware all nine security fixes rest on — has zero behavioural tests, including its production TEMP_ID kill-switch | servana_api-main/tests/verify-auth.test.ts (new); covers src/middleware/verifyAuth.ts:8-63 | no | agent |
+| SC-166 | RELEASE | freeRASP is inert. Every threat callback funnels into `ThreatDetectionProvider.protect()`, which sets `isUnderThreat` and notifies — and **nothing reads it**. The provider is registered at `main_injector.dart:86` and has no other consumer in `lib/`. The app ships a RASP SDK that detects root, hooks, debuggers, emulators and tampering, and then does nothing with any of it. | client-mobile | yes | **verified — grep for consumers returns only the registration** |
+| SC-167 | RELEASE | The two `signingCertHashes` pinned at `free_rasp_service.dart:16-19` do NOT match the upload certificate (`cCg2PG6Nv6NgZHnkPOyST2M/z/OO1qDWavjF36bfaCk=`, SHA-256 `70:28:36:3C:…:68:29`), and their provenance is undocumented — no doc records which keystore they came from. Harmless only for as long as SC-166 keeps the signal inert. **Wiring the protection before fixing these makes the app detect itself as tampered.** With Play App Signing the runtime cert is Play's app-signing key, not the upload key, so the correct value comes from Play Console → App integrity. | client-mobile + Play Console | yes | **verified — hashes computed and compared** |
+| SC-169 | RELEASE | JobOrder submission has no backend endpoint. `HttpBackend.insertJobOrder` (`http_backend.dart:571`) is a stub returning false; `servana_api` exposes no job-order route. `da02f94` made the failure honest — it no longer fabricates a booking — but the flow is now visibly non-functional on a path customers can reach from Store Items and the category tiles. Decide: wire an endpoint, route through `POST /api/bookings`, or remove the entry points. | backend + client-mobile | no | **verified — flow traced end to end** |
+| SC-173 | RELEASE | The upload keystore has never been matched against Play. If ServanaClient is already published, its SHA-256 must equal Play Console → App integrity → *Upload key certificate*, or every upload is rejected regardless of a green pipeline. Not checkable from the repositories. | Play Console | no | unverified |
 
-## P2 — open (46)
+## P2 — open (49)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -169,8 +178,11 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 | SC-153 | TEST | ServanaClient's six skipped tests defer to an integration_test/ directory that does not exist, and they cover exactly the token lifecycle this session | servana_client-main/test/common/data/backend/api_client_headers_test.dart (new); test/bloc/authentication_bloc_test.dart:123,139,168,283,317,602 | no | agent |
 | SC-154 | TEST | The column-does-not-exist defect class hit twice this session; the check that would catch it exists but is scoped to one alias in one function | servana_api-main/tests/sql-column-contract.test.ts (new); generalizes tests/guest-booking-link.test.ts:50-66 | no | agent |
 | SC-155 | TEST | Two test suites are silently excluded from jest, and they are the only ones that exercise real HTTP routes | servana_api-main/jest.config.js:5; tests/route-contract.test.ts (new) | no | agent |
+| SC-168 | RELEASE | freeRASP has never started on iOS. `iosConfig` is commented out at `free_rasp_service.dart:23-26`, and freeRASP throws `ConfigurationException` when it is absent — which `main.dart` discarded with `.ignore()`. `da02f94` reports the failure to Crashlytics instead of swallowing it, so it is now visible, but iOS still has no RASP. Needs the bundle ID and team ID. | client-mobile | yes | **verified** |
+| SC-171 | MOBILEVIEW | Beauty & Wellness category header renders the subtitle "Feel refreshed, confident, and cared for." *underneath* the back arrow — the same text-over-control defect class as the welcome-screen chip, reproducible on every load of that screen. | client-mobile | yes | **verified — observed on emulator-5554** |
+| SC-172 | RELEASE | Symbol retention cannot meet its own policy from CI alone. `RELEASE_ARTIFACTS.md` requires "duration of supported release + 12 months"; GitHub caps artifacts at 90 days without an org-level increase. Symbols must be downloaded and archived off-CI before day 90 or the artifact silently disappears and every crash from that release becomes unreadable. | process | n/a | **verified** |
 
-## P3 — open (10)
+## P3 — open (11)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -184,6 +196,29 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 | SC-163 | REPEAT | Class F confirmed still live at 799b6aa: otp_code and worker_code are one generator behind two business meanings, and the assignment service returns w | ? | no | agent |
 | SC-164 | TEST | Canonical §13 statuses `new` and `disputed` are unmapped and untested; unknown statuses are grouped under cancelled | client-mobile | yes | agent |
 | SC-165 | TEST | No test covers the §21 safe-error boundary, and several hardened controllers return raw exception text | servana_api-main/tests/booking-access.test.ts:167 (extend); src/controllers/bookingController.ts:51, src/controllers/paymentController.ts:25, src/controllers/technicianController.ts:97 | no | agent |
+| SC-170 | MOBILEVIEW | `search_screen.dart:419` has the same `padding: null` scroll-view defect as the category grid. It is *horizontal*, so it inherits the left/right insets — 0 in portrait, non-zero in landscape on a cutout device. Latent, not currently visible. | client-mobile | yes | **verified** |
+
+## Closed — release-pipeline session (2026-08-02)
+
+Everything below was found and fixed in the same session. Kept as its own
+section rather than merged into the round-2 table, because mixing sessions is
+how the round-1 closure count went wrong.
+
+| ID | Finding | Commit |
+| --- | --- | --- |
+| SC-R01 | `flutter analyze` failed CI on two warnings — a spotlight removal orphaned the `home_campaign_controller` import, and removing the traveling cards orphaned `_CardChip` and the sole use of its `ColorPalette` import. `--no-fatal-infos` makes infos non-fatal but **warnings still fail**. | `72dd3a1` |
+| SC-R02 | `versionCode` was hardcoded to 35 in the workflow's `local.properties`, which `build.gradle:57` reads — so it silently overrode pubspec. Every push to main built the same versionCode, and Play rejects duplicates: the first upload would work and every later one fail, while bumping pubspec did nothing. | `c90cd00` |
+| SC-R03 | "Verify signing" could not fail. `jarsigner -verify` prints "jar is unsigned" and exits 0, so the step verified nothing. Now asserts on "jar verified" and re-checks the signer certificate. | `c90cd00` |
+| SC-R04 | `GOOGLE_MAPS_API_KEY` was consumed by the build but absent from the preflight. Unset, `sed` substitutes an empty key, the build goes green, and the release ships `com.google.android.geo.API_KEY=""` — grey tracking maps, no error anywhere. | `c90cd00` |
+| SC-R05 | The release job had none of the disk mitigations the test job needs, while building a full multi-ABI obfuscated bundle rather than a debug arm64 APK. | `c90cd00` |
+| SC-R06 | `--obfuscate --split-debug-info` symbols were discarded with the runner. Dart stack traces would be unrecoverable addresses permanently — a rebuild yields a different mapping. Now uploaded with `mapping.txt`, tagged versionName-versionCode-sha. See SC-172 for the retention gap that remains. | `c90cd00`, `dbe636e` |
+| SC-R07 | 16 KB misalignment was only discoverable in Play Console. CI now reads `PT_LOAD p_align` from every arm64 ELF in the bundle and fails with the offending libraries named. Tested both ways against real fixtures. | `dbe636e` |
+| SC-R08 | Six arm64 libraries shipped 4 KB aligned against `targetSdkVersion 36`, blocking the Play upload. freerasp 6.12.0→8.0.0 consolidated five into one aligned `libts.so`; `librive_text.so` left entirely with `awesome_dialog`. Now 0 of 4 misaligned. | `da02f94` |
+| SC-R09 | `rive` could not be bumped: `awesome_dialog 3.2.1` declares `rive: ^0.13.2`, which under pub's pre-1.0 caret rule excludes 0.14.x, and `rive` pins `rive_common` exactly. Removed `awesome_dialog` instead — 6 call sites in 3 files replaced by `ServanaAlertDialog`. | `da02f94` |
+| SC-R10 | `attachListener` returned `void` in freerasp 6.x and is `Future<void>` in 8.x, where it awaits `detachListener()` before subscribing. Called unawaited immediately before `start()`, the native SDK could report before the Dart listener existed. Compiles clean; `unawaited_futures` is not enabled. | `da02f94` |
+| SC-R11 | `android/app/build.gradle` pinned the Talsec **native** SDK to 6.4.0 while the plugin declares 18.3.0 — twelve majors apart. Gradle highest-wins resolved 18.3.0, which is the only reason the build produced an aligned `libts.so`; a dependency lock or `resolutionStrategy` would have selected 6.4.0 and silently restored the misaligned libraries. | `da02f94` |
+| SC-R12 | **JobOrder ghost success.** `onJoRequested` called `repo.insertJobOrder(...)` without `await` and never read the bool. In release the Backend is `HttpBackend`, whose stub returns false — so submission always failed and the customer was always told it worked: a "Job order submitted." snackbar, the screen popped, and a placeholder booking with status "For Review" appeared that the server never received. `JobOrderScreen` is routed and reachable, so this was a live path. Now awaited and checked; a rejection emits `FailedJOState` and writes nothing. 6 regression tests. | `da02f94` |
+| SC-R13 | Home spacing: the category grid inherited `MediaQuery.padding` because a vertical `GridView` with `padding: null` adopts it, opening a device-dependent ~48pt gap; and the header computed its own height from assumed child sizes, producing `BOTTOM OVERFLOWED BY 5.0 PIXELS`. | `06bedfd`, `72dd3a1` |
 
 ## Closed this session
 
@@ -222,6 +257,9 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 | Item | Where |
 | --- | --- |
 | Rotate Firebase keys — previously-committed ones remain in git history | ServanaClient |
+| Set the 5 `production` environment secrets; `release-android` fails its preflight until then | GitHub → Settings → Environments → production |
+| Rotate the upload keystore password — it was pasted into a chat transcript — and move `upload-keystore.jks` out of `Downloads` | ServanaClient release process |
+| Merge `chore/16kb-alignment` into main; the 16 KB fix and the JobOrder fix both live there | `Heatclift/ServanaClient` |
 | 36 unauthenticated legacy worker routes; migration step 2 needs a mobile release | `servana_api` + ServanaWorker |
 | 4 backend security commits are local-only and undeployed | `servana_api`, no upstream configured |
 
