@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 ///   1. [ServanaOrangeRibbon] — the continuous narrative ribbon from §24.
 ///   2. [_TravelingPetal]    — one Servana-blue petal that shifts depth + position
 ///                             across the three scenes (§25).
-///   3. [_TravelingCard]     — two service category cards that orbit and travel
+///   (The two labelled traveling cards were removed — their viewport-
+///   fractional anchors put one on top of the real chip grid, where its label
+///   drew over itself and read as corrupted text.)
 ///                             forward (§17 / §27).
 ///
 /// All elements respond continuously to [WelcomeExperienceController.pageProgress]
@@ -33,25 +35,13 @@ class WelcomeTravelingOverlay extends StatelessWidget {
           // Traveling blue petal
           _TravelingPetal(controller: controller),
 
-          // Two traveling service cards
-          if (controller.motionMode.hasTravelingElements) ...[
-            _TravelingCard(
-              controller: controller,
-              icon: Icons.ac_unit_rounded,
-              label: 'Aircon',
-              anchorScene0: const FractionalOffset(0.10, 0.38),
-              anchorScene1: const FractionalOffset(0.14, 0.30),
-              anchorScene2: const FractionalOffset(0.08, 0.25),
-            ),
-            _TravelingCard(
-              controller: controller,
-              icon: Icons.spa_rounded,
-              label: 'Beauty',
-              anchorScene0: const FractionalOffset(0.72, 0.32),
-              anchorScene1: const FractionalOffset(0.68, 0.25),
-              anchorScene2: const FractionalOffset(0.74, 0.22),
-            ),
-          ],
+          // The two labelled traveling cards ("Aircon" and "Beauty") were
+          // removed. Their anchors are fractions of the viewport, so on a tall
+          // narrow screen the Beauty card landed underneath the real chip grid
+          // and drew its label on top of itself — the text read as corrupted
+          // rather than as a second element. It was decoration duplicating
+          // labels the grid already shows, so there is nothing to replace it
+          // with; the ribbon and petal above carry the motion without text.
         ],
       ),
     );
@@ -143,64 +133,6 @@ class _PetalPainter extends CustomPainter {
 }
 
 // ── Traveling service card ────────────────────────────────────────────────────
-
-class _TravelingCard extends StatelessWidget {
-  const _TravelingCard({
-    required this.controller,
-    required this.icon,
-    required this.label,
-    required this.anchorScene0,
-    required this.anchorScene1,
-    required this.anchorScene2,
-  });
-
-  final WelcomeExperienceController controller;
-  final IconData icon;
-  final String label;
-  final FractionalOffset anchorScene0;
-  final FractionalOffset anchorScene1;
-  final FractionalOffset anchorScene2;
-
-  static const double _cardW = 100.0;
-  static const double _cardH = 40.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: ListenableBuilder(
-        listenable: controller,
-        builder: (_, Widget? stable) {
-          final size = MediaQuery.sizeOf(context);
-          final t01 = controller.travelProgress(0, 1);
-          final t12 = controller.travelProgress(1, 2);
-
-          final ax = _lerp3(
-              anchorScene0.dx, anchorScene1.dx, anchorScene2.dx, t01, t12);
-          final ay = _lerp3(
-              anchorScene0.dy, anchorScene1.dy, anchorScene2.dy, t01, t12);
-
-          // Cards fade out in scene 2 (booking confirmation doesn't show them)
-          final op = (1.0 - t12 * 0.85).clamp(0.0, 1.0);
-
-          final left = ax * size.width - _cardW / 2;
-          final top = ay * size.height - _cardH / 2;
-
-          return Positioned(
-            left: left,
-            top: top,
-            child: Opacity(opacity: op, child: stable),
-          );
-        },
-        child: _CardChip(icon: icon, label: label),
-      ),
-    );
-  }
-
-  static double _lerp3(double a, double b, double c, double t01, double t12) {
-    final ab = a + (b - a) * t01;
-    return ab + (c - ab) * t12;
-  }
-}
 
 class _CardChip extends StatelessWidget {
   const _CardChip({required this.icon, required this.label});

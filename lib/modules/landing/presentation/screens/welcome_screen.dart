@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/servana_banner.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
@@ -60,6 +61,51 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _track(const OnboardingStartedEvent(entrySource: 'app_launch'));
     _track(const OnboardingCardViewedEvent(cardKey: 'scene_0', stepNumber: 0));
     _maybeShowConsentGate();
+    _startAutoAdvance();
+  }
+
+  // ── Auto-advance ───────────────────────────────────────────────────────────
+
+  /// Dwell time per scene before advancing on its own.
+  static const Duration _autoAdvanceInterval = Duration(seconds: 3);
+
+  Timer? _autoAdvance;
+
+  /// Advances a scene every [_autoAdvanceInterval] and stops on the last one.
+  ///
+  /// It does NOT loop back to the first scene: a carousel that restarts reads
+  /// as stuck, and the last scene holds the primary call to action.
+  ///
+  /// Cancelled the moment the customer touches the pager. Continuing to move
+  /// the page under someone who is reading it is worse than not animating at
+  /// all — and it would fight a manual swipe mid-gesture.
+  void _startAutoAdvance() {
+    _autoAdvance?.cancel();
+    _autoAdvance = Timer.periodic(_autoAdvanceInterval, (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      final last = WelcomeSceneSpec.scenes.length - 1;
+      final next = _ctrl.currentPage + 1;
+      if (next > last) {
+        t.cancel();
+        return;
+      }
+      if (_ctrl.navigationLocked) return;
+      final pc = _ctrl.pageController;
+      if (!pc.hasClients) return;
+      pc.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  void _cancelAutoAdvance() {
+    _autoAdvance?.cancel();
+    _autoAdvance = null;
   }
 
   void _maybeShowConsentGate() {
@@ -74,6 +120,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   void dispose() {
+    _cancelAutoAdvance();
     _ctrl.dispose();
     super.dispose();
   }
@@ -145,39 +192,45 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               // ── Background photos ──────────────────────────────────────
               // Each photo is wrapped in WelcomeParallaxLayer so it shifts
               // slightly against the scroll direction, creating depth.
-              PageView.builder(
-                controller: _ctrl.pageController,
-                itemCount: _scenes.length,
-                onPageChanged: (page) {
-                  _ctrl.onPageChanged(page);
-                  _track(OnboardingCardViewedEvent(
-                    cardKey: 'scene_$page',
-                    stepNumber: page,
-                  ));
-                },
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (_, i) {
-                  final img = Semantics(
-                    label: _scenes[i].semanticDescription,
-                    image: true,
-                    child: SizedBox.expand(
-                      child: Image.asset(
-                        _scenes[i].backgroundAsset,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const ColoredBox(color: Color(0xFF001140)),
+              // Listener, not GestureDetector: a raw pointer-down fires even
+              // when the PageView claims the gesture, so a swipe cancels the
+              // timer at the moment it starts rather than after it resolves.
+              Listener(
+                onPointerDown: (_) => _cancelAutoAdvance(),
+                child: PageView.builder(
+                  controller: _ctrl.pageController,
+                  itemCount: _scenes.length,
+                  onPageChanged: (page) {
+                    _ctrl.onPageChanged(page);
+                    _track(OnboardingCardViewedEvent(
+                      cardKey: 'scene_$page',
+                      stepNumber: page,
+                    ));
+                  },
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: (_, i) {
+                    final img = Semantics(
+                      label: _scenes[i].semanticDescription,
+                      image: true,
+                      child: SizedBox.expand(
+                        child: Image.asset(
+                          _scenes[i].backgroundAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const ColoredBox(color: Color(0xFF001140)),
+                        ),
                       ),
-                    ),
-                  );
-                  if (isStatic) return img;
-                  return WelcomeParallaxLayer(
-                    controller: _ctrl,
-                    pageIndex: i,
-                    parallaxFactor: 0.15,
-                    verticalFactor: 0.02,
-                    child: img,
-                  );
-                },
+                    );
+                    if (isStatic) return img;
+                    return WelcomeParallaxLayer(
+                      controller: _ctrl,
+                      pageIndex: i,
+                      parallaxFactor: 0.15,
+                      verticalFactor: 0.02,
+                      child: img,
+                    );
+                  },
+                ),
               ),
 
               // ── Gradient overlay ───────────────────────────────────────
@@ -426,13 +479,16 @@ class _ServiceCategoriesVisual extends StatelessWidget {
   const _ServiceCategoriesVisual({required this.isStatic});
   final bool isStatic;
 
+  // Massage and Nails replace Cleaning and Gardening. Both are real seeded
+  // level_2 categories under service_id 2 (migrations 002 and 003), so the
+  // first thing a new customer sees is now something they can actually book.
   static const _services = [
     (Icons.ac_unit_rounded, 'Aircon'),
-    (Icons.cleaning_services_rounded, 'Cleaning'),
+    (Icons.self_improvement_rounded, 'Massage'),
     (Icons.spa_rounded, 'Beauty'),
     (Icons.plumbing_rounded, 'Plumbing'),
     (Icons.handyman_rounded, 'Repairs'),
-    (Icons.local_florist_rounded, 'Gardening'),
+    (Icons.back_hand_rounded, 'Nails'),
   ];
 
   @override
