@@ -23,6 +23,7 @@
 /// renews only when the token is expired or nearly so. These tests pin the
 /// seam — that a provider is consulted, and that it wins over the stored token —
 /// without requiring Firebase in the test process.
+library;
 
 import 'dart:convert';
 import 'dart:io';

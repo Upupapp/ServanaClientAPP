@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:client/common/constants/color_palette.dart';
 
 class ServanaHomeAtmosphere extends StatefulWidget {
-  final double height;
-  const ServanaHomeAtmosphere({super.key, required this.height});
+  /// Fixed height, or null to fill whatever the parent measures.
+  ///
+  /// Null is the Home header's case: its height is content-driven now, so the
+  /// backdrop cannot be told a number up front (§6). A `SizedBox(height: null)`
+  /// simply takes its constraints, which under `Positioned.fill` is the whole
+  /// Stack.
+  final double? height;
+  const ServanaHomeAtmosphere({super.key, this.height});
 
   @override
   State<ServanaHomeAtmosphere> createState() => _ServanaHomeAtmosphereState();

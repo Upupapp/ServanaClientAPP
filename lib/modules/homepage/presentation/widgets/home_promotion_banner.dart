@@ -1,3 +1,4 @@
+import 'package:client/common/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:client/common/constants/color_palette.dart';
@@ -66,7 +67,7 @@ class _ServanaPromotionBannerState extends State<ServanaPromotionBanner> {
           scale: _pressed ? 0.985 : 1.0,
           duration: const Duration(milliseconds: 120),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: EdgeInsets.symmetric(horizontal: homeGutter(context)),
             height: 172,
             decoration: BoxDecoration(
               gradient: LinearGradient(

@@ -1,3 +1,4 @@
+import 'package:client/common/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:client/common/constants/font_palette.dart';
@@ -50,7 +51,7 @@ class ServanaHomeCategoryGrid extends StatelessWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: homeGutter(context)),
       child: GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,

@@ -1,3 +1,4 @@
+import 'package:client/common/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:client/common/constants/color_palette.dart';
@@ -34,8 +35,15 @@ class ServanaBenefitSection extends StatelessWidget {
       ),
     ];
 
+    // §16: vertical padding removed here.
+    //
+    // The section stacked three separate vertical gaps — the parent's top gap,
+    // this container's padding, and this inner 8 — so the space above the
+    // heading was the sum of all three rather than any one intended value.
+    // Horizontal stays, and now comes from the shared gutter so the section
+    // aligns with the grid and banners above it.
     Widget content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: homeGutter(context)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

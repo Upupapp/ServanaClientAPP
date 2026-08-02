@@ -3,6 +3,7 @@
 /// Three separate bugs, one theme: a value arrived in a shape the reader did not
 /// expect, and the screen showed *something* rather than nothing — so nobody
 /// noticed. None of the three had a test.
+library;
 
 import 'package:client/common/domain/pricing/catalog_price.dart';
 import 'package:flutter_test/flutter_test.dart';

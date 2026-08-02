@@ -1,4 +1,3 @@
-import 'package:client/common/constants/color_palette.dart';
 import 'package:client/modules/landing/presentation/controllers/welcome_experience_controller.dart';
 import 'package:client/modules/landing/presentation/widgets/servana_orange_ribbon.dart';
 import 'package:flutter/material.dart';
@@ -130,47 +129,4 @@ class _PetalPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PetalPainter old) => false;
-}
-
-// ── Traveling service card ────────────────────────────────────────────────────
-
-class _CardChip extends StatelessWidget {
-  const _CardChip({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0x30FFFFFF),
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: const Color(0x55FFFFFF), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: ColorPalette.primaryColorDark.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 14),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

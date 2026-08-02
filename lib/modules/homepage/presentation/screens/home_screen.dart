@@ -1,3 +1,4 @@
+import 'package:client/common/constants/app_spacing.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/core/recovery/pending_payment_service.dart';
@@ -27,7 +28,6 @@ import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen
 import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/homepage/data/home_promotion_repository.dart';
 import 'package:client/modules/homepage/domain/home_promotion.dart';
-import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
 import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
@@ -197,7 +197,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 20, bottom: 12),
+                        // Left gutter only. The header owns the gap above
+                        // this heading (§9: one section owns the spacing, not
+                        // both).
+                        padding: EdgeInsets.only(
+                          left: homeGutter(context),
+                          bottom: AppSpacing.md,
+                        ),
                         child: Text(
                           'Services',
                           style: TextStyle(
@@ -282,7 +288,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 }),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              // §18: breathing room only.
+              //
+              // The Scaffold already reserves the navigation's own height for
+              // page content, so this must NOT re-add it — doing so is the
+              // double-count §18 warns about. 24 is the visible gap between the
+              // last card and the bar, nothing more.
+              SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
             ],
           ),
         ),
@@ -294,55 +306,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeaderSection() {
     return Builder(builder: (ctx) {
-      final topPad = MediaQuery.paddingOf(ctx).top;
-      // Content height below status bar:
-      //   ServanaHomeHeader inner padding: 16 top + 40 row + 20 bottom = 76
-      //   ServanaHomeSearch: 52 + 28 bottom spacing = 80
-      const contentH = 76.0 + 80.0;
-      final totalH = topPad + contentH;
-
-      return SizedBox(
-        height: totalH,
-        child: Stack(
-          children: [
-            ServanaHomeAtmosphere(height: totalH),
-            SafeArea(
-              bottom: false,
-              child: Observer(builder: (obsCtx) {
-                final s = store.session;
-                final parts = (s?.fullname ?? '')
-                    .split(RegExp(r'\s+'))
-                    .where((p) => p.isNotEmpty)
-                    .toList();
-                final first = parts.isNotEmpty ? parts.first : null;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListenableBuilder(
-                      listenable: _notifCtrl,
-                      builder: (_, __) => ServanaHomeHeader(
-                        firstName: first,
-                        isAuthenticated: s != null,
-                        animate: true,
-                        notificationCount: _notifCtrl.unreadCount,
-                        onMenuTap: () =>
-                            _scaffoldKey.currentState?.openDrawer(),
-                        onNotificationTap: () =>
-                            context.pushNamed(NotificationsScreen.routeName),
-                      ),
-                    ),
-                    ServanaHomeSearch(
-                      onTap: () => context.pushNamed(SearchScreen.routeName),
+      // Content-driven, not calculated (§6).
+      //
+      // This used to be `const contentH = 76.0 + 80.0` — a hardcoded sum of
+      // assumed child sizes: "header inner padding 16 top + 40 row + 20 bottom"
+      // plus "search 52 + 28 bottom". The real content measures 161pt, which is
+      // why the emulator showed "BOTTOM OVERFLOWED BY 5.0 PIXELS" at default
+      // text size, before any of the conditions that were supposed to be the
+      // risk — a long first name, bold text, 200% scaling or a localised
+      // greeting. The arithmetic was simply wrong, and it would have been
+      // wrong-and-worse for every one of those.
+      //
+      // The Stack now takes its height from the Column, and the atmosphere
+      // fills whatever that turns out to be. Nothing to keep in sync.
+      return Stack(
+        children: [
+          const Positioned.fill(child: ServanaHomeAtmosphere()),
+          SafeArea(
+            bottom: false,
+            child: Observer(builder: (obsCtx) {
+              final s = store.session;
+              final parts = (s?.fullname ?? '')
+                  .split(RegExp(r'\s+'))
+                  .where((p) => p.isNotEmpty)
+                  .toList();
+              final first = parts.isNotEmpty ? parts.first : null;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListenableBuilder(
+                    listenable: _notifCtrl,
+                    builder: (_, __) => ServanaHomeHeader(
+                      firstName: first,
+                      isAuthenticated: s != null,
                       animate: true,
-                      animationDelay: const Duration(milliseconds: 160),
+                      notificationCount: _notifCtrl.unreadCount,
+                      onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      onNotificationTap: () =>
+                          context.pushNamed(NotificationsScreen.routeName),
                     ),
-                    const SizedBox(height: 28),
-                  ],
-                );
-              }),
-            ),
-          ],
-        ),
+                  ),
+                  ServanaHomeSearch(
+                    onTap: () => context.pushNamed(SearchScreen.routeName),
+                    animate: true,
+                    animationDelay: const Duration(milliseconds: 160),
+                  ),
+                  // §8: this section owns the ENTIRE gap down to the next
+                  // one. It used to add 28 here while the Services heading
+                  // added another 20 above itself, giving a 48pt trench that
+                  // neither file could see on its own.
+                  SizedBox(height: AppSpacing.section),
+                ],
+              );
+            }),
+          ),
+        ],
       );
     });
   }
@@ -363,7 +381,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (active == null) return const SizedBox.shrink();
 
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        // Shared gutter (§12). This was a hardcoded 16 while the grid,
+        // banners and benefit section all sat at 20, so the card was visibly
+        // indented differently from everything above and below it.
+        padding: EdgeInsets.fromLTRB(
+          homeGutter(context),
+          AppSpacing.section,
+          homeGutter(context),
+          0,
+        ),
         child: Semantics(
           button: true,
           label: 'Active booking: ${active.merchantServiceName}. Tap to view.',
@@ -475,7 +501,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (all.isEmpty && isLoading) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          padding: EdgeInsets.fromLTRB(
+            homeGutter(context),
+            AppSpacing.xl,
+            homeGutter(context),
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -497,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: homeGutter(context)),
               child: _sectionHeader(
                 'Featured Services',
                 onSeeAll: () => context.pushNamed(SearchScreen.routeName),
@@ -507,7 +538,9 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: 222,
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                // Same gutter as the heading above it, so the first card's
+                // leading edge lines up with the section title (§13).
+                padding: EdgeInsets.symmetric(horizontal: homeGutter(context)),
                 scrollDirection: Axis.horizontal,
                 itemCount: all.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -567,7 +600,13 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: onSeeAll,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              // No horizontal padding: the parent already applies the page
+              // gutter, and TextButton's default inset pushed "See All" 8pt
+              // inside the right-hand guide that every other section respects.
+              padding: EdgeInsets.zero,
+              // Keeps the accessible tap target without adding visual width.
+              tapTargetSize: MaterialTapTargetSize.padded,
+              minimumSize: const Size(48, 48),
             ),
             child: Text(
               'See All',
@@ -658,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 20),
+                        padding: EdgeInsets.only(left: homeGutter(context)),
                         child: Text(
                           "My Account",
                           style: TextStyle(
@@ -724,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 20),
+                        padding: EdgeInsets.only(left: homeGutter(context)),
                         child: Text(
                           "General",
                           style: TextStyle(
