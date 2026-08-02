@@ -6,6 +6,16 @@
     <!-- Required for push notifications on Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- SC-179: freeRASP 8 registers screenshot and screen-recording detectors
+         at startup and logs a TalsecScreenProtector failure for each without
+         these. They are normal (install-time) permissions with no runtime
+         prompt, and they only let the app be TOLD that a capture happened —
+         they grant no access to screen content, and nothing is collected or
+         transmitted beyond the threat's name. Declared with maxSdkVersion
+         omitted deliberately: both are no-ops on older releases. -->
+    <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE"/>
+    <uses-permission android:name="android.permission.DETECT_SCREEN_RECORDING"/>
+
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

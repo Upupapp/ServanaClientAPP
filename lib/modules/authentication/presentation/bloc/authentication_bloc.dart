@@ -1,3 +1,5 @@
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
+import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/auth/auth_token_exchanger.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
@@ -352,6 +354,14 @@ class AuthenticationBloc
       dpLocator<SupportCreateController>().resetPrivateData();
       dpLocator<SupportTicketController>().resetPrivateData();
       dpLocator<SupportDraftRepository>().clearAllDrafts().ignore();
+      // A threat detected during one customer's session must not be attributed
+      // to the next person who signs in on this device.
+      dpLocator<ThreatDetectionProvider>().reset();
+      // LAUNCHBANNER+ §25: cancel any pending campaign presentation and clear
+      // the session flag. Persisted frequency history is account-scoped and
+      // deliberately survives, so a permanent dismissal cannot be reset by
+      // signing out and back in.
+      dpLocator<HomeCampaignController>().resetSessionState();
       dpLocator<ReviewFormController>().resetPrivateData();
       dpLocator<ReviewDetailController>().resetPrivateData();
     } catch (_) {}
