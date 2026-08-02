@@ -57,11 +57,14 @@ jobs:
 
       - name: Write local.properties for CI
         run: |
+          # Same derivation as the release job, so the debug APK this job
+          # produces carries the version it claims to.
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//' | tr -d '\r')
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
           echo "flutter.buildMode=debug" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=35" >> android/local.properties
+          echo "flutter.versionName=${VERSION%%+*}" >> android/local.properties
+          echo "flutter.versionCode=${VERSION##*+}" >> android/local.properties
 
       - name: Get dependencies
         run: flutter pub get
@@ -102,6 +105,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The test job needs this to fit a DEBUG, arm64-only APK on the runner.
+      # This job builds a full release bundle for every ABI with obfuscation —
+      # strictly more disk and native work — and had none of the mitigations.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/share/swift || true
+          docker image prune -af 2>/dev/null || true
+          sudo apt-get clean || true
+          df -h
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -130,20 +148,27 @@ jobs:
       # writes an EMPTY file, and `bundleRelease` fails at the very end with a
       # keystore error that names neither the secret nor this workflow. That is
       # what a 21-minute red build was reporting.
-      - name: Require Android signing secrets
+      - name: Require Android release secrets
         env:
           CM_KEYSTORE_BASE64: ${{ secrets.CM_KEYSTORE_BASE64 }}
           CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           missing=""
           [ -z "$CM_KEYSTORE_BASE64" ]   && missing="$missing CM_KEYSTORE_BASE64"
           [ -z "$CM_KEYSTORE_PASSWORD" ] && missing="$missing CM_KEYSTORE_PASSWORD"
           [ -z "$CM_KEY_ALIAS" ]         && missing="$missing CM_KEY_ALIAS"
           [ -z "$CM_KEY_PASSWORD" ]      && missing="$missing CM_KEY_PASSWORD"
+          # Not a signing secret, but it fails WORSE than one. The build step
+          # seds this value over the strings.xml placeholder; unset, sed writes
+          # an EMPTY key, the build goes green, and the release ships with
+          # com.google.android.geo.API_KEY="" — booking tracking maps render
+          # grey on every device with no error in any log.
+          [ -z "$GOOGLE_MAPS_API_KEY" ]  && missing="$missing GOOGLE_MAPS_API_KEY"
           if [ -n "$missing" ]; then
-            echo "::error::Missing Android signing secrets:$missing"
+            echo "::error::Missing Android release secrets:$missing"
             echo "Set them on the 'production' environment this job declares:"
             echo "  Settings > Environments > production > Environment secrets"
             echo "CM_KEYSTORE_BASE64 is the upload keystore, base64 encoded:"
@@ -187,10 +212,28 @@ jobs:
 
       - name: Write local.properties for release
         run: |
+          # Derive the version from pubspec.yaml rather than hardcoding it.
+          #
+          # android/app/build.gradle:57 reads flutter.versionCode out of
+          # local.properties, and this step overwrites that file — so a
+          # hardcoded value here silently WINS over pubspec. It was pinned to
+          # 35, meaning every push to main produced an AAB with versionCode 35
+          # and Play rejects the second and every later upload as a duplicate.
+          # Bumping pubspec had no effect, which is the confusing part.
+          #
+          # One source of truth: pubspec's `version: x.y.z+N`.
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//' | tr -d '\r')
+          VERSION_NAME="${VERSION%%+*}"
+          VERSION_CODE="${VERSION##*+}"
+          if [ -z "$VERSION_CODE" ] || [ "$VERSION_CODE" = "$VERSION" ]; then
+            echo "::error::pubspec.yaml version must be 'name+code', got '$VERSION'"
+            exit 1
+          fi
+          echo "Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=35" >> android/local.properties
+          echo "flutter.versionName=$VERSION_NAME" >> android/local.properties
+          echo "flutter.versionCode=$VERSION_CODE" >> android/local.properties
 
       - name: Get dependencies
         run: flutter pub get
@@ -213,10 +256,27 @@ jobs:
             --split-debug-info=build/debug-info
 
       - name: Verify signing
-        # apksigner is APK-only; use jarsigner to verify AAB is signed.
+        # apksigner is APK-only; use jarsigner to verify the AAB is signed.
+        #
+        # `jarsigner -verify` prints "jar is unsigned" and still exits 0, so the
+        # bare command could never fail this step — it verified nothing. Assert
+        # on the output, and re-assert the signer is the expected alias so a
+        # build signed with the WRONG key is caught here rather than by Play.
+        env:
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
         run: |
-          jarsigner -verify -verbose \
-            build/app/outputs/bundle/release/app-release.aab
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          out=$(jarsigner -verify -verbose:summary -certs "$AAB" 2>&1) || true
+          echo "$out" | tail -25
+          if ! echo "$out" | grep -q "jar verified"; then
+            echo "::error::AAB is NOT signed. jarsigner did not report 'jar verified'."
+            exit 1
+          fi
+          if ! echo "$out" | grep -qi "CN=Servana Client"; then
+            echo "::error::AAB is signed, but not by the expected upload certificate."
+            exit 1
+          fi
+          echo "AAB signed by the expected upload key."
 
       - name: Compute SHA-256 checksum
         run: |
@@ -232,3 +292,19 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/bundle/release/app-release.aab.sha256
           retention-days: 90
+
+      # The build runs --obfuscate --split-debug-info, which moves every symbol
+      # out of the binary into build/debug-info. Those files were then thrown
+      # away with the runner. Without them a production stack trace is a list of
+      # meaningless addresses, permanently — they cannot be regenerated later,
+      # because a rebuild produces a different obfuscation mapping.
+      #
+      # Retention is deliberately longer than the AAB's: crashes get reported
+      # long after a release ships.
+      - name: Upload obfuscation symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: servana-client-debug-symbols-${{ github.sha }}
+          path: build/debug-info/
+          retention-days: 90
+          if-no-files-found: error
