@@ -607,6 +607,13 @@ class _HomeScreenState extends State<HomeScreen> {
               // Keeps the accessible tap target without adding visual width.
               tapTargetSize: MaterialTapTargetSize.padded,
               minimumSize: const Size(48, 48),
+              // "See All" is narrower than the 48pt minimum, and a button
+              // centres its child by default — so the tap target that keeps
+              // this control accessible was itself holding the label ~4pt
+              // inside the guide, which is the misalignment this section set
+              // out to remove. Pinning the child right puts the text on the
+              // gutter while the 48pt box stays.
+              alignment: Alignment.centerRight,
             ),
             child: Text(
               'See All',

@@ -56,6 +56,12 @@ class ServanaHomeCategoryGrid extends StatelessWidget {
         crossAxisCount: 2,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        // Not optional. A vertical BoxScrollView with `padding: null` silently
+        // adopts MediaQuery.padding as its own vertical padding, so this
+        // mid-page grid was inheriting the device status-bar inset and opening
+        // a device-dependent hole between the "Services" heading and the first
+        // card. The outer Padding already supplies the gutter.
+        padding: EdgeInsets.zero,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
         childAspectRatio: 1.55,
