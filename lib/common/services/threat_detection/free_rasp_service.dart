@@ -51,7 +51,13 @@ class FreeRasp {
         }
       },
     );
-    Talsec.instance.attachListener(callback);
+    // Must be awaited on freerasp 8.x. In 6.x this returned void; it is now
+    // `Future<void>` and internally awaits detachListener() before
+    // subscribing. Left unawaited, start() below can hand control to the
+    // native SDK before the Dart listener exists, and early threat callbacks
+    // are dropped. It compiles clean either way, and `unawaited_futures` is
+    // not enabled, so nothing flags it.
+    await Talsec.instance.attachListener(callback);
     await Talsec.instance.start(config);
   }
 }

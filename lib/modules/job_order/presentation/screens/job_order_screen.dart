@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/models/job_order_item.dart';
@@ -330,6 +330,18 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                             ),
                           );
                           if (context.canPop()) context.pop();
+                        }
+                        if (state is FailedJOState) {
+                          if (!context.mounted) return;
+                          // Stay on the screen. The customer's selections are
+                          // still here, so retrying costs them nothing — and
+                          // popping would imply the order went through.
+                          await ServanaAlertDialog.show(
+                            context: context,
+                            type: ServanaAlertType.error,
+                            title: 'Job order not submitted',
+                            message: state.message,
+                          );
                         }
                       },
                       builder: (context, state) {
@@ -788,12 +800,12 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                             }
 
                             if (errors.isNotEmpty) {
-                              AwesomeDialog(
+                              ServanaAlertDialog.show(
                                 context: context,
-                                dialogType: DialogType.error,
+                                type: ServanaAlertType.error,
                                 title: "Error",
-                                desc: errors.join("\n"),
-                              ).show();
+                                message: errors.join("\n"),
+                              );
                               return;
                             }
 

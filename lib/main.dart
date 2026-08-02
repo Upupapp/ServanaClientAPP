@@ -77,8 +77,23 @@ Future<void> _bootstrap() async {
   initInjector(config);
 
   // C24: Start freeRASP runtime protection (Android-only until iOS team ID is set).
+  //
+  // This used `.ignore()`, which discarded every failure — including the
+  // ConfigurationException freeRASP throws on iOS whenever iosConfig is absent,
+  // as it is here. So the SDK has never started on iOS and nothing said so.
+  // Startup must not block on it, but a silent permanent failure is not a
+  // reasonable price for that.
   if (!kIsWeb) {
-    FreeRasp.initThreatDetection().ignore();
+    unawaited(
+      FreeRasp.initThreatDetection().catchError((Object e, StackTrace s) {
+        try {
+          // Non-fatal: the app is fully usable without RASP, and reporting it
+          // as a crash would misstate the crash rate. It should still be
+          // visible rather than discarded.
+          FirebaseCrashlytics.instance.recordError(e, s, fatal: false);
+        } catch (_) {}
+      }),
+    );
   }
 
   // C21: Initialize analytics context (platform, version, environment).

@@ -95,9 +95,12 @@ flutter {
     source '../..'
 }
 
-dependencies {
-   implementation 'com.aheaditec.talsec.security:TalsecSecurity-Community-Flutter:6.4.0'
-}
+// The Talsec native SDK is declared by the freerasp plugin itself
+// (freerasp/android/build.gradle: talsec_version). It was ALSO pinned here at
+// 6.4.0, twelve majors behind. Gradle's highest-wins hid that, but a
+// dependency lock or a resolutionStrategy would have resolved 6.4.0 and
+// silently reintroduced the 4 KB aligned native libraries. Let the plugin own
+// its own dependency.
 
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'

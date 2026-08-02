@@ -286,15 +286,36 @@ class JobOrderBloc extends Bloc<JOEvent, JOState> {
   Future<void> onJoRequested(JoRequestEvent event, Emitter emit) async {
     emit(const LoadingJOState());
 
-    // Try to insert to backend (may fail if backend is not available)
-    repo.insertJobOrder(
-      merchantId: event.merchantId,
-      address: event.address,
-      schedule: event.schedule,
-      coords: LatLng(event.location.latitude, event.location.longitude),
-      items: joServices,
-      options: toSelectOptions,
-    );
+    // This result used to be discarded — the call was not awaited and its
+    // boolean was never read. In a release build the Backend implementation is
+    // HttpBackend, whose insertJobOrder returns false unconditionally, so the
+    // submission always failed and the customer was always told it had
+    // succeeded: a "Job order submitted." snackbar, the screen popped, and a
+    // local placeholder booking appeared that the server had never heard of.
+    //
+    // The optimistic placeholder below is only honest once the server has
+    // accepted the order, so nothing is written until this succeeds.
+    bool accepted;
+    try {
+      accepted = await repo.insertJobOrder(
+        merchantId: event.merchantId,
+        address: event.address,
+        schedule: event.schedule,
+        coords: LatLng(event.location.latitude, event.location.longitude),
+        items: joServices,
+        options: toSelectOptions,
+      );
+    } catch (_) {
+      accepted = false;
+    }
+
+    if (!accepted) {
+      emit(const FailedJOState(
+        'We could not submit this job order. Please try again, or contact '
+        'support if it keeps failing.',
+      ));
+      return;
+    }
 
     // Optimistic UI: insert a local placeholder booking so the customer sees
     // their booking appear immediately without waiting for the next poll.

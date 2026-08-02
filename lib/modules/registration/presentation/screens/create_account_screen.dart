@@ -1,4 +1,4 @@
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -133,15 +133,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   context.loaderOverlay.hide();
 
                   if (state is RegistrationSubmittedState) {
-                    await AwesomeDialog(
-                            context: context,
-                            dialogType: DialogType.success,
-                            title: "Success",
-                            headerAnimationLoop: false,
-                            desc:
-                                "Your account has been created successfully. Please sign in to continue.",
-                            btnOkText: "Sign In")
-                        .show();
+                    await ServanaAlertDialog.show(
+                      context: context,
+                      type: ServanaAlertType.success,
+                      title: "Success",
+                      message:
+                          "Your account has been created successfully. Please sign in to continue.",
+                      okText: "Sign In",
+                    );
                     // ignore: use_build_context_synchronously
                     context.goNamed(WelcomeScreen.routeName);
                   }
@@ -151,15 +150,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   }
 
                   if (state is RegistrationSubmittedFailedState) {
-                    AwesomeDialog(
-                            // ignore: use_build_context_synchronously
-                            context: context,
-                            dialogType: DialogType.error,
-                            title: "Error",
-                            headerAnimationLoop: false,
-                            desc: state.error,
-                            btnOkText: "Okay")
-                        .show();
+                    ServanaAlertDialog.show(
+                      // ignore: use_build_context_synchronously
+                      context: context,
+                      type: ServanaAlertType.error,
+                      title: "Error",
+                      message: state.error,
+                      okText: "Okay",
+                    );
                   }
                 },
                 builder: (context, state) {

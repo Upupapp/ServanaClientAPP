@@ -99,7 +99,22 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: test
-    environment: production
+
+    # This job previously declared `environment: production`, which meant it
+    # could ONLY see secrets attached to that environment. Creating an
+    # environment requires admin on the repository, which the people
+    # maintaining this app do not have — so the secrets were unsettable and the
+    # job could never go green.
+    #
+    # It now reads repository secrets (Settings > Secrets and variables >
+    # Actions), which maintainers can set.
+    #
+    # The trade-off is real and worth stating: environment secrets can be gated
+    # behind required reviewers and a branch allow-list, and repository secrets
+    # cannot. What limits exposure here instead is the `if:` above — this job
+    # runs only on a push to main, never on a pull request, so a fork PR cannot
+    # reach these values. If someone with admin later creates the `production`
+    # environment, restore the line and move the five secrets onto it.
 
     steps:
       - name: Checkout
@@ -169,8 +184,8 @@ jobs:
           [ -z "$GOOGLE_MAPS_API_KEY" ]  && missing="$missing GOOGLE_MAPS_API_KEY"
           if [ -n "$missing" ]; then
             echo "::error::Missing Android release secrets:$missing"
-            echo "Set them on the 'production' environment this job declares:"
-            echo "  Settings > Environments > production > Environment secrets"
+            echo "Set them as REPOSITORY secrets:"
+            echo "  Settings > Secrets and variables > Actions > New repository secret"
             echo "CM_KEYSTORE_BASE64 is the upload keystore, base64 encoded:"
             echo "  base64 -w0 upload-keystore.jks"
             exit 1
