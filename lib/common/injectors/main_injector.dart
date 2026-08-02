@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/application/consent_gate_service.dart';
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
 import 'package:client/core/analytics/application/experiment_coordinator.dart';
 import 'package:client/core/analytics/data/firebase_analytics_service.dart';
 import 'package:client/core/observability/crashlytics_service.dart';
@@ -97,6 +98,11 @@ void initInjector(AppConfig config) {
   dpLocator.registerLazySingleton(() => PerformanceService());
   // C24: Consent gate — singleton so dialog fires exactly once per install.
   dpLocator.registerLazySingleton(() => ConsentGateService());
+
+  // LAUNCHBANNER+ §26: a singleton, so "once per app session" survives Home
+  // being rebuilt. A controller owned by the widget would reset its session
+  // flag on every reconstruction and the campaign could reappear.
+  dpLocator.registerLazySingleton(() => HomeCampaignController());
 
   // ── Encrypted storage — registered early so recovery layer can inject it ──
   dpLocator.registerLazySingleton(

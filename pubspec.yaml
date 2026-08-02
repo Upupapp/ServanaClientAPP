@@ -87,6 +87,9 @@ dependencies:
   socket_io_client: ^2.0.3+1
   firebase_analytics: ^11.3.2
   firebase_performance: ^0.10.0
+  # LAUNCHBANNER+ §21/§22: the campaign kill switch and date/impression
+  # targeting must be changeable without shipping a build.
+  firebase_remote_config: ^5.1.3
   firebase_messaging: ^15.1.0
   phone_numbers_parser: ^9.0.0
   toastification: ^2.3.0
@@ -162,6 +165,11 @@ flutter:
     - assets/images/splash/
     - assets/images/states/
     - assets/images/welcome/
+    # Campaign creatives. Declared as an explicit directory so a new campaign
+    # asset ships by being dropped in. The uncompressed PNG sources live in
+    # assets_src/campaigns/ and are deliberately NOT declared here — they are
+    # the editable originals, and bundling both would forfeit the compression.
+    - assets/images/campaigns/
     - assets/animations/
     - assets/icons/
     - assets/payment_icons/

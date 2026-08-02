@@ -196,6 +196,12 @@ final class AnalyticsPrivacyFilter {
     AnalyticsKeys.utmMedium,
     AnalyticsKeys.utmCampaign,
     AnalyticsKeys.referralCategory,
+    // Home campaigns (LAUNCHBANNER+ §27). All four describe the creative and
+    // the customer's response to it; none can identify the customer.
+    AnalyticsKeys.campaignId,
+    AnalyticsKeys.campaignVersion,
+    AnalyticsKeys.impressionNumber,
+    AnalyticsKeys.suppressionReason,
     // Generic
     AnalyticsKeys.result,
     AnalyticsKeys.modelVersion,

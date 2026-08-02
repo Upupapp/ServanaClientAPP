@@ -132,6 +132,15 @@ abstract final class AnalyticsKeys {
   static const String utmCampaign = 'utm_campaign';
   static const String referralCategory = 'referral_category';
 
+  // ── Home campaigns (LAUNCHBANNER+ §27) ────────────────────────────────────
+  // Deliberately low-cardinality. campaignId and campaignVersion identify the
+  // CREATIVE, never the customer; impressionNumber is capped at 3 by the
+  // campaign itself, so a raw int stays safe without bucketing.
+  static const String campaignId = 'campaign_id';
+  static const String campaignVersion = 'campaign_version';
+  static const String impressionNumber = 'impression_number';
+  static const String suppressionReason = 'suppression_reason';
+
   // ── Generic ───────────────────────────────────────────────────────────────
   static const String result = 'result';
   static const String modelVersion = 'model_version';

@@ -1,3 +1,10 @@
+import 'dart:async';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:client/core/analytics/domain/analytics_event.dart';
+import 'package:client/core/analytics/events/home_events.dart';
+import 'package:client/modules/homepage/application/home_campaign_eligibility.dart';
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
+import 'package:client/modules/homepage/presentation/widgets/servana_launch_benefits_modal.dart';
 import 'package:client/common/constants/app_spacing.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
@@ -64,6 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>(debugLabel: "scaffoldKey");
 
   final _promoRepo = HomePromotionRepository();
+  final _campaign = dpLocator<HomeCampaignController>();
+
+  /// Read once for §21 app-version targeting. package_info_plus is already a
+  /// dependency and AnalyticsContextProvider reads it the same way.
+  String _appVersion = '0.0.0';
 
   @override
   void initState() {
@@ -72,17 +84,197 @@ class _HomeScreenState extends State<HomeScreen> {
     bwStore.ensureOptionsLoaded(serviceId: 2);
     airconStore.ensureOptionsLoaded(serviceId: 1);
     _restoreDraftIfPending();
+    _loadAppVersion();
     _maybeShowConsentGate();
   }
 
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) _appVersion = info.version;
+    } catch (_) {
+      // Leaves the permissive default. A version lookup failure must not
+      // suppress the campaign — §21's bounds are optional, and an unparseable
+      // or missing version is ignored rather than treated as out of range.
+    }
+  }
+
+  @override
+  void dispose() {
+    // Home had no dispose() at all. The campaign schedules a delayed
+    // presentation, and a Timer keeps its closure alive independently of the
+    // widget tree — uncancelled, it fires into a disposed context (§8).
+    _campaign.cancelPendingPresentation();
+    super.dispose();
+  }
+
   void _maybeShowConsentGate() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      dpLocator<ConsentGateService>().maybeShow(
+      // Awaited, so the campaign cannot race it. Both previously targeted the
+      // same first frame; §7 puts required consent above a promotion, and two
+      // modals opening together is the failure that ordering prevents.
+      await dpLocator<ConsentGateService>().maybeShow(
         context,
         dpLocator<AnalyticsCoordinator>(),
       );
+      if (!mounted) return;
+      _maybeScheduleLaunchCampaign();
     });
+  }
+
+  /// LAUNCHBANNER+ §5/§8: evaluate eligibility, then present after a short,
+  /// cancellable delay once Home is stably rendered.
+  Future<void> _maybeScheduleLaunchCampaign() async {
+    final campaign = _campaign.resolve(_promoRepo.getLaunchCampaign());
+    await _campaign.initialise(campaign);
+    if (!mounted) return;
+
+    final session = store.session;
+    final decision = await _campaign.evaluate(
+      campaign: campaign,
+      context: CampaignEvaluationContext(
+        now: DateTime.now(),
+        isAuthenticated: session != null,
+        accountId: session?.customerID,
+        appVersion: _appVersion,
+        hasConfiguration: _campaign.hasConfiguration,
+        shownThisSession: _campaign.shownThisSession,
+        homeVisible: mounted,
+        hasCriticalBooking: _hasCriticalBooking(),
+      ),
+    );
+    if (!mounted) return;
+
+    if (!decision.eligible) {
+      _trackCampaign(HomeLaunchBannerSuppressedEvent(
+        campaignId: campaign.id,
+        campaignVersion: campaign.version,
+        suppressionReason: decision.suppression.analyticsValue,
+      ));
+      return;
+    }
+
+    _trackCampaign(HomeLaunchBannerEligibleEvent(
+      campaignId: campaign.id,
+      campaignVersion: campaign.version,
+    ));
+
+    // Precache so the first frame of the modal is the artwork, not a blank
+    // card (§31). Failure is non-fatal — the modal falls back natively.
+    final asset = campaign.assetPath;
+    if (asset != null) {
+      unawaited(precacheImage(AssetImage(asset), context).catchError((_) {}));
+    }
+
+    _campaign.schedulePresentation(
+      delay: const Duration(milliseconds: 800),
+      // Re-checked at fire time: between scheduling and firing the customer
+      // may have navigated away or another modal may have opened (§8).
+      stillEligible: () => mounted && ModalRoute.of(context)?.isCurrent == true,
+      present: () => _presentLaunchCampaign(campaign),
+    );
+  }
+
+  Future<void> _presentLaunchCampaign(HomeCampaign campaign) async {
+    final asset = campaign.assetPath;
+    final ratio = campaign.assetAspectRatio;
+    if (!mounted || asset == null || ratio == null) return;
+
+    final accountId = store.session?.customerID;
+    var impressionNumber = 0;
+
+    final outcome = await ServanaLaunchBenefitsModal.show(
+      context: context,
+      assetPath: asset,
+      assetAspectRatio: ratio,
+      // §28: fires only once the campaign has actually rendered.
+      onImpressionVerified: () async {
+        final state = await _campaign.recordImpression(
+          campaign: campaign,
+          accountId: accountId,
+          now: DateTime.now(),
+        );
+        impressionNumber = state.impressionCount;
+        _trackCampaign(HomeLaunchBannerImpressionEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+      },
+      onDisplayFailed: () => _trackCampaign(HomeLaunchBannerDisplayFailedEvent(
+        campaignId: campaign.id,
+        campaignVersion: campaign.version,
+        result: 'image_load_failed',
+      )),
+    );
+
+    if (!mounted) return;
+    final now = DateTime.now();
+
+    switch (outcome) {
+      case LaunchBannerOutcome.cta:
+        await _campaign.recordCtaCompleted(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerCtaSelectedEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+        if (!mounted) return;
+        // §14: routed through the existing sealed-target dispatcher rather
+        // than a parallel one, so the CTA cannot reach an unvalidated route.
+        _handlePromotionTap(campaign.ctaTarget);
+
+      case LaunchBannerOutcome.close:
+        await _campaign.recordPermanentDismissal(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerClosedEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+
+      case LaunchBannerOutcome.remindLater:
+        await _campaign.recordRemindLater(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerRemindLaterEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+
+      case LaunchBannerOutcome.backOrBarrier:
+      case null:
+        // §18: a reflexive back-swipe is not a rejection. Same cooldown as
+        // remind-later, reported separately so the funnel stays honest.
+        await _campaign.recordRemindLater(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerDismissedByBackEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+    }
+  }
+
+  /// §7: an OTP or payment-blocked booking outranks a promotion.
+  bool _hasCriticalBooking() {
+    try {
+      return store.bookings.any((b) {
+        final s = (b.jobOrderStatusToString).toUpperCase();
+        return s.contains('OTP') || s.contains('PAYMENT');
+      });
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Analytics must never surface to the customer or block Home (§29).
+  void _trackCampaign(AnalyticsEvent event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   // STITCH-C05-001 / LEAK-C05-001: restores a pending BookingDraft after the
