@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [ dev, main ]
 
+  # On-demand tester builds. Cutting a build for QA should not require pushing
+  # to main, which is the only other way to reach the release job.
+  workflow_dispatch:
+    inputs:
+      tester_groups:
+        description: 'Firebase App Distribution group aliases (comma-separated)'
+        required: false
+        default: 'internal-testers'
+      release_notes:
+        description: 'What testers should look at in this build'
+        required: false
+        default: ''
+
 jobs:
   test:
     name: Test & Build
@@ -97,8 +110,17 @@ jobs:
   release-android:
     name: Release Build (Android)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: >-
+      (github.ref == 'refs/heads/main' && github.event_name == 'push')
+      || github.event_name == 'workflow_dispatch'
     needs: test
+
+    # Job-level, deliberately. The `secrets` context is NOT available in a
+    # step's `if:`, and a step's own `env:` is not available to its own `if:`
+    # either — so gating on the step's env block would evaluate '' != '' and
+    # skip the step forever, silently. Job-level env is visible to step `if:`.
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
     # This job previously declared `environment: production`, which meant it
     # could ONLY see secrets attached to that environment. Creating an
@@ -296,6 +318,80 @@ jobs:
             exit 1
           fi
           echo "AAB signed by the expected upload key."
+
+      # Testers cannot install an AAB, and App Distribution only accepts one
+      # for apps already linked to Play. A signed release APK works today and
+      # is what a tester's device actually installs.
+      #
+      # Built from the same signing config as the bundle, so what QA tests is
+      # signed by the same key as what ships.
+      - name: Build release APK for testers
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        env:
+          CM_KEYSTORE_PATH: /tmp/upload-keystore.jks
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL=https://api.servana.com.ph \
+            --dart-define=BRAND=servana \
+            --dart-define=MOCK_BACKEND=false
+          ls -la build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Distribute to Firebase App Distribution
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        env:
+          # Not a secret: this ID is in android/app/google-services.json, which
+          # is committed, and it ships inside every APK.
+          FIREBASE_APP_ID: '1:320379709991:android:c3ec0648a70fb5081bfc02'
+          TESTER_GROUPS: ${{ github.event.inputs.tester_groups || 'internal-testers' }}
+          INPUT_NOTES: ${{ github.event.inputs.release_notes }}
+        run: |
+          # Written with a restrictive umask and deleted in a trap, so the
+          # credential never outlives the step even if a command below fails.
+          umask 077
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > /tmp/fb-sa.json
+          trap 'rm -f /tmp/fb-sa.json' EXIT
+
+          if ! python3 -c 'import json,sys; json.load(open("/tmp/fb-sa.json"))' 2>/dev/null; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT is not valid JSON."
+            echo "Paste the whole downloaded key file, including the braces."
+            exit 1
+          fi
+
+          npm install -g firebase-tools@13 > /dev/null 2>&1
+
+          NOTES="${INPUT_NOTES}"
+          if [ -z "$NOTES" ]; then
+            NOTES="$(git log -1 --pretty=%s)"
+          fi
+          NOTES="${NOTES}
+
+          version ${VERSION_NAME} (${VERSION_CODE})
+          commit ${GITHUB_SHA}"
+
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/fb-sa.json
+          firebase appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "$TESTER_GROUPS" \
+            --release-notes "$NOTES"
+
+          echo "### Distributed to testers" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Groups: \`$TESTER_GROUPS\` · version ${VERSION_NAME} (${VERSION_CODE})" >> "$GITHUB_STEP_SUMMARY"
+
+      # Distribution is an add-on. A missing Firebase credential must not cost
+      # a signed, verified, Play-ready bundle — but it must not pass silently
+      # either, or "no tester build appeared" becomes a mystery.
+      - name: Note that distribution was skipped
+        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        run: |
+          echo "::warning::FIREBASE_SERVICE_ACCOUNT is not set — no tester build was distributed. The release AAB below is unaffected."
+          echo "### Tester distribution SKIPPED" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`FIREBASE_SERVICE_ACCOUNT\` is not set, so no APK went to Firebase App Distribution." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Compute SHA-256 checksum
         run: |
