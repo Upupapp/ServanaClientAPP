@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       tester_groups:
-        description: 'Firebase App Distribution group aliases (comma-separated)'
+        description: 'Firebase App Distribution group ALIASES, comma-separated (not display names)'
         required: false
-        default: 'internal-testers'
+        default: 'external'
       release_notes:
         description: 'What testers should look at in this build'
         required: false
@@ -345,7 +345,10 @@ jobs:
           # Not a secret: this ID is in android/app/google-services.json, which
           # is committed, and it ships inside every APK.
           FIREBASE_APP_ID: '1:320379709991:android:c3ec0648a70fb5081bfc02'
-          TESTER_GROUPS: ${{ github.event.inputs.tester_groups || 'internal-testers' }}
+          # The group ALIAS, which Firebase shows in monospace beside the
+          # display name — "External" is the name, `external` is the alias, and
+          # passing the name fails with "group not found".
+          TESTER_GROUPS: ${{ github.event.inputs.tester_groups || 'external' }}
           INPUT_NOTES: ${{ github.event.inputs.release_notes }}
         run: |
           # Written with a restrictive umask and deleted in a trap, so the

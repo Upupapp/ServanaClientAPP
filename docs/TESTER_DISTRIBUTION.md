@@ -48,9 +48,19 @@ and upload that directory alongside the existing symbols.
 
 Firebase Console → **App Distribution** → **Testers & Groups** → **Add group**.
 
-Name it so its alias is `internal-testers` (the alias is what the workflow
-passes, not the display name). Add tester emails. They each get an invite and
-must accept it once before any build appears for them.
+**A group already exists**: display name **External**, alias **`external`**,
+currently holding `carmela@lguids.com.ph` and `jave@lguids.com.ph`. That alias
+is the workflow's default.
+
+The distinction matters: Firebase shows the display name in bold and the
+alias beside it in monospace, and they are not the same string. The CLI takes
+the **alias**; passing "External" fails with "group not found".
+
+Groups are **project-level**, shared by every app in the Firebase project —
+only releases are per-app. `external` has been serving `com.servana.worker`
+builds, so once customer builds go to the same group its testers receive both
+apps. Worth splitting into a dedicated group before the tester list grows;
+`Add group` on that page, then read the new alias the same way.
 
 To use a different alias, pass it in the `tester_groups` input when running
 the workflow manually, or change the default in
@@ -87,7 +97,7 @@ inputs:
 
 | Input | Default | Purpose |
 |---|---|---|
-| `tester_groups` | `internal-testers` | comma-separated group aliases |
+| `tester_groups` | `external` | comma-separated group **aliases** |
 | `release_notes` | *(commit subject)* | what testers should look at |
 
 Release notes always carry the version and commit SHA appended, so a tester
