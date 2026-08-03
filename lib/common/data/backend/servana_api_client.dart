@@ -523,11 +523,13 @@ class ServanaApiClient {
 
   // ───────────────────── Workers ─────────────────────
 
-  Future<Map<String, dynamic>> listWorkersByRole(int role) async {
-    final uri = _uri('/api/workers/role/$role');
-    final res = await _client.get(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
+  // listWorkersByRole (GET /api/workers/role/:role) removed. It was a directory
+  // listing of every provider on the platform, reachable by any caller, and no
+  // screen ever used it — its only remaining caller was a test that needed an
+  // arbitrary authenticated GET. Provider matching is a backend concern
+  // (eligibility is computed server-side and lists are filtered there), so a
+  // client should never ask this. The route is marked for deletion rather than
+  // replacement in servana_api/docs/WORKER_ROUTE_MIGRATION.md.
 
   /// `GET /api/booking/:bookingId/provider` — who is coming to this booking.
   ///

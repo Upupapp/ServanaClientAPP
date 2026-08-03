@@ -101,8 +101,8 @@ void main() {
       },
     );
 
-    await client.listWorkersByRole(2);
-    await client.listWorkersByRole(2);
+    await client.getBookingProvider(1);
+    await client.getBookingProvider(1);
 
     // Two requests, two resolutions. Resolving once and caching is precisely
     // the bug: the cached value is what goes stale after an hour.
@@ -116,7 +116,7 @@ void main() {
       tokenProvider: () async => 'fresh-token',
     );
 
-    await client.listWorkersByRole(2);
+    await client.getBookingProvider(1);
 
     expect(capturedHeaders()?['Authorization'], 'Bearer fresh-token');
   });
@@ -129,8 +129,8 @@ void main() {
       tokenProvider: () async => 'token-${++n}',
     );
 
-    await client.listWorkersByRole(2);
-    await client.listWorkersByRole(2);
+    await client.getBookingProvider(1);
+    await client.getBookingProvider(1);
 
     // This is the whole point: after a refresh the app must use the new
     // credential. Sending 'token-1' twice would reproduce the outage.
@@ -147,7 +147,7 @@ void main() {
     // Falls through to the stored session (absent here), so the call proceeds
     // unauthenticated and the server decides. A refresh failure turning into a
     // thrown exception would take out every screen at once.
-    await client.listWorkersByRole(2);
+    await client.getBookingProvider(1);
     expect(capturedHeaders()?.containsKey('Authorization'), isFalse);
   });
 
@@ -159,7 +159,7 @@ void main() {
       tokenProvider: () async => null,
     );
 
-    await client.listWorkersByRole(2);
+    await client.getBookingProvider(1);
     expect(capturedHeaders()?.containsKey('Authorization'), isFalse);
   });
 
@@ -170,7 +170,7 @@ void main() {
       client: mockHttp,
     );
 
-    await client.listWorkersByRole(2);
+    await client.getBookingProvider(1);
     expect(capturedHeaders()?['Content-Type'], 'application/json');
   });
 
