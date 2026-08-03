@@ -319,14 +319,44 @@ jobs:
           fi
           echo "AAB signed by the expected upload key."
 
-      # Testers cannot install an AAB, and App Distribution only accepts one
-      # for apps already linked to Play. A signed release APK works today and
-      # is what a tester's device actually installs.
+      # Preserve the BUNDLE's R8 mapping before anything else can regenerate it.
       #
-      # Built from the same signing config as the bundle, so what QA tests is
-      # signed by the same key as what ships.
-      - name: Build release APK for testers
-        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+      # Both `flutter build appbundle --release` and `flutter build apk --release`
+      # use the `release` buildType, so both write
+      # build/app/outputs/mapping/release/mapping.txt — and the APK build below
+      # runs before the symbols are uploaded. R8 is largely deterministic, so the
+      # two mappings are probably identical and nothing has necessarily been lost
+      # to date; "probably identical" is just not a property worth betting a
+      # shipped release's crash reports on, and a copy costs nothing.
+      #
+      # What ships to Play is the AAB. These are its symbols.
+      - name: Preserve the AAB obfuscation mapping
+        run: |
+          mkdir -p build/aab-mapping
+          cp build/app/outputs/mapping/release/mapping.txt build/aab-mapping/mapping.txt
+          ls -la build/aab-mapping/mapping.txt
+
+      # Testers cannot install an AAB, and App Distribution only accepts one for
+      # apps already linked to Play. A signed release APK works today and is
+      # what a device actually installs — for QA, for sideloading, and for any
+      # distribution that does not go through Play.
+      #
+      # Built from the same signing config, the same --dart-defines and the same
+      # substituted Maps key as the bundle, so what anyone installs from here
+      # behaves like what ships.
+      #
+      # NOT gated on FIREBASE_SERVICE_ACCOUNT any more. The gate meant that
+      # without that one secret the APK was never built at all, which made "give
+      # me a production APK" impossible to satisfy without editing CI. Firebase
+      # distribution keeps its own gate below; building the artifact and
+      # choosing to upload it somewhere are separate decisions.
+      #
+      # Obfuscated, unlike before. This APK is a production artifact that can be
+      # installed by people outside the team, so it gets the same hardening as
+      # the bundle. Its symbols go to a SEPARATE directory: build/debug-info
+      # holds the bundle's, and a Dart obfuscation mapping is per-build — mixing
+      # them would leave neither trustworthy.
+      - name: Build release APK
         env:
           CM_KEYSTORE_PATH: /tmp/upload-keystore.jks
           CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
@@ -336,8 +366,58 @@ jobs:
           flutter build apk --release \
             --dart-define=API_BASE_URL=https://api.servana.com.ph \
             --dart-define=BRAND=servana \
-            --dart-define=MOCK_BACKEND=false
+            --dart-define=MOCK_BACKEND=false \
+            --obfuscate \
+            --split-debug-info=build/debug-info-apk
           ls -la build/app/outputs/flutter-apk/app-release.apk
+
+      # apksigner works on APKs (the AAB above needed jarsigner instead) and
+      # reports the signature schemes, which matters: Android 11+ requires v2 or
+      # better, and an APK that only carries a v1 signature installs on nothing
+      # modern.
+      #
+      # `apksigner verify` exits non-zero on an unsigned APK, so unlike the
+      # jarsigner case the exit code is load-bearing here. The certificate is
+      # still asserted separately, because an APK signed by the WRONG key is
+      # verifiably signed and completely useless.
+      - name: Verify APK signature
+        run: |
+          # pipefail, because the apksigner call below is piped into tee and a
+          # pipeline reports the LAST command's status — without this, apksigner
+          # exiting non-zero on an unsigned APK is swallowed by a successful tee
+          # and the step passes. The grep assertions would still catch it, but
+          # only by accident of what apksigner prints on failure.
+          set -o pipefail
+
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          APKSIGNER=$(find "$SDK/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner not found under $SDK/build-tools"
+            exit 1
+          fi
+          echo "using $APKSIGNER"
+
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/apksig.txt
+
+          # Both patterns below are matched against REAL apksigner output, not
+          # from memory. The scheme line reads:
+          #
+          #   Verified using v2 scheme (APK Signature Scheme v2): true
+          #
+          # An earlier version of this check looked for "APK Signature Scheme
+          # v2: true" — no closing parenthesis — which matches nothing and would
+          # have failed every release build.
+          if ! grep -qi "CN=Servana Client" /tmp/apksig.txt; then
+            echo "::error::APK is not signed by the expected upload certificate."
+            grep -i "certificate DN" /tmp/apksig.txt || true
+            exit 1
+          fi
+          if ! grep -q "(APK Signature Scheme v2): true" /tmp/apksig.txt; then
+            echo "::error::APK lacks a v2 signature; Android 11+ will refuse to install it."
+            exit 1
+          fi
+          echo "APK signed by the expected upload key, with a v2 signature."
 
       - name: Distribute to Firebase App Distribution
         if: env.FIREBASE_SERVICE_ACCOUNT != ''
@@ -396,11 +476,18 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "\`FIREBASE_SERVICE_ACCOUNT\` is not set, so no APK went to Firebase App Distribution." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Compute SHA-256 checksum
+      - name: Compute SHA-256 checksums
         run: |
           sha256sum build/app/outputs/bundle/release/app-release.aab \
             > build/app/outputs/bundle/release/app-release.aab.sha256
           cat build/app/outputs/bundle/release/app-release.aab.sha256
+
+          # The APK is the artifact people install by hand, off-store, with no
+          # Play integrity check in front of it — so the checksum is the only
+          # way a recipient can tell that what they downloaded is what CI built.
+          sha256sum build/app/outputs/flutter-apk/app-release.apk \
+            > build/app/outputs/flutter-apk/app-release.apk.sha256
+          cat build/app/outputs/flutter-apk/app-release.apk.sha256
 
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
@@ -410,6 +497,28 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/bundle/release/app-release.aab.sha256
           retention-days: 90
+
+      # The APK was previously built and then thrown away with the runner unless
+      # Firebase App Distribution happened to be configured — so there was no way
+      # to get an installable production build out of CI at all.
+      #
+      # This is a universal APK: one file that installs on any ABI, which is what
+      # direct distribution wants. It is correspondingly large. --split-per-abi
+      # would cut it substantially but produces several files and makes "send
+      # someone the app" a decision about their CPU.
+      #
+      # Play does not accept an APK. This artifact is for sideloading, QA and
+      # off-store distribution; the AAB above remains the only thing that ships
+      # to the store.
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: servana-client-release-apk-${{ github.sha }}
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-release.apk.sha256
+          retention-days: 90
+          if-no-files-found: error
 
       # The build runs --obfuscate --split-debug-info, which moves every symbol
       # out of the binary into build/debug-info. Those files were then thrown
@@ -425,8 +534,20 @@ jobs:
           # RELEASE_ARTIFACTS.md requires symbols be tagged with version, build
           # number and commit SHA. versionCode is exported by the build step.
           name: servana-client-symbols-${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}-${{ github.sha }}
+          # Four files, two builds, and they are NOT interchangeable — a stack
+          # trace decoded with the wrong build's mapping produces plausible,
+          # wrong symbol names, which is worse than no answer:
+          #
+          #   debug-info/                            AAB — Dart obfuscation
+          #   aab-mapping/mapping.txt                AAB — R8, copied before the
+          #                                          APK build could overwrite it
+          #   debug-info-apk/                        APK — Dart obfuscation
+          #   app/outputs/mapping/release/mapping.txt  APK — R8, as left on disk
+          #                                          by the later APK build
           path: |
             build/debug-info/
+            build/aab-mapping/mapping.txt
+            build/debug-info-apk/
             build/app/outputs/mapping/release/mapping.txt
           # 90 is the GitHub ceiling without an org-level increase.
           # RELEASE_ARTIFACTS.md asks for "supported release + 12 months", so
