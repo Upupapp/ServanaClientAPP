@@ -70,11 +70,11 @@ abstract final class BookingActionResolver {
       actions.add(BookingAction.confirmOtp);
     }
 
-    if (BookingStatusMapper.requiresPayment(status) && !isCash) {
+    if (!isCash) {
       if (status == BookingStatus.paymentProcessing ||
           status == BookingStatus.paymentPendingConfirmation) {
         actions.add(BookingAction.retryPayment);
-      } else {
+      } else if (BookingStatusMapper.requiresPayment(status)) {
         actions.add(BookingAction.pay);
       }
     }
