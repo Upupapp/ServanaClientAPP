@@ -31,9 +31,9 @@ class GeoPositionSnapshot {
   }) =>
       now.difference(updatedAt) > threshold;
 
-  /// Parse from the `GET /api/workers/location/:uid` response.
+  /// Parse from the `GET /api/booking/:bookingId/provider-location` response.
   ///
-  /// Expected envelope (unauthenticated mobile route):
+  /// Expected envelope (the GPS document, at the root or under `location`):
   /// ```json
   /// { "uid": "...", "is_online": true,
   ///   "loc": { "type": "Point", "coordinates": [longitude, latitude] },

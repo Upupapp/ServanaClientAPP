@@ -11,6 +11,7 @@ class _FakeDataSource extends Fake implements TrackingDataSource {
   GeoPositionSnapshot? locationResponse;
   Object? locationError;
   int locationCallCount = 0;
+  int? lastLocationBookingId;
   int bookingCallCount = 0;
 
   @override
@@ -20,8 +21,9 @@ class _FakeDataSource extends Fake implements TrackingDataSource {
   }
 
   @override
-  Future<GeoPositionSnapshot?> getProviderLocation(String workerUid) async {
+  Future<GeoPositionSnapshot?> getProviderLocation(int bookingId) async {
     locationCallCount++;
+    lastLocationBookingId = bookingId;
     if (locationError != null) throw locationError!;
     return locationResponse;
   }
@@ -64,9 +66,8 @@ void main() {
     });
   });
 
-  group('TrackingRepository.fetchSnapshot — known UID (parallel path)', () {
-    test('fires location call in parallel when knownWorkerUid is provided',
-        () async {
+  group('TrackingRepository.fetchSnapshot — booking-scoped location', () {
+    test('asks for the location by BOOKING id, not by worker uid', () async {
       final ds = _FakeDataSource()
         ..bookingResponse = makeBookingBody(workerUid: 'uid-001')
         ..locationResponse = makeLocation();
@@ -76,6 +77,10 @@ void main() {
 
       expect(ds.bookingCallCount, 1);
       expect(ds.locationCallCount, 1);
+      // The subject is the booking the caller already owns. The old endpoint
+      // took a worker uid and had no authentication, so anyone could follow
+      // any provider; this request cannot even express that question.
+      expect(ds.lastLocationBookingId, 42);
     });
 
     test('returns state with providerLocation when location call succeeds',
@@ -107,29 +112,42 @@ void main() {
       expect(state.bookingStatus, BookingStatus.inProgress);
     });
 
-    test('does not fire location call when knownWorkerUid is empty', () async {
-      final ds = _FakeDataSource()..bookingResponse = makeBookingBody();
+    test('still fetches the location when no worker uid is known', () async {
+      // This assertion is INVERTED from what it used to be, and the inversion
+      // is the point. The location call was keyed on a worker uid, so with no
+      // uid in hand it was skipped entirely — the first tracking frame drew an
+      // empty map, and a position only appeared on the next refresh. Keyed on the
+      // booking, there is nothing to wait for.
+      final ds = _FakeDataSource()
+        ..bookingResponse = makeBookingBody()
+        ..locationResponse = makeLocation();
 
       final repo = TrackingRepository(ds);
-      await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: '');
+      final state =
+          await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: '');
 
-      expect(ds.locationCallCount, 0);
+      expect(ds.locationCallCount, 1);
+      expect(state.providerLocation, isNotNull);
     });
   });
 
-  group('TrackingRepository.fetchSnapshot — late UID discovery', () {
-    test('fires second location call when UID discovered in booking response',
+  group('TrackingRepository.fetchSnapshot — no late-uid second fetch', () {
+    test('issues exactly ONE location call even when the uid arrives late',
         () async {
+      // Previously the uid could only be learned from the booking response, so
+      // a second location fetch was issued after it — two round trips to render
+      // one frame. The booking id is known up front, so there is no second one.
       final ds = _FakeDataSource()
         ..bookingResponse = makeBookingBody(workerUid: 'uid-from-booking')
         ..locationResponse = makeLocation();
 
       final repo = TrackingRepository(ds);
-      await repo.fetchSnapshot(
-          bookingId: '42', knownWorkerUid: null); // no prior UID
+      final state =
+          await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: null);
 
       expect(ds.bookingCallCount, 1);
       expect(ds.locationCallCount, 1);
+      expect(state.providerLocation, isNotNull);
     });
 
     test('late UID location failure is isolated', () async {
@@ -145,14 +163,25 @@ void main() {
       expect(state.bookingStatus, BookingStatus.enRoute);
     });
 
-    test('does not fire location call when booking response has no UID',
+    test('fetches the location even when the booking names no worker at all',
         () async {
-      final ds = _FakeDataSource()..bookingResponse = makeBookingBody();
+      // Also inverted. A booking with no worker uid anywhere used to mean no
+      // location call, which sounds reasonable until you notice the backend is
+      // the one that knows whether a provider is assigned. It answers
+      // {assigned: false, location: null} for exactly this case, so asking is
+      // both cheap and the only way to tell "nobody assigned yet" apart from
+      // "assigned but not reporting" — a distinction the map needs in order to
+      // say something truthful rather than just showing nothing.
+      final ds = _FakeDataSource()
+        ..bookingResponse = makeBookingBody()
+        ..locationResponse = null;
 
       final repo = TrackingRepository(ds);
-      await repo.fetchSnapshot(bookingId: '42');
+      final state = await repo.fetchSnapshot(bookingId: '42');
 
-      expect(ds.locationCallCount, 0);
+      expect(ds.locationCallCount, 1);
+      expect(ds.lastLocationBookingId, 42);
+      expect(state.providerLocation, isNull);
     });
   });
 

@@ -535,20 +535,22 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> getWorkerLocation(String uid) async {
-    final uri = _uri('/api/workers/location/$uid');
+  /// `GET /api/booking/:bookingId/provider-location` — where is the provider on
+  /// *this* booking.
+  ///
+  /// Replaces `GET /api/workers/location/:uid`, which carried no authentication
+  /// and let the caller name any provider, so anyone could follow any worker's
+  /// live position. Entitlement here is decided server-side by
+  /// `assertBookingAccess`, and the request cannot even express "where is some
+  /// other provider" — there is no worker id in it.
+  ///
+  /// Response distinguishes three states:
+  ///   `{assigned: false, location: null}` — not matched to a provider yet
+  ///   `{assigned: true,  location: null}` — matched, but no position reported
+  ///   `{assigned: true,  location: {...}}` — matched and reporting
+  Future<Map<String, dynamic>> getBookingProviderLocation(int bookingId) async {
+    final uri = _uri('/api/booking/$bookingId/provider-location');
     final res = await _client.get(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
-
-  Future<Map<String, dynamic>> updateWorkerLocation(
-      Map<String, dynamic> payload) async {
-    final uri = _uri('/api/workers/location');
-    final res = await _client.post(
-      uri,
-      headers: await _headers(),
-      body: jsonEncode(payload),
-    );
     return _decodeJson(res);
   }
 

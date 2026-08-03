@@ -18,27 +18,36 @@ class TrackingDataSource {
     return _api.getBooking(bookingId);
   }
 
-  /// `GET /api/workers/location/:uid` — latest location of a specific worker.
+  /// `GET /api/booking/:bookingId/provider-location` — where is the provider on
+  /// *this* booking.
   ///
-  /// Response: `{ uid, is_online, loc: { type: 'Point', coordinates: [lon, lat] }, updatedAt }`
+  /// TRACK-GAP-006 CLOSED. This replaced `GET /api/workers/location/:uid`, which
+  /// was unauthenticated on the backend and took the subject from the URL, so
+  /// anyone could follow any provider's live position. The old note here said
+  /// the data source "passes through the auth headers … the backend ignores
+  /// them for this route" — which was an accurate description of a hole, not a
+  /// mitigation.
   ///
-  /// SECURITY NOTE (TRACK-GAP-006): This endpoint is unauthenticated on the
-  /// backend. The data source passes through the auth headers the API client
-  /// includes by default; the backend ignores them for this route.
+  /// The successor asks a question the caller is entitled to ask. Access is
+  /// decided server-side by `assertBookingAccess`, and there is no way to phrase
+  /// a request for an arbitrary provider's whereabouts: the booking is the
+  /// subject, and it is one the customer already owns.
   ///
-  /// Returns null instead of throwing when the worker has no location record
-  /// (e.g., provider app never pushed a location).
-  Future<GeoPositionSnapshot?> getProviderLocation(String workerUid) async {
+  /// Returns null when there is no position to show — either no provider is
+  /// assigned yet, or one is assigned but has not reported. Both are normal
+  /// states rather than errors.
+  Future<GeoPositionSnapshot?> getProviderLocation(int bookingId) async {
     try {
-      final result = await _api.getWorkerLocation(workerUid);
-      // Backend may return the doc at root or under "data".
-      final doc = result['data'] is Map<String, dynamic>
-          ? result['data'] as Map<String, dynamic>
-          : result;
-      return GeoPositionSnapshot.fromApiMap(doc);
+      final result = await _api.getBookingProviderLocation(bookingId);
+      // `location` is the documented field. `data` is an additive alias the
+      // backend added to keep already-installed builds working, since this
+      // parser once read only the root or `data`. Reading `location` first is
+      // what lets that alias eventually be dropped.
+      return GeoPositionSnapshot.fromApiMap(result);
     } on ServanaApiException catch (e) {
-      // 404 means the worker has never pushed a location — not an error.
-      if (e.statusCode == 404) return null;
+      // 404 — booking gone. 403 — not the caller's booking, which is the
+      // authorization working, not a failure to render.
+      if (e.statusCode == 404 || e.statusCode == 403) return null;
       rethrow;
     }
   }
