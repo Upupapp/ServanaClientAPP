@@ -250,9 +250,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         }
       });
 
-      // First time we see a workerUid, look up the technician's name.
-      if (_workerUid != null && _workerName == null) {
-        unawaited(_loadWorkerProfile(_workerUid!));
+      // First time we see an assigned provider, look up their display details.
+      //
+      // Keyed on the booking, not on the provider's uid: the endpoint decides
+      // entitlement from a booking this customer already owns, so there is no
+      // way to phrase a request about an arbitrary provider. _workerUid is still
+      // the trigger — it is how we know someone has been assigned.
+      final bookingIdInt = int.tryParse(_bookingId);
+      if (_workerUid != null && _workerName == null && bookingIdInt != null) {
+        unawaited(_loadWorkerProfile(bookingIdInt));
       }
 
       // Track detail view once per screen visit.
@@ -281,10 +287,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
-  Future<void> _loadWorkerProfile(String uid) async {
+  Future<void> _loadWorkerProfile(int bookingId) async {
     try {
       final api = dpLocator<ServanaApiClient>();
-      final res = await api.getWorkerByUid(uid);
+      final res = await api.getBookingProvider(bookingId);
       final w = res['worker'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
           res;

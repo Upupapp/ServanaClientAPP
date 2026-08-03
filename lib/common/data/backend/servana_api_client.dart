@@ -529,8 +529,19 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> getWorkerByUid(String uid) async {
-    final uri = _uri('/api/workers/$uid');
+  /// `GET /api/booking/:bookingId/provider` — who is coming to this booking.
+  ///
+  /// Replaces `GET /api/workers/:uid`, which let any authenticated caller name
+  /// any provider and pull their profile. That route was audience-projected, so
+  /// a customer only ever received a name and a phone number — but the request
+  /// could still be phrased about anyone, and it was the last thing keeping the
+  /// legacy `/api/workers/*` family alive.
+  ///
+  /// Keyed on a booking the caller already owns; `assertBookingAccess` decides
+  /// entitlement server-side. Returns `{assigned: false, worker: null}` before a
+  /// provider is matched, which is a normal state and not an error.
+  Future<Map<String, dynamic>> getBookingProvider(int bookingId) async {
+    final uri = _uri('/api/booking/$bookingId/provider');
     final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }
