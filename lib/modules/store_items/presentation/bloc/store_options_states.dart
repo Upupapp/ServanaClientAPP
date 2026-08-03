@@ -5,7 +5,7 @@ sealed class StoreOptionsState extends Equatable {
   const StoreOptionsState();
   @override
   // TODO: implement props
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => const [];
 }
 
 class InitialStoreOptionsState extends StoreOptionsState {

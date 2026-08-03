@@ -1,6 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/observability/performance_service.dart';
+import 'package:client/core/observability/trace_name_registry.dart';
+import 'package:client/core/analytics/events/message_events.dart';
+import 'package:client/core/analytics/events/recovery_events.dart';
 import 'package:client/modules/messaging/data/mappers/message_mapper.dart';
 import 'package:client/modules/messaging/data/models/conversation_model.dart';
 import 'package:client/modules/messaging/data/models/message_model.dart';
@@ -45,7 +51,8 @@ abstract class _MessagingStore with Store {
 
   /// conversationId → list of messages (oldest at index 0, newest at end)
   @observable
-  ObservableMap<int, ObservableList<MessageModel>> messagesByConvId = ObservableMap();
+  ObservableMap<int, ObservableList<MessageModel>> messagesByConvId =
+      ObservableMap();
 
   /// conversationId → oldest message id loaded (null = not loaded yet)
   @observable
@@ -161,11 +168,13 @@ abstract class _MessagingStore with Store {
     isLoadingByConvId[conversationId] = true;
     final gen = _generation;
     try {
-      final messages = await repository.getMessages(
-        conversationId: conversationId,
-        limit: 40,
-        before: refresh ? null : oldestIdByConvId[conversationId],
-      );
+      final messages = await _perf(
+          TraceNames.conversationLoad,
+          () async => repository.getMessages(
+                conversationId: conversationId,
+                limit: 40,
+                before: refresh ? null : oldestIdByConvId[conversationId],
+              ));
       if (_generation != gen) return;
 
       final list = messagesByConvId.putIfAbsent(
@@ -184,7 +193,8 @@ abstract class _MessagingStore with Store {
 
       // Track the oldest message id for subsequent page loads.
       if (messages.isNotEmpty) {
-        final oldest = messages.reduce((a, b) => (a.id ?? 0) < (b.id ?? 0) ? a : b);
+        final oldest =
+            messages.reduce((a, b) => (a.id ?? 0) < (b.id ?? 0) ? a : b);
         oldestIdByConvId[conversationId] = oldest.id;
       }
       hasMoreByConvId[conversationId] = messages.length >= 40;
@@ -220,6 +230,7 @@ abstract class _MessagingStore with Store {
       sendStatus: MessageSendStatus.pending,
     );
     _insertMessage(conversationId, pending);
+    _track(const MessageSendStartedEvent(contentType: 'text'));
 
     try {
       final confirmed = await repository.sendMessage(
@@ -230,10 +241,13 @@ abstract class _MessagingStore with Store {
       if (_generation != gen) return;
       // Replace optimistic message with confirmed server message.
       _replaceByClientMsgId(conversationId, clientMsgId, confirmed);
+      _track(const MessageSendSucceededEvent(contentType: 'text'));
     } catch (e) {
       if (_generation != gen) return;
       debugPrint('[MessagingStore] sendMessage error: $e');
       _markFailed(conversationId, clientMsgId);
+      _track(const MessageSendFailedEvent(
+          contentType: 'text', failureCode: 'api_error'));
     }
   }
 
@@ -245,6 +259,7 @@ abstract class _MessagingStore with Store {
   }) async {
     final gen = _generation;
     _markPending(conversationId, clientMsgId);
+    _track(const MessageRetrySelectedEvent());
     try {
       final confirmed = await repository.sendMessage(
         conversationId: conversationId,
@@ -253,9 +268,12 @@ abstract class _MessagingStore with Store {
       );
       if (_generation != gen) return;
       _replaceByClientMsgId(conversationId, clientMsgId, confirmed);
+      _track(const MessageSendSucceededEvent(contentType: 'text'));
     } catch (e) {
       if (_generation != gen) return;
       _markFailed(conversationId, clientMsgId);
+      _track(const MessageSendFailedEvent(
+          contentType: 'text', failureCode: 'api_error'));
     }
   }
 
@@ -279,6 +297,7 @@ abstract class _MessagingStore with Store {
       );
       // Reset unread count for this conversation locally.
       _updateConversationUnread(conversationId, 0);
+      _track(const ConversationMarkedReadEvent());
     } catch (e) {
       debugPrint('[MessagingStore] markRead error: $e');
     }
@@ -289,11 +308,13 @@ abstract class _MessagingStore with Store {
   void _onSocketEvent(ChatSocketEvent event) {
     switch (event) {
       case MessageNewEvent(:final conversationId, :final message):
-        final model = MessageMapper.fromJson(message, conversationId: conversationId);
+        final model =
+            MessageMapper.fromJson(message, conversationId: conversationId);
         // If a pending message with the same clientMsgId exists, replace it.
         final clientId = model.clientMsgId;
         if (clientId != null) {
-          final replaced = _replaceByClientMsgId(conversationId, clientId, model);
+          final replaced =
+              _replaceByClientMsgId(conversationId, clientId, model);
           if (replaced) break;
         }
         _insertMessage(conversationId, model);
@@ -301,24 +322,41 @@ abstract class _MessagingStore with Store {
         _updateConversationUnread(
           conversationId,
           (convsByBookingId.values
-                  .where((c) => c.id == conversationId)
-                  .firstOrNull
-                  ?.unreadCount ?? 0) + 1,
+                      .where((c) => c.id == conversationId)
+                      .firstOrNull
+                      ?.unreadCount ??
+                  0) +
+              1,
         );
 
       case MessageUpdatedEvent(:final conversationId, :final message):
-        final model = MessageMapper.fromJson(message, conversationId: conversationId);
+        final model =
+            MessageMapper.fromJson(message, conversationId: conversationId);
         _replaceById(conversationId, model);
 
       case MessageReadEvent(:final conversationId):
         _updateConversationUnread(conversationId, 0);
 
       case SocketConnectedEvent():
+        _syncAfterReconnect();
+
       case SocketDisconnectedEvent():
       case TypingEvent():
       case ConversationClosedEvent():
         break;
     }
+  }
+
+  /// Re-syncs messages and conversation list after a socket reconnect.
+  /// Guards against the initial connect (when convsByBookingId is still empty)
+  /// so it does not duplicate the load that [initForSession] already performs.
+  void _syncAfterReconnect() {
+    if (convsByBookingId.isEmpty) return;
+    _track(const RecoverySocketReconnectedEvent());
+    for (final convId in messagesByConvId.keys.toList()) {
+      loadMessages(convId, refresh: true);
+    }
+    loadConversations();
   }
 
   // ── Internal helpers ───────────────────────────────────────────────────────
@@ -384,7 +422,9 @@ abstract class _MessagingStore with Store {
 
   @action
   void _updateConversationUnread(int conversationId, int count) {
-    final entry = convsByBookingId.entries.where((e) => e.value.id == conversationId).firstOrNull;
+    final entry = convsByBookingId.entries
+        .where((e) => e.value.id == conversationId)
+        .firstOrNull;
     if (entry == null) return;
     convsByBookingId[entry.key] = entry.value.copyWith(unreadCount: count);
     _recalcTotalUnread();
@@ -392,7 +432,16 @@ abstract class _MessagingStore with Store {
 
   @action
   void _recalcTotalUnread() {
-    totalUnread = convsByBookingId.values.fold(0, (sum, c) => sum + c.unreadCount);
+    totalUnread =
+        convsByBookingId.values.fold(0, (sum, c) => sum + c.unreadCount);
+  }
+
+  // ── Analytics ──────────────────────────────────────────────────────────────
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -403,5 +452,10 @@ abstract class _MessagingStore with Store {
     final ts = DateTime.now().millisecondsSinceEpoch;
     final rand = _rng.nextInt(0xFFFFFF);
     return '${ts.toRadixString(16)}-${rand.toRadixString(16)}';
+  }
+
+  Future<T> _perf<T>(String name, Future<T> Function() fn) async {
+    if (!dpLocator.isRegistered<PerformanceService>()) return fn();
+    return dpLocator<PerformanceService>().traced(name, fn);
   }
 }

@@ -22,8 +22,10 @@ class FcmCoordinator {
   StreamSubscription<String>? _tokenRefreshSub;
 
   // Stream broadcast to the foreground banner
-  final _foregroundStreamCtrl = StreamController<ServanaNotification>.broadcast();
-  Stream<ServanaNotification> get foregroundStream => _foregroundStreamCtrl.stream;
+  final _foregroundStreamCtrl =
+      StreamController<ServanaNotification>.broadcast();
+  Stream<ServanaNotification> get foregroundStream =>
+      _foregroundStreamCtrl.stream;
 
   // For deduplication of foreground messages
   final Set<String> _recentKeys = {};
@@ -47,10 +49,10 @@ class FcmCoordinator {
     // iOS foreground presentation: suppress OS banner (handled in-app via toastification).
     FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
-      alert: false,
-      badge: true,
-      sound: false,
-    )
+          alert: false,
+          badge: true,
+          sound: false,
+        )
         .ignore();
   }
 
@@ -66,7 +68,8 @@ class FcmCoordinator {
       _subscribeToRefresh(uid);
       _subscribeToForeground();
     } catch (e) {
-      debugPrint('[FcmCoordinator] registerForAccount failed: ${e.runtimeType}');
+      debugPrint(
+          '[FcmCoordinator] registerForAccount failed: ${e.runtimeType}');
     }
   }
 
@@ -81,6 +84,11 @@ class FcmCoordinator {
     _recentKeys.clear();
     try {
       await _repository.clearFcmToken();
+    } catch (_) {}
+    // LEAK L-2: invalidate the FCM token on Firebase's side so the device
+    // cannot receive push notifications while signed out.
+    try {
+      await FirebaseMessaging.instance.deleteToken();
     } catch (_) {}
   }
 
@@ -110,7 +118,8 @@ class FcmCoordinator {
 
   void _subscribeToRefresh(String uid) {
     _tokenRefreshSub?.cancel();
-    _tokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    _tokenRefreshSub =
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
       if (_activeUid != uid) return; // account switch guard
       _repository.registerFcmToken(newToken).ignore();
     });
@@ -150,9 +159,7 @@ class FcmCoordinator {
     final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
     bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
     bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
-    final hex = bytes
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}'
         '-${hex.substring(12, 16)}-${hex.substring(16, 20)}'
         '-${hex.substring(20, 32)}';

@@ -22,6 +22,7 @@ class DrawerItemWidget extends StatelessWidget {
               AssetImage(iconFile!),
               size: 22,
               color: ColorPalette.primaryColorDark,
+              semanticLabel: '',
             )
           : const SizedBox.square(
               dimension: 25,

@@ -29,144 +29,181 @@ class NotificationCard extends StatelessWidget {
           ? DismissDirection.endToStart
           : DismissDirection.none,
       onDismissed: (_) => onDismiss?.call(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        color: ColorPalette.danger.withOpacity(0.85),
-        child: const Icon(Icons.delete_outline_rounded,
-            color: Colors.white, size: 22),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
+      // [a11y] Wrap both swipe backgrounds in ExcludeSemantics so the delete
+      // icon is not announced separately — the Dismissible itself exposes a
+      // "dismiss" semantic action automatically via Flutter's framework.
+      background: ExcludeSemantics(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: isUnread
-                ? ColorPalette.primaryColorLight.withOpacity(0.45)
-                : ColorPalette.secondaryBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          color: ColorPalette.danger.withOpacity(0.85),
+          child: const Icon(Icons.delete_outline_rounded,
+              color: Colors.white, size: 22),
+        ),
+      ),
+      secondaryBackground: ExcludeSemantics(
+        child: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          color: ColorPalette.danger.withOpacity(0.85),
+          child: const Icon(Icons.delete_outline_rounded,
+              color: Colors.white, size: 22),
+        ),
+      ),
+      // [a11y] Card is a single focusable button for TalkBack / VoiceOver.
+      // excludeSemantics: true prevents child widgets from becoming separate
+      // focus nodes; the label encodes unread state, title, and body.
+      child: Semantics(
+        label:
+            '${isUnread ? 'Unread notification: ' : 'Notification: '}${notification.title}. ${notification.safeBody}',
+        button: true,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
               color: isUnread
-                  ? ColorPalette.primaryColorDark.withOpacity(0.14)
-                  : ColorPalette.secondaryBorder,
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: ColorPalette.shadow(0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                  ? ColorPalette.primaryColorLight.withOpacity(0.45)
+                  : ColorPalette.secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isUnread
+                    ? ColorPalette.primaryColorDark.withOpacity(0.14)
+                    : ColorPalette.secondaryBorder,
+                width: 1,
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _NotifIcon(type: notification.type, isUnread: isUnread),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notification.title,
-                              style: TextStyle(
-                                fontFamily: FontPalette.primaryFontFamily,
-                                fontSize: 13.5,
-                                fontWeight: isUnread
-                                    ? FontWeight.w700
-                                    : FontWeight.w600,
-                                color: ColorPalette.secondaryText,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (isUnread)
-                            Container(
-                              width: 7,
-                              height: 7,
-                              margin: const EdgeInsets.only(top: 4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: ColorPalette.primaryColorDark,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notification.safeBody,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontSize: 12,
-                          color: ColorPalette.accentText,
-                          height: 1.45,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text(
-                            _timeAgo(notification.createdAt),
-                            style: TextStyle(
-                              fontFamily: FontPalette.primaryFontFamily,
-                              fontSize: 11,
-                              color: ColorPalette.accentText.withOpacity(0.7),
-                            ),
-                          ),
-                          if (notification.safeContextLabel != null) ...[
-                            Text(
-                              ' · ',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: ColorPalette.accentText.withOpacity(0.5),
-                              ),
-                            ),
-                            Flexible(
+              boxShadow: [
+                BoxShadow(
+                  color: ColorPalette.shadow(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _NotifIcon(type: notification.type, isUnread: isUnread),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
                               child: Text(
-                                notification.safeContextLabel!,
-                                overflow: TextOverflow.ellipsis,
+                                notification.title,
                                 style: TextStyle(
                                   fontFamily: FontPalette.primaryFontFamily,
-                                  fontSize: 11,
-                                  color:
-                                      ColorPalette.accentText.withOpacity(0.7),
+                                  fontSize: 13.5,
+                                  fontWeight: isUnread
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                  color: ColorPalette.secondaryText,
+                                  height: 1.3,
                                 ),
                               ),
                             ),
-                          ],
-                          const Spacer(),
-                          if (notification.canMarkRead && isUnread)
-                            GestureDetector(
-                              onTap: onMarkRead,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Text(
-                                  'Mark read',
-                                  style: TextStyle(
-                                    fontFamily: FontPalette.primaryFontFamily,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
+                            const SizedBox(width: 8),
+                            // [a11y] Unread dot is purely decorative; unread
+                            // state is already in the parent Semantics label.
+                            if (isUnread)
+                              ExcludeSemantics(
+                                child: Container(
+                                  width: 7,
+                                  height: 7,
+                                  margin: const EdgeInsets.only(top: 4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
                                     color: ColorPalette.primaryColorDark,
                                   ),
                                 ),
                               ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          notification.safeBody,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontSize: 12,
+                            color: ColorPalette.accentText,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Text(
+                              _timeAgo(notification.createdAt),
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontSize: 11,
+                                color: ColorPalette.accentText.withOpacity(0.7),
+                              ),
                             ),
-                        ],
-                      ),
-                    ],
+                            if (notification.safeContextLabel != null) ...[
+                              Text(
+                                ' · ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color:
+                                      ColorPalette.accentText.withOpacity(0.5),
+                                ),
+                              ),
+                              Flexible(
+                                child: Text(
+                                  notification.safeContextLabel!,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: FontPalette.primaryFontFamily,
+                                    fontSize: 11,
+                                    color: ColorPalette.accentText
+                                        .withOpacity(0.7),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            // [a11y] Mark-read has its own Semantics so that
+                            // if the outer excludeSemantics is ever relaxed,
+                            // this control is correctly labelled.
+                            if (notification.canMarkRead && isUnread)
+                              Semantics(
+                                label: 'Mark as read',
+                                button: true,
+                                excludeSemantics: true,
+                                child: GestureDetector(
+                                  onTap: onMarkRead,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: Text(
+                                      'Mark read',
+                                      style: TextStyle(
+                                        fontFamily:
+                                            FontPalette.primaryFontFamily,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: ColorPalette.primaryColorDark,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

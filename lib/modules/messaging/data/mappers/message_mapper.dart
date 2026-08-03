@@ -15,7 +15,8 @@ class MessageMapper {
     }
   }
 
-  static MessageModel fromJson(Map<String, dynamic> json, {required int conversationId}) {
+  static MessageModel fromJson(Map<String, dynamic> json,
+      {required int conversationId}) {
     final rawAttachments = json['attachments'] as List<dynamic>? ?? const [];
     final attachments = rawAttachments
         .cast<Map<String, dynamic>>()
@@ -26,13 +27,15 @@ class MessageMapper {
       id: (json['id'] as num?)?.toInt(),
       conversationId: conversationId,
       senderUid: json['senderUid'] as String? ?? json['sender_uid'] as String?,
-      senderRole: (json['senderRole'] as num? ?? json['sender_role'] as num?)?.toInt(),
+      senderRole:
+          (json['senderRole'] as num? ?? json['sender_role'] as num?)?.toInt(),
       type: _typeFrom(json['type'] as String?),
       body: json['body'] as String?,
       createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
       editedAt: _parseDateNullable(json['editedAt'] ?? json['edited_at']),
       deletedAt: _parseDateNullable(json['deletedAt'] ?? json['deleted_at']),
-      clientMsgId: json['clientMsgId'] as String? ?? json['client_msg_id'] as String?,
+      clientMsgId:
+          json['clientMsgId'] as String? ?? json['client_msg_id'] as String?,
       sendStatus: MessageSendStatus.sent,
       attachments: attachments,
     );

@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 class SettingsController extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _hapticsEnabled = true;
+  String _language = 'English';
   bool _loaded = false;
   bool _loading = false;
   bool _disposed = false;
 
   ThemeMode get themeMode => _themeMode;
   bool get hapticsEnabled => _hapticsEnabled;
+  String get language => _language;
   bool get isLoaded => _loaded;
 
   @override
@@ -24,6 +26,7 @@ class SettingsController extends ChangeNotifier {
     _loading = true;
     _themeMode = await SettingsLocalDataSource.loadThemeMode();
     _hapticsEnabled = await SettingsLocalDataSource.loadHapticsEnabled();
+    _language = await SettingsLocalDataSource.loadLanguage();
     if (_disposed) return;
     AppHaptics.setEnabled(_hapticsEnabled);
     _loaded = true;
@@ -43,5 +46,12 @@ class SettingsController extends ChangeNotifier {
     AppHaptics.setEnabled(enabled);
     notifyListeners();
     await SettingsLocalDataSource.saveHapticsEnabled(enabled);
+  }
+
+  Future<void> setLanguage(String language) async {
+    if (_language == language) return;
+    _language = language;
+    notifyListeners();
+    await SettingsLocalDataSource.saveLanguage(language);
   }
 }

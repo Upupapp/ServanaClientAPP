@@ -1,14 +1,24 @@
 import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
+
 import 'package:client/common/config/app_config.dart';
 import 'package:client/common/config/app_theme.dart';
+import 'package:client/core/analytics/application/analytics_context_provider.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/screen_analytics_observer.dart';
+import 'package:client/core/observability/safe_diagnostics.dart';
+import 'package:client/core/recovery/app_lifecycle_coordinator.dart';
+import 'package:client/core/recovery/connectivity_monitor.dart';
+import 'package:client/core/recovery/offline_banner.dart';
 import 'package:client/firebase_options.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
+import 'package:client/modules/notifications/data/notification_mapper.dart';
 import 'package:client/modules/notifications/presentation/foreground_notification_banner.dart';
+import 'package:client/common/services/threat_detection/free_rasp_service.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
@@ -55,7 +65,10 @@ Future<void> _bootstrap() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FcmCoordinator.initHandlers();
     if (!kDebugMode) {
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      // C21: Only capture Flutter framework fatal errors here.
+      // Zone errors are handled separately below with non-fatal classification.
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
     }
   }
 
@@ -63,17 +76,36 @@ Future<void> _bootstrap() async {
   ColorPalette.applyBrand(config.brand);
   initInjector(config);
 
+  // C24: Start freeRASP runtime protection (Android-only until iOS team ID is set).
+  if (!kIsWeb) {
+    FreeRasp.initThreatDetection().ignore();
+  }
+
+  // C21: Initialize analytics context (platform, version, environment).
+  await AnalyticsContextProvider.instance.init(
+    environment: kDebugMode ? 'development' : 'production',
+  );
+
+  // C21: Initialize analytics coordinator (loads consent from storage).
+  await dpLocator<AnalyticsCoordinator>().init();
+
   runApp(MyApp(config: config));
 }
 
 void _onZoneError(Object error, StackTrace stack) {
   if (!kDebugMode) {
-    // Guard: Crashlytics requires Firebase to be initialized. If this handler
-    // fires before initializeApp() completes (e.g. Hive failure), the call
-    // itself would throw FirebaseException(app-not-initialized) and create a
-    // second unhandled exception — so we swallow any secondary failure here.
+    // C21 Fix: distinguish fatal vs. non-fatal zone errors.
+    // Routine offline/network errors MUST NOT be reported as crashes —
+    // doing so inflates crash rate and misleads reliability dashboards.
+    final isRoutine = SafeDiagnostics.isRoutine(error);
     try {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      FirebaseCrashlytics.instance.recordError(
+        error,
+        stack,
+        // Only truly unrecoverable errors are fatal.
+        // Routine errors (network, timeout, 4xx/5xx) are non-fatal.
+        fatal: !isRoutine,
+      );
     } catch (_) {}
   }
 }
@@ -92,6 +124,9 @@ class _MyAppState extends State<MyApp> {
   late final SettingsController _settingsCtrl;
   late final FcmCoordinator _fcmCoord;
   late final NotificationNavigationCoordinator _navCoord;
+  late final AppLifecycleCoordinator _lifecycleCoord;
+  late final ConnectivityMonitor _connectivity;
+  late final ScreenAnalyticsObserver _screenObserver;
 
   @override
   void initState() {
@@ -100,6 +135,61 @@ class _MyAppState extends State<MyApp> {
     _settingsCtrl.load();
     _fcmCoord = dpLocator<FcmCoordinator>();
     _navCoord = dpLocator<NotificationNavigationCoordinator>();
+    _connectivity = dpLocator<ConnectivityMonitor>();
+
+    // C21: Attach GoRouter screen observer for centralized screen_view tracking.
+    _screenObserver = ScreenAnalyticsObserver(
+      router: _router,
+      coordinator: dpLocator<AnalyticsCoordinator>(),
+    );
+    _screenObserver.attach();
+
+    // Rebuild AppLifecycleCoordinator with the messaging store resume callback,
+    // then attach it to the WidgetsBinding.
+    _lifecycleCoord = dpLocator<AppLifecycleCoordinator>();
+    _lifecycleCoord.attach();
+
+    // STITCH FAIL-01: handle notification taps when app was terminated (cold start).
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final data = <String, dynamic>{
+          ...message.data,
+          'title': message.notification?.title ??
+              message.data['title'] as String? ??
+              '',
+          'body': message.notification?.body ??
+              message.data['body'] as String? ??
+              '',
+        };
+        final notification = mapFcmDataToNotification(data);
+        if (notification != null) _navCoord.navigateTo(context, notification);
+      });
+    });
+
+    // STITCH FAIL-01: handle notification taps when app was backgrounded.
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      if (!mounted) return;
+      final data = <String, dynamic>{
+        ...message.data,
+        'title': message.notification?.title ??
+            message.data['title'] as String? ??
+            '',
+        'body':
+            message.notification?.body ?? message.data['body'] as String? ?? '',
+      };
+      final notification = mapFcmDataToNotification(data);
+      if (notification != null) _navCoord.navigateTo(context, notification);
+    });
+  }
+
+  @override
+  void dispose() {
+    _screenObserver.detach();
+    _lifecycleCoord.detach();
+    _connectivity.dispose(); // STITCH WARN-03
+    super.dispose();
   }
 
   @override
@@ -139,10 +229,13 @@ class _MyAppState extends State<MyApp> {
             routeInformationParser: _router.routeInformationParser,
             routeInformationProvider: _router.routeInformationProvider,
             routerDelegate: _router.routerDelegate,
-            builder: (context, child) => ForegroundNotificationBanner(
-              fcmCoordinator: _fcmCoord,
-              navigationCoordinator: _navCoord,
-              child: child ?? const SizedBox.shrink(),
+            builder: (context, child) => OfflineBanner(
+              monitor: _connectivity,
+              child: ForegroundNotificationBanner(
+                fcmCoordinator: _fcmCoord,
+                navigationCoordinator: _navCoord,
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         ),

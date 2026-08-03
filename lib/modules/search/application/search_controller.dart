@@ -1,6 +1,12 @@
 import 'dart:async';
 
 import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/domain/analytics_property.dart';
+import 'package:client/core/observability/performance_service.dart';
+import 'package:client/core/observability/trace_name_registry.dart';
+import 'package:client/core/analytics/events/search_events.dart';
 import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/data/search_local_data_source.dart';
 import 'package:client/modules/search/data/search_repository.dart';
@@ -57,13 +63,20 @@ class SearchController extends ChangeNotifier {
     _state = SearchLoadState.loading;
     _error = null;
     if (!_disposed) notifyListeners();
+    final sw = Stopwatch()..start();
     try {
-      _allResults = await _repository.fetchCatalog(forceRefresh: forceRefresh);
+      _allResults = await _perf(TraceNames.searchRequest,
+          () async => _repository.fetchCatalog(forceRefresh: forceRefresh));
       _state = SearchLoadState.ready;
       _applyFilters();
+      _track(SearchResultsLoadedEvent(
+        resultCountBucket: CountBucketValues.forCount(_allResults.length),
+        latencyBucket: LatencyBucketValues.forMillis(sw.elapsedMilliseconds),
+      ));
     } on Exception catch (e) {
       _state = SearchLoadState.error;
       _error = e.toString();
+      _track(const SearchFailedEvent(failureCode: 'network_error'));
       if (!_disposed) notifyListeners();
     }
   }
@@ -81,7 +94,14 @@ class SearchController extends ChangeNotifier {
     _debounce?.cancel();
     _query = query;
     final term = query.trim();
-    if (term.isNotEmpty) _addToHistory(term);
+    if (term.isNotEmpty) {
+      _addToHistory(term);
+      _track(SearchSubmittedEvent(
+        queryLengthBucket: _lengthBucket(term.length),
+        queryTokenCountBucket:
+            CountBucketValues.forCount(term.split(RegExp(r'\s+')).length),
+      ));
+    }
     _applyFilters();
   }
 
@@ -133,6 +153,10 @@ class SearchController extends ChangeNotifier {
           r.categoryLabel.toLowerCase().contains(q));
     }
     _filteredResults = _sortResults(filtered.toList());
+    if (q.isNotEmpty && _filteredResults.isEmpty) {
+      _track(
+          SearchZeroResultsEvent(queryLengthBucket: _lengthBucket(q.length)));
+    }
     if (!_disposed) notifyListeners();
   }
 
@@ -152,9 +176,26 @@ class SearchController extends ChangeNotifier {
   }
 
   void _addToHistory(String term) {
-    _history =
-        [term, ..._history.where((t) => t != term)].take(10).toList();
+    _history = [term, ..._history.where((t) => t != term)].take(10).toList();
     SearchLocalDataSource.addTerm(term);
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
+  static String _lengthBucket(int len) {
+    if (len < 5) return '<5';
+    if (len < 10) return '5-9';
+    if (len < 20) return '10-19';
+    return '20+';
+  }
+
+  Future<T> _perf<T>(String name, Future<T> Function() fn) async {
+    if (!dpLocator.isRegistered<PerformanceService>()) return fn();
+    return dpLocator<PerformanceService>().traced(name, fn);
   }
 
   @override

@@ -1,5 +1,7 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
@@ -17,6 +19,25 @@ class AccountPendingForApprovalScreen extends StatefulWidget {
 
 class _AccountPendingForApprovalScreenState
     extends State<AccountPendingForApprovalScreen> {
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,6 +129,7 @@ class _AccountPendingForApprovalScreenState
                       style: TextStyle(
                         color: ColorPalette.primaryColorDark,
                       ),
+                      recognizer: _termsRecognizer,
                     ),
                     const TextSpan(text: " and "),
                     TextSpan(
@@ -115,6 +137,7 @@ class _AccountPendingForApprovalScreenState
                       style: TextStyle(
                         color: ColorPalette.primaryColorDark,
                       ),
+                      recognizer: _privacyRecognizer,
                     ),
                   ],
                 ),

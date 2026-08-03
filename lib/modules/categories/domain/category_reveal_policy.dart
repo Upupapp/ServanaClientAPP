@@ -29,8 +29,7 @@ abstract final class CategoryRevealPolicy {
         : RevealDecision.fullReveal;
   }
 
-  static void markSeen(ServiceCategoryId categoryId) =>
-      _seen.add(categoryId);
+  static void markSeen(ServiceCategoryId categoryId) => _seen.add(categoryId);
 
   static bool hasSeen(ServiceCategoryId categoryId) =>
       _seen.contains(categoryId);

@@ -28,19 +28,28 @@ class _ServanaPromotionBannerState extends State<ServanaPromotionBanner> {
     final promo = widget.promotion;
 
     final (bg1, bg2) = switch (promo.theme) {
-      HomeBannerTheme.primaryBlue =>
-        (const Color(0xFF1A3DB5), const Color(0xFF0A1F6E)),
-      HomeBannerTheme.wellness =>
-        (const Color(0xFF6C3DB5), const Color(0xFF3D1E7A)),
-      HomeBannerTheme.reengagementNavy =>
-        (const Color(0xFF0F2060), const Color(0xFF1A3480)),
-      HomeBannerTheme.categoryPurple =>
-        (const Color(0xFF4A2DB5), const Color(0xFF2A1080)),
+      HomeBannerTheme.primaryBlue => (
+          const Color(0xFF1A3DB5),
+          const Color(0xFF0A1F6E)
+        ),
+      HomeBannerTheme.wellness => (
+          const Color(0xFF6C3DB5),
+          const Color(0xFF3D1E7A)
+        ),
+      HomeBannerTheme.reengagementNavy => (
+          const Color(0xFF0F2060),
+          const Color(0xFF1A3480)
+        ),
+      HomeBannerTheme.categoryPurple => (
+          const Color(0xFF4A2DB5),
+          const Color(0xFF2A1080)
+        ),
     };
 
     Widget banner = Semantics(
       label: promo.accessibilityDescription,
       button: true,
+      excludeSemantics: true,
       child: GestureDetector(
         onTapDown: (_) {
           setState(() => _pressed = true);
@@ -184,10 +193,7 @@ class _ServanaPromotionBannerState extends State<ServanaPromotionBanner> {
       banner = switch (promo.motion) {
         HomeMotionPreset.productReveal ||
         HomeMotionPreset.categoryBloom =>
-          banner
-              .animate()
-              .fadeIn(duration: 360.ms)
-              .slideY(
+          banner.animate().fadeIn(duration: 360.ms).slideY(
                 begin: 0.12,
                 end: 0,
                 duration: 360.ms,

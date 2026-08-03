@@ -32,7 +32,8 @@ void main() {
     ctrl = NotificationsController(repository: mockRepo);
 
     when(() => mockRepo.loadCached(any())).thenAnswer((_) async => []);
-    when(() => mockRepo.loadCachedUnreadCount(any())).thenAnswer((_) async => 0);
+    when(() => mockRepo.loadCachedUnreadCount(any()))
+        .thenAnswer((_) async => 0);
     when(() => mockRepo.clearCacheForAccount(any())).thenAnswer((_) async {});
   });
 
@@ -171,12 +172,17 @@ void main() {
       expect(ctrl.notifications.length, 1);
     });
 
-    test('shows offline state when init backend fetch fails but cache was loaded', () async {
-      when(() => mockRepo.loadCached(any())).thenAnswer((_) async => [notif('n1')]);
-      when(() => mockRepo.loadCachedUnreadCount(any())).thenAnswer((_) async => 1);
+    test(
+        'shows offline state when init backend fetch fails but cache was loaded',
+        () async {
+      when(() => mockRepo.loadCached(any()))
+          .thenAnswer((_) async => [notif('n1')]);
+      when(() => mockRepo.loadCachedUnreadCount(any()))
+          .thenAnswer((_) async => 1);
       when(() => mockRepo.fetchNotifications(uid: any(named: 'uid')))
           .thenThrow(Exception('Network'));
-      when(() => mockRepo.fetchUnreadCount(any())).thenThrow(Exception('Network'));
+      when(() => mockRepo.fetchUnreadCount(any()))
+          .thenThrow(Exception('Network'));
 
       await ctrl.init('uid-123');
 

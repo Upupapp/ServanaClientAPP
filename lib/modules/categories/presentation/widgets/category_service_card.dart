@@ -42,9 +42,11 @@ class CategoryServiceCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _ServiceImage(imageAsset: option.imageAsset, accent: accentColor),
+                _ServiceImage(
+                    imageAsset: option.imageAsset, accent: accentColor),
                 const SizedBox(width: 14),
-                Expanded(child: _ServiceInfo(option: option, accent: accentColor)),
+                Expanded(
+                    child: _ServiceInfo(option: option, accent: accentColor)),
                 const SizedBox(width: 12),
                 _BookButton(accent: accentColor, onTap: onTap),
                 const SizedBox(width: 12),

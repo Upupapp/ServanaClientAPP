@@ -1,3 +1,4 @@
+import 'package:client/core/accessibility/semantics_labels.dart';
 import 'package:flutter/material.dart';
 
 /// Typed identity for each primary navigation branch.
@@ -60,6 +61,9 @@ enum CoreTab {
   /// Accessible label for screen readers, incorporating badge count when > 0.
   String semanticLabel({int badge = 0}) {
     if (badge == 0) return label;
+    if (this == CoreTab.messages) {
+      return SemanticsLabels.tabMessagesWithUnread(badge);
+    }
     return '$label, $badge pending';
   }
 }

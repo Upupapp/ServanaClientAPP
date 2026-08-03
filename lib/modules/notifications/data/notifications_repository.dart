@@ -21,9 +21,7 @@ class NotificationsRepository {
     final notifications = await _remote.listNotifications(filter: filter);
     // Cache only unfiltered results for offline use
     if (filter == null || filter.isEmpty) {
-      final rawList = notifications
-          .map((n) => _notificationToMap(n))
-          .toList();
+      final rawList = notifications.map((n) => _notificationToMap(n)).toList();
       _local.saveCached(uid, rawList).ignore();
     }
     return notifications;
@@ -49,12 +47,12 @@ class NotificationsRepository {
 
   Future<void> dismiss(String key) => _remote.dismiss(key);
 
-  Future<void> registerFcmToken(String token) => _remote.registerFcmToken(token);
+  Future<void> registerFcmToken(String token) =>
+      _remote.registerFcmToken(token);
 
   Future<void> clearFcmToken() => _remote.clearFcmToken();
 
-  Future<void> clearCacheForAccount(String uid) =>
-      _local.clearForAccount(uid);
+  Future<void> clearCacheForAccount(String uid) => _local.clearForAccount(uid);
 
   static Map<String, dynamic> _notificationToMap(ServanaNotification n) => {
         'notificationKey': n.notificationKey,
@@ -76,11 +74,27 @@ class NotificationsRepository {
   static Map<String, dynamic>? _targetToRoute(NotificationTarget? target) {
     if (target == null) return null;
     return switch (target) {
-      BookingTarget t => {'routeKey': 'BOOKING_DETAILS', 'resourceId': t.bookingId},
-      PaymentTarget t => {'routeKey': 'PAYMENT_DETAILS', 'resourceId': t.bookingId},
-      ConversationTarget t => {'routeKey': 'CONVERSATION', 'resourceId': t.conversationId},
+      BookingTarget t => {
+          'routeKey': 'BOOKING_DETAILS',
+          'resourceId': t.bookingId
+        },
+      PaymentTarget t => {
+          'routeKey': 'PAYMENT_DETAILS',
+          'resourceId': t.bookingId
+        },
+      ConversationTarget t => {
+          'routeKey': 'CONVERSATION',
+          'resourceId': t.conversationId
+        },
       CategoryTarget t => {'routeKey': 'CATEGORY', 'resourceId': t.categoryKey},
-      SettingsTarget() => {'routeKey': 'NOTIFICATION_SETTINGS', 'resourceId': ''},
+      SettingsTarget() => {
+          'routeKey': 'NOTIFICATION_SETTINGS',
+          'resourceId': ''
+        },
+      SupportTicketTarget t => {
+          'routeKey': 'SUPPORT_TICKET',
+          'resourceId': t.ticketKey
+        },
       UnknownTarget t => {'routeKey': t.routeKey, 'resourceId': ''},
     };
   }

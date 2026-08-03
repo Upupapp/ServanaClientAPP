@@ -39,7 +39,8 @@ sealed class HomePromotionTarget {
 }
 
 class HomeTargetCategory extends HomePromotionTarget {
-  final String categoryKey; // 'beauty_wellness', 'hair_nails', 'massage', 'aircon'
+  final String
+      categoryKey; // 'beauty_wellness', 'hair_nails', 'massage', 'aircon'
   const HomeTargetCategory(this.categoryKey);
 }
 

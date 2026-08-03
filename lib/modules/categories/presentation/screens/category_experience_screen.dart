@@ -149,9 +149,9 @@ class _CategoryExperienceScreenState extends State<CategoryExperienceScreen> {
 
   List<Widget> _buildBody(BuildContext context) {
     return switch (_controller.status) {
-      CategoryExperienceStatus.idle ||
-      CategoryExperienceStatus.loading =>
-        [const CategorySkeletonList()],
+      CategoryExperienceStatus.idle || CategoryExperienceStatus.loading => [
+          const CategorySkeletonList()
+        ],
       CategoryExperienceStatus.failure => [
           SliverToBoxAdapter(
             child: CategoryErrorState(

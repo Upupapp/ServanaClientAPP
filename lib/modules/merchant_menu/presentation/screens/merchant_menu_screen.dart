@@ -27,6 +27,7 @@ class _MerchantMenuScreenState extends State<MerchantMenuScreen> {
         backgroundColor: ColorPalette.secondaryBackground,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Go back',
           onPressed: () => context.pop(),
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,

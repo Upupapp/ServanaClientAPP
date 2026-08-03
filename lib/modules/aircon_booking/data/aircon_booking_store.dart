@@ -1,8 +1,15 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/domain/analytics_property.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
+import 'package:client/core/recovery/draft_repository.dart';
+import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:mobx/mobx.dart';
 
@@ -16,6 +23,10 @@ abstract class _AirconBookingStore with Store {
   final ServanaApiClient api;
 
   _AirconBookingStore({required this.api});
+
+  /// Stable idempotency key for the current booking session.
+  /// Generated once on first [createBooking] call; reused on retry; cleared on reset.
+  String? _idempotencyKey;
 
   // ───────── Observable state ─────────
 
@@ -139,6 +150,7 @@ abstract class _AirconBookingStore with Store {
 
   @action
   void reset() {
+    _idempotencyKey = null;
     selectedOption = null;
     selectedHpKey = null;
     selectedHeightKey = null;
@@ -204,6 +216,7 @@ abstract class _AirconBookingStore with Store {
   /// user starts a fresh booking while already-loaded options are reused.
   @action
   void clearSelectionOnly() {
+    _idempotencyKey = null;
     selectedOption = null;
     selectedHpKey = null;
     selectedHeightKey = null;
@@ -363,13 +376,19 @@ abstract class _AirconBookingStore with Store {
     if (isSubmitting) return;
     isSubmitting = true;
     submissionError = null;
+    _track(const BookingSubmittedEvent(serviceCategory: 'aircon'));
     try {
       final session = await SessionService.getSession();
       final userId = session?.customerID ?? '';
       if (userId.isEmpty) {
         submissionError = 'You must be signed in to create a booking.';
+        _track(const BookingFailedEvent(
+            serviceCategory: 'aircon', failureCode: 'unauthenticated'));
         return;
       }
+
+      // Generate a stable idempotency key once; reuse on retry — never regenerate.
+      _idempotencyKey ??= _uuidV4();
 
       final addressId =
           selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
@@ -395,7 +414,25 @@ abstract class _AirconBookingStore with Store {
         'pricing': pricing,
       };
 
-      final res = await api.createBooking(userId: userId, payload: payload);
+      // Journal the operation before the API call so a process kill during
+      // the network request leaves a reconcilable record.
+      final opId = _uuidV4();
+      dpLocator<OperationJournal>()
+          .record(JournaledOperation(
+            id: opId,
+            type: 'booking.create',
+            customerUid: userId,
+            payload: {'category': 'aircon', 'paymentMethod': paymentMethod},
+            startedAt: DateTime.now(),
+            idempotencyKey: _idempotencyKey,
+          ))
+          .ignore();
+
+      final res = await api.createBooking(
+        userId: userId,
+        payload: payload,
+        idempotencyKey: _idempotencyKey,
+      );
       bookingResult = res;
       final booking = res['booking'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
@@ -407,10 +444,23 @@ abstract class _AirconBookingStore with Store {
       workerCode =
           (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
       if (workerCode!.isEmpty) workerCode = null;
+
+      // Booking confirmed — remove the pending journal entry.
+      dpLocator<OperationJournal>().resolve(userId, opId).ignore();
+
+      _track(BookingCreatedEvent(
+        serviceCategory: 'aircon',
+        paymentMethod: paymentMethod.toLowerCase(),
+        amountBand: AmountBandValues.forAmount(quotedTotal),
+      ));
       // isSubmitting intentionally NOT reset on success — keeps the button
       // permanently disabled after a booking is created.
     } catch (e) {
       submissionError = _errorMsg(e);
+      _track(BookingFailedEvent(
+        serviceCategory: 'aircon',
+        failureCode: FailureCodeValues.networkError,
+      ));
       // Reset on error only so the user can retry after a genuine failure.
       isSubmitting = false;
     }
@@ -422,6 +472,8 @@ abstract class _AirconBookingStore with Store {
     isPaymentLoading = true;
     errorMessage = null;
     try {
+      final session = await SessionService.getSession();
+      final uid = session?.customerID ?? '';
       final res = await api.createPaymongoSession(bookingId: createdBookingId!);
       final data = res['data'] ?? res;
       paymongoCheckoutUrl =
@@ -431,6 +483,16 @@ abstract class _AirconBookingStore with Store {
       // the Retry branch instead of an indefinite spinner.
       if (paymongoCheckoutUrl == null || paymongoCheckoutUrl!.isEmpty) {
         errorMessage = 'Payment session could not be started. Please retry.';
+      } else if (uid.isNotEmpty) {
+        // Persist checkout URL so the user can resume payment after an app crash.
+        dpLocator<DraftRepository>()
+            .savePaymentContext(PendingPaymentContext(
+              bookingId: createdBookingId!,
+              checkoutUrl: paymongoCheckoutUrl!,
+              customerUid: uid,
+              savedAt: DateTime.now(),
+            ))
+            .ignore();
       }
     } catch (e) {
       errorMessage = _errorMsg(e);
@@ -525,6 +587,17 @@ abstract class _AirconBookingStore with Store {
     return e.toString();
   }
 
+  static String _uuidV4() {
+    final rng = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+        '${hex.substring(20, 32)}';
+  }
+
   /// Snapshot of the just-created booking built from current selections, used
   /// to open the booking detail screen and seed the bookings list immediately
   /// after creation. The detail screen refreshes live status/payment on open.
@@ -563,5 +636,11 @@ abstract class _AirconBookingStore with Store {
             opt['optionName'] ??
             'Aircon Service')
         .toString();
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 }

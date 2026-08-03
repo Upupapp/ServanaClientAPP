@@ -42,6 +42,7 @@ class _AddCreditCardScreenState extends State<AddCreditCardScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 IconButton(
+                  tooltip: 'Go back',
                   onPressed: () {
                     context.pop();
                   },

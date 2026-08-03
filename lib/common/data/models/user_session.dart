@@ -16,7 +16,6 @@ class UserSession with _$UserSession {
     @HiveField(53) String? referralCode,
     @HiveField(54) required String fullname,
     @HiveField(56) String? emailAddress,
-    @HiveField(57) String? password,
     @Default('') @HiveField(58) String token,
   }) = _UserSession;
 

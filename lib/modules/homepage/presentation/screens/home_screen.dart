@@ -1,5 +1,9 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/core/recovery/pending_payment_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
@@ -71,6 +75,17 @@ class _HomeScreenState extends State<HomeScreen> {
     airconStore.ensureOptionsLoaded(serviceId: 1);
     _restoreDraftIfPending();
     _scheduleSpotlight();
+    _maybeShowConsentGate();
+  }
+
+  void _maybeShowConsentGate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      dpLocator<ConsentGateService>().maybeShow(
+        context,
+        dpLocator<AnalyticsCoordinator>(),
+      );
+    });
   }
 
   // STITCH-C05-001 / LEAK-C05-001: restores a pending BookingDraft after the
@@ -157,6 +172,34 @@ class _HomeScreenState extends State<HomeScreen> {
         if (state is AuthenticationAuthenticated) {
           store.loadBookings();
           _restoreDraftIfPending();
+          // STITCH B2: show resume prompt for any payment interrupted by process kill.
+          final paymentCtx = dpLocator<PendingPaymentService>().consume();
+          if (paymentCtx != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Resume payment for booking #${paymentCtx.bookingId}?'),
+                duration: const Duration(seconds: 10),
+                action: SnackBarAction(
+                  label: 'Resume',
+                  onPressed: () async {
+                    final ok = await launchUrl(
+                      Uri.parse(paymentCtx.checkoutUrl),
+                      mode: LaunchMode.externalApplication,
+                    );
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Could not open payment page. Try again later.'),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            );
+          }
         }
       },
       child: Scaffold(
@@ -319,8 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     ServanaHomeSearch(
-                      onTap: () =>
-                          context.pushNamed(SearchScreen.routeName),
+                      onTap: () => context.pushNamed(SearchScreen.routeName),
                       animate: true,
                       animationDelay: const Duration(milliseconds: 160),
                     ),
@@ -434,8 +476,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFeaturedSection() {
     return Observer(builder: (ctx) {
-      final bwItems =
-          bwStore.bookableOptions.map((o) => _FeaturedItem(raw: o, isAircon: false));
+      final bwItems = bwStore.bookableOptions
+          .map((o) => _FeaturedItem(raw: o, isAircon: false));
       final airconItems = airconStore.bookableOptions
           .map((o) => _FeaturedItem(raw: o, isAircon: true));
       final all = [...bwItems, ...airconItems].take(12).toList();

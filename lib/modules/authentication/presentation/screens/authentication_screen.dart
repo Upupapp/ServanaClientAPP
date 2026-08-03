@@ -1,5 +1,7 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:client/common/domain/auth/auth_identifier.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,6 +39,25 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
   // Whether the current identifier input looks like a mobile number.
   bool _isMobileInput = false;
+
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
 
   void _onIdentifierChanged(String value) {
     setState(() {
@@ -98,6 +119,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
+                    tooltip: 'Go back',
                     onPressed: () {
                       context.goNamed(WelcomeScreen.routeName);
                     },
@@ -197,20 +219,29 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                 label: 'Password',
                                 inputType: TextInputType.visiblePassword,
                                 obscureText: !_isPassVisible,
-                                trailing: InkWell(
-                                  onTap: () {
-                                    setState(
-                                        () => _isPassVisible = !_isPassVisible);
-                                  },
-                                  child: _isPassVisible
-                                      ? Icon(
-                                          Icons.visibility_off_rounded,
-                                          color: ColorPalette.primaryColorDark,
-                                        )
-                                      : Icon(
-                                          Icons.visibility_rounded,
-                                          color: ColorPalette.primaryColorDark,
-                                        ),
+                                trailing: Semantics(
+                                  label: _isPassVisible
+                                      ? 'Hide password'
+                                      : 'Show password',
+                                  button: true,
+                                  excludeSemantics: true,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() =>
+                                          _isPassVisible = !_isPassVisible);
+                                    },
+                                    child: _isPassVisible
+                                        ? Icon(
+                                            Icons.visibility_off_rounded,
+                                            color:
+                                                ColorPalette.primaryColorDark,
+                                          )
+                                        : Icon(
+                                            Icons.visibility_rounded,
+                                            color:
+                                                ColorPalette.primaryColorDark,
+                                          ),
+                                  ),
                                 ),
                                 onChange: (value) {
                                   setState(() => _password = value);
@@ -220,20 +251,25 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                               // Forgot password
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: GestureDetector(
-                                  onTap: _showForgotPasswordInfo,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8, horizontal: 4),
-                                    child: Text(
-                                      'Forgot password?',
-                                      style: TextStyle(
-                                        fontFamily:
-                                            FontPalette.primaryFontFamily,
-                                        fontSize: 13,
-                                        color: ColorPalette.primaryColorDark,
-                                        fontWeight: FontWeight.w500,
+                                child: Semantics(
+                                  label: 'Forgot password',
+                                  button: true,
+                                  excludeSemantics: true,
+                                  child: GestureDetector(
+                                    onTap: _showForgotPasswordInfo,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8, horizontal: 4),
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          fontSize: 13,
+                                          color: ColorPalette.primaryColorDark,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -310,47 +346,186 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                 builder: (context, state) {
                                   final isLoading =
                                       state is AuthenticationLoading;
-                                  return PrimaryButton(
-                                    width: 250,
-                                    text: 'Sign In',
-                                    onClick:
-                                        isLoading ? null : () => _submit(bloc),
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      PrimaryButton(
+                                        width: 250,
+                                        text: 'Sign In',
+                                        onClick: isLoading
+                                            ? null
+                                            : () => _submit(bloc),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // Social sign-in divider
+                                      Row(
+                                        children: [
+                                          const Expanded(child: Divider()),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12),
+                                            child: Text(
+                                              'or continue with',
+                                              style: TextStyle(
+                                                fontFamily: FontPalette
+                                                    .primaryFontFamily,
+                                                color:
+                                                    ColorPalette.secondaryText,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                          const Expanded(child: Divider()),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Google sign-in button — disabled during loading
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 50,
+                                        child: OutlinedButton(
+                                          onPressed: isLoading
+                                              ? null
+                                              : () =>
+                                                  bloc.add(AuthGoogleSignIn()),
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(
+                                                color: Colors.grey.shade400),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // Google "G" logo
+                                              Container(
+                                                width: 22,
+                                                height: 22,
+                                                alignment: Alignment.center,
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xFF4285F4),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: const Text(
+                                                  'G',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    height: 1,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                'Continue with Google',
+                                                style: TextStyle(
+                                                  fontFamily: FontPalette
+                                                      .primaryFontFamily,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+
+                                      // Facebook sign-in button — disabled during loading
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 50,
+                                        child: OutlinedButton(
+                                          onPressed: isLoading
+                                              ? null
+                                              : () => bloc
+                                                  .add(AuthFacebookSignIn()),
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(
+                                                color: Colors.grey.shade400),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(Icons.facebook,
+                                                  color: Color(0xFF1877F2),
+                                                  size: 24),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                'Continue with Facebook',
+                                                style: TextStyle(
+                                                  fontFamily: FontPalette
+                                                      .primaryFontFamily,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
                                   );
                                 },
                               ),
-                              const SizedBox(height: 16),
 
                               // Sign up link
-                              GestureDetector(
-                                onTap: () => context
-                                    .goNamed(CreateAccountScreen.routeName),
-                                behavior: HitTestBehavior.opaque,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 4),
-                                  child: Text.rich(
-                                    TextSpan(
-                                      text: "Don't have an account? ",
-                                      style: TextStyle(
-                                        fontFamily:
-                                            FontPalette.primaryFontFamily,
-                                        color: ColorPalette.secondaryText,
-                                        fontSize: 14,
-                                      ),
-                                      children: [
-                                        TextSpan(
-                                          text: 'Sign up',
-                                          style: TextStyle(
-                                            fontFamily:
-                                                FontPalette.primaryFontFamily,
-                                            color:
-                                                ColorPalette.primaryColorDark,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                              Semantics(
+                                label: 'Create an account',
+                                button: true,
+                                excludeSemantics: true,
+                                child: GestureDetector(
+                                  onTap: () => context
+                                      .goNamed(CreateAccountScreen.routeName),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 4),
+                                    child: Text.rich(
+                                      TextSpan(
+                                        text: "Don't have an account? ",
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          color: ColorPalette.secondaryText,
+                                          fontSize: 14,
                                         ),
-                                      ],
+                                        children: [
+                                          TextSpan(
+                                            text: 'Sign up',
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  FontPalette.primaryFontFamily,
+                                              color:
+                                                  ColorPalette.primaryColorDark,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
@@ -374,6 +549,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         style: TextStyle(
                                           color: ColorPalette.primaryColorDark,
                                         ),
+                                        recognizer: _termsRecognizer,
                                       ),
                                       const TextSpan(text: ' and '),
                                       TextSpan(
@@ -381,6 +557,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                         style: TextStyle(
                                           color: ColorPalette.primaryColorDark,
                                         ),
+                                        recognizer: _privacyRecognizer,
                                       ),
                                     ],
                                   ),

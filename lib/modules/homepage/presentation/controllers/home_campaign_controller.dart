@@ -27,8 +27,7 @@ class HomeCampaignController {
     _sessionDismissed.add(key);
   }
 
-  Future<void> markDismissed(HomeCampaign campaign,
-      {String? accountId}) async {
+  Future<void> markDismissed(HomeCampaign campaign, {String? accountId}) async {
     _spotlightShownThisSession = true;
     final key = _dismissedKey(campaign.id, campaign.version, accountId);
     _sessionDismissed.add(key);

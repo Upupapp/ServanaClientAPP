@@ -62,7 +62,8 @@ class _PermissionsScreenState extends State<PermissionsScreen>
         };
       });
     } catch (_) {
-      if (mounted) setState(() => _locationStatus = PermissionStatus.unavailable);
+      if (mounted)
+        setState(() => _locationStatus = PermissionStatus.unavailable);
     }
   }
 
@@ -124,7 +125,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       body: ListView(
         children: [
           const SizedBox(height: 8),
-
           SettingsSectionHeader('Location'),
           SettingsGroup(children: [
             SettingsPermissionTile(
@@ -132,14 +132,12 @@ class _PermissionsScreenState extends State<PermissionsScreen>
               title: 'Location',
               purpose: 'Used to assist with address entry and coverage',
               status: _locationStatus,
-              onOpenSettings:
-                  _locationStatus == PermissionStatus.denied ||
-                          _locationStatus == PermissionStatus.restricted
-                      ? _openSystemSettings
-                      : null,
+              onOpenSettings: _locationStatus == PermissionStatus.denied ||
+                      _locationStatus == PermissionStatus.restricted
+                  ? _openSystemSettings
+                  : null,
             ),
           ]),
-
           if (_locationStatus == PermissionStatus.denied)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -154,7 +152,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 ),
               ),
             ),
-
           SettingsSectionHeader('Notifications'),
           SettingsGroup(children: [
             SettingsPermissionTile(
@@ -184,7 +181,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 ),
               ),
             ),
-
           SettingsSectionHeader('Camera & Photos'),
           SettingsGroup(children: [
             SettingsNavTile(
@@ -208,7 +204,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
               ),
             ),
           ),
-
           const SizedBox(height: 32),
         ],
       ),

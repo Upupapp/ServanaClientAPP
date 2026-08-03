@@ -2,7 +2,8 @@ import 'package:client/modules/landing/domain/welcome_motion_mode.dart';
 import 'package:client/modules/landing/presentation/controllers/welcome_experience_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-WelcomeExperienceController _make([WelcomeMotionMode mode = WelcomeMotionMode.full]) =>
+WelcomeExperienceController _make(
+        [WelcomeMotionMode mode = WelcomeMotionMode.full]) =>
     WelcomeExperienceController(motionMode: mode);
 
 void main() {

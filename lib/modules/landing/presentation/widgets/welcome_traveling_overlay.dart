@@ -174,8 +174,10 @@ class _TravelingCard extends StatelessWidget {
           final t01 = controller.travelProgress(0, 1);
           final t12 = controller.travelProgress(1, 2);
 
-          final ax = _lerp3(anchorScene0.dx, anchorScene1.dx, anchorScene2.dx, t01, t12);
-          final ay = _lerp3(anchorScene0.dy, anchorScene1.dy, anchorScene2.dy, t01, t12);
+          final ax = _lerp3(
+              anchorScene0.dx, anchorScene1.dx, anchorScene2.dx, t01, t12);
+          final ay = _lerp3(
+              anchorScene0.dy, anchorScene1.dy, anchorScene2.dy, t01, t12);
 
           // Cards fade out in scene 2 (booking confirmation doesn't show them)
           final op = (1.0 - t12 * 0.85).clamp(0.0, 1.0);

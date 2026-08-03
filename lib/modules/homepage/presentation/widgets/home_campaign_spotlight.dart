@@ -45,8 +45,7 @@ class _CampaignSpotlightPage extends StatefulWidget {
   });
 
   @override
-  State<_CampaignSpotlightPage> createState() =>
-      _CampaignSpotlightPageState();
+  State<_CampaignSpotlightPage> createState() => _CampaignSpotlightPageState();
 }
 
 class _CampaignSpotlightPageState extends State<_CampaignSpotlightPage>
@@ -102,6 +101,7 @@ class _CampaignSpotlightPageState extends State<_CampaignSpotlightPage>
                       Semantics(
                         label: 'Close promotion',
                         button: true,
+                        excludeSemantics: true,
                         child: GestureDetector(
                           onTap: widget.onDismiss,
                           child: Container(

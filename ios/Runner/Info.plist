@@ -29,8 +29,48 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- Google Maps: inject GOOGLE_MAPS_API_KEY via CI secret or local
+	     build environment (e.g. Flutter --dart-define or a pre-build script
+	     that writes RunnerConfig/Secrets.xcconfig). Never commit the real key. -->
 	<key>GMSApiKey</key>
-	<string>AIzaSyBl1ZmjZpUJ683IJak5S7ny5xj6iShBjP0</string>
+	<string>REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
+	<!-- Google Sign-In: Replace REVERSED_CLIENT_ID with value from GoogleService-Info.plist
+	     after enabling Google Sign-In in Firebase Console > Authentication > Sign-in method -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.320379709991-7npea534t292ocslpmonotq3ac9s85do</string>
+			</array>
+		</dict>
+		<!-- Facebook Sign-In: Replace FB_APP_ID with your Facebook App ID
+		     from developers.facebook.com after creating a Facebook App -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb2048115409245680</string>
+			</array>
+		</dict>
+	</array>
+	<key>FacebookAppID</key>
+	<string>2048115409245680</string>
+	<key>FacebookClientToken</key>
+	<string>85785ea054884504017e00d1907ea9b5</string>
+	<key>FacebookDisplayName</key>
+	<string>Servana</string>
+	<!-- Allow Facebook SDK to query installed apps -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>

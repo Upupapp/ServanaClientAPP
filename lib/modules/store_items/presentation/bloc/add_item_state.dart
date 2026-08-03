@@ -3,7 +3,7 @@ import 'package:client/common/data/models/merchant_service.dart';
 sealed class AddItemState {
   const AddItemState();
 
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => const [];
 }
 
 class InitialAddItemState extends AddItemState {

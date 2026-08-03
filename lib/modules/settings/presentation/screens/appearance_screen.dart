@@ -36,7 +36,6 @@ class AppearanceScreen extends StatelessWidget {
           body: ListView(
             children: [
               const SizedBox(height: 8),
-
               SettingsSectionHeader('Theme'),
               SettingsGroup(children: [
                 _ThemeOption(
@@ -65,7 +64,6 @@ class AppearanceScreen extends StatelessWidget {
                   reason: 'Dark mode is being added in a future update',
                 ),
               ]),
-
               SettingsSectionHeader('Interaction'),
               SettingsGroup(children: [
                 SettingsToggleTile(
@@ -79,7 +77,6 @@ class AppearanceScreen extends StatelessWidget {
                   },
                 ),
               ]),
-
               const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -127,8 +124,7 @@ class _ThemeOption extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
               Icon(

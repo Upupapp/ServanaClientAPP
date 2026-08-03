@@ -296,20 +296,21 @@ class JobOrderBloc extends Bloc<JOEvent, JOState> {
       options: toSelectOptions,
     );
 
-    // Create a mock booking to show in the booking history immediately
+    // Optimistic UI: insert a local placeholder booking so the customer sees
+    // their booking appear immediately without waiting for the next poll.
+    // The placeholder ID starts with 'pending_' so downstream code can
+    // distinguish it. loadBookings() will upsert the real record from the
+    // backend, replacing this entry by ID when it arrives.
     final store = dpLocator<HomeStore>();
 
-    // Generate a mock job order ID and number
-    final mockId = 'mock_${DateTime.now().millisecondsSinceEpoch}';
-    final mockNumber =
+    final pendingId = 'pending_${DateTime.now().millisecondsSinceEpoch}';
+    final pendingNumber =
         'JO${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
-    // Get the first service name for display (or combine multiple)
     final serviceName = joServices.isNotEmpty
         ? joServices.map((s) => s.serviceName).join(', ')
         : 'Service';
 
-    // Calculate total amount from services and options
     final totalAmount = joServices.fold<double>(
           0,
           (sum, item) => sum + item.amount + item.transportaion,
@@ -319,13 +320,11 @@ class JobOrderBloc extends Bloc<JOEvent, JOState> {
           (sum, option) => sum + option.amount + option.baseFair,
         );
 
-    // Use merchant name from the event
     final merchantName = event.merchantName;
 
-    // Create a mock JobOrder
-    final mockBooking = JobOrder(
-      jobOrderID: mockId,
-      jobOrderNumber: mockNumber,
+    final pendingBooking = JobOrder(
+      jobOrderID: pendingId,
+      jobOrderNumber: pendingNumber,
       merchantName: merchantName,
       merchantID: event.merchantId,
       scheduleDate: event.schedule,
@@ -344,9 +343,7 @@ class JobOrderBloc extends Bloc<JOEvent, JOState> {
       createdDate: DateTime.now(),
     );
 
-    // Optimistically add to store so it appears immediately; upserts by ID
-    // so the real booking replaces it when loadBookings() next succeeds.
-    store.addBooking(mockBooking);
+    store.addBooking(pendingBooking);
 
     emit(const DoneJOState(""));
   }

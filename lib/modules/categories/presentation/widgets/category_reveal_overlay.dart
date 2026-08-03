@@ -1,3 +1,6 @@
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
 import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:flutter/material.dart';
@@ -37,9 +40,8 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
     final dur = _reduced
         ? const Duration(milliseconds: 120)
         : const Duration(milliseconds: 600);
-    final decorDur = _reduced
-        ? Duration.zero
-        : const Duration(milliseconds: 1200);
+    final decorDur =
+        _reduced ? Duration.zero : const Duration(milliseconds: 1200);
 
     _fadeCtrl = AnimationController(vsync: this, duration: dur);
     _scaleCtrl = AnimationController(
@@ -55,13 +57,22 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
     _fadeCtrl.forward();
     if (!_reduced) {
       _scaleCtrl.forward();
-      Future.delayed(const Duration(milliseconds: 200),
-          () => _decorCtrl.forward());
+      Future.delayed(
+          const Duration(milliseconds: 200), () => _decorCtrl.forward());
     }
 
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) setState(() => _tapProtected = false);
     });
+
+    _track(
+        CategoryRevealShownEvent(categoryKey: widget.config.categoryId.name));
+  }
+
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   @override
@@ -127,7 +138,8 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            if (!_reduced) _CategoryDecoration(config: widget.config, progress: _decor),
+            if (!_reduced)
+              _CategoryDecoration(config: widget.config, progress: _decor),
             Padding(
               padding: const EdgeInsets.all(32),
               child: Column(
@@ -202,8 +214,7 @@ class _CategoryDecoration extends StatelessWidget {
   final CategoryPresentationConfig config;
   final Animation<double> progress;
 
-  const _CategoryDecoration(
-      {required this.config, required this.progress});
+  const _CategoryDecoration({required this.config, required this.progress});
 
   @override
   Widget build(BuildContext context) {

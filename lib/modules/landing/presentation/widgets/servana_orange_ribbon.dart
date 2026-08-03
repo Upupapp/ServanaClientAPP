@@ -105,7 +105,8 @@ class _RibbonPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..shader = gradient;
 
-    canvas.saveLayer(Rect.fromLTWH(0, 0, w, h), Paint()..color = Colors.white.withOpacity(opacity));
+    canvas.saveLayer(Rect.fromLTWH(0, 0, w, h),
+        Paint()..color = Colors.white.withOpacity(opacity));
     canvas.drawPath(path, paint);
     canvas.restore();
 

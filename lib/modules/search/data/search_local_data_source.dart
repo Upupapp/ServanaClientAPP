@@ -12,9 +12,8 @@ class SearchLocalDataSource {
   static Future<void> addTerm(String term) async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getStringList(_kHistoryKey) ?? [];
-    final updated = [term, ...existing.where((t) => t != term)]
-        .take(_kMaxHistory)
-        .toList();
+    final updated =
+        [term, ...existing.where((t) => t != term)].take(_kMaxHistory).toList();
     await prefs.setStringList(_kHistoryKey, updated);
   }
 

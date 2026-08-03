@@ -24,7 +24,8 @@ class CategoryQuickActionsSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (chips.length <= 1) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (chips.length <= 1)
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
 
     return SliverPersistentHeader(
       pinned: true,
@@ -85,14 +86,11 @@ class _ChipBarDelegate extends SliverPersistentHeaderDelegate {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? accentColor
-                      : accentColor.withOpacity(0.08),
+                  color: selected ? accentColor : accentColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: selected
-                        ? accentColor
-                        : accentColor.withOpacity(0.2),
+                    color:
+                        selected ? accentColor : accentColor.withOpacity(0.2),
                     width: 1.2,
                   ),
                 ),
@@ -100,8 +98,7 @@ class _ChipBarDelegate extends SliverPersistentHeaderDelegate {
                   chip.label,
                   style: TextStyle(
                     color: selected ? Colors.white : accentColor,
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 13,
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_dialogs/material_dialogs.dart';
 import 'package:material_dialogs/widgets/buttons/icon_button.dart';
 import 'package:client/common/constants/color_palette.dart';
+import 'package:client/core/accessibility/focus_coordinator.dart';
 
 class LogoutDialog {
   static void showDialog({
@@ -10,6 +11,7 @@ class LogoutDialog {
     void Function()? onConfirm,
     void Function()? onCancel,
   }) {
+    final priorFocus = FocusScope.of(context).focusedChild;
     Dialogs.bottomMaterialDialog(
         msg: 'Are you sure you want to logout?',
         title: 'Logout',
@@ -19,6 +21,7 @@ class LogoutDialog {
             onPressed: () {
               onCancel?.call();
               context.pop();
+              FocusCoordinator.restoreToNode(priorFocus);
             },
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),

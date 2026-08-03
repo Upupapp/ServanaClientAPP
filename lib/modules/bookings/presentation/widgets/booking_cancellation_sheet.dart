@@ -2,6 +2,7 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/core/accessibility/focus_coordinator.dart';
 import 'package:flutter/material.dart';
 
 /// Modal bottom sheet that collects a cancellation reason and calls the
@@ -30,6 +31,7 @@ class BookingCancellationSheet extends StatefulWidget {
     required String bookingId,
     required VoidCallback onCancelled,
   }) {
+    final priorFocus = FocusScope.of(context).focusedChild;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -40,7 +42,7 @@ class BookingCancellationSheet extends StatefulWidget {
         bookingId: bookingId,
         onCancelled: onCancelled,
       ),
-    );
+    ).whenComplete(() => FocusCoordinator.restoreToNode(priorFocus));
   }
 
   @override

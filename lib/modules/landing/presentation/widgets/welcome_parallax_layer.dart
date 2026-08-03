@@ -45,10 +45,13 @@ class WelcomeParallaxLayer extends StatelessWidget {
         builder: (_, Widget? stable) {
           final width = MediaQuery.sizeOf(context).width;
           final height = MediaQuery.sizeOf(context).height;
-          final dx = controller.parallaxOffset(pageIndex, parallaxFactor, width);
+          final dx =
+              controller.parallaxOffset(pageIndex, parallaxFactor, width);
           // Subtle vertical: deeper layers drift slightly upward while swiping.
           final dy = verticalFactor > 0
-              ? -((controller.pageProgress - pageIndex).abs()) * height * verticalFactor
+              ? -((controller.pageProgress - pageIndex).abs()) *
+                  height *
+                  verticalFactor
               : 0.0;
           return Transform.translate(
             offset: Offset(dx, dy),

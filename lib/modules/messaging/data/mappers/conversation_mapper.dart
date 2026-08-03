@@ -17,9 +17,14 @@ class ConversationMapper {
     return ConversationModel(
       id: id,
       bookingId: bookingId,
-      unreadCount: (json['unreadCount'] as num? ?? json['unread_count'] as num? ?? 0).toInt(),
-      isClosed: (json['isClosed'] as bool? ?? json['is_closed'] as bool? ?? false),
-      lastMessageAt: rawLastMsgAt != null ? DateTime.tryParse(rawLastMsgAt.toString())?.toLocal() : null,
+      unreadCount:
+          (json['unreadCount'] as num? ?? json['unread_count'] as num? ?? 0)
+              .toInt(),
+      isClosed:
+          (json['isClosed'] as bool? ?? json['is_closed'] as bool? ?? false),
+      lastMessageAt: rawLastMsgAt != null
+          ? DateTime.tryParse(rawLastMsgAt.toString())?.toLocal()
+          : null,
       lastMessage: lastMessage,
     );
   }

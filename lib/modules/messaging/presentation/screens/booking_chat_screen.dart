@@ -2,6 +2,8 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/responsive/servana_responsive.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/message_events.dart';
 import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/messaging/data/models/message_model.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
@@ -76,6 +78,11 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
         _resolving = false;
       });
 
+      _track(const ConversationOpenedEvent(
+        bookingStatusCategory: 'unknown',
+        entrySource: 'chat_screen',
+      ));
+
       // Mark as read on open.
       _store.markRead(conv.id);
 
@@ -138,6 +145,12 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
     );
   }
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _conversationId == null) return;
@@ -157,6 +170,7 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
+          tooltip: 'Go back',
           icon: Icon(Icons.chevron_left,
               color: ColorPalette.primaryColorDark, size: 32),
         ),
@@ -172,7 +186,8 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
           // Connection indicator
           Observer(
             builder: (_) {
-              final connected = _store.messagesByConvId[_conversationId] != null;
+              final connected =
+                  _store.messagesByConvId[_conversationId] != null;
               return Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Tooltip(
@@ -294,8 +309,8 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
                     color: ColorPalette.secondaryText.withOpacity(.5),
                     fontWeight: FontWeight.w600,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   filled: true,
                   fillColor: ColorPalette.secondaryColor,
                   border: OutlineInputBorder(
@@ -461,31 +476,27 @@ class _MessageBubble extends StatelessWidget {
         isMe ? ColorPalette.primaryColor : ColorPalette.secondaryColor;
     final textColor =
         isMe ? ColorPalette.primaryText : ColorPalette.secondaryText;
-    final align =
-        isMe ? Alignment.centerRight : Alignment.centerLeft;
+    final align = isMe ? Alignment.centerRight : Alignment.centerLeft;
     final senderLabel = isMe ? 'Client' : providerLabel;
 
     final statusIcon = _statusIcon(message.sendStatus, isMe);
 
     return Semantics(
-      label:
-          '$senderLabel at ${timeFormat.format(message.createdAt)}: $body'
+      label: '$senderLabel at ${timeFormat.format(message.createdAt)}: $body'
           '${message.isPending ? ", sending" : ""}${message.isFailed ? ", failed to send" : ""}',
       child: Align(
         alignment: align,
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           constraints: BoxConstraints(maxWidth: bubbleMax),
           decoration: BoxDecoration(
             color: bubbleColor.withOpacity(message.isPending ? .6 : 1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
-            crossAxisAlignment: isMe
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Text(
                 senderLabel,
@@ -502,11 +513,8 @@ class _MessageBubble extends StatelessWidget {
                 body,
                 style: TextStyle(
                   fontFamily: FontPalette.primaryFontFamily,
-                  color: isDeleted
-                      ? textColor.withOpacity(.5)
-                      : textColor,
-                  fontStyle:
-                      isDeleted ? FontStyle.italic : FontStyle.normal,
+                  color: isDeleted ? textColor.withOpacity(.5) : textColor,
+                  fontStyle: isDeleted ? FontStyle.italic : FontStyle.normal,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
@@ -531,17 +539,22 @@ class _MessageBubble extends StatelessWidget {
                 ],
               ),
               if (message.isFailed && onRetry != null)
-                GestureDetector(
-                  onTap: onRetry,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Tap to retry',
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        color: Colors.red.shade300,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                Semantics(
+                  label: 'Retry sending message',
+                  button: true,
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: onRetry,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Tap to retry',
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          color: Colors.red.shade300,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

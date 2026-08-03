@@ -4,18 +4,19 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
+import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
 import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
 import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
+import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart'
     show LatLong;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RewardsScreen extends StatelessWidget {
@@ -180,12 +181,14 @@ class SavedAddressesScreen extends StatefulWidget {
 
 class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   final _api = dpLocator<ServanaApiClient>();
+  late final AddressController _addrCtrl;
   List<Map<String, dynamic>> _addresses = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _addrCtrl = dpLocator<AddressController>();
     _loadAddresses();
   }
 
@@ -200,6 +203,8 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
+    // Keep the controller in sync so ProfileController.completeness is accurate.
+    _addrCtrl.loadAddresses().ignore();
   }
 
   @override
@@ -412,13 +417,13 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   }
 
   Future<void> _setDefault(String addressId) async {
-    try {
-      await _api.makeAddressPrimary(addressId: addressId);
+    final ok = await _addrCtrl.setPrimaryAddress(addressId);
+    if (!mounted) return;
+    if (ok) {
       await _loadAddresses();
-    } catch (e) {
-      if (!mounted) return;
+    } else if (_addrCtrl.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to set default: $e')),
+        SnackBar(content: Text(_addrCtrl.error!)),
       );
     }
   }
@@ -445,7 +450,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
     if (confirm != true) return;
 
     try {
-      await _api.deleteAddress(addressId: addressId);
+      await _addrCtrl.deleteAddress(addressId);
       await _loadAddresses();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -485,7 +490,6 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 8),
-
           _SettingsSectionLabel('Account'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -498,7 +502,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Preferences'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -520,7 +523,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Permissions'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -533,7 +535,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Security'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -545,7 +546,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           _SettingsSectionLabel('Legal & Info'),
           _SettingsGroup(children: [
             _SettingsNavItem(
@@ -565,7 +565,6 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-
           const SizedBox(height: 32),
         ],
       ),
@@ -707,7 +706,6 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
-  static const _prefKey = 'settings_language';
   String _selected = 'English';
 
   static const _options = [
@@ -719,19 +717,14 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_prefKey) ?? 'English';
-    if (mounted) setState(() => _selected = saved);
+    // Read current value from SettingsController so it stays in sync.
+    _selected = dpLocator<SettingsController>().language;
   }
 
   Future<void> _select(String name) async {
+    if (!mounted) return;
     setState(() => _selected = name);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefKey, name);
+    await dpLocator<SettingsController>().setLanguage(name);
   }
 
   @override
@@ -880,6 +873,16 @@ class HelpSupportScreen extends StatefulWidget {
 }
 
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
+  // Replaced by SupportHomeScreen — redirect immediately on first frame.
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.push('/support');
+    });
+  }
+
   int? _expanded;
 
   static const _faqs = [

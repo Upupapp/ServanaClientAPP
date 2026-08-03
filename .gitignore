@@ -50,3 +50,8 @@ app.*.map.json
 # Local machine config — never commit Windows/Mac absolute paths
 /android/local.properties
 /android/key.properties
+
+# Firebase credentials — must never be committed; inject via CI or flutterfire configure
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist

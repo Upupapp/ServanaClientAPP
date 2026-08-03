@@ -1,5 +1,7 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -9,6 +11,7 @@ import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/custom_text_field.dart';
 import 'package:client/common/presentation/widgets/primary_button.dart';
+import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_events.dart';
@@ -30,11 +33,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   late TooltipController _toolTipController;
   String _firstName = '';
   String _lastName = '';
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
 
   @override
   void initState() {
     final bloc = BlocProvider.of<RegistrationBloc>(context);
     _toolTipController = TooltipController();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
 
     final existing = (bloc.registration.ownerName ?? '').trim();
     if (existing.isNotEmpty) {
@@ -63,6 +72,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final bloc = dpLocator<RegistrationBloc>();
     bloc.add(const ValidationReset());
     _toolTipController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -78,6 +89,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
+                    tooltip: 'Go back',
                     onPressed: () {
                       context.goNamed(WelcomeScreen.routeName);
                     },
@@ -358,6 +370,38 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             const SizedBox(
                               height: 20,
                             ),
+                            GestureDetector(
+                              onTap: () => context
+                                  .goNamed(AuthenticationScreen.routeName),
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 4),
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: 'Already have an account? ',
+                                    style: TextStyle(
+                                      fontFamily: FontPalette.primaryFontFamily,
+                                      color: ColorPalette.secondaryText,
+                                      fontSize: 14,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Sign in',
+                                        style: TextStyle(
+                                          fontFamily:
+                                              FontPalette.primaryFontFamily,
+                                          color: ColorPalette.primaryColorDark,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                             Container(
                               margin:
                                   const EdgeInsets.symmetric(horizontal: 20),
@@ -376,6 +420,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       style: TextStyle(
                                         color: ColorPalette.primaryColorDark,
                                       ),
+                                      recognizer: _termsRecognizer,
                                     ),
                                     const TextSpan(text: " and "),
                                     TextSpan(
@@ -383,6 +428,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       style: TextStyle(
                                         color: ColorPalette.primaryColorDark,
                                       ),
+                                      recognizer: _privacyRecognizer,
                                     ),
                                   ],
                                 ),

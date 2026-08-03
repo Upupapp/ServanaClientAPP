@@ -78,8 +78,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _selectHistory(String term) {
     _textCtrl.text = term;
-    _textCtrl.selection =
-        TextSelection.collapsed(offset: term.length);
+    _textCtrl.selection = TextSelection.collapsed(offset: term.length);
     _ctrl.selectHistory(term);
     _focusNode.unfocus();
   }
@@ -124,11 +123,16 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => context.pop(),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.arrow_back,
-                    color: Colors.white, size: 26),
+              Semantics(
+                label: 'Go back',
+                button: true,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () => context.pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.arrow_back,
+                      color: Colors.white, size: 26),
+                ),
               ),
               Expanded(
                 child: Text(
@@ -142,12 +146,16 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () =>
-                    context.pushNamed(NotificationsScreen.routeName),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 26),
+              Semantics(
+                label: 'View notifications',
+                button: true,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () => context.pushNamed(NotificationsScreen.routeName),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.notifications_outlined,
+                      color: Colors.white, size: 26),
+                ),
               ),
             ],
           ),
@@ -197,8 +205,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       hintStyle: TextStyle(
                         fontFamily: FontPalette.primaryFontFamily,
                         fontSize: 14,
-                        color: ColorPalette.secondaryText
-                            .withOpacity(0.45),
+                        color: ColorPalette.secondaryText.withOpacity(0.45),
                       ),
                     ),
                   ),
@@ -208,11 +215,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     onTap: _clearQuery,
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: Icon(Icons.close,
-                          color: ColorPalette.secondaryText
-                              .withOpacity(0.5),
+                          color: ColorPalette.secondaryText.withOpacity(0.5),
                           size: 18),
                     ),
                   ),
@@ -225,11 +230,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildBody() => switch (_ctrl.state) {
-    SearchLoadState.idle || SearchLoadState.loading => _buildLoading(),
-    SearchLoadState.error => _buildError(),
-    SearchLoadState.ready =>
-      _ctrl.hasQuery ? _buildResults() : _buildDiscovery(),
-  };
+        SearchLoadState.idle || SearchLoadState.loading => _buildLoading(),
+        SearchLoadState.error => _buildError(),
+        SearchLoadState.ready =>
+          _ctrl.hasQuery ? _buildResults() : _buildDiscovery(),
+      };
 
   Widget _buildLoading() {
     return const Center(child: CircularProgressIndicator());
@@ -243,8 +248,7 @@ class _SearchScreenState extends State<SearchScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.wifi_off_outlined,
-                size: 48,
-                color: ColorPalette.secondaryText.withOpacity(0.4)),
+                size: 48, color: ColorPalette.secondaryText.withOpacity(0.4)),
             const SizedBox(height: 12),
             Text(
               'Could not load services. Check your connection and try again.',
@@ -286,8 +290,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      for (final t
-                          in List<String>.from(_ctrl.history)) {
+                      for (final t in List<String>.from(_ctrl.history)) {
                         _ctrl.removeHistory(t);
                       }
                     },
@@ -312,8 +315,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   dense: true,
                   leading: Icon(Icons.history,
                       size: 18,
-                      color: ColorPalette.secondaryText
-                          .withOpacity(0.5)),
+                      color: ColorPalette.secondaryText.withOpacity(0.5)),
                   title: Text(
                     term,
                     style: TextStyle(
@@ -322,12 +324,16 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: ColorPalette.secondaryText,
                     ),
                   ),
-                  trailing: GestureDetector(
-                    onTap: () => _ctrl.removeHistory(term),
-                    child: Icon(Icons.close,
-                        size: 16,
-                        color: ColorPalette.secondaryText
-                            .withOpacity(0.4)),
+                  trailing: Semantics(
+                    label: 'Remove "$term" from history',
+                    button: true,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      onTap: () => _ctrl.removeHistory(term),
+                      child: Icon(Icons.close,
+                          size: 16,
+                          color: ColorPalette.secondaryText.withOpacity(0.4)),
+                    ),
                   ),
                   onTap: () => _selectHistory(term),
                 );
@@ -368,8 +374,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: Colors.black.withOpacity(0.08)),
+                      border: Border.all(color: Colors.black.withOpacity(0.08)),
                     ),
                     child: Text(
                       chip.label,
@@ -414,41 +419,43 @@ class _SearchScreenState extends State<SearchScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _kChips.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: 8),
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
                   final chip = _kChips[i];
-                  final selected =
-                      _ctrl.categoryFilter == chip.id;
-                  return GestureDetector(
-                    onTap: () =>
-                        _ctrl.setCategoryFilter(chip.id),
-                    behavior: HitTestBehavior.opaque,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? ColorPalette.primaryColorDark
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                  final selected = _ctrl.categoryFilter == chip.id;
+                  return Semantics(
+                    label: chip.label,
+                    button: true,
+                    selected: selected,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      onTap: () => _ctrl.setCategoryFilter(chip.id),
+                      behavior: HitTestBehavior.opaque,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
                           color: selected
                               ? ColorPalette.primaryColorDark
-                              : Colors.black.withOpacity(0.08),
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: selected
+                                ? ColorPalette.primaryColorDark
+                                : Colors.black.withOpacity(0.08),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        chip.label,
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: selected
-                              ? Colors.white
-                              : ColorPalette.secondaryText,
+                        child: Text(
+                          chip.label,
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: selected
+                                ? Colors.white
+                                : ColorPalette.secondaryText,
+                          ),
                         ),
                       ),
                     ),
@@ -458,36 +465,38 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => _showSortSheet(context),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              height: 36,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: Colors.black.withOpacity(0.08)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.sort,
-                      size: 16,
-                      color: ColorPalette.secondaryText),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Sort',
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: ColorPalette.secondaryText,
+          Semantics(
+            label: 'Sort results',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: () => _showSortSheet(context),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black.withOpacity(0.08)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.sort,
+                        size: 16, color: ColorPalette.secondaryText),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Sort',
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: ColorPalette.secondaryText,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -514,8 +523,7 @@ class _SearchScreenState extends State<SearchScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: FontPalette.primaryFontFamily,
-                color: ColorPalette.secondaryText
-                    .withOpacity(0.6),
+                color: ColorPalette.secondaryText.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 12),
@@ -543,8 +551,7 @@ class _SearchScreenState extends State<SearchScreen> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           sliver: SliverGrid(
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -581,8 +588,7 @@ class _SearchScreenState extends State<SearchScreen> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
@@ -620,15 +626,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     fontFamily: FontPalette.primaryFontFamily,
                     fontSize: 15,
                     color: ColorPalette.secondaryText,
-                    fontWeight: s == current
-                        ? FontWeight.w700
-                        : FontWeight.w400,
+                    fontWeight:
+                        s == current ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
                 trailing: s == current
                     ? Icon(Icons.check,
-                        color: ColorPalette.primaryColorDark,
-                        size: 20)
+                        color: ColorPalette.primaryColorDark, size: 20)
                     : null,
                 onTap: () {
                   _ctrl.setSort(s);
@@ -644,8 +648,7 @@ class _SearchScreenState extends State<SearchScreen> {
 }
 
 class _SearchResultCard extends StatelessWidget {
-  const _SearchResultCard(
-      {required this.result, required this.onTap});
+  const _SearchResultCard({required this.result, required this.onTap});
 
   final SearchResult result;
   final VoidCallback onTap;
@@ -678,8 +681,7 @@ class _SearchResultCard extends StatelessWidget {
                       errorBuilder: (_, __, ___) => Container(
                         color: const Color(0xFFEEF2FF),
                         child: Icon(Icons.home_repair_service,
-                            color: ColorPalette.primaryColorDark,
-                            size: 36),
+                            color: ColorPalette.primaryColorDark, size: 36),
                       ),
                     ),
                   ),
@@ -708,11 +710,10 @@ class _SearchResultCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: ColorPalette.primaryColorDark
-                        .withOpacity(0.08),
+                    color: ColorPalette.primaryColorDark.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

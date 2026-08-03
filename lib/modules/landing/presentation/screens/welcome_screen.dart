@@ -1,8 +1,12 @@
+import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/servana_banner.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/common/presentation/widgets/servana_primary_button.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/common/services/motion_tokens.dart';
 import 'package:client/common/services/onboarding_state_service.dart';
+import 'package:client/core/analytics/events/home_events.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
@@ -40,6 +44,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     WelcomeSceneVisual.bookingJourney, // Scene 2: confirmed-booking benefits
   ];
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +57,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ? WelcomeMotionMode.staticMode
         : WelcomeMotionMode.full;
     _ctrl = WelcomeExperienceController(motionMode: mode);
+    _track(const OnboardingStartedEvent(entrySource: 'app_launch'));
+    _track(const OnboardingCardViewedEvent(cardKey: 'scene_0', stepNumber: 0));
+    _maybeShowConsentGate();
+  }
+
+  void _maybeShowConsentGate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      dpLocator<ConsentGateService>().maybeShow(
+        context,
+        dpLocator<AnalyticsCoordinator>(),
+      );
+    });
   }
 
   @override
@@ -79,6 +102,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _ctrl.lock();
     try {
       AppHaptics.medium();
+      _track(OnboardingSkippedEvent(stepNumber: _ctrl.currentPage));
       await OnboardingStateService.setStatus(OnboardingStatus.skippedToBrowse);
       if (!mounted) return;
       BlocProvider.of<AuthenticationBloc>(context).add(AuthBrowseAsGuest());
@@ -93,6 +117,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _ctrl.lock();
     try {
       AppHaptics.selection();
+      _track(const OnboardingCompletedEvent());
       await OnboardingStateService.setStatus(OnboardingStatus.completed);
       if (!mounted) return;
       context.goNamed(CreateAccountScreen.routeName);
@@ -123,7 +148,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               PageView.builder(
                 controller: _ctrl.pageController,
                 itemCount: _scenes.length,
-                onPageChanged: _ctrl.onPageChanged,
+                onPageChanged: (page) {
+                  _ctrl.onPageChanged(page);
+                  _track(OnboardingCardViewedEvent(
+                    cardKey: 'scene_$page',
+                    stepNumber: page,
+                  ));
+                },
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: (_, i) {
                   final img = Semantics(
@@ -267,8 +298,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                         // ── Primary CTA: Browse Services ──────────────────
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Semantics(
                             label: 'Browse services without signing in',
                             child: ServanaPrimaryButton(
@@ -282,8 +312,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                         // ── Secondary CTA: Create Account ─────────────────
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Semantics(
                             label: 'Create a new Servana account',
                             child: ServanaOutlinedButton(
@@ -413,8 +442,8 @@ class _ServiceCategoriesVisual extends StatelessWidget {
       runSpacing: 10,
       alignment: WrapAlignment.center,
       children: List.generate(_services.length, (i) {
-        final chip = _ServiceChip(
-            icon: _services[i].$1, label: _services[i].$2);
+        final chip =
+            _ServiceChip(icon: _services[i].$1, label: _services[i].$2);
         if (isStatic) return chip;
         return chip
             .animate(delay: Duration(milliseconds: i * 55))

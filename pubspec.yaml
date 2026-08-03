@@ -86,6 +86,7 @@ dependencies:
   flutter_mobx: ^2.2.1+1
   socket_io_client: ^2.0.3+1
   firebase_analytics: ^11.3.2
+  firebase_performance: ^0.10.0
   firebase_messaging: ^15.1.0
   phone_numbers_parser: ^9.0.0
   toastification: ^2.3.0
@@ -99,8 +100,12 @@ dependencies:
   webview_flutter: ^4.13.1
   url_launcher: ^6.2.5
   qr_flutter: ^4.1.0
+  crypto: ^3.0.5
   shared_preferences: ^2.3.2
   package_info_plus: ^8.0.0
+  firebase_auth: ^5.3.1
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -157,6 +162,7 @@ flutter:
     - assets/images/splash/
     - assets/images/states/
     - assets/images/welcome/
+    - assets/animations/
     - assets/icons/
     - assets/payment_icons/
     - assets/jsons/philippine-addresses/

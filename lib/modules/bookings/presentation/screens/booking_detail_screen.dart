@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/booking_events.dart';
+import 'package:client/modules/tracking/domain/tracking_args.dart';
 import 'package:client/common/presentation/responsive/servana_responsive.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
@@ -11,6 +14,8 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
+import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
+import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +54,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   int? _etaMinutes;
   DateTime? _assignedAt;
   String? _workerCode;
+  bool _hasReview = false;
+  bool _detailViewTracked = false;
 
   // Poll for worker assignment for up to ~60s after the screen opens, while
   // the booking is still in a pre-assignment state. Stops as soon as a
@@ -69,6 +76,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     });
   }
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     _pollTimer?.cancel();
@@ -86,6 +99,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   bool get _isAssigned => _workerUid != null && _workerUid!.isNotEmpty;
 
+  /// Whether the "Track Provider" button should be shown.
+  ///
+  /// Tracking is available when the booking is active (en route / arrived /
+  /// in progress) and a worker has been assigned.
+  bool get _isTrackable {
+    if (!_isAssigned) return false;
+    final s = BookingStatusMapper.fromString(_bookingStatus);
+    return s == BookingStatus.enRoute ||
+        s == BookingStatus.arrived ||
+        s == BookingStatus.inProgress ||
+        s == BookingStatus.awaitingCompletion;
+  }
+
   /// Allow cancellation only for pre-service states where the booking can still
   /// be cleanly voided.  In-progress and terminal states are excluded.
   bool get _isCancellable {
@@ -98,6 +124,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         s == BookingStatus.awaitingAssignment ||
         s == BookingStatus.assigned ||
         s == BookingStatus.confirmed;
+  }
+
+  bool get _isCompleted {
+    final s = _bookingStatus?.toUpperCase();
+    return s == 'COMPLETED' || s == 'REVIEWED';
   }
 
   bool get _shouldPoll {
@@ -128,8 +159,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
       final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
       final status = (b['status'] ?? '').toString().toUpperCase();
-      final workerUid =
-          b['workerUid']?.toString() ?? b['providerUid']?.toString();
+      final workerUid = b['workerUid']?.toString() ??
+          b['worker_uid']?.toString() ??
+          b['providerUid']?.toString();
       final eta = b['etaMinutes'];
       final assignedAtRaw = b['assignedAt']?.toString();
       final workerCode = b['workerCode']?.toString();
@@ -205,6 +237,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         }
 
         _bookingStatus = status.isEmpty ? _bookingStatus : status;
+        _hasReview = status == 'REVIEWED';
         if (workerUid != null && workerUid.isNotEmpty) {
           _workerUid = workerUid;
         }
@@ -220,6 +253,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       // First time we see a workerUid, look up the technician's name.
       if (_workerUid != null && _workerName == null) {
         unawaited(_loadWorkerProfile(_workerUid!));
+      }
+
+      // Track detail view once per screen visit.
+      if (!_detailViewTracked) {
+        _detailViewTracked = true;
+        _track(BookingDetailViewedEvent(
+            bookingStatusCategory:
+                (_bookingStatus ?? 'unknown').toLowerCase()));
       }
 
       // Also refresh the bookings list so the Bookings tab updates.
@@ -279,6 +320,22 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     });
   }
 
+  /// Navigate to the live tracking screen for this booking.
+  void _openTracking() {
+    context.push(
+      '/bookings/$_bookingId/track',
+      extra: TrackingArgs(
+        bookingId: _bookingId,
+        workerUid: _workerUid ?? '',
+        workerName: _workerName,
+        workerPhone: _workerPhone,
+        serviceAddress: _booking?.address,
+        serviceLatitude: _booking?.latitude,
+        serviceLongitude: _booking?.longitude,
+      ),
+    );
+  }
+
   /// Open the booking's chat conversation via C14 MessagingStore.
   Future<void> _openMessaging() async {
     try {
@@ -299,6 +356,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         // Refresh to surface the CANCELLED status.
         _refreshBooking();
       },
+    );
+  }
+
+  Future<void> _openReviewForm() async {
+    final b = _booking;
+    final reviewed = await context.pushNamed<bool>(
+      ReviewFormScreen.routeName,
+      queryParameters: {
+        'bookingId': _bookingId,
+        if (b != null)
+          'bookingLabel': 'Booking #$_bookingId — ${b.merchantServiceName}',
+      },
+    );
+    if (reviewed == true && mounted) _refreshBooking();
+  }
+
+  void _openReviewDetail() {
+    context.pushNamed(
+      ReviewDetailScreen.routeName,
+      queryParameters: {'bookingId': _bookingId},
     );
   }
 
@@ -394,6 +471,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             IconButton(
               onPressed: _refreshBooking,
               icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Refresh booking',
             ),
         ],
       ),
@@ -428,10 +506,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => setState(() => _refreshError = null),
-                      child: const Icon(Icons.close_rounded,
-                          size: 18, color: ColorPalette.danger),
+                    Semantics(
+                      label: 'Dismiss error',
+                      button: true,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _refreshError = null),
+                        child: const Icon(Icons.close_rounded,
+                            size: 18, color: ColorPalette.danger),
+                      ),
                     ),
                   ],
                 ),
@@ -585,6 +668,33 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ),
 
+            // Track Provider — available when booking is active (enRoute/arrived/inProgress).
+            if (_isTrackable) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _openTracking,
+                  icon: const Icon(Icons.location_on_rounded),
+                  label: Text(
+                    'Track Provider',
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorPalette.primaryColorDark,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
             // Message Provider — available once a technician is assigned.
             if (_isAssigned) ...[
               const SizedBox(height: 12),
@@ -624,6 +734,52 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     style: TextStyle(color: Colors.red),
                   ),
                 ),
+              ),
+            ],
+
+            // Leave a Review — available after completion, one per booking.
+            if (_isCompleted) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: _hasReview
+                    ? OutlinedButton.icon(
+                        onPressed: _openReviewDetail,
+                        icon: const Icon(Icons.star_rounded),
+                        label: Text(
+                          'View Your Review',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFF59E0B),
+                          side: const BorderSide(color: Color(0xFFF59E0B)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: _openReviewForm,
+                        icon: const Icon(Icons.star_outline_rounded),
+                        label: Text(
+                          'Leave a Review',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF59E0B),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
               ),
             ],
 

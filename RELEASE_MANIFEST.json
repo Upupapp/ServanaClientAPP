@@ -1,0 +1,21 @@
+{
+  "application": "Servana Client",
+  "repository": "Heatclift/ServanaClient",
+  "branch": "main",
+  "commitSha": "1eb2faa",
+  "version": "1.0.0",
+  "buildNumber": 35,
+  "environment": "production",
+  "backendBaseUrl": "https://api.servana.com.ph",
+  "socketUrl": "wss://api.servana.com.ph",
+  "apiContractVersion": "C23-compatible",
+  "firebaseProject": "servana-1d13b",
+  "androidApplicationId": "com.servana.serviceclient",
+  "iosBundleId": "com.servana.client",
+  "minimumAndroidSdk": 21,
+  "minimumIosDeploymentTarget": "13.0",
+  "releaseTag": "v1.0.0+35",
+  "releaseCommands": "C01-C23 (STABILIZE through RELEASEFORTRESS+)",
+  "certifiedAt": "2026-07-30T00:00:00Z",
+  "certifiedBy": "Claude Code / Engineering Lead"
+}

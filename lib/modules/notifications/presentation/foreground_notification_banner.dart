@@ -119,72 +119,99 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // [a11y] The banner is restructured as a Stack so the "dismiss" button
+    // lives outside the banner's own Semantics(excludeSemantics: true) node.
+    // This lets TalkBack / VoiceOver reach both independently:
+    //   1. Banner tap → navigates to notification detail.
+    //   2. Dismiss button → closes the banner (44×44 touch target).
     return Material(
       color: Colors.transparent,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: ColorPalette.secondaryText,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
+      child: Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          // ── Tappable banner body ──────────────────────────────────────────
+          Semantics(
+            label: '${notification.title}: ${notification.safeBody}',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                // Right padding reserves space for the 44 px dismiss button.
+                padding: const EdgeInsets.fromLTRB(14, 12, 58, 12),
                 decoration: BoxDecoration(
-                  color: ColorPalette.primaryColor.withOpacity(0.2),
-                  shape: BoxShape.circle,
+                  color: ColorPalette.secondaryText,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  Icons.notifications_rounded,
-                  size: 17,
-                  color: ColorPalette.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                child: Row(
                   children: [
-                    Text(
-                      notification.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: ColorPalette.primaryColor.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.notifications_rounded,
+                        size: 17,
+                        color: ColorPalette.primaryColor,
                       ),
                     ),
-                    Text(
-                      notification.safeBody,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.75),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            notification.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            notification.safeBody,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.75),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: onDismiss,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
+            ),
+          ),
+
+          // ── Dismiss button overlay (44×44 touch target) ──────────────────
+          Semantics(
+            label: 'Dismiss notification',
+            button: true,
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: onDismiss,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
                   child: Icon(
                     Icons.close_rounded,
                     size: 16,
@@ -192,9 +219,9 @@ class _Banner extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

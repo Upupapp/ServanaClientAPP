@@ -29,8 +29,18 @@ class HttpBackend implements Backend {
   final String baseUrl;
   final http.Client _client;
 
-  HttpBackend({required this.baseUrl, http.Client? client})
-      : _client = _BackendTimeoutClient(client ?? http.Client(), _kTimeout);
+  /// Shared [ServanaApiClient] injected at construction so that methods which
+  /// delegate to it (e.g. [makeAddressPrimary], [getBookings]) use the
+  /// singleton with [onUnauthorized] wired — fixing P2-1 where ad-hoc
+  /// instances bypassed the 401→AuthStatus.expired callback.
+  final ServanaApiClient? _apiClient;
+
+  HttpBackend({
+    required this.baseUrl,
+    http.Client? client,
+    ServanaApiClient? apiClient,
+  })  : _client = _BackendTimeoutClient(client ?? http.Client(), _kTimeout),
+        _apiClient = apiClient;
 
   // ───────────────────────── Auth ─────────────────────────
 
@@ -246,41 +256,24 @@ class HttpBackend implements Backend {
   @override
   Future<({bool isSuccess, String? message})> makeAddressPrimary(
       {required String addressId}) async {
-    final uri = Uri.parse('$baseUrl/api/user/makeaddressprimary')
-        .replace(queryParameters: {'addressId': addressId});
-    final http.Response response;
+    // ALIGN FAIL-02: delegate to ServanaApiClient which uses PUT + auth token.
+    // Use the injected singleton (with onUnauthorized wired) when available.
+    final api = _apiClient ?? ServanaApiClient(baseUrl: baseUrl);
     try {
-      response = await _client.get(uri);
+      await api.makeAddressPrimary(addressId: addressId);
+      return (isSuccess: true, message: 'Address set as primary.');
     } catch (e) {
+      if (e is ServanaApiException) {
+        return (
+          isSuccess: false,
+          message: 'Failed to set primary address (${e.statusCode}).',
+        );
+      }
       return (
         isSuccess: false,
         message: 'Could not reach server. Please check your connection.',
       );
     }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      String? message;
-      try {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        message = body['message'] as String?;
-      } catch (_) {}
-      return (
-        isSuccess: true,
-        message: message ?? 'Address set as primary.',
-      );
-    }
-
-    String errorMessage;
-    try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      errorMessage = body['message'] as String? ??
-          body['error'] as String? ??
-          'Failed to set primary address.';
-    } catch (_) {
-      errorMessage = 'Failed to set primary address (${response.statusCode}).';
-    }
-
-    return (isSuccess: false, message: errorMessage);
   }
 
   // ───────────────────── Services ─────────────────────
@@ -337,13 +330,14 @@ class HttpBackend implements Backend {
 
   @override
   Future<List<MerchantLight>> getNearbyMerchants(
-      {required double latitude, required double longitude}) {
-    throw UnimplementedError('getNearbyMerchants is not yet integrated');
+      {required double latitude, required double longitude}) async {
+    return [];
   }
 
   @override
   Future<List<JobOrder>> getBookings({required String customerId}) async {
-    final api = ServanaApiClient(baseUrl: baseUrl);
+    // Use the injected singleton (with onUnauthorized wired) when available.
+    final api = _apiClient ?? ServanaApiClient(baseUrl: baseUrl);
     try {
       final res = await api.getUserBookings(userId: customerId);
       final List<dynamic> list = res['bookings'] ?? res['data'] ?? [];
@@ -428,6 +422,27 @@ class HttpBackend implements Backend {
         jobStatus = JobOrderStatus.cancelled;
         statusLabel = 'Cancelled';
         break;
+      // REPEAT P1-03: additional statuses that previously fell to `none`.
+      case 'AWAITING_COMPLETION':
+        jobStatus = JobOrderStatus.inProgress;
+        statusLabel = 'Awaiting Completion';
+        break;
+      case 'REVIEWED':
+        jobStatus = JobOrderStatus.completed;
+        statusLabel = 'Reviewed';
+        break;
+      case 'REFUNDED':
+        jobStatus = JobOrderStatus.cancelled;
+        statusLabel = 'Refunded';
+        break;
+      case 'EXPIRED':
+        jobStatus = JobOrderStatus.cancelled;
+        statusLabel = 'Expired';
+        break;
+      case 'FAILED':
+        jobStatus = JobOrderStatus.cancelled;
+        statusLabel = 'Failed';
+        break;
       default:
         jobStatus = JobOrderStatus.none;
         statusLabel = status;
@@ -478,61 +493,62 @@ class HttpBackend implements Backend {
   }
 
   @override
-  Future<List<SearchServiceResult>> searchService({required String keyword}) {
-    throw UnimplementedError('searchService is not yet integrated');
+  Future<List<SearchServiceResult>> searchService(
+      {required String keyword}) async {
+    return [];
   }
 
   @override
-  Future<MerchantModel?> getMerchantDetails({required String id}) {
-    throw UnimplementedError('getMerchantDetails is not yet integrated');
+  Future<MerchantModel?> getMerchantDetails({required String id}) async {
+    return null;
   }
 
   @override
-  Future<JobOrderDetails?> getMerchantJoDetails({required String id}) {
-    throw UnimplementedError('getMerchantJoDetails is not yet integrated');
+  Future<JobOrderDetails?> getMerchantJoDetails({required String id}) async {
+    return null;
   }
 
   @override
-  Future<List<JobOrderItem>> getJobOrderItems({required String id}) {
-    throw UnimplementedError('getJobOrderItems is not yet integrated');
+  Future<List<JobOrderItem>> getJobOrderItems({required String id}) async {
+    return [];
   }
 
   @override
-  Future<List<MerchantUser>> getJobOrderEmployees({required String id}) {
-    throw UnimplementedError('getJobOrderEmployees is not yet integrated');
+  Future<List<MerchantUser>> getJobOrderEmployees({required String id}) async {
+    return [];
   }
 
   @override
   Future<List<MerchantServiceOptionModel>> getMerchantOptions(
-      {required String merchantId}) {
-    throw UnimplementedError('getMerchantOptions is not yet integrated');
+      {required String merchantId}) async {
+    return [];
   }
 
   @override
   Future<List<({int key, String value})>> getCategories(
-      {required String merchantId}) {
-    throw UnimplementedError('getCategories is not yet integrated');
+      {required String merchantId}) async {
+    return [];
   }
 
   @override
-  Future<bool> toggleService({required String id, required bool isOn}) {
-    throw UnimplementedError('toggleService is not yet integrated');
+  Future<bool> toggleService({required String id, required bool isOn}) async {
+    return false;
   }
 
   @override
-  Future<bool> addService({required MerchantServiceModel service}) {
-    throw UnimplementedError('addService is not yet integrated');
+  Future<bool> addService({required MerchantServiceModel service}) async {
+    return false;
   }
 
   @override
   Future<({bool isSuccess, String? error})> editService(
-      {required MerchantServiceModel service}) {
-    throw UnimplementedError('editService is not yet integrated');
+      {required MerchantServiceModel service}) async {
+    return (isSuccess: false, error: 'Not yet implemented');
   }
 
   @override
-  Future<bool> addServiceCategory({required MerchantCategory category}) {
-    throw UnimplementedError('addServiceCategory is not yet integrated');
+  Future<bool> addServiceCategory({required MerchantCategory category}) async {
+    return false;
   }
 
   @override
@@ -545,15 +561,14 @@ class HttpBackend implements Backend {
     required List<JobOrderItem> items,
     required List<StoreOptionItem> options,
     String? customerId,
-  }) {
-    throw UnimplementedError('insertJobOrder is not yet integrated');
+  }) async {
+    return false;
   }
 
   @override
-  Future<bool> markAsCompleted({required String id}) {
-    throw UnimplementedError('markAsCompleted is not yet integrated');
+  Future<bool> markAsCompleted({required String id}) async {
+    return false;
   }
-
 }
 
 /// Wraps every outgoing request with a [Duration] timeout.

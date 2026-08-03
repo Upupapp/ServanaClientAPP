@@ -20,6 +20,7 @@ abstract final class AppHaptics {
   /// Exposed for testing only — do not use in production code.
   @visibleForTesting
   static bool get isEnabled => _enabled;
+
   /// Light tap — use for low-stakes selections (toggle, option pick, tab).
   static Future<void> selection() async {
     if (!_enabled) return;

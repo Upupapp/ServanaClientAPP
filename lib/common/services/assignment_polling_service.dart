@@ -98,7 +98,9 @@ class AssignmentPollingService {
 
       final status =
           BookingStatusMapper.fromString(booking['status']?.toString());
-      final workerUid = booking['workerUid']?.toString();
+      final workerUid = booking['workerUid']?.toString() ??
+          booking['worker_uid']?.toString() ??
+          booking['providerUid']?.toString();
 
       String? workerName;
       if (workerUid != null && workerUid.isNotEmpty) {

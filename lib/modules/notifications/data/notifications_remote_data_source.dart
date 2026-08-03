@@ -10,10 +10,7 @@ class NotificationsRemoteDataSource {
   Future<List<ServanaNotification>> listNotifications({String? filter}) async {
     final result = await _api.listNotifications(filter: filter);
     final raw = (result['data']?['notifications'] as List?) ?? [];
-    return raw
-        .whereType<Map<String, dynamic>>()
-        .map(mapNotification)
-        .toList();
+    return raw.whereType<Map<String, dynamic>>().map(mapNotification).toList();
   }
 
   Future<int> getUnreadCount() async {

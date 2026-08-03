@@ -265,13 +265,16 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontFamily: FontPalette.primaryFontFamily,
-        fontWeight: FontWeight.w700,
-        fontSize: 16,
-        color: ColorPalette.secondaryText,
+    return Semantics(
+      header: true,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: FontPalette.primaryFontFamily,
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          color: ColorPalette.secondaryText,
+        ),
       ),
     );
   }
@@ -294,56 +297,62 @@ class _OptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? ColorPalette.primaryColorDark
-                : ColorPalette.secondaryBackground,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
+      child: Semantics(
+        label: title,
+        button: true,
+        selected: selected,
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
               color: selected
                   ? ColorPalette.primaryColorDark
-                  : ColorPalette.border(.55),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.spa_rounded,
+                  : ColorPalette.secondaryBackground,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
                 color: selected
-                    ? ColorPalette.primaryText
-                    : ColorPalette.primaryColorDark,
+                    ? ColorPalette.primaryColorDark
+                    : ColorPalette.border(.55),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w700,
-                    color: selected
-                        ? ColorPalette.primaryText
-                        : ColorPalette.secondaryText,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.spa_rounded,
+                  color: selected
+                      ? ColorPalette.primaryText
+                      : ColorPalette.primaryColorDark,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w700,
+                      color: selected
+                          ? ColorPalette.primaryText
+                          : ColorPalette.secondaryText,
+                    ),
                   ),
                 ),
-              ),
-              if (subtitle.isNotEmpty)
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w800,
-                    color: selected
-                        ? ColorPalette.primaryText
-                        : ColorPalette.primaryColorDark,
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.w800,
+                      color: selected
+                          ? ColorPalette.primaryText
+                          : ColorPalette.primaryColorDark,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

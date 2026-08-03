@@ -30,8 +30,6 @@ mixin _$UserSession {
   String get fullname => throw _privateConstructorUsedError;
   @HiveField(56)
   String? get emailAddress => throw _privateConstructorUsedError;
-  @HiveField(57)
-  String? get password => throw _privateConstructorUsedError;
   @HiveField(58)
   String get token => throw _privateConstructorUsedError;
 
@@ -53,7 +51,6 @@ abstract class $UserSessionCopyWith<$Res> {
       @HiveField(53) String? referralCode,
       @HiveField(54) String fullname,
       @HiveField(56) String? emailAddress,
-      @HiveField(57) String? password,
       @HiveField(58) String token});
 }
 
@@ -75,7 +72,6 @@ class _$UserSessionCopyWithImpl<$Res, $Val extends UserSession>
     Object? referralCode = freezed,
     Object? fullname = null,
     Object? emailAddress = freezed,
-    Object? password = freezed,
     Object? token = null,
   }) {
     return _then(_value.copyWith(
@@ -99,10 +95,6 @@ class _$UserSessionCopyWithImpl<$Res, $Val extends UserSession>
           ? _value.emailAddress
           : emailAddress // ignore: cast_nullable_to_non_nullable
               as String?,
-      password: freezed == password
-          ? _value.password
-          : password // ignore: cast_nullable_to_non_nullable
-              as String?,
       token: null == token
           ? _value.token
           : token // ignore: cast_nullable_to_non_nullable
@@ -125,7 +117,6 @@ abstract class _$$UserSessionImplCopyWith<$Res>
       @HiveField(53) String? referralCode,
       @HiveField(54) String fullname,
       @HiveField(56) String? emailAddress,
-      @HiveField(57) String? password,
       @HiveField(58) String token});
 }
 
@@ -145,7 +136,6 @@ class __$$UserSessionImplCopyWithImpl<$Res>
     Object? referralCode = freezed,
     Object? fullname = null,
     Object? emailAddress = freezed,
-    Object? password = freezed,
     Object? token = null,
   }) {
     return _then(_$UserSessionImpl(
@@ -169,10 +159,6 @@ class __$$UserSessionImplCopyWithImpl<$Res>
           ? _value.emailAddress
           : emailAddress // ignore: cast_nullable_to_non_nullable
               as String?,
-      password: freezed == password
-          ? _value.password
-          : password // ignore: cast_nullable_to_non_nullable
-              as String?,
       token: null == token
           ? _value.token
           : token // ignore: cast_nullable_to_non_nullable
@@ -190,7 +176,6 @@ class _$UserSessionImpl extends _UserSession {
       @HiveField(53) this.referralCode,
       @HiveField(54) required this.fullname,
       @HiveField(56) this.emailAddress,
-      @HiveField(57) this.password,
       @HiveField(58) this.token = ''})
       : super._();
 
@@ -213,16 +198,13 @@ class _$UserSessionImpl extends _UserSession {
   @HiveField(56)
   final String? emailAddress;
   @override
-  @HiveField(57)
-  final String? password;
-  @override
   @JsonKey()
   @HiveField(58)
   final String token;
 
   @override
   String toString() {
-    return 'UserSession(customerID: $customerID, mobileNumber: $mobileNumber, referralCode: $referralCode, fullname: $fullname, emailAddress: $emailAddress, password: $password, token: $token)';
+    return 'UserSession(customerID: $customerID, mobileNumber: $mobileNumber, referralCode: $referralCode, fullname: $fullname, emailAddress: $emailAddress, token: [REDACTED])';
   }
 
   @override
@@ -240,15 +222,13 @@ class _$UserSessionImpl extends _UserSession {
                 other.fullname == fullname) &&
             (identical(other.emailAddress, emailAddress) ||
                 other.emailAddress == emailAddress) &&
-            (identical(other.password, password) ||
-                other.password == password) &&
             (identical(other.token, token) || other.token == token));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, customerID, mobileNumber,
-      referralCode, fullname, emailAddress, password, token);
+      referralCode, fullname, emailAddress, token);
 
   @JsonKey(ignore: true)
   @override
@@ -271,7 +251,6 @@ abstract class _UserSession extends UserSession {
       @HiveField(53) final String? referralCode,
       @HiveField(54) required final String fullname,
       @HiveField(56) final String? emailAddress,
-      @HiveField(57) final String? password,
       @HiveField(58) final String token}) = _$UserSessionImpl;
   const _UserSession._() : super._();
 
@@ -293,9 +272,6 @@ abstract class _UserSession extends UserSession {
   @override
   @HiveField(56)
   String? get emailAddress;
-  @override
-  @HiveField(57)
-  String? get password;
   @override
   @HiveField(58)
   String get token;

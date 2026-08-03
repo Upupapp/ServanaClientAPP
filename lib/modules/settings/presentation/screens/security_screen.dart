@@ -29,7 +29,6 @@ class SecurityScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 8),
-
           SettingsSectionHeader('Sign-In'),
           SettingsGroup(children: [
             SettingsUnavailableTile(
@@ -43,7 +42,6 @@ class SecurityScreen extends StatelessWidget {
               reason: 'Biometric authentication is coming in a future update',
             ),
           ]),
-
           SettingsSectionHeader('Sessions'),
           SettingsGroup(children: [
             SettingsUnavailableTile(
@@ -52,7 +50,6 @@ class SecurityScreen extends StatelessWidget {
               reason: 'Session management requires a future backend update',
             ),
           ]),
-
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

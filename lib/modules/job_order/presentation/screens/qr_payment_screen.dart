@@ -42,6 +42,7 @@ class _QRPaymentScreenState extends State<QRPaymentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     IconButton(
+                      tooltip: 'Go back',
                       onPressed: () {
                         context.pop();
                       },
@@ -140,7 +141,7 @@ class _QRPaymentScreenState extends State<QRPaymentScreen> {
                               ),
                               const Spacer(),
                               Text(
-                                "600.00",
+                                bloc.subtotal.toStringAsFixed(2),
                                 style: TextStyle(
                                   color: ColorPalette.secondaryText,
                                   fontWeight: FontWeight.w500,
@@ -152,7 +153,7 @@ class _QRPaymentScreenState extends State<QRPaymentScreen> {
                           Row(
                             children: [
                               Text(
-                                "Transportation::",
+                                "Transportation:",
                                 style: TextStyle(
                                   color: ColorPalette.secondaryText,
                                   fontSize: 19,
@@ -161,49 +162,7 @@ class _QRPaymentScreenState extends State<QRPaymentScreen> {
                               ),
                               const Spacer(),
                               Text(
-                                "200.00",
-                                style: TextStyle(
-                                  color: ColorPalette.secondaryText,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 19,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                "Discount:",
-                                style: TextStyle(
-                                  color: ColorPalette.secondaryText,
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                "- 100.00",
-                                style: TextStyle(
-                                  color: ColorPalette.secondaryText,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 19,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                "Downpayment:",
-                                style: TextStyle(
-                                  color: ColorPalette.secondaryText,
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                "- 300.00",
+                                bloc.transportation.toStringAsFixed(2),
                                 style: TextStyle(
                                   color: ColorPalette.secondaryText,
                                   fontWeight: FontWeight.w500,
@@ -232,7 +191,7 @@ class _QRPaymentScreenState extends State<QRPaymentScreen> {
                               ),
                               const Spacer(),
                               Text(
-                                "400",
+                                bloc.total.toStringAsFixed(2),
                                 style: TextStyle(
                                   color: ColorPalette.primaryButtonTextColor,
                                   fontWeight: FontWeight.bold,

@@ -4,6 +4,12 @@ import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+/// Callback invoked after every successful reconnect so callers can fetch
+/// messages missed during the disconnection window.
+///
+/// [rejoinedRooms] contains every conversationId whose room was re-joined.
+typedef OnSocketReconnect = void Function(Set<int> rejoinedRooms);
+
 /// Events emitted by the server over the /chat Socket.IO namespace.
 sealed class ChatSocketEvent {}
 
@@ -53,9 +59,17 @@ class SocketDisconnectedEvent extends ChatSocketEvent {}
 /// The [events] stream is broadcast — multiple listeners are supported.
 /// Events are strongly typed via [ChatSocketEvent] sealed class.
 class ChatSocketService {
-  ChatSocketService({required String baseUrl}) : _baseUrl = baseUrl;
+  ChatSocketService({
+    required String baseUrl,
+    this.onReconnect,
+  }) : _baseUrl = baseUrl;
 
   final String _baseUrl;
+
+  /// Called after every successful reconnect with the set of re-joined rooms.
+  /// Wire this in [MessagingStore] to fetch missed messages via REST.
+  final OnSocketReconnect? onReconnect;
+
   io.Socket? _socket;
   final _eventController = StreamController<ChatSocketEvent>.broadcast();
   final Set<int> _joinedRooms = {};
@@ -88,9 +102,12 @@ class ChatSocketService {
       ..onConnect((_) {
         _emit(SocketConnectedEvent());
         // Re-join all rooms on reconnect.
-        for (final id in List.of(_joinedRooms)) {
+        final rooms = Set<int>.of(_joinedRooms);
+        for (final id in rooms) {
           _joinRoomOnSocket(id);
         }
+        // Notify caller to fetch messages missed during the disconnection window.
+        if (rooms.isNotEmpty) onReconnect?.call(rooms);
       })
       ..onDisconnect((_) => _emit(SocketDisconnectedEvent()))
       ..onConnectError((e) {
@@ -178,8 +195,8 @@ class ChatSocketService {
   // ── Internal ─────────────────────────────────────────────────────────────
 
   void _joinRoomOnSocket(int conversationId) {
-    _socket?.emitWithAck('conversation:join', {'conversationId': conversationId},
-        ack: (data) {
+    _socket?.emitWithAck(
+        'conversation:join', {'conversationId': conversationId}, ack: (data) {
       if (data is Map && data['ok'] != true) {
         debugPrint('[ChatSocket] room join denied for $conversationId: $data');
         _joinedRooms.remove(conversationId);

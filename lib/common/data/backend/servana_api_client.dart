@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Thin, low-level client that wraps every Servana REST API endpoint.
@@ -15,9 +16,14 @@ class ServanaApiClient {
   final String baseUrl;
   final http.Client _client;
 
+  /// Called when any response returns HTTP 401 (token expired / revoked).
+  /// Wire this in GetIt to update [AuthStateService] and clear the session.
+  final void Function()? onUnauthorized;
+
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
+    this.onUnauthorized,
   }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
@@ -43,10 +49,14 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> _decodeJson(http.Response response) async {
     final status = response.statusCode;
     if (status < 200 || status >= 300) {
-      dev.log(
-        'HTTP $status ${response.request?.method ?? ''} ${response.request?.url ?? ''}\n${response.body}',
-        name: 'ServanaApi',
-      );
+      if (kDebugMode) {
+        dev.log(
+          'HTTP $status ${response.request?.method ?? ''} ${response.request?.url ?? ''}\n${response.body}',
+          name: 'ServanaApi',
+        );
+      }
+      // STITCH B1: notify caller of session expiry so the router can redirect.
+      if (status == 401) onUnauthorized?.call();
       throw ServanaApiException(
         statusCode: status,
         body: response.body,
@@ -106,15 +116,14 @@ class ServanaApiClient {
     required String idToken,
     String? fcmToken,
   }) async {
-    final uri = _uri('/api/auth/firebase-login');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (fcmToken != null && fcmToken.isNotEmpty) 'fcmToken': fcmToken,
-    };
+    final uri = _uri('/api/auth/customer-firebase-login');
     final res = await _client.post(
       uri,
-      headers: headers,
-      body: jsonEncode({'idToken': idToken}),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'idToken': idToken,
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcmToken': fcmToken,
+      }),
     );
     return _decodeJson(res);
   }
@@ -198,6 +207,29 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Load the authenticated user's own profile (JWT-scoped, no ID param).
+  Future<Map<String, dynamic>> loadProfile() async {
+    final uri = _uri('/api/user/profile');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> verifyEmailOtp({required String otp}) async {
+    final uri = _uri('/api/auth/verify-email-otp');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'otp': otp}),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> resendEmailOtp() async {
+    final uri = _uri('/api/auth/resend-email-otp');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getRegisteredUsers({
     bool? isArchived,
     int? role,
@@ -229,7 +261,7 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> listOptionsWithAddons({
     required int serviceId,
   }) async {
-    final uri = _uri('/api/$serviceId/options-with-addons');
+    final uri = _uri('/api/services/$serviceId/options-with-addons');
     final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }
@@ -337,11 +369,16 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> createBooking({
     required String userId,
     required Map<String, dynamic> payload,
+    String? idempotencyKey,
   }) async {
     final uri = _uri('/api/bookings', {'userId': userId});
+    final headers = {
+      ...await _headers(),
+      if (idempotencyKey != null) 'X-Idempotency-Key': idempotencyKey,
+    };
     final res = await _client.post(
       uri,
-      headers: await _headers(),
+      headers: headers,
       body: jsonEncode(payload),
     );
     return _decodeJson(res);
@@ -554,7 +591,8 @@ class ServanaApiClient {
     required String category,
     String? description,
   }) async {
-    final uri = _uri('/api/chat/conversations/$conversationId/messages/$messageId/report');
+    final uri = _uri(
+        '/api/chat/conversations/$conversationId/messages/$messageId/report');
     final res = await _client.post(
       uri,
       headers: await _headers(),
@@ -610,6 +648,218 @@ class ServanaApiClient {
       headers: await _headers(),
       body: jsonEncode(payload),
     );
+    return _decodeJson(res);
+  }
+
+  // ─── Customer Support ─────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> listSupportTickets() async {
+    final uri = _uri('/api/support/tickets');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> createSupportTicket({
+    required String subject,
+    required String description,
+    required String category,
+    String? clientRequestId,
+    String? bookingId,
+  }) async {
+    final uri = _uri('/api/support/tickets');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'subject': subject,
+        'description': description,
+        'category': category,
+        if (clientRequestId != null) 'clientRequestId': clientRequestId,
+        if (bookingId != null) 'bookingId': bookingId,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getSupportTicketDetail(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> addSupportTicketReply({
+    required String ticketKey,
+    required String message,
+  }) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/replies');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'message': message}),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> markSupportTicketRead(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/mark-read');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> closeSupportTicket(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/close');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> reopenSupportTicket(String ticketKey) async {
+    final uri = _uri('/api/support/tickets/$ticketKey/reopen');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getSupportUnreadCount() async {
+    final uri = _uri('/api/support/unread-count');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getSupportEmergencyConfig() async {
+    final uri = _uri('/api/support/safety/emergency-config');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> listSafetyIncidents() async {
+    final uri = _uri('/api/support/safety/incidents');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> submitSafetyIncident({
+    required String clientIncidentId,
+    required String category,
+    required String severity,
+    required String description,
+    String? bookingId,
+    bool immediateDanger = false,
+  }) async {
+    final uri = _uri('/api/support/safety/incidents');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'clientIncidentId': clientIncidentId,
+        'category': category,
+        'severity': severity,
+        'description': description,
+        if (bookingId != null) 'bookingId': bookingId,
+        'immediateDanger': immediateDanger,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  // ─── Customer Reviews ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getReviewEligibility(String bookingId) async {
+    final uri = _uri('/api/bookings/$bookingId/review-eligibility');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> createReview({
+    required String bookingId,
+    required int overallRating,
+    required Map<String, int> dimensions,
+    String? publicComment,
+    String? privateFeedback,
+    String visibility = 'PUBLIC',
+    String? clientRequestId,
+  }) async {
+    final uri = _uri('/api/bookings/$bookingId/reviews');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'overallRating': overallRating,
+        'dimensions': dimensions,
+        if (publicComment != null) 'publicComment': publicComment,
+        if (privateFeedback != null) 'privateFeedback': privateFeedback,
+        'visibility': visibility,
+        if (clientRequestId != null) 'clientRequestId': clientRequestId,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getReviewByBooking(String bookingId) async {
+    final uri = _uri('/api/bookings/$bookingId/reviews');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getReviewById(String reviewId) async {
+    final uri = _uri('/api/reviews/$reviewId');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> editReview({
+    required String reviewId,
+    required int overallRating,
+    required Map<String, int> dimensions,
+    String? publicComment,
+    String? privateFeedback,
+    String visibility = 'PUBLIC',
+  }) async {
+    final uri = _uri('/api/reviews/$reviewId');
+    final res = await _client.put(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'overallRating': overallRating,
+        'dimensions': dimensions,
+        if (publicComment != null) 'publicComment': publicComment,
+        if (privateFeedback != null) 'privateFeedback': privateFeedback,
+        'visibility': visibility,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> deleteReview(String reviewId) async {
+    final uri = _uri('/api/reviews/$reviewId');
+    final res = await _client.delete(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> listMyReviews() async {
+    final uri = _uri('/api/reviews/me');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> reportReview({
+    required String reviewId,
+    required String reason,
+    String? details,
+  }) async {
+    final uri = _uri('/api/reviews/$reviewId/report');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'reason': reason,
+        if (details != null) 'details': details,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> getProviderAggregate(String providerUid) async {
+    final uri = _uri('/api/providers/$providerUid/rating');
+    final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }
 }

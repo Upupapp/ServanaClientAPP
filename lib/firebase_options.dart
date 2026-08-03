@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCkOUK84lSzwyg-u88MiQolfM2Tt_e53J0',
-    appId: '1:306195353425:android:cc084398b4dd6e49f38d70',
-    messagingSenderId: '306195353425',
-    projectId: 'servana-1d13b',
-    storageBucket: 'servana-1d13b.appspot.com',
+    apiKey: 'AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s',
+    appId: '1:320379709991:android:c3ec0648a70fb5081bfc02',
+    messagingSenderId: '320379709991',
+    projectId: 'servana-59bee',
+    storageBucket: 'servana-59bee.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCxDjegqSQdO6S7Nb7meaiSzeCImQ2FLdQ',
-    appId: '1:306195353425:ios:c02f7454484ff9c0f38d70',
-    messagingSenderId: '306195353425',
-    projectId: 'servana-1d13b',
-    storageBucket: 'servana-1d13b.appspot.com',
-    iosBundleId: 'com.servana.serviceclient',
+    apiKey: 'AIzaSyBDpbTRieyIXCTs2vWdGRMOFRGJed5JrSE',
+    appId: '1:320379709991:ios:1bf2a384b926d3901bfc02',
+    messagingSenderId: '320379709991',
+    projectId: 'servana-59bee',
+    storageBucket: 'servana-59bee.firebasestorage.app',
+    iosBundleId: 'com.servana.client',
   );
 }

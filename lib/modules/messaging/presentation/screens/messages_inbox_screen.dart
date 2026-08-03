@@ -4,6 +4,8 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
+import 'package:client/core/analytics/application/analytics_coordinator.dart';
+import 'package:client/core/analytics/events/message_events.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/messaging/presentation/screens/booking_chat_screen.dart';
@@ -28,9 +30,16 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  void _track(dynamic event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
+    _track(const MessagesOpenedEvent());
     Future.microtask(() async {
       await _homeStore.loadBookings();
       await _msgStore.loadConversations();
@@ -137,7 +146,8 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                     await _homeStore.loadBookings();
                     await _msgStore.loadConversations();
                   },
-                  child: filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
+                  child:
+                      filtered.isEmpty ? _buildEmpty() : _buildList(filtered),
                 );
               },
             ),
@@ -182,11 +192,16 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => context.pushNamed(NotificationsScreen.routeName),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 26),
+              Semantics(
+                label: 'View notifications',
+                button: true,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () => context.pushNamed(NotificationsScreen.routeName),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.notifications_outlined,
+                      color: Colors.white, size: 26),
+                ),
               ),
             ],
           ),
@@ -239,17 +254,22 @@ class _MessagesInboxScreenState extends State<MessagesInboxScreen> {
                   ),
                 ),
                 if (_searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.close,
-                          color: ColorPalette.secondaryText.withOpacity(0.5),
-                          size: 18),
+                  Semantics(
+                    label: 'Clear search',
+                    button: true,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(Icons.close,
+                            color: ColorPalette.secondaryText.withOpacity(0.5),
+                            size: 18),
+                      ),
                     ),
                   ),
               ],
@@ -355,6 +375,7 @@ class _ConversationTile extends StatelessWidget {
       label: '$title, $statusLabel'
           '${unreadCount > 0 ? ", $unreadCount unread message${unreadCount > 1 ? 's' : ''}" : ""}',
       button: true,
+      excludeSemantics: true,
       child: Material(
         color: ColorPalette.secondaryBackground,
         borderRadius: BorderRadius.circular(15),

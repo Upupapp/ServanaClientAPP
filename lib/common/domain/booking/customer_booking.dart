@@ -221,7 +221,9 @@ class CustomerBooking {
       paymentStatus: (json['paymentStatus'] as String?) ?? 'PENDING',
       paymentMethod:
           (json['paymentMethod'] ?? json['paymentMethodUsed'])?.toString(),
-      workerUid: (json['workerUid'] ?? json['providerUid'])?.toString(),
+      workerUid:
+          (json['workerUid'] ?? json['worker_uid'] ?? json['providerUid'])
+              ?.toString(),
       workerName: json['workerName']?.toString(),
       workerPhone: json['workerPhone']?.toString(),
       workerCode: json['workerCode']?.toString(),

@@ -28,11 +28,13 @@ void main() {
 
     test('background assets point at existing page_N_bg.png paths', () {
       final assets = WelcomeSceneSpec.scenes.map((s) => s.backgroundAsset);
-      expect(assets, containsAll([
-        'assets/images/welcome/page_1_bg.png',
-        'assets/images/welcome/page_2_bg.png',
-        'assets/images/welcome/page_3_bg.png',
-      ]));
+      expect(
+          assets,
+          containsAll([
+            'assets/images/welcome/page_1_bg.png',
+            'assets/images/welcome/page_2_bg.png',
+            'assets/images/welcome/page_3_bg.png',
+          ]));
     });
 
     test('each scene has exactly three gradient stops', () {
@@ -66,11 +68,13 @@ void main() {
     });
 
     test('values are serviceCategories, serviceCards, bookingJourney', () {
-      expect(WelcomeSceneVisual.values, containsAll([
-        WelcomeSceneVisual.serviceCategories,
-        WelcomeSceneVisual.serviceCards,
-        WelcomeSceneVisual.bookingJourney,
-      ]));
+      expect(
+          WelcomeSceneVisual.values,
+          containsAll([
+            WelcomeSceneVisual.serviceCategories,
+            WelcomeSceneVisual.serviceCards,
+            WelcomeSceneVisual.bookingJourney,
+          ]));
     });
   });
 }
