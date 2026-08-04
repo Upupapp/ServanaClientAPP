@@ -52,6 +52,10 @@ app.*.map.json
 # ios/build/XCBuildData were committed, and the dev branch added a 663-line
 # android/build Gradle problems report. Build output is not source.
 /android/build/
+# Kotlin compiler session files. Gradle writes these during a build and they
+# have no business in git — one was committed by a blanket `git add -A` after
+# an APK build.
+/android/.kotlin/
 /android/*/build/
 /ios/build/
 /macos/build/

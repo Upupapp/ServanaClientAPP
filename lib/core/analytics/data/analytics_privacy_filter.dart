@@ -199,6 +199,8 @@ final class AnalyticsPrivacyFilter {
     // Home campaigns (LAUNCHBANNER+ §27). All four describe the creative and
     // the customer's response to it; none can identify the customer.
     AnalyticsKeys.campaignId,
+    AnalyticsKeys.campaignKey,
+    AnalyticsKeys.dismissalMethod,
     AnalyticsKeys.campaignVersion,
     AnalyticsKeys.impressionNumber,
     AnalyticsKeys.suppressionReason,

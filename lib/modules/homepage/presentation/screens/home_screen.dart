@@ -47,6 +47,8 @@ import 'package:client/modules/homepage/presentation/widgets/home_promotion_bann
 import 'package:client/modules/homepage/presentation/widgets/home_search.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
+import 'package:client/common/presentation/category_campaign/category_campaign_coordinator.dart';
+import 'package:client/common/presentation/category_campaign/category_campaign_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -73,6 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final _promoRepo = HomePromotionRepository();
   final _campaign = dpLocator<HomeCampaignController>();
 
+  /// Presents category promo banners and owns their single-instance guard.
+  ///
+  /// Held on the State, not rebuilt per tap: the guard has to outlive the
+  /// individual gesture it is guarding against.
+  final _categoryCampaigns = CategoryCampaignCoordinator(
+    analytics: dpLocator<AnalyticsCoordinator>(),
+  );
+
   /// Read once for §21 app-version targeting. package_info_plus is already a
   /// dependency and AnalyticsContextProvider reads it the same way.
   String _appVersion = '0.0.0';
@@ -86,6 +96,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _restoreDraftIfPending();
     _loadAppVersion();
     _maybeShowConsentGate();
+    _precacheCategoryCampaigns();
+  }
+
+  /// Warms the category campaign artwork once Home has drawn.
+  ///
+  /// Deliberately post-frame: these are ~2 MB PNGs each, and decoding them on
+  /// the way to Home's first paint would trade a visible startup cost for a
+  /// saving the customer only benefits from if they tap that category. Failure
+  /// is ignored — the popup's own error path already falls back to the native
+  /// layout, so a warm cache is an optimisation, not a dependency.
+  void _precacheCategoryCampaigns() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final campaign in CategoryCampaignRegistry.all) {
+        precacheImage(AssetImage(campaign.assetPath), context)
+            .catchError((_) {});
+      }
+    });
   }
 
   Future<void> _loadAppVersion() async {
@@ -312,7 +340,39 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _handleCategoryTap(String key) {
+  /// Navigates to a category, showing its promotional campaign first when one
+  /// exists.
+  ///
+  /// The campaign is a preview, not a gate: whether the customer taps its call
+  /// to action or dismisses it, the category route and any authentication it
+  /// already enforces are unchanged. A category with no creative registered
+  /// navigates immediately, exactly as before.
+  ///
+  /// Only an explicit tap on a Home category card reaches here — a deep link
+  /// resolves the category route directly through the router and never sees a
+  /// popup.
+  Future<void> _handleCategoryTap(String key) async {
+    if (CategoryCampaignCoordinator.hasCampaignFor(key)) {
+      final explore = await _categoryCampaigns.present(
+        context: context,
+        categoryKey: key,
+      );
+      // Dismissed, or a second tap that the guard rejected. Either way the
+      // customer stays on Home with its scroll position untouched — no route
+      // was pushed.
+      if (!explore) return;
+      // The modal's own route has finished popping by the time present()
+      // completes, but this State can still have been disposed underneath it.
+      if (!mounted) return;
+    }
+    _navigateToCategory(key);
+  }
+
+  /// The canonical destination for each category card.
+  ///
+  /// Unchanged by the campaign work, and deliberately kept as the single place
+  /// that names a category route so a popup can never introduce a second one.
+  void _navigateToCategory(String key) {
     switch (key) {
       case 'beauty_wellness':
         context.pushNamed(BeautyWellnessScreen.routeName);

@@ -141,6 +141,12 @@ abstract final class AnalyticsKeys {
   static const String impressionNumber = 'impression_number';
   static const String suppressionReason = 'suppression_reason';
 
+  // Category campaign popups (CATEGORYPOPUP+). campaignKey identifies the
+  // CREATIVE, dismissalMethod is one of a closed set of four verbs — both are
+  // low-cardinality and neither can carry a customer identifier.
+  static const String campaignKey = 'campaign_key';
+  static const String dismissalMethod = 'dismissal_method';
+
   // ── Generic ───────────────────────────────────────────────────────────────
   static const String result = 'result';
   static const String modelVersion = 'model_version';

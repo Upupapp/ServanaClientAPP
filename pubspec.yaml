@@ -187,6 +187,14 @@ flutter:
     # assets_src/campaigns/ and are deliberately NOT declared here — they are
     # the editable originals, and bundling both would forfeit the compression.
     - assets/images/campaigns/
+    # Per-category campaign creatives shown when a customer taps a category
+    # card. Declared as a directory for the same reason as campaigns/ above.
+    #
+    # Filenames here must be lowercase. Windows is case-insensitive, so a file
+    # named BEAUTY_WELLNESS_POPUP_V1.png loads fine on a dev machine and then
+    # fails to resolve on iOS and Android, which are not. That exact mismatch
+    # was present when this directory was first populated.
+    - assets/images/categories/
     - assets/animations/
     - assets/icons/
     - assets/payment_icons/
