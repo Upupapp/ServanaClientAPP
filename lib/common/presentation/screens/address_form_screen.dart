@@ -68,6 +68,26 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   // BGC, Taguig — used when no initial location and GPS unavailable.
   static const LatLng _fallbackCenter = LatLng(14.5535, 121.0220);
 
+  /// Whether the pin represents a location the customer or their GPS actually
+  /// chose, as opposed to [_fallbackCenter].
+  ///
+  /// This screen opens the map on BGC when there is no initial location, then
+  /// tries GPS. The GPS auto-attempt swallows failures on purpose. But the map
+  /// still lays out, still fires `onCameraIdle`, and that idle used to
+  /// reverse-geocode whatever the camera was sitting on — which, whenever GPS
+  /// was off, denied or slow, was the hardcoded BGC fallback.
+  ///
+  /// The result was not a formatting problem. A customer anywhere in the
+  /// country could save an address reverse-geocoded from Taguig, with the
+  /// fallback's latitude and longitude attached. Those coordinates are stored
+  /// and forwarded to the geo record that drives coverage checks and dispatch,
+  /// so a booking could be created against a location the customer never
+  /// picked and never saw picked for them.
+  ///
+  /// A pin nobody chose is never geocoded. This clears when GPS returns a fix,
+  /// or the moment the customer touches the map.
+  bool _pinIsUnconfirmed = false;
+
   final _addressController = TextEditingController();
   final _unitController = TextEditingController();
   final _streetController = TextEditingController();
@@ -113,6 +133,9 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     _suppressNextIdleGeocode = hasPrefilledText;
 
     if (initial == null) {
+      // The pin is on the BGC fallback and nobody put it there yet.
+      _pinIsUnconfirmed = true;
+
       // Try to recenter on GPS once we're mounted. Auto-attempt is silent on
       // failure; only the explicit FAB tap surfaces feedback.
       WidgetsBinding.instance.addPostFrameCallback(
@@ -141,6 +164,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       // User explicitly asked for GPS — let the resulting onCameraIdle run
       // the geocode (single source of truth, no double-fire).
       _suppressNextIdleGeocode = false;
+      // A real fix. The pin now means something, so geocoding it is safe.
+      _pinIsUnconfirmed = false;
       final target = LatLng(position.latitude, position.longitude);
       if (kIsWeb) {
         // No map controller on web — just record the pin and try to geocode.
@@ -180,6 +205,10 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       _suppressNextIdleGeocode = false;
       return;
     }
+    // The map settling on a fallback nobody chose is not a location. Filling
+    // the form from it is how an address in Taguig ended up on accounts that
+    // had never been near Taguig.
+    if (_pinIsUnconfirmed) return;
     await _reverseGeocodeAndFill(_pickedLatLng);
   }
 
@@ -202,12 +231,32 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     });
   }
 
+  /// Street-level address only. The city is deliberately excluded.
+  ///
+  /// `locality` used to be the last part here, while `_reverseGeocodeAndFill`
+  /// puts the SAME `locality` into `_cityController`. That field becomes
+  /// `postTown` and the composed line becomes `addressOne`, and checkout renders
+  /// them as "$addressOne, $postTown" — so a customer in Taguig with no street
+  /// data saw their address listed as "Taguig, Taguig", and one in Manila saw
+  /// "15, Del Pilar, Manila, Manila". The city was never duplicated in storage;
+  /// it was written into both fields and then printed twice.
+  ///
+  /// `subLocality` (the barangay) stays. Nothing else carries it: `addressTwo`
+  /// is unit+street, `postTown` is the city, and the barangay otherwise
+  /// survives only as a fallback for the address label. Dropping it to "fix"
+  /// the duplicate would delete a field Philippine addressing needs.
+  ///
+  /// Returning an empty string is a valid outcome. A coarse geocode that yields
+  /// nothing below city level gives the customer no service address, and the
+  /// Save button is gated on this field being non-empty — which is correct.
+  /// The field is editable and carries `onChanged: setState`, so typing a real
+  /// address re-enables Save immediately. Filling it with a bare city name
+  /// would look complete while sending a technician to a city centroid.
   String _composeAddressLine(Placemark p) {
     final parts = <String>[
       (p.subThoroughfare ?? '').trim(),
       (p.thoroughfare ?? '').trim(),
       (p.subLocality ?? '').trim(),
-      (p.locality ?? '').trim(),
     ].where((s) => s.isNotEmpty).toList();
     return parts.join(', ');
   }
@@ -247,10 +296,17 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     Text(
                       kIsWeb
                           ? 'Enter your address details below. Tap “Use current GPS” to attach coordinates.'
-                          : 'Pan the map to drop the pin where the technician should arrive. Edit any field below if the auto-fill is wrong.',
+                          : _pinIsUnconfirmed
+                              // Says plainly that nothing has been located yet,
+                              // instead of leaving a fallback pin looking like
+                              // a result.
+                              ? "We couldn't detect your location. Pan the map to your address, or type it in below."
+                              : 'Pan the map to drop the pin where the technician should arrive. Edit any field below if the auto-fill is wrong.',
                       style: TextStyle(
                         fontFamily: FontPalette.primaryFontFamily,
-                        color: ColorPalette.accentText,
+                        color: _pinIsUnconfirmed && !kIsWeb
+                            ? ColorPalette.danger
+                            : ColorPalette.accentText,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -259,8 +315,12 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     const SizedBox(height: 8),
                     _field(
                       controller: _addressController,
-                      hint:
-                          'House/Unit/Building, Street, Barangay, City, Province',
+                      // City and province are deliberately absent from this
+                      // hint. They have their own fields below, and asking for
+                      // them here is what taught customers to type the city
+                      // into the line that already gets the city appended to it
+                      // on every screen that renders an address.
+                      hint: 'House/Unit/Building, Street, Barangay',
                       onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 12),
@@ -358,23 +418,35 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       height: 260,
       child: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _pickedLatLng,
-              zoom: 17,
-            ),
-            onMapCreated: (controller) {
-              if (!_mapController.isCompleted) {
-                _mapController.complete(controller);
+          // Listener, not GestureDetector: the map claims pan gestures, so a
+          // GestureDetector wrapped around it never sees them. A raw pointer
+          // down still arrives, and it is the only reliable signal that the
+          // customer is positioning the pin themselves rather than the camera
+          // settling on a fallback.
+          Listener(
+            onPointerDown: (_) {
+              if (_pinIsUnconfirmed) {
+                setState(() => _pinIsUnconfirmed = false);
               }
             },
-            onCameraMove: _onCameraMove,
-            onCameraIdle: _onCameraIdle,
-            myLocationEnabled: false,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            compassEnabled: false,
-            mapToolbarEnabled: false,
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: _pickedLatLng,
+                zoom: 17,
+              ),
+              onMapCreated: (controller) {
+                if (!_mapController.isCompleted) {
+                  _mapController.complete(controller);
+                }
+              },
+              onCameraMove: _onCameraMove,
+              onCameraIdle: _onCameraIdle,
+              myLocationEnabled: false,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              compassEnabled: false,
+              mapToolbarEnabled: false,
+            ),
           ),
           // Centered pin overlay — tip of the pin sits over the camera target.
           IgnorePointer(

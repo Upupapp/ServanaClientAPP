@@ -1,3 +1,4 @@
+import 'package:client/common/domain/address/address_display.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/repositories/address_repository.dart';
@@ -243,7 +244,10 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                                         ),
                                       ),
                                     Text(
-                                      '$line1, $line2',
+                                      formatAddressLine(
+                                        line1.toString(),
+                                        line2.toString(),
+                                      ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(

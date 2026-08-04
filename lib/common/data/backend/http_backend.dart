@@ -1,3 +1,4 @@
+import 'package:client/common/domain/address/address_display.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -491,8 +492,10 @@ class HttpBackend implements Backend {
           DateTime.tryParse(b['schedule']?.toString() ?? '') ?? DateTime.now(),
       jobOrderStatus: jobStatus,
       jobOrderStatusToString: statusLabel,
-      address: '${b['address'] ?? ''}, ${b['postTown'] ?? ''}'
-          .replaceAll(RegExp(r'^, |, $'), ''),
+      address: formatAddressLine(
+        b['address']?.toString(),
+        b['postTown']?.toString(),
+      ),
       latitude: 0,
       longitude: 0,
       numberOfPersonnel: 1,

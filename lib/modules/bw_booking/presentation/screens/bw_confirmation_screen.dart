@@ -1,3 +1,4 @@
+import 'package:client/common/domain/address/address_display.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
@@ -188,8 +189,10 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                     if (store.selectedAddress != null)
                       _DetailRow(
                         label: 'Address',
-                        value:
-                            '${store.selectedAddress!['addressOne'] ?? ''}, ${store.selectedAddress!['postTown'] ?? ''}',
+                        value: formatAddressLine(
+                          store.selectedAddress!['addressOne']?.toString(),
+                          store.selectedAddress!['postTown']?.toString(),
+                        ),
                       ),
                     if (store.selectedAddonIds.isNotEmpty)
                       _DetailRow(
