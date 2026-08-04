@@ -61,6 +61,8 @@ class FcmCoordinator {
   Future<void> registerForAccount(String uid) async {
     _activeUid = uid;
     try {
+      await _awaitApnsTokenOnIos();
+
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         await _repository.registerFcmToken(token);
@@ -71,6 +73,40 @@ class FcmCoordinator {
       debugPrint(
           '[FcmCoordinator] registerForAccount failed: ${e.runtimeType}');
     }
+  }
+
+  /// On iOS, FCM cannot mint a token until APNs has delivered one to the
+  /// device. Calling `getToken()` first throws `apns-token-not-set`.
+  ///
+  /// This was the shape of the bug: `getToken()` was called directly, the
+  /// throw was caught by the handler above, and the failure became a single
+  /// `debugPrint`. So on a cold start the device would simply never register
+  /// for push — no crash, no log in production, and every investigation would
+  /// point at the APNs key or the Firebase upload rather than at a race.
+  ///
+  /// APNs registration is asynchronous and usually completes in well under a
+  /// second, but it is not instant and it is not guaranteed: in the Simulator,
+  /// with no network, or when the customer denies the permission prompt, it
+  /// never arrives. So this polls briefly and then gives up rather than
+  /// blocking login. Giving up is fine — `onTokenRefresh` fires once APNs
+  /// does arrive, and [_subscribeToRefresh] registers the token then.
+  Future<void> _awaitApnsTokenOnIos() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+
+    const attempts = 10;
+    const gap = Duration(milliseconds: 300);
+
+    for (var i = 0; i < attempts; i++) {
+      final apns = await FirebaseMessaging.instance.getAPNSToken();
+      if (apns != null) return;
+      if (i < attempts - 1) await Future<void>.delayed(gap);
+    }
+
+    debugPrint(
+      '[FcmCoordinator] no APNS token after ${attempts * gap.inMilliseconds}ms. '
+      'Push permission may be denied, or this is the Simulator. Registration '
+      'will be retried by onTokenRefresh.',
+    );
   }
 
   /// Call on logout. Deactivates the device token in the backend so no
