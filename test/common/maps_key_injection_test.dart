@@ -55,6 +55,58 @@ void main() {
       expect(appDelegate, contains('GMSServices.provideAPIKey'));
     });
 
+    test('each platform has its own key variable', () {
+      // A Google Cloud API key carries at most ONE application restriction —
+      // Android apps OR iOS apps, never both. Sharing one key across platforms
+      // is therefore only possible with an UNRESTRICTED key, which is
+      // extractable from any shipped binary and bills to us until noticed.
+      final tool = _read('tool/inject_maps_key.dart');
+      expect(tool, contains('GOOGLE_MAPS_API_KEY_ANDROID'));
+      expect(tool, contains('GOOGLE_MAPS_API_KEY_IOS'));
+      expect(tool, contains("sharedEnvVar = 'GOOGLE_MAPS_API_KEY'"),
+          reason: 'the shared fallback must remain, so a repo that has not '
+              'split its keys yet still renders maps');
+    });
+
+    test('every CI job that injects passes all three variables', () {
+      // A key wired into the script but not into the workflow is a key that
+      // silently never arrives — the injector would fall back or warn, and the
+      // build would still go green with no maps.
+      final ci = _read('.github/workflows/flutter-ci.yml');
+
+      int wired(String v) =>
+          RegExp('$v: \\\$\\{\\{ secrets\\.$v \\}\\}').allMatches(ci).length;
+
+      // Three jobs inject: build-android, build-ios, release-android.
+      expect(wired('GOOGLE_MAPS_API_KEY_ANDROID'), greaterThanOrEqualTo(3));
+      expect(wired('GOOGLE_MAPS_API_KEY_IOS'), 3);
+      // The shared fallback is also read by release-android's preflight check,
+      // so it legitimately appears more often than the injection steps.
+      expect(wired('GOOGLE_MAPS_API_KEY'), greaterThanOrEqualTo(3));
+    });
+
+    test('the release preflight accepts either Android variable', () {
+      // The preflight used to demand GOOGLE_MAPS_API_KEY by name. After the
+      // split, setting only GOOGLE_MAPS_API_KEY_ANDROID — the correct,
+      // restricted key for the one platform this job builds — would have
+      // failed the release before it started.
+      final ci = _read('.github/workflows/flutter-ci.yml');
+      expect(
+        ci,
+        contains(r'if [ -z "$GOOGLE_MAPS_API_KEY_ANDROID" ] && '
+            r'[ -z "$GOOGLE_MAPS_API_KEY" ]; then'),
+        reason: 'the preflight must pass when EITHER variable is set',
+      );
+    });
+
+    test('the release job requires a key rather than warning', () {
+      // The original inline `sed` substituted an EMPTY key when the secret was
+      // unset and shipped a release with grey rectangles where maps should be,
+      // reporting success throughout.
+      final ci = _read('.github/workflows/flutter-ci.yml');
+      expect(ci, contains('dart run tool/inject_maps_key.dart --require'));
+    });
+
     test('no real Google API key is committed to either native file', () {
       // Google browser/Android/iOS keys are 39 chars starting "AIza". The two
       // files below are the ones the injector writes to, so a real key here

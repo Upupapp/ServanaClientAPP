@@ -139,6 +139,13 @@ jobs:
       # the iOS side in the first place.
       - name: Inject Google Maps key
         env:
+          # Per-platform keys, because a Google Cloud API key carries at most
+          # ONE application restriction (Android apps OR iOS apps, never both).
+          # A single shared key can therefore only be an UNRESTRICTED key, and
+          # an unrestricted Maps key is extractable from any shipped binary.
+          # GOOGLE_MAPS_API_KEY is still honoured as a fallback for both.
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY_IOS: ${{ secrets.GOOGLE_MAPS_API_KEY_IOS }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: dart run tool/inject_maps_key.dart
 
@@ -193,6 +200,13 @@ jobs:
 
       - name: Inject Google Maps key
         env:
+          # Per-platform keys, because a Google Cloud API key carries at most
+          # ONE application restriction (Android apps OR iOS apps, never both).
+          # A single shared key can therefore only be an UNRESTRICTED key, and
+          # an unrestricted Maps key is extractable from any shipped binary.
+          # GOOGLE_MAPS_API_KEY is still honoured as a fallback for both.
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY_IOS: ${{ secrets.GOOGLE_MAPS_API_KEY_IOS }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: dart run tool/inject_maps_key.dart
 
@@ -329,6 +343,7 @@ jobs:
           CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           missing=""
@@ -336,12 +351,19 @@ jobs:
           [ -z "$CM_KEYSTORE_PASSWORD" ] && missing="$missing CM_KEYSTORE_PASSWORD"
           [ -z "$CM_KEY_ALIAS" ]         && missing="$missing CM_KEY_ALIAS"
           [ -z "$CM_KEY_PASSWORD" ]      && missing="$missing CM_KEY_PASSWORD"
-          # Not a signing secret, but it fails WORSE than one. The build step
-          # seds this value over the strings.xml placeholder; unset, sed writes
-          # an EMPTY key, the build goes green, and the release ships with
-          # com.google.android.geo.API_KEY="" — booking tracking maps render
-          # grey on every device with no error in any log.
-          [ -z "$GOOGLE_MAPS_API_KEY" ]  && missing="$missing GOOGLE_MAPS_API_KEY"
+          # Not a signing secret, but it fails WORSE than one. The build injects
+          # this value over the strings.xml placeholder; unset, the old inline
+          # `sed` wrote an EMPTY key, the build went green, and the release
+          # shipped com.google.android.geo.API_KEY="" — booking tracking maps
+          # render grey on every device with no error in any log.
+          #
+          # EITHER variable satisfies this job, because this job builds Android
+          # only. GOOGLE_MAPS_API_KEY_ANDROID is the restricted, preferred one;
+          # GOOGLE_MAPS_API_KEY is the shared fallback for a repo that has not
+          # split its keys per platform yet.
+          if [ -z "$GOOGLE_MAPS_API_KEY_ANDROID" ] && [ -z "$GOOGLE_MAPS_API_KEY" ]; then
+            missing="$missing GOOGLE_MAPS_API_KEY_ANDROID(or GOOGLE_MAPS_API_KEY)"
+          fi
           if [ -n "$missing" ]; then
             echo "::error::Missing Android release secrets:$missing"
             echo "Set them as REPOSITORY secrets:"
@@ -433,6 +455,13 @@ jobs:
       # serves the iOS job so the two platforms cannot drift.
       - name: Inject Google Maps key
         env:
+          # Per-platform keys, because a Google Cloud API key carries at most
+          # ONE application restriction (Android apps OR iOS apps, never both).
+          # A single shared key can therefore only be an UNRESTRICTED key, and
+          # an unrestricted Maps key is extractable from any shipped binary.
+          # GOOGLE_MAPS_API_KEY is still honoured as a fallback for both.
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY_IOS: ${{ secrets.GOOGLE_MAPS_API_KEY_IOS }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: dart run tool/inject_maps_key.dart --require
 
