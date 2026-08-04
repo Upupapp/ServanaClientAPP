@@ -9,8 +9,10 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:client/common/services/threat_detection/free_rasp_service.dart';
 import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
 
 String _read(String p) => File(p).readAsStringSync();
@@ -220,6 +222,75 @@ void main() {
       ]) {
         expect(manifest, isNot(contains(dangerous)), reason: dangerous);
       }
+    });
+  });
+
+  group('freeRASP starts or declines — it never throws on launch', () {
+    // The iOS regression: `iosConfig` was absent, so IOSConfig's verifier threw
+    // ConfigurationException on every iOS launch. main.dart caught it and filed
+    // a non-fatal, so the app looked healthy while carrying no protection at
+    // all. Declining to start is a legitimate outcome; throwing is not.
+    //
+    // flutter_test reports TargetPlatform.android, so this exercises the
+    // Android branch directly and the others by construction.
+
+    test('android is always configured', () {
+      expect(defaultTargetPlatform, TargetPlatform.android,
+          reason: 'flutter_test defaults to android; if this changes, the '
+              'expectation below is testing something else');
+      expect(FreeRasp.isConfiguredForCurrentPlatform, isTrue);
+    });
+
+    test('iOS is configured by default, without needing a build flag', () {
+      // The team id defaults to the real one rather than coming only from
+      // --dart-define. Sourcing it exclusively from the flag meant forgetting
+      // the flag shipped iOS with no protection and nothing said so.
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      expect(FreeRasp.isConfiguredForCurrentPlatform, isTrue,
+          reason: 'iOS must be protected out of the box');
+    });
+
+    test('the default team id is the one that owns the App ID', () {
+      // UPUP TECHNOLOGIES PTE. LTD — the team holding com.servana.client.
+      // A wrong team id makes freeRASP report every legitimate install as
+      // tampered, so it is pinned rather than left to a comment.
+      final src =
+          _read('lib/common/services/threat_detection/free_rasp_service.dart');
+      expect(src, contains("defaultValue: '2K2SF7NRQP'"));
+
+      final teamId =
+          RegExp(r"defaultValue: '([^']+)'").firstMatch(src)!.group(1)!;
+      expect(teamId.length, 10,
+          reason: 'an Apple Team ID is 10 characters; "$teamId" is not');
+      expect(RegExp(r'^[A-Z0-9]{10}$').hasMatch(teamId), isTrue);
+    });
+
+    test('desktop platforms decline rather than throw', () {
+      for (final p in const [
+        TargetPlatform.windows,
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.fuchsia,
+      ]) {
+        debugDefaultTargetPlatformOverride = p;
+        expect(FreeRasp.isConfiguredForCurrentPlatform, isFalse, reason: '$p');
+      }
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    test('the iOS bundle id it would register matches the Xcode target', () {
+      // A freeRASP bundle id that does not match what Xcode builds reports
+      // every legitimate install as tampered.
+      final src =
+          _read('lib/common/services/threat_detection/free_rasp_service.dart');
+      final pbx = _read('ios/Runner.xcodeproj/project.pbxproj');
+      final declared =
+          RegExp(r"_iosBundleId = '([^']+)'").firstMatch(src)?.group(1);
+
+      expect(declared, isNotNull, reason: '_iosBundleId not found');
+      expect(pbx, contains('PRODUCT_BUNDLE_IDENTIFIER = $declared;'));
     });
   });
 }

@@ -20,9 +20,60 @@ on:
         default: ''
 
 jobs:
-  test:
-    name: Test & Build
+  # ---------------------------------------------------------------------------
+  # Validation. Flutter only — no Java, no Android SDK, no Gradle, no NDK, no
+  # Xcode, no CocoaPods.
+  #
+  # This job used to be called "Test & Build" and finished by building a debug
+  # Android APK. That coupling is what let an Android-only toolchain problem
+  # gate the entire pipeline, and it meant the green check beside a PR reported
+  # on Gradle's health as much as on the code. Validation now stops where the
+  # standing rule says it stops: `dart format`, `flutter analyze`,
+  # `flutter test`. Anything a single platform can break belongs in a build job.
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Validate (Flutter)
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Format check
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Android assembly check. Proves the Gradle/NDK side still assembles. It
+  # re-runs no validation.
+  # ---------------------------------------------------------------------------
+  build-android:
+    name: Build (Android)
+    runs-on: ubuntu-latest
+    needs: validate
 
     steps:
       - name: Checkout
@@ -82,21 +133,21 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Format check
-        run: dart format --set-exit-if-changed .
-
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos
-
-      - name: Run tests
-        run: flutter test --coverage
+      # One script, identical behaviour on this runner and the macOS one below.
+      # `sed -i` would not have been: GNU and BSD sed disagree about its syntax,
+      # which is the exact class of platform-specific build scripting that broke
+      # the iOS side in the first place.
+      - name: Inject Google Maps key
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: dart run tool/inject_maps_key.dart
 
       - name: Disk space before APK build
         run: df -h
 
       - name: Build debug APK (arm64 only)
         id: build_apk
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: flutter build apk --debug --target-platform android-arm64 --no-tree-shake-icons
 
       - name: Upload debug APK
@@ -107,13 +158,100 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
+  # ---------------------------------------------------------------------------
+  # iOS assembly check.
+  #
+  # This job did not exist. That is why the Podfile could carry
+  # `platform :ios, '26.0'` against a Runner target of 15.6 indefinitely, why a
+  # Podfile.lock that predated firebase_auth and firebase_messaging survived,
+  # and why ios/firebase_app_id_file.json kept naming a retired project:
+  # nothing ever ran CocoaPods or Xcode against this repository.
+  #
+  # It builds UNSIGNED, so it needs no certificate, no provisioning profile and
+  # no Apple account. That is sufficient to catch the entire class of failure
+  # that was hiding here — pod resolution, deployment-target mismatch, plugin
+  # linkage, missing Info.plist keys — while signing remains a separate,
+  # credentialed step you run for an actual App Store submission.
+  # ---------------------------------------------------------------------------
+  build-ios:
+    name: Build (iOS)
+    runs-on: macos-latest
+    needs: validate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Inject Google Maps key
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: dart run tool/inject_maps_key.dart
+
+      # Explicit rather than left to `flutter build`, so a resolution failure is
+      # reported here by CocoaPods in its own words instead of surfacing later
+      # as an opaque Xcode error.
+      - name: pod install
+        working-directory: ios
+        run: |
+          pod --version
+          pod install --repo-update
+
+      # ios/Podfile.lock is deliberately absent from git at this commit: the one
+      # that was committed predated firebase_auth, firebase_messaging,
+      # firebase_remote_config, google_sign_in and flutter_facebook_auth, so it
+      # described an app that no longer exists. Once this job is green, download
+      # this artifact and commit it — from then on the lock is authoritative and
+      # this note should be deleted.
+      - name: Upload generated Podfile.lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-podfile-lock-${{ github.sha }}
+          path: ios/Podfile.lock
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Build iOS (release, unsigned)
+        id: build_ios
+        timeout-minutes: 40
+        env:
+          # freeRASP starts on iOS only when this is present. Without it the app
+          # builds and runs with no runtime protection rather than throwing on
+          # every launch — see FreeRasp.isConfiguredForCurrentPlatform.
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_TEAM_ID" ]; then
+            flutter build ios --release --no-codesign \
+              --dart-define=APPLE_TEAM_ID="$APPLE_TEAM_ID"
+          else
+            echo "::warning::APPLE_TEAM_ID is not set — building without freeRASP iOS runtime protection."
+            flutter build ios --release --no-codesign
+          fi
+
+      - name: Report app size
+        if: steps.build_ios.outcome == 'success'
+        run: du -sh build/ios/iphoneos/Runner.app
+
   release-android:
     name: Release Build (Android)
     runs-on: ubuntu-latest
     if: >-
       (github.ref == 'refs/heads/main' && github.event_name == 'push')
       || github.event_name == 'workflow_dispatch'
-    needs: test
+    # Both gates, deliberately. `validate` is the Flutter-level contract and
+    # `build-android` is the Gradle/NDK one; a release must clear each. iOS is
+    # NOT a gate here — a Play release should not be blocked by a macOS runner,
+    # and an App Store submission is its own signed pipeline.
+    needs: [validate, build-android]
 
     # Job-level, deliberately. The `secrets` context is NOT available in a
     # step's `if:`, and a step's own `env:` is not available to its own `if:`
@@ -235,13 +373,22 @@ jobs:
           fi
           echo "Keystore decoded and opened successfully."
 
-      # The build step rewrites this placeholder in place. If it is already
-      # gone, the key was committed — which is worth failing over, since it
+      # The injection step rewrites these placeholders in place. If one is
+      # already gone, a real key was committed — worth failing over, since it
       # would ship a live Maps key in the repository.
-      - name: Check the Maps key placeholder is intact
+      #
+      # Now checks BOTH platforms. Checking only strings.xml meant a key
+      # committed into Info.plist would pass unremarked.
+      - name: Check the Maps key placeholders are intact
         run: |
-          if ! grep -q REPLACE_WITH_GOOGLE_MAPS_API_KEY                  android/app/src/main/res/values/strings.xml; then
-            echo "::error::The Google Maps placeholder is missing from strings.xml."
+          MISSING=0
+          for f in android/app/src/main/res/values/strings.xml ios/Runner/Info.plist; do
+            if ! grep -q REPLACE_WITH_GOOGLE_MAPS_API_KEY "$f"; then
+              echo "::error::The Google Maps placeholder is missing from $f."
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
             echo "A real key may have been committed. It must stay a placeholder"
             echo "and be substituted at build time from GOOGLE_MAPS_API_KEY."
             exit 1
@@ -279,16 +426,23 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      # Was an inline `sed -i` inside the build step, Android-only, and unable
+      # to fail: with the secret unset it substituted an EMPTY key and shipped a
+      # release bundle whose maps render as a grey rectangle, with a green tick.
+      # `--require` makes a missing key a build failure, and the same script
+      # serves the iOS job so the two platforms cannot drift.
+      - name: Inject Google Maps key
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: dart run tool/inject_maps_key.dart --require
+
       - name: Build release AAB
         env:
           CM_KEYSTORE_PATH: /tmp/upload-keystore.jks
           CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
-          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          sed -i "s/REPLACE_WITH_GOOGLE_MAPS_API_KEY/$GOOGLE_MAPS_API_KEY/g" \
-            android/app/src/main/res/values/strings.xml
           flutter build appbundle --release \
             --dart-define=API_BASE_URL=https://api.servana.com.ph \
             --dart-define=BRAND=servana \

@@ -63,7 +63,63 @@ class FreeRasp {
     // at runtime, and using them here would look correct and always fail.
   ];
 
+  /// iOS bundle id, as registered in Firebase and built by Runner.xcodeproj.
+  ///
+  /// Deliberately different from the Android `applicationId`
+  /// (`com.servana.serviceclient`) — the two stores have separate
+  /// registrations and both are apps of the one `servana-59bee` project.
+  static const String _iosBundleId = 'com.servana.client';
+
+  /// Apple Developer Team ID for UPUP TECHNOLOGIES PTE. LTD, the team that owns
+  /// the `com.servana.client` App ID.
+  ///
+  /// Hard-coded as the default deliberately. A Team ID is **not** a secret — it
+  /// is embedded in every IPA and readable from any installed build — so the
+  /// only thing sourcing it exclusively from `--dart-define` achieved was a
+  /// silent failure mode: forget the flag and iOS ships with no runtime
+  /// protection at all, exactly the state this class was written to end.
+  ///
+  /// Still overridable for a different team:
+  /// `flutter build ipa --dart-define=APPLE_TEAM_ID=XXXXXXXXXX`
+  static const String _appleTeamId =
+      String.fromEnvironment('APPLE_TEAM_ID', defaultValue: '2K2SF7NRQP');
+
+  /// Whether freeRASP has the configuration it needs on the running platform.
+  ///
+  /// Android has always had it. iOS never did: `iosConfig` was absent, so
+  /// `IOSConfig`'s own verifier threw `ConfigurationException` on every single
+  /// iOS launch. That exception was caught in main.dart and filed as a
+  /// non-fatal, which is why nothing ever surfaced it — the app looked healthy
+  /// and simply had no runtime protection.
+  ///
+  /// Throwing on every launch is not a better failure than not starting, so
+  /// when the team id is absent the SDK is skipped deliberately instead.
+  static bool get isConfiguredForCurrentPlatform {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return true;
+      case TargetPlatform.iOS:
+        return _appleTeamId.isNotEmpty;
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+        return false;
+    }
+  }
+
   static Future<void> initThreatDetection() async {
+    // freeRASP is a mobile SDK. On every other platform, and on iOS before a
+    // team id is supplied, starting it can only throw.
+    if (!isConfiguredForCurrentPlatform) {
+      debugPrint(
+        'freeRASP not started: no configuration for $defaultTargetPlatform. '
+        'On iOS this means APPLE_TEAM_ID was not passed to the build; the app '
+        'runs normally but without runtime threat detection.',
+      );
+      return;
+    }
+
     final trigger = dpLocator<ThreatDetectionProvider>();
 
     final config = TalsecConfig(
@@ -72,9 +128,15 @@ class FreeRasp {
         supportedStores: ['com.android.vending'],
         signingCertHashes: _signingCertHashes,
       ),
-      // iosConfig is still unset, so freeRASP throws ConfigurationException on
-      // iOS. main.dart now reports that instead of discarding it, which is how
-      // it stayed invisible. Setting it needs the bundle id and team id.
+      // Constructed only when a team id exists: IOSConfig's constructor runs
+      // ConfigVerifier.verifyIOS, which throws on an empty teamId when the
+      // running platform is iOS.
+      iosConfig: _appleTeamId.isEmpty
+          ? null
+          : IOSConfig(
+              bundleIds: const <String>[_iosBundleId],
+              teamId: _appleTeamId,
+            ),
       watcherMail: 'hcalmerin+freerasp@gmail.com',
       isProd: !kDebugMode,
     );

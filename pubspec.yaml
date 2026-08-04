@@ -151,6 +151,20 @@ flutter_launcher_icons:
 # The following section is specific to Flutter packages.
 flutter:
 
+  # Keep iOS/macOS plugins on CocoaPods.
+  #
+  # Flutter's Swift Package Manager path resolves firebase_core through SPM
+  # while several other Firebase plugins still declare a CocoaPods dependency
+  # on it. The two resolvers then disagree about which firebase_core is present
+  # and the build fails inside a pod, naming a symbol rather than the cause.
+  #
+  # This is a build-system selection, not a platform-specific implementation:
+  # it changes how the same Dart code is assembled for Apple platforms and adds
+  # no iOS-only code path. Remove it once every Firebase plugin ships an SPM
+  # manifest.
+  config:
+    enable-swift-package-manager: false
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

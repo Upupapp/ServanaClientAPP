@@ -76,13 +76,16 @@ Future<void> _bootstrap() async {
   ColorPalette.applyBrand(config.brand);
   initInjector(config);
 
-  // C24: Start freeRASP runtime protection (Android-only until iOS team ID is set).
+  // C24: Start freeRASP runtime protection. Runs on Android, and on iOS once
+  // the build supplies --dart-define=APPLE_TEAM_ID.
   //
   // This used `.ignore()`, which discarded every failure — including the
-  // ConfigurationException freeRASP throws on iOS whenever iosConfig is absent,
-  // as it is here. So the SDK has never started on iOS and nothing said so.
-  // Startup must not block on it, but a silent permanent failure is not a
-  // reasonable price for that.
+  // ConfigurationException freeRASP threw on every iOS launch while iosConfig
+  // was absent. So the SDK never started on iOS and nothing said so.
+  //
+  // FreeRasp now declines to start rather than throwing when a platform has no
+  // configuration, so this catch is back to covering genuine startup faults.
+  // Startup still must not block on it.
   if (!kIsWeb) {
     unawaited(
       FreeRasp.initThreatDetection().catchError((Object e, StackTrace s) {

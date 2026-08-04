@@ -1,5 +1,15 @@
-# Uncomment this line to define a global platform for your project
-platform :ios, '26.0'
+# Minimum iOS version.
+#
+# This MUST match IPHONEOS_DEPLOYMENT_TARGET in Runner.xcodeproj, or CocoaPods
+# compiles the pods against one floor while Xcode compiles the app against
+# another, and the link step fails with errors that name a pod rather than the
+# mismatch that caused them.
+#
+# It previously read `26.0` — an OS almost no device is on — while the Runner
+# target said 15.6. That is the iOS build failure. 15.6 is the app target's own
+# value and clears every floor that actually applies: Firebase iOS SDK 11
+# (13.0), GoogleSignIn 7 (11.0), Flutter 3.44 (13.0).
+platform :ios, '15.6'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -32,25 +42,34 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # Runner.xcodeproj still defines a RunnerTests target. Removing this block
+  # without also removing that target — which is what the dev branch did — is
+  # what leaves RunnerTests with no pod search paths and an incoherent
+  # workspace.
+  #
+  # Nothing runs this target. Validation is `flutter analyze` + `flutter test`
+  # only, and `flutter build ipa` does not build test targets. It is declared
+  # here so the Podfile and the Xcode project agree, not so it can be executed.
   target 'RunnerTests' do
     inherit! :search_paths
   end
 end
 
-xcode_base_version = `xcodebuild -version | grep 'Xcode' | awk '{print $2}' | cut -d . -f 1`
-
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '26.0'
-      # For xcode 15+ only
-       if config.base_configuration_reference && Integer(xcode_base_version) >= 15
-        xcconfig_path = config.base_configuration_reference.real_path
-        xcconfig = File.read(xcconfig_path)
-        xcconfig_mod = xcconfig.gsub(/DT_TOOLCHAIN_DIR/, "TOOLCHAIN_DIR")
-         File.open(xcconfig_path, "w") { |file| file << xcconfig_mod }
-      end
+      # Keep every pod on the same floor as the app target declared above.
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.6'
     end
   end
 end
+
+# Removed here: the `DT_TOOLCHAIN_DIR` -> `TOOLCHAIN_DIR` rewrite that used to
+# run for Xcode >= 15. It worked around an Xcode 15 beta defect that CocoaPods
+# fixed in 1.13, and it did so by rewriting the pods' generated .xcconfig files
+# IN PLACE — so every `pod install` mutated files the next `pod install`
+# regenerates, giving different output on a clean checkout than on a dirty one.
+# It also shelled out to `xcodebuild` while parsing the Podfile, which fails
+# outright on any machine that has no Xcode.

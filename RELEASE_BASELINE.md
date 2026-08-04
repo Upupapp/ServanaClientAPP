@@ -15,7 +15,7 @@ Generated: 2026-07-30 | Sweep HEAD: 1eb2faa (post-C23 RELEASEFORTRESS+ fixes app
 | Flutter channel | stable |
 | Android app ID | com.servana.serviceclient |
 | iOS bundle ID | com.servana.client |
-| Firebase project | servana-1d13b |
+| Firebase project | servana-59bee |
 | Production API | https://api.servana.com.ph |
 | Version | 1.0.0+35 |
 
@@ -122,7 +122,7 @@ Generated: 2026-07-30 | Sweep HEAD: 1eb2faa (post-C23 RELEASEFORTRESS+ fixes app
 | Crashlytics PII in keys | `safe_diagnostics.dart` strips URLs and long tokens |
 | `flutter analyze` | 38 infos (prefer_const only) — 0 warnings, 0 errors |
 | `flutter test` | 933/933 pass, 6 skip, 0 fail |
-| Firebase project ID | servana-1d13b (consistent across Android + iOS) |
+| Firebase project ID | servana-59bee (consistent across Android + iOS) |
 
 ---
 

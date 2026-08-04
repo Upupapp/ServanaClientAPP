@@ -34,8 +34,18 @@
 	     that writes RunnerConfig/Secrets.xcconfig). Never commit the real key. -->
 	<key>GMSApiKey</key>
 	<string>REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
-	<!-- Google Sign-In: Replace REVERSED_CLIENT_ID with value from GoogleService-Info.plist
-	     after enabling Google Sign-In in Firebase Console > Authentication > Sign-in method -->
+	<!-- Google Sign-In client id.
+	     google_sign_in_ios resolves the client id from GIDClientID here, or
+	     failing that from a GoogleService-Info.plist inside the app bundle.
+	     GoogleService-Info.plist exists on disk but is NOT referenced by
+	     Runner.xcodeproj, so it is never copied into the bundle and the
+	     fallback does not apply — without this key, Google Sign-In fails at
+	     runtime on iOS with no build-time warning.
+	     Must equal CLIENT_ID in ios/Runner/GoogleService-Info.plist; asserted
+	     by test/common/firebase_single_project_test.dart. -->
+	<key>GIDClientID</key>
+	<string>320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com</string>
+	<!-- Google Sign-In callback: REVERSED_CLIENT_ID from GoogleService-Info.plist -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

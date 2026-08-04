@@ -24,7 +24,7 @@ Generated: 2026-07-30 | Command: C23 V1 RELEASEFORTRESS+
 |---|---|---|
 | API Base URL | https://api.servana.com.ph | Configured via `--dart-define=API_BASE_URL` default |
 | Socket URL | wss://api.servana.com.ph | Wired in SocketIO client |
-| Firebase Project | servana-1d13b | `google-services.json` + `GoogleService-Info.plist` |
+| Firebase Project | servana-59bee | `google-services.json` + `GoogleService-Info.plist` |
 | Firebase Auth | Enabled | Email, Google, Facebook, Phone |
 | FCM | Enabled | Foreground + background + terminated-state handler |
 | Analytics | Enabled | Consent-gated, PII-filtered |

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Apple Push Notification service.
+	     firebase_messaging on iOS delivers nothing without this entitlement.
+	     Info.plist already declares UIBackgroundModes > remote-notification,
+	     which is the half of the pair that does not require signing — so the
+	     app looked configured for push while being incapable of receiving it.
+
+	     `development` is correct for debug and TestFlight-from-Xcode builds.
+	     Xcode rewrites it to `production` when exporting for the App Store, so
+	     this value does not need to change per build.
+
+	     Requires the matching capability on the App ID in the Apple Developer
+	     portal, and an APNs key uploaded to Firebase Console > Project settings
+	     > Cloud Messaging for the servana-59bee project. Neither can be done
+	     from this repository. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>
