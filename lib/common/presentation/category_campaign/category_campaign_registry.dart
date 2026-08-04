@@ -99,9 +99,38 @@ abstract final class CategoryCampaignRegistry {
     closeLabel: 'Close Hair and Nails promotion',
   );
 
+  /// Massage & Wellness.
+  ///
+  /// CTA pill measured at x 134..805, y 1497..1590 of 941x1672.
+  ///
+  /// NOTE the category key. The MASSAGEWELLNESSPOPUP+ command specifies
+  /// `massage_wellness`, and **no such key exists in this app** — the Home
+  /// grid, the router and `home_promotion.dart` all use `massage`
+  /// (`main_router.dart:76`, `home_category_grid.dart:38`). Taking the command
+  /// literally would have registered a campaign nothing could ever look up:
+  /// `forCategoryKey('massage')` returns null, the popup never appears, and
+  /// nothing fails loudly. The creative's own name is preserved in
+  /// [campaignKey], which is only an analytics label.
+  static const CategoryCampaign massageWellness = CategoryCampaign(
+    categoryId: ServiceCategoryId.massage,
+    campaignKey: 'massage_wellness_category_popup_v1',
+    categoryKey: 'massage',
+    assetPath: 'assets/images/categories/massage_wellness_popup_v1.png',
+    assetWidth: 941,
+    assetHeight: 1672,
+    ctaRect: Rect.fromLTWH(0.1424, 0.8953, 0.7141, 0.0562),
+    semanticSummary:
+        'Massage and Wellness. Relax, recharge, and feel your best. Book '
+        'full-body massage, home spa, foot massage, and aromatherapy services '
+        'with trusted wellness professionals and easy scheduling.',
+    primaryActionLabel: 'Explore Massage and Wellness',
+    closeLabel: 'Close Massage and Wellness promotion',
+  );
+
   static const List<CategoryCampaign> all = <CategoryCampaign>[
     beautyWellness,
     hairAndNails,
+    massageWellness,
   ];
 
   /// The campaign for [key], or null when that category has none.

@@ -178,8 +178,8 @@ void main() {
     });
 
     test('categories without a creative have no campaign', () {
-      // massage and aircon must keep navigating straight through.
-      expect(CategoryCampaignRegistry.forCategoryKey('massage'), isNull);
+      // Aircon's creative sits on disk with no registry entry, so it stays
+      // inert and that category keeps navigating straight through.
       expect(CategoryCampaignRegistry.forCategoryKey('aircon'), isNull);
       expect(CategoryCampaignRegistry.forCategoryKey('nonsense'), isNull);
     });
@@ -288,6 +288,36 @@ void main() {
           tester.getSize(find.byKey(ServanaCategoryCampaignPopup.artworkKey));
       expect(cta.height, lessThan(art.height * 0.5),
           reason: 'the CTA must cover the drawn button, not the artwork');
+    });
+  });
+
+  group('massage & wellness', () {
+    testWidgets('renders its own artwork with a working CTA', (tester) async {
+      await _openPopup(tester, CategoryCampaignRegistry.massageWellness);
+      expect(
+          find.byKey(ServanaCategoryCampaignPopup.artworkKey), findsOneWidget);
+      expect(find.byKey(ServanaCategoryCampaignPopup.ctaKey), findsOneWidget);
+    });
+
+    testWidgets('its CTA also clears 48dp on the smallest phone',
+        (tester) async {
+      await _openPopup(tester, CategoryCampaignRegistry.massageWellness,
+          viewport: const Size(320, 568));
+      final box =
+          tester.getSize(find.byKey(ServanaCategoryCampaignPopup.ctaKey));
+      expect(box.height, greaterThanOrEqualTo(48.0));
+    });
+
+    test('it is registered against the category key the app actually uses', () {
+      // The command specifies `massage_wellness`. No such key exists — the Home
+      // grid and the router both use `massage`. Registering the command's key
+      // verbatim would mean forCategoryKey('massage') returns null and the
+      // popup silently never appears.
+      expect(CategoryCampaignRegistry.massageWellness.categoryKey, 'massage');
+      expect(CategoryCampaignRegistry.forCategoryKey('massage'), isNotNull);
+      expect(
+          CategoryCampaignRegistry.forCategoryKey('massage_wellness'), isNull,
+          reason: 'that key does not exist in this app');
     });
   });
 

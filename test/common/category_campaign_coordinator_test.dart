@@ -45,8 +45,9 @@ void main() {
       expect(CategoryCampaignCoordinator.hasCampaignFor('beauty_wellness'),
           isTrue);
       expect(CategoryCampaignCoordinator.hasCampaignFor('hair_nails'), isTrue);
-      // These must keep navigating straight through, exactly as before.
-      expect(CategoryCampaignCoordinator.hasCampaignFor('massage'), isFalse);
+      expect(CategoryCampaignCoordinator.hasCampaignFor('massage'), isTrue);
+      // Aircon has an asset on disk but NO registry entry, so it must keep
+      // navigating straight through — an unregistered creative is inert.
       expect(CategoryCampaignCoordinator.hasCampaignFor('aircon'), isFalse);
     });
 
@@ -61,7 +62,7 @@ void main() {
           builder: (context) => ElevatedButton(
             onPressed: () async {
               result =
-                  await coord.present(context: context, categoryKey: 'massage');
+                  await coord.present(context: context, categoryKey: 'aircon');
             },
             child: const Text('go'),
           ),
@@ -236,6 +237,89 @@ void main() {
       await tester.idle();
 
       expect(results, [false]);
+    });
+  });
+
+  group('session safety', () {
+    testWidgets('a route popped externally still releases the guard',
+        (tester) async {
+      // What logout looks like from the coordinator's side: the router tears
+      // the modal's route down without the customer touching either control.
+      // The guard is released in `finally`, so this must not leave the
+      // category permanently unresponsive for the next account.
+      tester.view.physicalSize = const Size(390, 844) * 3;
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      final coord = CategoryCampaignCoordinator(
+          analytics: _analytics(MockFirebaseAnalytics()));
+      final navKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(MaterialApp(
+        navigatorKey: navKey,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () =>
+                    coord.present(context: context, categoryKey: 'massage'),
+                child: const Text('tap'),
+              ),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('tap'));
+      await tester.pumpAndSettle();
+      expect(coord.isOpen, isTrue);
+
+      // Torn down from outside, exactly as a session change would.
+      navKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      await tester.idle();
+
+      expect(coord.isOpen, isFalse,
+          reason: 'an externally popped route must not strand the guard');
+      expect(find.byKey(ServanaCategoryCampaignPopup.artworkKey), findsNothing,
+          reason: 'no stale modal may survive into the next session');
+    });
+
+    testWidgets('the category still works after such a teardown',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844) * 3;
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      final coord = CategoryCampaignCoordinator(
+          analytics: _analytics(MockFirebaseAnalytics()));
+      final navKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(MaterialApp(
+        navigatorKey: navKey,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () =>
+                    coord.present(context: context, categoryKey: 'massage'),
+                child: const Text('tap'),
+              ),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('tap'));
+      await tester.pumpAndSettle();
+      navKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      await tester.idle();
+
+      await tester.tap(find.text('tap'));
+      await tester.pumpAndSettle();
+      expect(
+          find.byKey(ServanaCategoryCampaignPopup.artworkKey), findsOneWidget);
     });
   });
 

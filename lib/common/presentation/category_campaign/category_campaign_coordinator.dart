@@ -185,6 +185,29 @@ class CategoryCampaignCoordinator {
           onClose: onClose,
           onReady: onReady,
         ),
+      ServiceCategoryId.massage => CategoryCampaignAccessibleView(
+          heading: 'Massage & Wellness',
+          tagline: 'Relax, recharge, and feel your best.',
+          body: 'Book massage and wellness services from your phone, choose '
+              'your schedule, and enjoy a smooth, secure experience.',
+          services: const [
+            'Full body massage',
+            'Home spa and wellness',
+            'Foot massage',
+            'Aromatherapy session',
+          ],
+          benefits: const [
+            'Trusted wellness pros',
+            'Easy scheduling',
+            'Relaxing experience',
+          ],
+          primaryActionLabel: campaign.primaryActionLabel,
+          closeLabel: campaign.closeLabel,
+          accentColor: config.primaryColor,
+          onExplore: onExplore,
+          onClose: onClose,
+          onReady: onReady,
+        ),
       // Every registry entry must have fallback copy. A campaign added without
       // it would otherwise ship an unreadable modal to large-text customers.
       _ => CategoryCampaignAccessibleView(
