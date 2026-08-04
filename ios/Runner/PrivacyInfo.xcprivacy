@@ -118,6 +118,21 @@
 			</array>
 		</dict>
 
+		<!-- NO NSPrivacyCollectedDataTypePaymentInfo, and that is correct.
+
+		     All payments go through PayMongo hosted checkout, opened in a
+		     WebView restricted to an explicit host allowlist
+		     (lib/common/presentation/screens/payment_webview_screen.dart). The
+		     customer enters card details on PayMongo's page; this app never
+		     receives, stores or transmits them.
+
+		     A dead add_credit_card_screen.dart with cardNumber/expiry/cvv
+		     fields used to sit in lib/modules/payments — unreachable, its
+		     router import commented out. It was deleted rather than left in
+		     place, because the only way this declaration becomes wrong is
+		     someone re-enabling that screen. app_store_readiness_test.dart
+		     fails if card-entry UI reappears without this declaration. -->
+
 		<!-- Customer support tickets and in-app messages with the provider. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>

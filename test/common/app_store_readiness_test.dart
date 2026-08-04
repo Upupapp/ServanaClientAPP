@@ -168,6 +168,54 @@ void main() {
     });
   });
 
+  group('payment data is not collected, and the manifest agrees', () {
+    // All payments run through PayMongo hosted checkout in a WebView, so the
+    // customer types their card on PayMongo's page and this app never sees it.
+    // That is why NSPrivacyCollectedDataTypePaymentInfo is absent.
+    //
+    // These two tests are a pair: if card-entry UI ever comes back, the first
+    // fails and forces whoever added it to also update the manifest and the
+    // App Store Connect questionnaire. A declaration that quietly goes stale
+    // is worse than one that was never made.
+
+    test('no card-entry UI exists anywhere in lib/', () {
+      final offenders = <String>[];
+      for (final entity in Directory('lib').listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        final src = entity.readAsStringSync();
+        // Controllers/fields that would mean the app itself takes card input.
+        if (RegExp(r'\b(cardNumber|cardCvv|cvv)\s*=\s*TextEditingController')
+            .hasMatch(src)) {
+          offenders.add(entity.path);
+        }
+      }
+      expect(offenders, isEmpty,
+          reason: 'card input found — the app would then COLLECT payment '
+              'info, and PrivacyInfo.xcprivacy plus the App Store Connect '
+              'questionnaire must declare it:\n${offenders.join('\n')}');
+    });
+
+    test('the manifest declares no payment info', () {
+      final manifest = _read('ios/Runner/PrivacyInfo.xcprivacy');
+      // Present in the explanatory comment, absent as a declaration.
+      expect(
+        RegExp(r'<string>NSPrivacyCollectedDataTypePaymentInfo</string>')
+            .hasMatch(manifest),
+        isFalse,
+        reason: 'payments are handled off-device by PayMongo hosted checkout',
+      );
+    });
+
+    test('PayMongo checkout is host-restricted', () {
+      // The allowlist is what keeps checkout — and therefore card entry — on
+      // PayMongo's own domain instead of anywhere a redirect points.
+      final src =
+          _read('lib/common/presentation/screens/payment_webview_screen.dart');
+      expect(src, contains('checkout.paymongo.com'));
+      expect(src, contains('_approvedHosts'));
+    });
+  });
+
   group('the native plists are valid XML', () {
     // Info.plist carried `--dart-define` inside an XML comment. A double hyphen
     // is illegal there, so the file was not well-formed XML. Xcode's parser is

@@ -26,7 +26,6 @@ import 'package:client/modules/merchant_menu/presentation/screens/item_option_me
 import 'package:client/modules/merchant_menu/presentation/screens/merchant_menu_screen.dart';
 import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
 import 'package:client/common/presentation/widgets/main_nav_scaffold.dart';
-// import 'package:client/modules/payments/presentation/screens/add_credit_card_screen.dart';
 import 'package:client/modules/registration/presentation/screens/create_account_screen.dart';
 import 'package:client/modules/store_items/presentation/screens/store_items_screen.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
