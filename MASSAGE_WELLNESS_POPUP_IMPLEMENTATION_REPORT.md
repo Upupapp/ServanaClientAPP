@@ -140,8 +140,7 @@ popping the route out from under the modal.
 | `flutter analyze` | **exit 0** — 53 infos, no warnings, no errors |
 | `flutter test` | **exit 0 — 1328 passed**, 6 skipped |
 | Campaign suites alone | **54 passed** |
-| `flutter build apk --debug` | exit 0 (before `flutter clean`) |
-| `flutter build apk --release` | exit 0, 63.2 MB (before `flutter clean`) |
+| `flutter build apk --release` | **exit 0** — 63.2 MB, rebuilt after `flutter clean`; asset verified inside the APK |
 | `flutter build appbundle` | **NOT RUN** |
 | `flutter build ios --no-codesign` | **CANNOT RUN — requires macOS** |
 
@@ -149,9 +148,11 @@ popping the route out from under the modal.
 repository's `build-ios` CI job on `macos-latest` covers it once pushed.
 Reporting it as passed would be untrue.
 
-The two APK builds succeeded **before** `flutter clean` was run, so they did not
-include the renamed massage asset. They are reported as-run rather than
-re-claimed; the next CI run validates the current tree.
+An earlier pair of APK builds in the same session predated `flutter clean` and
+did not contain the renamed asset. Those are not what the table above reports:
+the release APK was rebuilt afterwards, and
+`massage_wellness_popup_v1.png` was confirmed present inside the archive at its
+registered path rather than inferred from a green build.
 
 ---
 
@@ -164,6 +165,7 @@ re-claimed; the next CI run validates the current tree.
    who taps the CTA sees the campaign and then the category reveal. Pre-existing
    behaviour; whether two successive presentations is wanted is a product call.
 4. **No frequency cap** — per §13 it shows on every deliberate tap.
-5. **Aircon has a creative on disk but no registry entry**, so that category is
-   unchanged. `aircon_repair_pop_up.png` is inert, and a test asserts aircon has
-   no campaign.
+5. **Aircon has since been implemented too** (AIRCONREPAIRPOPUP+ V1), so all
+   four Home categories now show a campaign on tap. At the time this document
+   was first written aircon was still inert; the statement is corrected rather
+   than left to mislead.

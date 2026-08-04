@@ -127,10 +127,39 @@ abstract final class CategoryCampaignRegistry {
     closeLabel: 'Close Massage and Wellness promotion',
   );
 
+  /// Aircon Repair.
+  ///
+  /// CTA pill measured at x 135..801, y 1445..1561 of 941x1672. Noticeably
+  /// taller than the other three creatives (0.070 vs ~0.056 of artboard
+  /// height); verified against the row profile rather than assumed to be a
+  /// detector artefact — the pill really is a 116px orange-to-red gradient
+  /// with empty rows either side.
+  ///
+  /// Category key is `aircon`, not the `aircon_repair` the AIRCONREPAIRPOPUP+
+  /// command specifies — same mismatch as the massage creative. See
+  /// [massageWellness] for why registering the command's value verbatim would
+  /// fail silently.
+  static const CategoryCampaign airconRepair = CategoryCampaign(
+    categoryId: ServiceCategoryId.aircon,
+    campaignKey: 'aircon_repair_category_popup_v1',
+    categoryKey: 'aircon',
+    assetPath: 'assets/images/categories/aircon_repair_popup_v1.png',
+    assetWidth: 941,
+    assetHeight: 1672,
+    ctaRect: Rect.fromLTWH(0.1435, 0.8642, 0.7088, 0.0700),
+    semanticSummary: 'Aircon Repair. Stay cool with fast, reliable help. Book '
+        'air-conditioner cleaning, repair, preventive maintenance, '
+        'installation, and checkup services with trusted technicians and '
+        'convenient scheduling.',
+    primaryActionLabel: 'Explore Aircon Repair',
+    closeLabel: 'Close Aircon Repair promotion',
+  );
+
   static const List<CategoryCampaign> all = <CategoryCampaign>[
     beautyWellness,
     hairAndNails,
     massageWellness,
+    airconRepair,
   ];
 
   /// The campaign for [key], or null when that category has none.

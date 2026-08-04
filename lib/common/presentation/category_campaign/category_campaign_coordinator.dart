@@ -208,6 +208,32 @@ class CategoryCampaignCoordinator {
           onClose: onClose,
           onReady: onReady,
         ),
+      ServiceCategoryId.aircon => CategoryCampaignAccessibleView(
+          // Heading follows the creative ("Aircon Repair"), not the config
+          // title ("Aircon Services"). A customer who reaches the fallback
+          // should read the same words the artwork would have shown them.
+          heading: 'Aircon Repair',
+          tagline: 'Stay cool with fast, reliable help.',
+          body: 'Book aircon services from your phone, choose your schedule, '
+              'and enjoy a smooth, secure experience.',
+          services: const [
+            'AC cleaning',
+            'Aircon repair',
+            'Preventive maintenance',
+            'Installation and checkup',
+          ],
+          benefits: const [
+            'Trusted technicians',
+            'Easy scheduling',
+            'Cooler comfort',
+          ],
+          primaryActionLabel: campaign.primaryActionLabel,
+          closeLabel: campaign.closeLabel,
+          accentColor: config.primaryColor,
+          onExplore: onExplore,
+          onClose: onClose,
+          onReady: onReady,
+        ),
       // Every registry entry must have fallback copy. A campaign added without
       // it would otherwise ship an unreadable modal to large-text customers.
       _ => CategoryCampaignAccessibleView(

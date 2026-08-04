@@ -163,8 +163,14 @@ void main() {
 
   group('the registry', () {
     test('covers exactly the two categories with creatives', () {
-      expect(CategoryCampaignRegistry.all.map((c) => c.categoryKey),
-          containsAll(<String>['beauty_wellness', 'hair_nails']));
+      expect(
+          CategoryCampaignRegistry.all.map((c) => c.categoryKey),
+          containsAll(<String>[
+            'beauty_wellness',
+            'hair_nails',
+            'massage',
+            'aircon',
+          ]));
     });
 
     test('category keys resolve the same way the router resolves them', () {
@@ -178,9 +184,8 @@ void main() {
     });
 
     test('categories without a creative have no campaign', () {
-      // Aircon's creative sits on disk with no registry entry, so it stays
-      // inert and that category keeps navigating straight through.
-      expect(CategoryCampaignRegistry.forCategoryKey('aircon'), isNull);
+      // All four Home categories now have creatives, so only an unknown key
+      // may resolve to null — and it must, rather than throwing.
       expect(CategoryCampaignRegistry.forCategoryKey('nonsense'), isNull);
     });
 
@@ -318,6 +323,41 @@ void main() {
       expect(
           CategoryCampaignRegistry.forCategoryKey('massage_wellness'), isNull,
           reason: 'that key does not exist in this app');
+    });
+  });
+
+  group('aircon repair', () {
+    testWidgets('renders its own artwork with a working CTA', (tester) async {
+      await _openPopup(tester, CategoryCampaignRegistry.airconRepair);
+      expect(
+          find.byKey(ServanaCategoryCampaignPopup.artworkKey), findsOneWidget);
+      expect(find.byKey(ServanaCategoryCampaignPopup.ctaKey), findsOneWidget);
+    });
+
+    testWidgets('its CTA clears 48dp on the smallest phone', (tester) async {
+      await _openPopup(tester, CategoryCampaignRegistry.airconRepair,
+          viewport: const Size(320, 568));
+      final box =
+          tester.getSize(find.byKey(ServanaCategoryCampaignPopup.ctaKey));
+      expect(box.height, greaterThanOrEqualTo(48.0));
+    });
+
+    test('it is registered against the key the app actually uses', () {
+      // The command specifies `aircon_repair`; the Home grid and router use
+      // `aircon`. Registering the command's value verbatim would mean the
+      // popup silently never appears.
+      expect(CategoryCampaignRegistry.airconRepair.categoryKey, 'aircon');
+      expect(CategoryCampaignRegistry.forCategoryKey('aircon'), isNotNull);
+      expect(CategoryCampaignRegistry.forCategoryKey('aircon_repair'), isNull,
+          reason: 'that key does not exist in this app');
+    });
+
+    test('its taller CTA pill is preserved, not normalised', () {
+      // 0.070 of artboard height against ~0.056 for the other three. Verified
+      // against the row profile; clamping it to match the others would move
+      // the hit area off the drawn button.
+      expect(CategoryCampaignRegistry.airconRepair.ctaRect.height,
+          greaterThan(0.065));
     });
   });
 

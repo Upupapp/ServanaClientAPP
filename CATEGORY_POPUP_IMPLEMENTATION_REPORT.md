@@ -1,8 +1,18 @@
 # Category Campaign Popups — Implementation Report
 
-Covers **HAIRNAILSPOPUP+ V1** and **BEAUTYWELLNESSPOPUP+ V1**. They were
-implemented together because they are the same feature with two creatives; one
-reusable component serves both, which is what §5 of each command asks for.
+Shared architecture for **all four** category campaigns:
+
+| Command | Category key | Report |
+|---|---|---|
+| BEAUTYWELLNESSPOPUP+ V1 | `beauty_wellness` | [BEAUTY_WELLNESS_POPUP_IMPLEMENTATION_REPORT.md](BEAUTY_WELLNESS_POPUP_IMPLEMENTATION_REPORT.md) |
+| HAIRNAILSPOPUP+ V1 | `hair_nails` | [HAIR_NAILS_POPUP_IMPLEMENTATION_REPORT.md](HAIR_NAILS_POPUP_IMPLEMENTATION_REPORT.md) |
+| MASSAGEWELLNESSPOPUP+ V1 | `massage` | [MASSAGE_WELLNESS_POPUP_IMPLEMENTATION_REPORT.md](MASSAGE_WELLNESS_POPUP_IMPLEMENTATION_REPORT.md) |
+| AIRCONREPAIRPOPUP+ V1 | `aircon` | [AIRCON_REPAIR_POPUP_IMPLEMENTATION_REPORT.md](AIRCON_REPAIR_POPUP_IMPLEMENTATION_REPORT.md) |
+
+One reusable component serves all four, which is what §5 of each command asks
+for. **Two of the four commands specified a category key that does not exist in
+this application** (`massage_wellness`, `aircon_repair`); both would have failed
+silently. See the per-category reports.
 
 Date: 2026-08-04 · Branch: `main` · Base: `e874262`
 
@@ -10,7 +20,8 @@ Date: 2026-08-04 · Branch: `main` · Base: `e874262`
 
 ## 1. What the sweep found, and where the commands were wrong
 
-Both commands assume an existing popup to replace. **There was none.**
+All four commands assume an existing popup to replace. **There was none,
+for any of them.**
 
 | Question | Verified answer | Source |
 |---|---|---|
@@ -27,8 +38,8 @@ Both commands assume an existing popup to replace. **There was none.**
 
 ### The "plain blue popup" is not a popup
 
-Both commands describe a blue panel with decorative circles, a text heading and
-an *Explore now* button, and instruct that it be removed. That is
+Every one of the four commands describes a blue panel with decorative circles, a
+text heading and an *Explore now* button, and instructs that it be removed. That is
 `category_reveal_overlay.dart` — a **full-screen reveal transition mounted
 inside the category screen, after navigation**. It is not a modal, it is not
 shown on tap, and it belongs to the category-delight feature.
@@ -37,8 +48,8 @@ shown on tap, and it belongs to the category-delight feature.
 `lib/common/presentation/category_delight/`. If it should also go, that is a
 separate change and should be asked for explicitly.
 
-Consequence: §4 of both commands ("remove the old popup") had nothing to
-remove, and §28/§30's "the old popup does not appear" is satisfied vacuously.
+Consequence: the "remove the old popup" section of all four commands had
+nothing to remove, and §28/§30's "the old popup does not appear" is satisfied vacuously.
 This work **inserts new behaviour between tap and navigation** rather than
 replacing anything.
 
@@ -94,7 +105,8 @@ ServanaCategoryCampaignPopup  modal shell: ratio, CTA overlay, close,
 no second route or category id was introduced.
 
 A category with no registry entry keeps its previous behaviour: immediate
-navigation. `massage` and `aircon` are unchanged and tested as such.
+navigation. All four Home categories now have entries, so only an unknown key
+takes that path — and a test asserts it resolves to null rather than throwing.
 
 ---
 

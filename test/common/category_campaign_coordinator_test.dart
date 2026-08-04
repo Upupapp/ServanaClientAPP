@@ -46,9 +46,11 @@ void main() {
           isTrue);
       expect(CategoryCampaignCoordinator.hasCampaignFor('hair_nails'), isTrue);
       expect(CategoryCampaignCoordinator.hasCampaignFor('massage'), isTrue);
-      // Aircon has an asset on disk but NO registry entry, so it must keep
-      // navigating straight through — an unregistered creative is inert.
-      expect(CategoryCampaignCoordinator.hasCampaignFor('aircon'), isFalse);
+      expect(CategoryCampaignCoordinator.hasCampaignFor('aircon'), isTrue);
+      // All four Home categories now have creatives. An unknown key must still
+      // fall through to immediate navigation rather than throwing.
+      expect(CategoryCampaignCoordinator.hasCampaignFor('not_a_category'),
+          isFalse);
     });
 
     testWidgets('a category with no campaign never opens a modal',
@@ -61,8 +63,8 @@ void main() {
         home: Builder(
           builder: (context) => ElevatedButton(
             onPressed: () async {
-              result =
-                  await coord.present(context: context, categoryKey: 'aircon');
+              result = await coord.present(
+                  context: context, categoryKey: 'not_a_category');
             },
             child: const Text('go'),
           ),
