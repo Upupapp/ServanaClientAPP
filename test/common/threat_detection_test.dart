@@ -280,6 +280,22 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     });
 
+    test('CI does not claim iOS protection is off when it is on', () {
+      // The build log said "APPLE_TEAM_ID is not set — building without
+      // freeRASP iOS runtime protection." That was true while the team id came
+      // only from a --dart-define, and became false the moment a real default
+      // was compiled in — leaving CI asserting a security control was disabled
+      // on builds where it was active. A log that misstates that is worse than
+      // one that says nothing.
+      final ci = _read('.github/workflows/flutter-ci.yml');
+      expect(
+        ci,
+        isNot(contains('building without freeRASP iOS runtime protection')),
+        reason: 'the compiled-in team id means protection is ON without the '
+            'secret; the workflow must not say otherwise',
+      );
+    });
+
     test('the iOS bundle id it would register matches the Xcode target', () {
       // A freeRASP bundle id that does not match what Xcode builds reports
       // every legitimate install as tampered.

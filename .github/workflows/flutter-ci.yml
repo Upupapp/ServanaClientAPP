@@ -219,12 +219,10 @@ jobs:
           pod --version
           pod install --repo-update
 
-      # ios/Podfile.lock is deliberately absent from git at this commit: the one
-      # that was committed predated firebase_auth, firebase_messaging,
-      # firebase_remote_config, google_sign_in and flutter_facebook_auth, so it
-      # described an app that no longer exists. Once this job is green, download
-      # this artifact and commit it — from then on the lock is authoritative and
-      # this note should be deleted.
+      # ios/Podfile.lock IS committed and authoritative. This artifact is kept
+      # so a resolution drift is visible: if CI resolves something other than
+      # the committed lock, the uploaded file differs from the one in git and
+      # the diff is right here rather than only on a developer's Mac.
       - name: Upload generated Podfile.lock
         if: always()
         uses: actions/upload-artifact@v4
@@ -238,16 +236,23 @@ jobs:
         id: build_ios
         timeout-minutes: 40
         env:
-          # freeRASP starts on iOS only when this is present. Without it the app
-          # builds and runs with no runtime protection rather than throwing on
-          # every launch — see FreeRasp.isConfiguredForCurrentPlatform.
+          # OPTIONAL. FreeRasp._appleTeamId defaults to 2K2SF7NRQP — the team
+          # that owns the com.servana.client App ID — so iOS runtime protection
+          # is on whether or not this secret exists. Set it only to build for a
+          # DIFFERENT Apple team.
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           if [ -n "$APPLE_TEAM_ID" ]; then
+            echo "::notice::Overriding the compiled-in Apple team id from the APPLE_TEAM_ID secret."
             flutter build ios --release --no-codesign \
               --dart-define=APPLE_TEAM_ID="$APPLE_TEAM_ID"
           else
-            echo "::warning::APPLE_TEAM_ID is not set — building without freeRASP iOS runtime protection."
+            # This used to warn "building without freeRASP iOS runtime
+            # protection", which was true when the team id came only from a
+            # --dart-define and became false the moment a real default was
+            # compiled in. A build log that misstates whether a security
+            # control is active is worse than one that says nothing.
+            echo "::notice::APPLE_TEAM_ID secret not set — using the compiled-in team id. freeRASP iOS protection is ACTIVE."
             flutter build ios --release --no-codesign
           fi
 
