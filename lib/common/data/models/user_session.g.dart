@@ -22,14 +22,15 @@ class UserSessionAdapter extends TypeAdapter<UserSession> {
       referralCode: fields[53] as String?,
       fullname: fields[54] as String,
       emailAddress: fields[56] as String?,
-      token: fields[58] as String? ?? '',
+      token: fields[58] as String,
+      refreshToken: fields[59] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSession obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(51)
       ..write(obj.customerID)
       ..writeByte(52)
@@ -41,7 +42,9 @@ class UserSessionAdapter extends TypeAdapter<UserSession> {
       ..writeByte(56)
       ..write(obj.emailAddress)
       ..writeByte(58)
-      ..write(obj.token);
+      ..write(obj.token)
+      ..writeByte(59)
+      ..write(obj.refreshToken);
   }
 
   @override
@@ -67,6 +70,7 @@ _$UserSessionImpl _$$UserSessionImplFromJson(Map<String, dynamic> json) =>
       fullname: json['fullname'] as String,
       emailAddress: json['emailAddress'] as String?,
       token: json['token'] as String? ?? '',
+      refreshToken: json['refreshToken'] as String?,
     );
 
 Map<String, dynamic> _$$UserSessionImplToJson(_$UserSessionImpl instance) =>
@@ -77,4 +81,5 @@ Map<String, dynamic> _$$UserSessionImplToJson(_$UserSessionImpl instance) =>
       'fullname': instance.fullname,
       'emailAddress': instance.emailAddress,
       'token': instance.token,
+      'refreshToken': instance.refreshToken,
     };

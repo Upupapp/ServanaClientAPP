@@ -68,7 +68,7 @@
 
 ### Backend Compatibility
 - [x] Production API URL: https://api.servana.com.ph — CONFIGURED
-- [x] Firebase project ID consistent — PASS (servana-1d13b)
+- [x] Firebase project ID consistent — PASS (servana-59bee)
 - [x] iOS Firebase bundle ID corrected — FIXED this command
 - [ ] POST /api/auth/logout — OPEN
 

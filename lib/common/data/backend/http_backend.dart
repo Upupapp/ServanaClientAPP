@@ -84,6 +84,10 @@ class HttpBackend implements Backend {
           emailAddress:
               (data['email'] ?? data['emailAddress'] ?? email).toString(),
           token: token,
+          // ecf65fa added this to the sign-in response; dropping it left
+          // email/password sessions unable to renew and therefore dead after
+          // an hour.
+          refreshToken: (data['refreshToken'] ?? '').toString(),
         ),
         error: null,
       );
@@ -162,8 +166,20 @@ class HttpBackend implements Backend {
 
   @override
   Future<void> logout() async {
-    // No backend logout endpoint currently. Client-side session clear suffices.
-    // TODO: when BE adds POST /api/auth/logout, call it here.
+    // Revoke server-side before clearing anything locally.
+    //
+    // The endpoint exists now. Without it a logout was purely local: the
+    // Firebase refresh tokens stayed valid, so anyone holding one could keep
+    // minting ID tokens long after the customer believed they had signed out,
+    // and the device kept receiving that customer's push notifications.
+    //
+    // Best-effort and non-blocking: a logout the customer asked for must
+    // complete even offline. The local teardown below is what they actually
+    // see, and it runs regardless.
+    try {
+      final api = _apiClient ?? ServanaApiClient(baseUrl: baseUrl);
+      await api.logout();
+    } catch (_) {}
   }
 
   @override

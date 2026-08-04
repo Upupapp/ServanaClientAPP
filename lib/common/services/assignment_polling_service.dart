@@ -104,7 +104,7 @@ class AssignmentPollingService {
 
       String? workerName;
       if (workerUid != null && workerUid.isNotEmpty) {
-        workerName = await _fetchWorkerName(workerUid);
+        workerName = await _fetchWorkerName(bookingId);
       }
 
       if (_disposed) return;
@@ -122,10 +122,10 @@ class AssignmentPollingService {
     }
   }
 
-  Future<String?> _fetchWorkerName(String uid) async {
+  Future<String?> _fetchWorkerName(int bookingId) async {
     try {
       final api = dpLocator<ServanaApiClient>();
-      final res = await api.getWorkerByUid(uid);
+      final res = await api.getBookingProvider(bookingId);
       final w = res['worker'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
           res;

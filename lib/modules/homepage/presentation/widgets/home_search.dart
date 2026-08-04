@@ -1,3 +1,4 @@
+import 'package:client/common/constants/app_spacing.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -64,7 +65,7 @@ class _ServanaHomeSearchState extends State<ServanaHomeSearch> {
       },
       child: Container(
         height: 52,
-        margin: const EdgeInsets.symmetric(horizontal: 20),
+        margin: EdgeInsets.symmetric(horizontal: homeGutter(context)),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),

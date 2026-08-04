@@ -1,5 +1,6 @@
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/modules/search/domain/search_result.dart';
+import 'package:client/common/domain/pricing/catalog_price.dart';
 
 /// Fetches and caches the full service catalog for in-memory search.
 ///
@@ -30,8 +31,15 @@ class SearchRepository {
         if (level2.isEmpty) continue;
         final items = opt['items'] as List<dynamic>? ?? [];
         if (items.isEmpty) continue;
+        // Shared resolver: this used to read only `base_price` and cast it
+        // `as num?`, so a price arriving as a string — or under the camelCase
+        // spelling that /options-with-addons uses — became 0 and rendered as
+        // "Get a quote" on a priced service.
         final prices = items
-            .map((i) => (i['base_price'] as num?)?.toInt() ?? 0)
+            .map((i) => extractCatalogPricePesosInt(
+                  Map<String, dynamic>.from(i as Map),
+                ))
+            .whereType<int>()
             .where((p) => p > 0)
             .toList();
         results.add(SearchResult(

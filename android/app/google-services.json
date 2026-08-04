@@ -14,13 +14,37 @@
       },
       "oauth_client": [
         {
+          "client_id": "320379709991-ftnq17kfj0k336kbn0aarcs3ac55qbf3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.servana.serviceclient",
+            "certificate_hash": "ea3de8c6c9e398ffc630ecc42227a7f8c0c8efe0"
+          }
+        },
+        {
+          "client_id": "320379709991-pn23soa201hvq9eieku2muqivluujc7b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.servana.serviceclient",
+            "certificate_hash": "926eb8be48c261cbf4f063a81a5e581bfe4a9133"
+          }
+        },
+        {
+          "client_id": "320379709991-qi1d9quk3i19pu5cnie345o7o5s54748.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.servana.serviceclient",
+            "certificate_hash": "3840b79dcce9e089c908ace3f3489bb9467f25ff"
+          }
+        },
+        {
           "client_id": "320379709991-p564jec2qp3rl62bm03g4suufe6vunkh.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s"
+          "current_key": "AIzaSyAJhIszBqlum-DhCLdH2uA_EZFKnQhOkrU"
         }
       ],
       "services": {
@@ -56,7 +80,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyA5lwcYygv01agpuZBpilWHr932qzVuY8s"
+          "current_key": "AIzaSyAJhIszBqlum-DhCLdH2uA_EZFKnQhOkrU"
         }
       ],
       "services": {

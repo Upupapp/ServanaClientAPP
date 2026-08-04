@@ -31,13 +31,27 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     super.dispose();
   }
 
+  /// The address the OTP is tied to.
+  ///
+  /// The backend looks the OTP row up BY EMAIL — these routes are
+  /// unauthenticated by necessity, since an unverified customer cannot sign in
+  /// to obtain a token. Sending the code without it is what made in-app
+  /// verification impossible.
+  String get _email => _profileCtrl.profile?.email ?? '';
+
   Future<void> _sendOtp() async {
+    final email = _email;
+    if (email.isEmpty) {
+      setState(() => _error =
+          'We could not read your email address. Please reopen this screen.');
+      return;
+    }
     setState(() {
       _isSending = true;
       _error = null;
     });
     try {
-      await _repo.resendEmailVerification();
+      await _repo.resendEmailVerification(email);
       if (mounted)
         setState(() {
           _isSending = false;
@@ -60,12 +74,18 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           () => _error = 'Please enter the full 6-digit verification code.');
       return;
     }
+    final email = _email;
+    if (email.isEmpty) {
+      setState(() => _error =
+          'We could not read your email address. Please reopen this screen.');
+      return;
+    }
     setState(() {
       _isVerifying = true;
       _error = null;
     });
     try {
-      await _repo.verifyEmailOtp(otp);
+      await _repo.verifyEmailOtp(email, otp);
       // Refresh the profile so the verification badge appears.
       await _profileCtrl.loadProfile();
       if (mounted)

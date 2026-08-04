@@ -82,6 +82,16 @@ void main() {
       final captured = verify(() => mockHttp.send(captureAny())).captured.single
           as http.BaseRequest;
 
+      // This assertion was correct about the client and wrong about the world.
+      // Until 2026-08-01 the backend served only the two-segment form
+      // (`/api/:serviceId/options-with-addons`), so this call 404'd in
+      // production while the test stayed green — the suite certified a broken
+      // flow. The fix went in on the backend, additively: service.route.ts now
+      // registers the `/services/`-prefixed path alongside the original, which
+      // is also what every neighbouring catalog route uses.
+      //
+      // So do NOT "correct" this to the two-segment path. That form exists for
+      // ServanaWorker and is not what this client sends.
       expect(
         captured.url.path,
         '/api/services/7/options-with-addons',

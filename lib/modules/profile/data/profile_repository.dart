@@ -44,13 +44,13 @@ class ProfileRepository {
   }
 
   /// Resend email verification OTP.
-  Future<void> resendEmailVerification() async {
-    await _api.resendEmailOtp();
+  Future<void> resendEmailVerification(String email) async {
+    await _api.resendEmailOtp(email: email);
   }
 
   /// Verify email with the OTP the user received.
-  Future<void> verifyEmailOtp(String otp) async {
-    await _api.verifyEmailOtp(otp: otp);
+  Future<void> verifyEmailOtp(String email, String otp) async {
+    await _api.verifyEmailOtp(email: email, otp: otp);
   }
 
   CustomerProfile _profileFromJson(Map<String, dynamic> data) {

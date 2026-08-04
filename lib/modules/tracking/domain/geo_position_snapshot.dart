@@ -31,9 +31,9 @@ class GeoPositionSnapshot {
   }) =>
       now.difference(updatedAt) > threshold;
 
-  /// Parse from the `GET /api/workers/location/:uid` response.
+  /// Parse from the `GET /api/booking/:bookingId/provider-location` response.
   ///
-  /// Expected envelope (unauthenticated mobile route):
+  /// Expected envelope (the GPS document, at the root or under `location`):
   /// ```json
   /// { "uid": "...", "is_online": true,
   ///   "loc": { "type": "Point", "coordinates": [longitude, latitude] },
@@ -43,10 +43,19 @@ class GeoPositionSnapshot {
   /// GeoJSON orders coordinates as [longitude, latitude] — this method
   /// reverses them so the result is always latitude-first (standard LatLng).
   static GeoPositionSnapshot? fromApiMap(Map<String, dynamic> map) {
-    // Backend may wrap in a "data" envelope.
+    // The document may arrive at the root, or wrapped.
+    //
+    // `location` is what GET /booking/:id/provider-location actually returns
+    // (providerLocationAccessController). This parser only knew about the root
+    // and `data`, so every live-tracking response produced null and the customer
+    // watched an empty map for the whole journey. The backend now sends `data`
+    // as an alias too, which fixes already-installed builds; reading `location`
+    // here is what lets that alias eventually be removed.
     final raw = map['loc'] != null
         ? map
-        : (map['data'] as Map<String, dynamic>? ?? map);
+        : (map['location'] as Map<String, dynamic>? ??
+            map['data'] as Map<String, dynamic>? ??
+            map);
     final loc = raw['loc'] as Map<String, dynamic>?;
     if (loc == null) return null;
 

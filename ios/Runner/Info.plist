@@ -29,13 +29,28 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<!-- Google Maps: inject GOOGLE_MAPS_API_KEY via CI secret or local
-	     build environment (e.g. Flutter --dart-define or a pre-build script
-	     that writes RunnerConfig/Secrets.xcconfig). Never commit the real key. -->
+	<!-- Google Maps key. Injected at build time by tool/inject_maps_key.dart
+	     from GOOGLE_MAPS_API_KEY_IOS; the placeholder is what lives in git.
+	     Never commit the real key.
+
+	     Note: this comment previously contained a literal double hyphen (in
+	     "Flutter [dash][dash]dart-define"), which is ILLEGAL inside an XML
+	     comment. Xcode's plist parser is lenient and accepted it, so the iOS
+	     build passed — but strict XML parsers reject the whole file, and App
+	     Store submission runs one. Keep double hyphens out of these comments. -->
 	<key>GMSApiKey</key>
 	<string>REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
-	<!-- Google Sign-In: Replace REVERSED_CLIENT_ID with value from GoogleService-Info.plist
-	     after enabling Google Sign-In in Firebase Console > Authentication > Sign-in method -->
+	<!-- Google Sign-In client id.
+	     google_sign_in_ios resolves the client id from GIDClientID here, or
+	     failing that from a GoogleService-Info.plist inside the app bundle.
+	     Both paths now work — the plist was unreferenced by Runner.xcodeproj
+	     and so never reached the bundle, which is fixed — but this key is kept
+	     as the explicit, primary source rather than relying on the fallback.
+	     Must equal CLIENT_ID in ios/Runner/GoogleService-Info.plist; asserted
+	     by test/common/firebase_single_project_test.dart. -->
+	<key>GIDClientID</key>
+	<string>320379709991-7npea534t292ocslpmonotq3ac9s85do.apps.googleusercontent.com</string>
+	<!-- Google Sign-In callback: REVERSED_CLIENT_ID from GoogleService-Info.plist -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -71,16 +86,31 @@
 		<string>fbauth2</string>
 		<string>fbshareextension</string>
 	</array>
+	<!-- Export compliance. Declared here so App Store Connect stops asking on
+	     every single upload — an unanswered prompt holds the build out of
+	     TestFlight indefinitely.
+	     `false` is the correct answer: the app uses HTTPS and the platform's
+	     own cryptography only, which is exempt. If custom or non-standard
+	     encryption is ever added, this must change and a CCATS/self-
+	     classification may be required. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Purpose strings.
+	     App Review reads these verbatim and rejects vague or inaccurate ones.
+	     They previously said "Service app will use you photos" — a typo, the
+	     wrong product name, and for the camera key it described photos rather
+	     than the camera. Each now names Servana and states the specific reason
+	     the permission is requested. -->
 	<key>NSCameraUsageDescription</key>
-	<string>Service app will use you photos to give more details on your job orders</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Service app needs your location to search for nearby merchants.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Service app needs your location to search for nearby merchants.</string>
+	<string>Servana uses the camera so you can photograph a job so your service provider knows what to expect before arriving.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Service app will use you photos to give more details on your job orders</string>
+	<string>Servana uses your photo library so you can attach existing photos of a job to your booking.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Servana uses your location to find service providers near you and to show your provider's live location on the way to your booking.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Servana uses your location to find service providers near you and to show your provider's live location on the way to your booking.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -90,13 +120,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>

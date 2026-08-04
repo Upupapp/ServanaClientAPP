@@ -1,3 +1,11 @@
+import 'dart:async';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:client/core/analytics/domain/analytics_event.dart';
+import 'package:client/core/analytics/events/home_events.dart';
+import 'package:client/modules/homepage/application/home_campaign_eligibility.dart';
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
+import 'package:client/modules/homepage/presentation/widgets/servana_launch_benefits_modal.dart';
+import 'package:client/common/constants/app_spacing.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/core/recovery/pending_payment_service.dart';
@@ -27,20 +35,20 @@ import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen
 import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/homepage/data/home_promotion_repository.dart';
 import 'package:client/modules/homepage/domain/home_promotion.dart';
-import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
 import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_atmosphere.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_benefit_section.dart';
-import 'package:client/modules/homepage/presentation/widgets/home_campaign_spotlight.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_category_grid.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_header.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_promotion_banner.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_search.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
+import 'package:client/common/presentation/category_campaign/category_campaign_coordinator.dart';
+import 'package:client/common/presentation/category_campaign/category_campaign_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -64,8 +72,20 @@ class _HomeScreenState extends State<HomeScreen> {
   final _notifCtrl = dpLocator<NotificationsController>();
   final _scaffoldKey = GlobalKey<ScaffoldState>(debugLabel: "scaffoldKey");
 
-  final _campaignCtrl = HomeCampaignController();
   final _promoRepo = HomePromotionRepository();
+  final _campaign = dpLocator<HomeCampaignController>();
+
+  /// Presents category promo banners and owns their single-instance guard.
+  ///
+  /// Held on the State, not rebuilt per tap: the guard has to outlive the
+  /// individual gesture it is guarding against.
+  final _categoryCampaigns = CategoryCampaignCoordinator(
+    analytics: dpLocator<AnalyticsCoordinator>(),
+  );
+
+  /// Read once for §21 app-version targeting. package_info_plus is already a
+  /// dependency and AnalyticsContextProvider reads it the same way.
+  String _appVersion = '0.0.0';
 
   @override
   void initState() {
@@ -74,18 +94,215 @@ class _HomeScreenState extends State<HomeScreen> {
     bwStore.ensureOptionsLoaded(serviceId: 2);
     airconStore.ensureOptionsLoaded(serviceId: 1);
     _restoreDraftIfPending();
-    _scheduleSpotlight();
+    _loadAppVersion();
     _maybeShowConsentGate();
+    _precacheCategoryCampaigns();
+  }
+
+  /// Warms the category campaign artwork once Home has drawn.
+  ///
+  /// Deliberately post-frame: these are ~2 MB PNGs each, and decoding them on
+  /// the way to Home's first paint would trade a visible startup cost for a
+  /// saving the customer only benefits from if they tap that category. Failure
+  /// is ignored — the popup's own error path already falls back to the native
+  /// layout, so a warm cache is an optimisation, not a dependency.
+  void _precacheCategoryCampaigns() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final campaign in CategoryCampaignRegistry.all) {
+        precacheImage(AssetImage(campaign.assetPath), context)
+            .catchError((_) {});
+      }
+    });
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) _appVersion = info.version;
+    } catch (_) {
+      // Leaves the permissive default. A version lookup failure must not
+      // suppress the campaign — §21's bounds are optional, and an unparseable
+      // or missing version is ignored rather than treated as out of range.
+    }
+  }
+
+  @override
+  void dispose() {
+    // Home had no dispose() at all. The campaign schedules a delayed
+    // presentation, and a Timer keeps its closure alive independently of the
+    // widget tree — uncancelled, it fires into a disposed context (§8).
+    _campaign.cancelPendingPresentation();
+    super.dispose();
   }
 
   void _maybeShowConsentGate() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      dpLocator<ConsentGateService>().maybeShow(
+      // Awaited, so the campaign cannot race it. Both previously targeted the
+      // same first frame; §7 puts required consent above a promotion, and two
+      // modals opening together is the failure that ordering prevents.
+      await dpLocator<ConsentGateService>().maybeShow(
         context,
         dpLocator<AnalyticsCoordinator>(),
       );
+      if (!mounted) return;
+      _maybeScheduleLaunchCampaign();
     });
+  }
+
+  /// LAUNCHBANNER+ §5/§8: evaluate eligibility, then present after a short,
+  /// cancellable delay once Home is stably rendered.
+  Future<void> _maybeScheduleLaunchCampaign() async {
+    final campaign = _campaign.resolve(_promoRepo.getLaunchCampaign());
+    await _campaign.initialise(campaign);
+    if (!mounted) return;
+
+    final session = store.session;
+    final decision = await _campaign.evaluate(
+      campaign: campaign,
+      context: CampaignEvaluationContext(
+        now: DateTime.now(),
+        isAuthenticated: session != null,
+        accountId: session?.customerID,
+        appVersion: _appVersion,
+        hasConfiguration: _campaign.hasConfiguration,
+        shownThisSession: _campaign.shownThisSession,
+        homeVisible: mounted,
+        hasCriticalBooking: _hasCriticalBooking(),
+      ),
+    );
+    if (!mounted) return;
+
+    if (!decision.eligible) {
+      _trackCampaign(HomeLaunchBannerSuppressedEvent(
+        campaignId: campaign.id,
+        campaignVersion: campaign.version,
+        suppressionReason: decision.suppression.analyticsValue,
+      ));
+      return;
+    }
+
+    _trackCampaign(HomeLaunchBannerEligibleEvent(
+      campaignId: campaign.id,
+      campaignVersion: campaign.version,
+    ));
+
+    // Precache so the first frame of the modal is the artwork, not a blank
+    // card (§31). Failure is non-fatal — the modal falls back natively.
+    final asset = campaign.assetPath;
+    if (asset != null) {
+      unawaited(precacheImage(AssetImage(asset), context).catchError((_) {}));
+    }
+
+    _campaign.schedulePresentation(
+      delay: const Duration(milliseconds: 800),
+      // Re-checked at fire time: between scheduling and firing the customer
+      // may have navigated away or another modal may have opened (§8).
+      stillEligible: () => mounted && ModalRoute.of(context)?.isCurrent == true,
+      present: () => _presentLaunchCampaign(campaign),
+    );
+  }
+
+  Future<void> _presentLaunchCampaign(HomeCampaign campaign) async {
+    final asset = campaign.assetPath;
+    final ratio = campaign.assetAspectRatio;
+    if (!mounted || asset == null || ratio == null) return;
+
+    final accountId = store.session?.customerID;
+    var impressionNumber = 0;
+
+    final outcome = await ServanaLaunchBenefitsModal.show(
+      context: context,
+      assetPath: asset,
+      assetAspectRatio: ratio,
+      // §28: fires only once the campaign has actually rendered.
+      onImpressionVerified: () async {
+        final state = await _campaign.recordImpression(
+          campaign: campaign,
+          accountId: accountId,
+          now: DateTime.now(),
+        );
+        impressionNumber = state.impressionCount;
+        _trackCampaign(HomeLaunchBannerImpressionEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+      },
+      onDisplayFailed: () => _trackCampaign(HomeLaunchBannerDisplayFailedEvent(
+        campaignId: campaign.id,
+        campaignVersion: campaign.version,
+        result: 'image_load_failed',
+      )),
+    );
+
+    if (!mounted) return;
+    final now = DateTime.now();
+
+    switch (outcome) {
+      case LaunchBannerOutcome.cta:
+        await _campaign.recordCtaCompleted(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerCtaSelectedEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+        if (!mounted) return;
+        // §14: routed through the existing sealed-target dispatcher rather
+        // than a parallel one, so the CTA cannot reach an unvalidated route.
+        _handlePromotionTap(campaign.ctaTarget);
+
+      case LaunchBannerOutcome.close:
+        await _campaign.recordPermanentDismissal(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerClosedEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+
+      case LaunchBannerOutcome.remindLater:
+        await _campaign.recordRemindLater(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerRemindLaterEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+
+      case LaunchBannerOutcome.backOrBarrier:
+      case null:
+        // §18: a reflexive back-swipe is not a rejection. Same cooldown as
+        // remind-later, reported separately so the funnel stays honest.
+        await _campaign.recordRemindLater(
+            campaign: campaign, accountId: accountId, now: now);
+        _trackCampaign(HomeLaunchBannerDismissedByBackEvent(
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          impressionNumber: impressionNumber,
+        ));
+    }
+  }
+
+  /// §7: an OTP or payment-blocked booking outranks a promotion.
+  bool _hasCriticalBooking() {
+    try {
+      return store.bookings.any((b) {
+        final s = (b.jobOrderStatusToString).toUpperCase();
+        return s.contains('OTP') || s.contains('PAYMENT');
+      });
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Analytics must never surface to the customer or block Home (§29).
+  void _trackCampaign(AnalyticsEvent event) {
+    try {
+      dpLocator<AnalyticsCoordinator>().track(event).ignore();
+    } catch (_) {}
   }
 
   // STITCH-C05-001 / LEAK-C05-001: restores a pending BookingDraft after the
@@ -103,39 +320,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _scheduleSpotlight() {
-    Future.delayed(const Duration(seconds: 1), () async {
-      if (!mounted) return;
-      final hasCritical = store.bookings.any(
-        (b) =>
-            b.jobOrderStatus != JobOrderStatus.completed &&
-            b.jobOrderStatus != JobOrderStatus.cancelled &&
-            b.jobOrderStatus != JobOrderStatus.none,
-      );
-      final eligible = await _campaignCtrl.isSpotlightEligible(
-        campaign: HomePromotionRepository.defaultSpotlight,
-        hasCriticalBooking: hasCritical,
-      );
-      if (!mounted || !eligible) return;
-      await _campaignCtrl.markSeen(HomePromotionRepository.defaultSpotlight);
-      if (!mounted) return;
-      showCampaignSpotlight(
-        context: context,
-        campaign: HomePromotionRepository.defaultSpotlight,
-        onDismiss: () => _campaignCtrl.markDismissed(
-          HomePromotionRepository.defaultSpotlight,
-        ),
-        onCtaTap: () {
-          _campaignCtrl.markCtaCompleted(
-            HomePromotionRepository.defaultSpotlight,
-          );
-          _handlePromotionTap(
-            HomePromotionRepository.defaultSpotlight.ctaTarget,
-          );
-        },
-      );
-    });
-  }
+  // _scheduleSpotlight was removed with the "One app. More ways to get things
+  // done." campaign overlay. It interrupted every launch with a full-screen
+  // modal a second after Home appeared, before the customer had read anything,
+  // and its only action duplicated the Explore Services CTA already on the
+  // page. The campaign controller, eligibility rules and the spotlight widget
+  // are left in place so a future campaign can use them deliberately.
 
   void _handlePromotionTap(HomePromotionTarget target) {
     switch (target) {
@@ -150,7 +340,39 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _handleCategoryTap(String key) {
+  /// Navigates to a category, showing its promotional campaign first when one
+  /// exists.
+  ///
+  /// The campaign is a preview, not a gate: whether the customer taps its call
+  /// to action or dismisses it, the category route and any authentication it
+  /// already enforces are unchanged. A category with no creative registered
+  /// navigates immediately, exactly as before.
+  ///
+  /// Only an explicit tap on a Home category card reaches here — a deep link
+  /// resolves the category route directly through the router and never sees a
+  /// popup.
+  Future<void> _handleCategoryTap(String key) async {
+    if (CategoryCampaignCoordinator.hasCampaignFor(key)) {
+      final explore = await _categoryCampaigns.present(
+        context: context,
+        categoryKey: key,
+      );
+      // Dismissed, or a second tap that the guard rejected. Either way the
+      // customer stays on Home with its scroll position untouched — no route
+      // was pushed.
+      if (!explore) return;
+      // The modal's own route has finished popping by the time present()
+      // completes, but this State can still have been disposed underneath it.
+      if (!mounted) return;
+    }
+    _navigateToCategory(key);
+  }
+
+  /// The canonical destination for each category card.
+  ///
+  /// Unchanged by the campaign work, and deliberately kept as the single place
+  /// that names a category route so a popup can never introduce a second one.
+  void _navigateToCategory(String key) {
     switch (key) {
       case 'beauty_wellness':
         context.pushNamed(BeautyWellnessScreen.routeName);
@@ -227,7 +449,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 20, bottom: 12),
+                        // Left gutter only. The header owns the gap above
+                        // this heading (§9: one section owns the spacing, not
+                        // both).
+                        padding: EdgeInsets.only(
+                          left: homeGutter(context),
+                          bottom: AppSpacing.md,
+                        ),
                         child: Text(
                           'Services',
                           style: TextStyle(
@@ -312,7 +540,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 }),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              // §18: breathing room only.
+              //
+              // The Scaffold already reserves the navigation's own height for
+              // page content, so this must NOT re-add it — doing so is the
+              // double-count §18 warns about. 24 is the visible gap between the
+              // last card and the bar, nothing more.
+              SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
             ],
           ),
         ),
@@ -324,55 +558,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeaderSection() {
     return Builder(builder: (ctx) {
-      final topPad = MediaQuery.paddingOf(ctx).top;
-      // Content height below status bar:
-      //   ServanaHomeHeader inner padding: 16 top + 40 row + 20 bottom = 76
-      //   ServanaHomeSearch: 52 + 28 bottom spacing = 80
-      const contentH = 76.0 + 80.0;
-      final totalH = topPad + contentH;
-
-      return SizedBox(
-        height: totalH,
-        child: Stack(
-          children: [
-            ServanaHomeAtmosphere(height: totalH),
-            SafeArea(
-              bottom: false,
-              child: Observer(builder: (obsCtx) {
-                final s = store.session;
-                final parts = (s?.fullname ?? '')
-                    .split(RegExp(r'\s+'))
-                    .where((p) => p.isNotEmpty)
-                    .toList();
-                final first = parts.isNotEmpty ? parts.first : null;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListenableBuilder(
-                      listenable: _notifCtrl,
-                      builder: (_, __) => ServanaHomeHeader(
-                        firstName: first,
-                        isAuthenticated: s != null,
-                        animate: true,
-                        notificationCount: _notifCtrl.unreadCount,
-                        onMenuTap: () =>
-                            _scaffoldKey.currentState?.openDrawer(),
-                        onNotificationTap: () =>
-                            context.pushNamed(NotificationsScreen.routeName),
-                      ),
-                    ),
-                    ServanaHomeSearch(
-                      onTap: () => context.pushNamed(SearchScreen.routeName),
+      // Content-driven, not calculated (§6).
+      //
+      // This used to be `const contentH = 76.0 + 80.0` — a hardcoded sum of
+      // assumed child sizes: "header inner padding 16 top + 40 row + 20 bottom"
+      // plus "search 52 + 28 bottom". The real content measures 161pt, which is
+      // why the emulator showed "BOTTOM OVERFLOWED BY 5.0 PIXELS" at default
+      // text size, before any of the conditions that were supposed to be the
+      // risk — a long first name, bold text, 200% scaling or a localised
+      // greeting. The arithmetic was simply wrong, and it would have been
+      // wrong-and-worse for every one of those.
+      //
+      // The Stack now takes its height from the Column, and the atmosphere
+      // fills whatever that turns out to be. Nothing to keep in sync.
+      return Stack(
+        children: [
+          const Positioned.fill(child: ServanaHomeAtmosphere()),
+          SafeArea(
+            bottom: false,
+            child: Observer(builder: (obsCtx) {
+              final s = store.session;
+              final parts = (s?.fullname ?? '')
+                  .split(RegExp(r'\s+'))
+                  .where((p) => p.isNotEmpty)
+                  .toList();
+              final first = parts.isNotEmpty ? parts.first : null;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListenableBuilder(
+                    listenable: _notifCtrl,
+                    builder: (_, __) => ServanaHomeHeader(
+                      firstName: first,
+                      isAuthenticated: s != null,
                       animate: true,
-                      animationDelay: const Duration(milliseconds: 160),
+                      notificationCount: _notifCtrl.unreadCount,
+                      onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      onNotificationTap: () =>
+                          context.pushNamed(NotificationsScreen.routeName),
                     ),
-                    const SizedBox(height: 28),
-                  ],
-                );
-              }),
-            ),
-          ],
-        ),
+                  ),
+                  ServanaHomeSearch(
+                    onTap: () => context.pushNamed(SearchScreen.routeName),
+                    animate: true,
+                    animationDelay: const Duration(milliseconds: 160),
+                  ),
+                  // §8: this section owns the ENTIRE gap down to the next
+                  // one. It used to add 28 here while the Services heading
+                  // added another 20 above itself, giving a 48pt trench that
+                  // neither file could see on its own.
+                  SizedBox(height: AppSpacing.section),
+                ],
+              );
+            }),
+          ),
+        ],
       );
     });
   }
@@ -393,7 +633,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (active == null) return const SizedBox.shrink();
 
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        // Shared gutter (§12). This was a hardcoded 16 while the grid,
+        // banners and benefit section all sat at 20, so the card was visibly
+        // indented differently from everything above and below it.
+        padding: EdgeInsets.fromLTRB(
+          homeGutter(context),
+          AppSpacing.section,
+          homeGutter(context),
+          0,
+        ),
         child: Semantics(
           button: true,
           label: 'Active booking: ${active.merchantServiceName}. Tap to view.',
@@ -480,12 +728,37 @@ class _HomeScreenState extends State<HomeScreen> {
           .map((o) => _FeaturedItem(raw: o, isAircon: false));
       final airconItems = airconStore.bookableOptions
           .map((o) => _FeaturedItem(raw: o, isAircon: true));
-      final all = [...bwItems, ...airconItems].take(12).toList();
+      // Interleaved, not concatenated-then-truncated.
+      //
+      // This was `[...bwItems, ...airconItems].take(12)`. Beauty & Wellness
+      // alone seeds well over twelve options (migrations 002-005 add Massage,
+      // Nails, Hair, Facial and Beauty Drip under service_id 2), so the window
+      // filled before it ever reached the aircon items and "Featured Services"
+      // could never feature an aircon service. The cap looked like a display
+      // limit; it was acting as a category filter.
+      //
+      // Alternating draws from both lists keeps the same twelve-item budget
+      // while guaranteeing each category is represented when it has anything to
+      // show.
+      final bw = bwItems.toList();
+      final ac = airconItems.toList();
+      final all = <_FeaturedItem>[];
+      for (var i = 0;
+          all.length < 12 && (i < bw.length || i < ac.length);
+          i++) {
+        if (i < bw.length) all.add(bw[i]);
+        if (all.length < 12 && i < ac.length) all.add(ac[i]);
+      }
       final isLoading = bwStore.isLoading || airconStore.isLoading;
 
       if (all.isEmpty && isLoading) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          padding: EdgeInsets.fromLTRB(
+            homeGutter(context),
+            AppSpacing.xl,
+            homeGutter(context),
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -507,7 +780,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: homeGutter(context)),
               child: _sectionHeader(
                 'Featured Services',
                 onSeeAll: () => context.pushNamed(SearchScreen.routeName),
@@ -517,7 +790,9 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: 222,
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                // Same gutter as the heading above it, so the first card's
+                // leading edge lines up with the section title (§13).
+                padding: EdgeInsets.symmetric(horizontal: homeGutter(context)),
                 scrollDirection: Axis.horizontal,
                 itemCount: all.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -577,7 +852,20 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: onSeeAll,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              // No horizontal padding: the parent already applies the page
+              // gutter, and TextButton's default inset pushed "See All" 8pt
+              // inside the right-hand guide that every other section respects.
+              padding: EdgeInsets.zero,
+              // Keeps the accessible tap target without adding visual width.
+              tapTargetSize: MaterialTapTargetSize.padded,
+              minimumSize: const Size(48, 48),
+              // "See All" is narrower than the 48pt minimum, and a button
+              // centres its child by default — so the tap target that keeps
+              // this control accessible was itself holding the label ~4pt
+              // inside the guide, which is the misalignment this section set
+              // out to remove. Pinning the child right puts the text on the
+              // gutter while the 48pt box stays.
+              alignment: Alignment.centerRight,
             ),
             child: Text(
               'See All',
@@ -668,7 +956,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 20),
+                        padding: EdgeInsets.only(left: homeGutter(context)),
                         child: Text(
                           "My Account",
                           style: TextStyle(
@@ -734,7 +1022,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 20),
+                        padding: EdgeInsets.only(left: homeGutter(context)),
                         child: Text(
                           "General",
                           style: TextStyle(

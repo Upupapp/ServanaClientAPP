@@ -6,10 +6,74 @@ on:
   pull_request:
     branches: [ dev, main ]
 
+  # On-demand tester builds. Cutting a build for QA should not require pushing
+  # to main, which is the only other way to reach the release job.
+  workflow_dispatch:
+    inputs:
+      tester_groups:
+        description: 'Firebase App Distribution group ALIASES, comma-separated (not display names)'
+        required: false
+        default: 'external'
+      release_notes:
+        description: 'What testers should look at in this build'
+        required: false
+        default: ''
+
 jobs:
-  test:
-    name: Test & Build
+  # ---------------------------------------------------------------------------
+  # Validation. Flutter only — no Java, no Android SDK, no Gradle, no NDK, no
+  # Xcode, no CocoaPods.
+  #
+  # This job used to be called "Test & Build" and finished by building a debug
+  # Android APK. That coupling is what let an Android-only toolchain problem
+  # gate the entire pipeline, and it meant the green check beside a PR reported
+  # on Gradle's health as much as on the code. Validation now stops where the
+  # standing rule says it stops: `dart format`, `flutter analyze`,
+  # `flutter test`. Anything a single platform can break belongs in a build job.
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Validate (Flutter)
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Format check
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Android assembly check. Proves the Gradle/NDK side still assembles. It
+  # re-runs no validation.
+  # ---------------------------------------------------------------------------
+  build-android:
+    name: Build (Android)
+    runs-on: ubuntu-latest
+    needs: validate
 
     steps:
       - name: Checkout
@@ -57,30 +121,40 @@ jobs:
 
       - name: Write local.properties for CI
         run: |
+          # Same derivation as the release job, so the debug APK this job
+          # produces carries the version it claims to.
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//' | tr -d '\r')
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
           echo "flutter.buildMode=debug" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=35" >> android/local.properties
+          echo "flutter.versionName=${VERSION%%+*}" >> android/local.properties
+          echo "flutter.versionCode=${VERSION##*+}" >> android/local.properties
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Format check
-        run: dart format --set-exit-if-changed .
-
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos
-
-      - name: Run tests
-        run: flutter test --coverage
+      # One script, identical behaviour on this runner and the macOS one below.
+      # `sed -i` would not have been: GNU and BSD sed disagree about its syntax,
+      # which is the exact class of platform-specific build scripting that broke
+      # the iOS side in the first place.
+      - name: Inject Google Maps key
+        env:
+          # Per-platform keys, because a Google Cloud API key carries at most
+          # ONE application restriction (Android apps OR iOS apps, never both).
+          # A single shared key can therefore only be an UNRESTRICTED key, and
+          # an unrestricted Maps key is extractable from any shipped binary.
+          # GOOGLE_MAPS_API_KEY is still honoured as a fallback for both.
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY_IOS: ${{ secrets.GOOGLE_MAPS_API_KEY_IOS }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: dart run tool/inject_maps_key.dart
 
       - name: Disk space before APK build
         run: df -h
 
       - name: Build debug APK (arm64 only)
         id: build_apk
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: flutter build apk --debug --target-platform android-arm64 --no-tree-shake-icons
 
       - name: Upload debug APK
@@ -91,16 +165,154 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
-  release-android:
-    name: Release Build (Android)
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: test
-    environment: production
+  # ---------------------------------------------------------------------------
+  # iOS assembly check.
+  #
+  # This job did not exist. That is why the Podfile could carry
+  # `platform :ios, '26.0'` against a Runner target of 15.6 indefinitely, why a
+  # Podfile.lock that predated firebase_auth and firebase_messaging survived,
+  # and why ios/firebase_app_id_file.json kept naming a retired project:
+  # nothing ever ran CocoaPods or Xcode against this repository.
+  #
+  # It builds UNSIGNED, so it needs no certificate, no provisioning profile and
+  # no Apple account. That is sufficient to catch the entire class of failure
+  # that was hiding here — pod resolution, deployment-target mismatch, plugin
+  # linkage, missing Info.plist keys — while signing remains a separate,
+  # credentialed step you run for an actual App Store submission.
+  # ---------------------------------------------------------------------------
+  build-ios:
+    name: Build (iOS)
+    runs-on: macos-latest
+    needs: validate
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Inject Google Maps key
+        env:
+          # Per-platform keys, because a Google Cloud API key carries at most
+          # ONE application restriction (Android apps OR iOS apps, never both).
+          # A single shared key can therefore only be an UNRESTRICTED key, and
+          # an unrestricted Maps key is extractable from any shipped binary.
+          # GOOGLE_MAPS_API_KEY is still honoured as a fallback for both.
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY_IOS: ${{ secrets.GOOGLE_MAPS_API_KEY_IOS }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: dart run tool/inject_maps_key.dart
+
+      # Explicit rather than left to `flutter build`, so a resolution failure is
+      # reported here by CocoaPods in its own words instead of surfacing later
+      # as an opaque Xcode error.
+      - name: pod install
+        working-directory: ios
+        run: |
+          pod --version
+          pod install --repo-update
+
+      # ios/Podfile.lock IS committed and authoritative. This artifact is kept
+      # so a resolution drift is visible: if CI resolves something other than
+      # the committed lock, the uploaded file differs from the one in git and
+      # the diff is right here rather than only on a developer's Mac.
+      - name: Upload generated Podfile.lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-podfile-lock-${{ github.sha }}
+          path: ios/Podfile.lock
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Build iOS (release, unsigned)
+        id: build_ios
+        timeout-minutes: 40
+        env:
+          # OPTIONAL. FreeRasp._appleTeamId defaults to 2K2SF7NRQP — the team
+          # that owns the com.servana.client App ID — so iOS runtime protection
+          # is on whether or not this secret exists. Set it only to build for a
+          # DIFFERENT Apple team.
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_TEAM_ID" ]; then
+            echo "::notice::Overriding the compiled-in Apple team id from the APPLE_TEAM_ID secret."
+            flutter build ios --release --no-codesign \
+              --dart-define=APPLE_TEAM_ID="$APPLE_TEAM_ID"
+          else
+            # This used to warn "building without freeRASP iOS runtime
+            # protection", which was true when the team id came only from a
+            # --dart-define and became false the moment a real default was
+            # compiled in. A build log that misstates whether a security
+            # control is active is worse than one that says nothing.
+            echo "::notice::APPLE_TEAM_ID secret not set — using the compiled-in team id. freeRASP iOS protection is ACTIVE."
+            flutter build ios --release --no-codesign
+          fi
+
+      - name: Report app size
+        if: steps.build_ios.outcome == 'success'
+        run: du -sh build/ios/iphoneos/Runner.app
+
+  release-android:
+    name: Release Build (Android)
+    runs-on: ubuntu-latest
+    if: >-
+      (github.ref == 'refs/heads/main' && github.event_name == 'push')
+      || github.event_name == 'workflow_dispatch'
+    # Both gates, deliberately. `validate` is the Flutter-level contract and
+    # `build-android` is the Gradle/NDK one; a release must clear each. iOS is
+    # NOT a gate here — a Play release should not be blocked by a macOS runner,
+    # and an App Store submission is its own signed pipeline.
+    needs: [validate, build-android]
+
+    # Job-level, deliberately. The `secrets` context is NOT available in a
+    # step's `if:`, and a step's own `env:` is not available to its own `if:`
+    # either — so gating on the step's env block would evaluate '' != '' and
+    # skip the step forever, silently. Job-level env is visible to step `if:`.
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+    # This job previously declared `environment: production`, which meant it
+    # could ONLY see secrets attached to that environment. Creating an
+    # environment requires admin on the repository, which the people
+    # maintaining this app do not have — so the secrets were unsettable and the
+    # job could never go green.
+    #
+    # It now reads repository secrets (Settings > Secrets and variables >
+    # Actions), which maintainers can set.
+    #
+    # The trade-off is real and worth stating: environment secrets can be gated
+    # behind required reviewers and a branch allow-list, and repository secrets
+    # cannot. What limits exposure here instead is the `if:` above — this job
+    # runs only on a push to main, never on a pull request, so a fork PR cannot
+    # reach these values. If someone with admin later creates the `production`
+    # environment, restore the line and move the five secrets onto it.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The test job needs this to fit a DEBUG, arm64-only APK on the runner.
+      # This job builds a full release bundle for every ABI with obfuscation —
+      # strictly more disk and native work — and had none of the mitigations.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/share/swift || true
+          docker image prune -af 2>/dev/null || true
+          sudo apt-get clean || true
+          df -h
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -118,21 +330,145 @@ jobs:
         run: |
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;28.2.13676358" > /dev/null 2>&1 || true
 
+      # Fail here, in seconds, rather than twenty minutes deep in Gradle.
+      #
+      # The build step sets CM_KEYSTORE_PATH unconditionally, so
+      # android/app/build.gradle:63 ALWAYS takes the Codemagic branch and signs
+      # with whatever is at that path. Its comment claiming "GitHub Actions: no
+      # signing config set — release uses debug anyway" is not true for this
+      # workflow.
+      #
+      # So an unset CM_KEYSTORE_BASE64 does not fall back to a debug key: it
+      # writes an EMPTY file, and `bundleRelease` fails at the very end with a
+      # keystore error that names neither the secret nor this workflow. That is
+      # what a 21-minute red build was reporting.
+      - name: Require Android release secrets
+        env:
+          CM_KEYSTORE_BASE64: ${{ secrets.CM_KEYSTORE_BASE64 }}
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          missing=""
+          [ -z "$CM_KEYSTORE_BASE64" ]   && missing="$missing CM_KEYSTORE_BASE64"
+          [ -z "$CM_KEYSTORE_PASSWORD" ] && missing="$missing CM_KEYSTORE_PASSWORD"
+          [ -z "$CM_KEY_ALIAS" ]         && missing="$missing CM_KEY_ALIAS"
+          [ -z "$CM_KEY_PASSWORD" ]      && missing="$missing CM_KEY_PASSWORD"
+          # Not a signing secret, but it fails WORSE than one. The build injects
+          # this value over the strings.xml placeholder; unset, the old inline
+          # `sed` wrote an EMPTY key, the build went green, and the release
+          # shipped com.google.android.geo.API_KEY="" — booking tracking maps
+          # render grey on every device with no error in any log.
+          #
+          # EITHER variable satisfies this job, because this job builds Android
+          # only. GOOGLE_MAPS_API_KEY_ANDROID is the restricted, preferred one;
+          # GOOGLE_MAPS_API_KEY is the shared fallback for a repo that has not
+          # split its keys per platform yet.
+          if [ -z "$GOOGLE_MAPS_API_KEY_ANDROID" ] && [ -z "$GOOGLE_MAPS_API_KEY" ]; then
+            missing="$missing GOOGLE_MAPS_API_KEY_ANDROID(or GOOGLE_MAPS_API_KEY)"
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::Missing Android release secrets:$missing"
+            echo "Set them as REPOSITORY secrets:"
+            echo "  Settings > Secrets and variables > Actions > New repository secret"
+            echo "CM_KEYSTORE_BASE64 is the upload keystore, base64 encoded:"
+            echo "  base64 -w0 upload-keystore.jks"
+            exit 1
+          fi
+
       - name: Decode keystore
         env:
           CM_KEYSTORE_BASE64: ${{ secrets.CM_KEYSTORE_BASE64 }}
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
         run: |
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > /tmp/upload-keystore.jks
 
+          # A truncated or wrongly-encoded secret decodes to something, and
+          # Gradle only discovers it is not a keystore after the whole app has
+          # compiled. keytool answers in milliseconds.
+          if [ ! -s /tmp/upload-keystore.jks ]; then
+            echo "::error::CM_KEYSTORE_BASE64 decoded to an empty file."
+            exit 1
+          fi
+          if ! keytool -list -keystore /tmp/upload-keystore.jks                  -storepass "$CM_KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::The decoded keystore is unreadable. Either"
+            echo "CM_KEYSTORE_BASE64 is not a valid base64 JKS, or"
+            echo "CM_KEYSTORE_PASSWORD does not open it."
+            exit 1
+          fi
+          echo "Keystore decoded and opened successfully."
+
+      # The injection step rewrites these placeholders in place. If one is
+      # already gone, a real key was committed — worth failing over, since it
+      # would ship a live Maps key in the repository.
+      #
+      # Now checks BOTH platforms. Checking only strings.xml meant a key
+      # committed into Info.plist would pass unremarked.
+      - name: Check the Maps key placeholders are intact
+        run: |
+          MISSING=0
+          for f in android/app/src/main/res/values/strings.xml ios/Runner/Info.plist; do
+            if ! grep -q REPLACE_WITH_GOOGLE_MAPS_API_KEY "$f"; then
+              echo "::error::The Google Maps placeholder is missing from $f."
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
+            echo "A real key may have been committed. It must stay a placeholder"
+            echo "and be substituted at build time from GOOGLE_MAPS_API_KEY."
+            exit 1
+          fi
+
       - name: Write local.properties for release
         run: |
+          # Derive the version from pubspec.yaml rather than hardcoding it.
+          #
+          # android/app/build.gradle:57 reads flutter.versionCode out of
+          # local.properties, and this step overwrites that file — so a
+          # hardcoded value here silently WINS over pubspec. It was pinned to
+          # 35, meaning every push to main produced an AAB with versionCode 35
+          # and Play rejects the second and every later upload as a duplicate.
+          # Bumping pubspec had no effect, which is the confusing part.
+          #
+          # One source of truth: pubspec's `version: x.y.z+N`.
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//' | tr -d '\r')
+          VERSION_NAME="${VERSION%%+*}"
+          VERSION_CODE="${VERSION##*+}"
+          if [ -z "$VERSION_CODE" ] || [ "$VERSION_CODE" = "$VERSION" ]; then
+            echo "::error::pubspec.yaml version must be 'name+code', got '$VERSION'"
+            exit 1
+          fi
+          echo "Building versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          # Exported so later steps can tag artifacts with them, which
+          # RELEASE_ARTIFACTS.md requires for symbol files.
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=35" >> android/local.properties
+          echo "flutter.versionName=$VERSION_NAME" >> android/local.properties
+          echo "flutter.versionCode=$VERSION_CODE" >> android/local.properties
 
       - name: Get dependencies
         run: flutter pub get
+
+      # Was an inline `sed -i` inside the build step, Android-only, and unable
+      # to fail: with the secret unset it substituted an EMPTY key and shipped a
+      # release bundle whose maps render as a grey rectangle, with a green tick.
+      # `--require` makes a missing key a build failure, and the same script
+      # serves the iOS job so the two platforms cannot drift.
+      - name: Inject Google Maps key
+        env:
+          # Per-platform keys, because a Google Cloud API key carries at most
+          # ONE application restriction (Android apps OR iOS apps, never both).
+          # A single shared key can therefore only be an UNRESTRICTED key, and
+          # an unrestricted Maps key is extractable from any shipped binary.
+          # GOOGLE_MAPS_API_KEY is still honoured as a fallback for both.
+          GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.GOOGLE_MAPS_API_KEY_ANDROID }}
+          GOOGLE_MAPS_API_KEY_IOS: ${{ secrets.GOOGLE_MAPS_API_KEY_IOS }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: dart run tool/inject_maps_key.dart --require
 
       - name: Build release AAB
         env:
@@ -140,10 +476,7 @@ jobs:
           CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
-          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          sed -i "s/REPLACE_WITH_GOOGLE_MAPS_API_KEY/$GOOGLE_MAPS_API_KEY/g" \
-            android/app/src/main/res/values/strings.xml
           flutter build appbundle --release \
             --dart-define=API_BASE_URL=https://api.servana.com.ph \
             --dart-define=BRAND=servana \
@@ -152,16 +485,197 @@ jobs:
             --split-debug-info=build/debug-info
 
       - name: Verify signing
-        # apksigner is APK-only; use jarsigner to verify AAB is signed.
+        # apksigner is APK-only; use jarsigner to verify the AAB is signed.
+        #
+        # `jarsigner -verify` prints "jar is unsigned" and still exits 0, so the
+        # bare command could never fail this step — it verified nothing. Assert
+        # on the output, and re-assert the signer is the expected alias so a
+        # build signed with the WRONG key is caught here rather than by Play.
+        env:
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
         run: |
-          jarsigner -verify -verbose \
-            build/app/outputs/bundle/release/app-release.aab
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          out=$(jarsigner -verify -verbose:summary -certs "$AAB" 2>&1) || true
+          echo "$out" | tail -25
+          if ! echo "$out" | grep -q "jar verified"; then
+            echo "::error::AAB is NOT signed. jarsigner did not report 'jar verified'."
+            exit 1
+          fi
+          if ! echo "$out" | grep -qi "CN=Servana Client"; then
+            echo "::error::AAB is signed, but not by the expected upload certificate."
+            exit 1
+          fi
+          echo "AAB signed by the expected upload key."
 
-      - name: Compute SHA-256 checksum
+      # Preserve the BUNDLE's R8 mapping before anything else can regenerate it.
+      #
+      # Both `flutter build appbundle --release` and `flutter build apk --release`
+      # use the `release` buildType, so both write
+      # build/app/outputs/mapping/release/mapping.txt — and the APK build below
+      # runs before the symbols are uploaded. R8 is largely deterministic, so the
+      # two mappings are probably identical and nothing has necessarily been lost
+      # to date; "probably identical" is just not a property worth betting a
+      # shipped release's crash reports on, and a copy costs nothing.
+      #
+      # What ships to Play is the AAB. These are its symbols.
+      - name: Preserve the AAB obfuscation mapping
+        run: |
+          mkdir -p build/aab-mapping
+          cp build/app/outputs/mapping/release/mapping.txt build/aab-mapping/mapping.txt
+          ls -la build/aab-mapping/mapping.txt
+
+      # Testers cannot install an AAB, and App Distribution only accepts one for
+      # apps already linked to Play. A signed release APK works today and is
+      # what a device actually installs — for QA, for sideloading, and for any
+      # distribution that does not go through Play.
+      #
+      # Built from the same signing config, the same --dart-defines and the same
+      # substituted Maps key as the bundle, so what anyone installs from here
+      # behaves like what ships.
+      #
+      # NOT gated on FIREBASE_SERVICE_ACCOUNT any more. The gate meant that
+      # without that one secret the APK was never built at all, which made "give
+      # me a production APK" impossible to satisfy without editing CI. Firebase
+      # distribution keeps its own gate below; building the artifact and
+      # choosing to upload it somewhere are separate decisions.
+      #
+      # Obfuscated, unlike before. This APK is a production artifact that can be
+      # installed by people outside the team, so it gets the same hardening as
+      # the bundle. Its symbols go to a SEPARATE directory: build/debug-info
+      # holds the bundle's, and a Dart obfuscation mapping is per-build — mixing
+      # them would leave neither trustworthy.
+      - name: Build release APK
+        env:
+          CM_KEYSTORE_PATH: /tmp/upload-keystore.jks
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL=https://api.servana.com.ph \
+            --dart-define=BRAND=servana \
+            --dart-define=MOCK_BACKEND=false \
+            --obfuscate \
+            --split-debug-info=build/debug-info-apk
+          ls -la build/app/outputs/flutter-apk/app-release.apk
+
+      # apksigner works on APKs (the AAB above needed jarsigner instead) and
+      # reports the signature schemes, which matters: Android 11+ requires v2 or
+      # better, and an APK that only carries a v1 signature installs on nothing
+      # modern.
+      #
+      # `apksigner verify` exits non-zero on an unsigned APK, so unlike the
+      # jarsigner case the exit code is load-bearing here. The certificate is
+      # still asserted separately, because an APK signed by the WRONG key is
+      # verifiably signed and completely useless.
+      - name: Verify APK signature
+        run: |
+          # pipefail, because the apksigner call below is piped into tee and a
+          # pipeline reports the LAST command's status — without this, apksigner
+          # exiting non-zero on an unsigned APK is swallowed by a successful tee
+          # and the step passes. The grep assertions would still catch it, but
+          # only by accident of what apksigner prints on failure.
+          set -o pipefail
+
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          APKSIGNER=$(find "$SDK/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner not found under $SDK/build-tools"
+            exit 1
+          fi
+          echo "using $APKSIGNER"
+
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/apksig.txt
+
+          # Both patterns below are matched against REAL apksigner output, not
+          # from memory. The scheme line reads:
+          #
+          #   Verified using v2 scheme (APK Signature Scheme v2): true
+          #
+          # An earlier version of this check looked for "APK Signature Scheme
+          # v2: true" — no closing parenthesis — which matches nothing and would
+          # have failed every release build.
+          if ! grep -qi "CN=Servana Client" /tmp/apksig.txt; then
+            echo "::error::APK is not signed by the expected upload certificate."
+            grep -i "certificate DN" /tmp/apksig.txt || true
+            exit 1
+          fi
+          if ! grep -q "(APK Signature Scheme v2): true" /tmp/apksig.txt; then
+            echo "::error::APK lacks a v2 signature; Android 11+ will refuse to install it."
+            exit 1
+          fi
+          echo "APK signed by the expected upload key, with a v2 signature."
+
+      - name: Distribute to Firebase App Distribution
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        env:
+          # Not a secret: this ID is in android/app/google-services.json, which
+          # is committed, and it ships inside every APK.
+          FIREBASE_APP_ID: '1:320379709991:android:c3ec0648a70fb5081bfc02'
+          # The group ALIAS, which Firebase shows in monospace beside the
+          # display name — "External" is the name, `external` is the alias, and
+          # passing the name fails with "group not found".
+          TESTER_GROUPS: ${{ github.event.inputs.tester_groups || 'external' }}
+          INPUT_NOTES: ${{ github.event.inputs.release_notes }}
+        run: |
+          # Written with a restrictive umask and deleted in a trap, so the
+          # credential never outlives the step even if a command below fails.
+          umask 077
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > /tmp/fb-sa.json
+          trap 'rm -f /tmp/fb-sa.json' EXIT
+
+          if ! python3 -c 'import json,sys; json.load(open("/tmp/fb-sa.json"))' 2>/dev/null; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT is not valid JSON."
+            echo "Paste the whole downloaded key file, including the braces."
+            exit 1
+          fi
+
+          npm install -g firebase-tools@13 > /dev/null 2>&1
+
+          NOTES="${INPUT_NOTES}"
+          if [ -z "$NOTES" ]; then
+            NOTES="$(git log -1 --pretty=%s)"
+          fi
+          NOTES="${NOTES}
+
+          version ${VERSION_NAME} (${VERSION_CODE})
+          commit ${GITHUB_SHA}"
+
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/fb-sa.json
+          firebase appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "$TESTER_GROUPS" \
+            --release-notes "$NOTES"
+
+          echo "### Distributed to testers" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Groups: \`$TESTER_GROUPS\` · version ${VERSION_NAME} (${VERSION_CODE})" >> "$GITHUB_STEP_SUMMARY"
+
+      # Distribution is an add-on. A missing Firebase credential must not cost
+      # a signed, verified, Play-ready bundle — but it must not pass silently
+      # either, or "no tester build appeared" becomes a mystery.
+      - name: Note that distribution was skipped
+        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        run: |
+          echo "::warning::FIREBASE_SERVICE_ACCOUNT is not set — no tester build was distributed. The release AAB below is unaffected."
+          echo "### Tester distribution SKIPPED" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`FIREBASE_SERVICE_ACCOUNT\` is not set, so no APK went to Firebase App Distribution." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compute SHA-256 checksums
         run: |
           sha256sum build/app/outputs/bundle/release/app-release.aab \
             > build/app/outputs/bundle/release/app-release.aab.sha256
           cat build/app/outputs/bundle/release/app-release.aab.sha256
+
+          # The APK is the artifact people install by hand, off-store, with no
+          # Play integrity check in front of it — so the checksum is the only
+          # way a recipient can tell that what they downloaded is what CI built.
+          sha256sum build/app/outputs/flutter-apk/app-release.apk \
+            > build/app/outputs/flutter-apk/app-release.apk.sha256
+          cat build/app/outputs/flutter-apk/app-release.apk.sha256
 
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
@@ -171,3 +685,125 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/bundle/release/app-release.aab.sha256
           retention-days: 90
+
+      # The APK was previously built and then thrown away with the runner unless
+      # Firebase App Distribution happened to be configured — so there was no way
+      # to get an installable production build out of CI at all.
+      #
+      # This is a universal APK: one file that installs on any ABI, which is what
+      # direct distribution wants. It is correspondingly large. --split-per-abi
+      # would cut it substantially but produces several files and makes "send
+      # someone the app" a decision about their CPU.
+      #
+      # Play does not accept an APK. This artifact is for sideloading, QA and
+      # off-store distribution; the AAB above remains the only thing that ships
+      # to the store.
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: servana-client-release-apk-${{ github.sha }}
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-release.apk.sha256
+          retention-days: 90
+          if-no-files-found: error
+
+      # The build runs --obfuscate --split-debug-info, which moves every symbol
+      # out of the binary into build/debug-info. Those files were then thrown
+      # away with the runner. Without them a production stack trace is a list of
+      # meaningless addresses, permanently — they cannot be regenerated later,
+      # because a rebuild produces a different obfuscation mapping.
+      #
+      # Retention is deliberately longer than the AAB's: crashes get reported
+      # long after a release ships.
+      - name: Upload obfuscation symbols
+        uses: actions/upload-artifact@v4
+        with:
+          # RELEASE_ARTIFACTS.md requires symbols be tagged with version, build
+          # number and commit SHA. versionCode is exported by the build step.
+          name: servana-client-symbols-${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}-${{ github.sha }}
+          # Four files, two builds, and they are NOT interchangeable — a stack
+          # trace decoded with the wrong build's mapping produces plausible,
+          # wrong symbol names, which is worse than no answer:
+          #
+          #   debug-info/                            AAB — Dart obfuscation
+          #   aab-mapping/mapping.txt                AAB — R8, copied before the
+          #                                          APK build could overwrite it
+          #   debug-info-apk/                        APK — Dart obfuscation
+          #   app/outputs/mapping/release/mapping.txt  APK — R8, as left on disk
+          #                                          by the later APK build
+          path: |
+            build/debug-info/
+            build/aab-mapping/mapping.txt
+            build/debug-info-apk/
+            build/app/outputs/mapping/release/mapping.txt
+          # 90 is the GitHub ceiling without an org-level increase.
+          # RELEASE_ARTIFACTS.md asks for "supported release + 12 months", so
+          # these must ALSO be archived off-CI before day 90 or the retention
+          # policy is not actually met. Tracked in that doc.
+          retention-days: 90
+          if-no-files-found: error
+
+      # Runs AFTER the artifacts are uploaded, deliberately: a bundle Play will
+      # reject is still useful for internal distribution, so the signed AAB and
+      # its symbols stay downloadable even when this step goes red.
+      #
+      # targetSdkVersion is 36, and Play requires 16 KB page-size support for
+      # anything targeting API 35+. Discovering that in Play Console costs an
+      # upload cycle; the ELF program headers say it in seconds.
+      - name: Verify 16 KB page alignment
+        run: |
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          rm -rf /tmp/aabcheck && mkdir -p /tmp/aabcheck
+          unzip -q -o "$AAB" 'base/lib/arm64-v8a/*' -d /tmp/aabcheck || true
+          python3 - <<'PY'
+          import os, struct, sys
+
+          REQUIRED = 16384
+          root = '/tmp/aabcheck/base/lib/arm64-v8a'
+          if not os.path.isdir(root):
+              print('::error::Could not find arm64-v8a libraries in the AAB.')
+              sys.exit(1)
+
+          def load_aligns(path):
+              with open(path, 'rb') as f:
+                  h = f.read(64)
+                  if h[:4] != b'\x7fELF' or h[4] != 2:
+                      return None
+                  phoff  = struct.unpack_from('<Q', h, 0x20)[0]
+                  phentsz= struct.unpack_from('<H', h, 0x36)[0]
+                  phnum  = struct.unpack_from('<H', h, 0x38)[0]
+                  f.seek(phoff)
+                  ph = f.read(phentsz * phnum)
+              out = []
+              for i in range(phnum):
+                  o = i * phentsz
+                  if struct.unpack_from('<I', ph, o)[0] == 1:      # PT_LOAD
+                      out.append(struct.unpack_from('<Q', ph, o + 0x30)[0])
+              return out
+
+          bad = []
+          for name in sorted(os.listdir(root)):
+              a = load_aligns(os.path.join(root, name))
+              if a and min(a) < REQUIRED:
+                  bad.append((name, hex(min(a))))
+
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
+          if bad:
+              lines = ['### 16 KB alignment: FAILED', '',
+                       '`targetSdkVersion 36` requires 16 KB support. '
+                       'Play will reject this bundle.', '',
+                       '| library | LOAD p_align |', '|---|---|']
+              lines += ['| `%s` | `%s` |' % b for b in bad]
+              lines += ['', 'Fix: freerasp -> 8.0.0 (owns 5 of these), rive -> 0.14.10.']
+              if summary:
+                  open(summary, 'a').write('\n'.join(lines) + '\n')
+              for n, al in bad:
+                  print('::error::%s has LOAD p_align %s, needs >= 16384' % (n, al))
+              print('::error::%d arm64 libraries are not 16 KB aligned.' % len(bad))
+              sys.exit(1)
+
+          if summary:
+              open(summary, 'a').write('### 16 KB alignment: OK\n')
+          print('All arm64 libraries are 16 KB aligned.')
+          PY

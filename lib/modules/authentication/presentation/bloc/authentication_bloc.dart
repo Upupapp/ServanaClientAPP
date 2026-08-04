@@ -1,3 +1,5 @@
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
+import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/auth/auth_token_exchanger.dart';
 import 'package:client/common/domain/booking/booking_draft_service.dart';
@@ -42,6 +44,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'authentication_event.dart';
 import 'authentication_state.dart';
 
@@ -56,6 +62,7 @@ class AuthenticationBloc
         super(AuthenticationUninitialized()) {
     on<AuthenticationInit>(_onLogin);
     on<AuthGoogleSignIn>(_onGoogleSignIn);
+    on<AuthAppleSignIn>(_onAppleSignIn);
     on<AuthFacebookSignIn>(_onFacebookSignIn);
     on<AuthBrowseAsGuest>(_onBrowseAsGuest);
     on<AuthCheckSession>(_onCheckSession);
@@ -150,6 +157,130 @@ class AuthenticationBloc
       emit(AuthenticationUnauthenticated(
           message: 'Google sign-in failed. Please try again.'));
     }
+  }
+
+  /// Sign in with Apple.
+  ///
+  /// Required by App Store Review Guideline 4.8: an app offering Google or
+  /// Facebook login must also offer a privacy-preserving equivalent. Without
+  /// it the submission is rejected regardless of how well anything else works.
+  ///
+  /// Two things make this materially different from the Google and Facebook
+  /// handlers above, and both are easy to get wrong:
+  ///
+  /// **The nonce.** Firebase requires it to bind the Apple credential to this
+  /// sign-in attempt and prevent replay. Apple is given the SHA-256 HASH of a
+  /// random string; Firebase is given the RAW string, and checks that hashing
+  /// it reproduces what Apple signed. Sending the same value to both defeats
+  /// the point; sending them the wrong way round fails with an opaque
+  /// `invalid-credential`.
+  ///
+  /// **Name and email arrive exactly once.** Apple returns `givenName`,
+  /// `familyName` and `email` only on the FIRST authorisation for a given Apple
+  /// ID. Every later sign-in returns nulls — deleting the app does not reset
+  /// it. So the display name is composed here and passed to Firebase on that
+  /// first pass; a customer who has authorised before simply keeps whatever the
+  /// account already has, which is why the fallbacks below never invent one.
+  ///
+  /// Customers may also choose Apple's private relay address, which is a real,
+  /// deliverable `@privaterelay.appleid.com` address. Treat it as their email.
+  Future<void> _onAppleSignIn(
+      AuthAppleSignIn event, Emitter<AuthenticationState> emit) async {
+    emit(AuthenticationLoading());
+    _trackEvent(const SignInStartedEvent(authMethod: AuthMethodValues.apple));
+    try {
+      final rawNonce = _generateNonce();
+      final credentialResult = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
+      );
+
+      final identityToken = credentialResult.identityToken;
+      if (identityToken == null) {
+        _trackEvent(const SignInFailedEvent(
+          authMethod: AuthMethodValues.apple,
+          failureCode: FailureCodeValues.unknown,
+        ));
+        emit(AuthenticationUnauthenticated(
+            message: 'Apple sign-in failed. Please try again.'));
+        return;
+      }
+
+      // Raw nonce here, hashed nonce above. See the doc comment.
+      final oauth = OAuthProvider('apple.com').credential(
+        idToken: identityToken,
+        rawNonce: rawNonce,
+      );
+      final userCred = await FirebaseAuth.instance.signInWithCredential(oauth);
+
+      // First authorisation only — see the doc comment.
+      final given = credentialResult.givenName;
+      final family = credentialResult.familyName;
+      final fullName = [given, family]
+          .where((p) => p != null && p.trim().isNotEmpty)
+          .join(' ')
+          .trim();
+      if (fullName.isNotEmpty && (userCred.user?.displayName ?? '').isEmpty) {
+        try {
+          await userCred.user?.updateDisplayName(fullName);
+        } catch (_) {
+          // A name that fails to save must not fail the sign-in.
+        }
+      }
+
+      final firebaseIdToken = await userCred.user?.getIdToken();
+      if (firebaseIdToken == null) {
+        _trackEvent(const SignInFailedEvent(
+          authMethod: AuthMethodValues.apple,
+          failureCode: FailureCodeValues.unknown,
+        ));
+        emit(AuthenticationUnauthenticated(
+            message: 'Apple sign-in failed. Please try again.'));
+        return;
+      }
+
+      // credentialResult.email is null on every sign-in after the first;
+      // the Firebase user carries it from then on.
+      final email = credentialResult.email ?? userCred.user?.email ?? '';
+      await _loginWithFirebaseToken(firebaseIdToken, email, emit);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Cancellation is a deliberate choice, not a failure: no error message,
+      // and not tracked, matching how the Facebook handler treats it.
+      if (e.code == AuthorizationErrorCode.canceled) {
+        emit(AuthenticationUnauthenticated());
+        return;
+      }
+      debugPrint('[AuthBloc] Apple sign-in error: ${e.code}');
+      _trackEvent(const SignInFailedEvent(
+        authMethod: AuthMethodValues.apple,
+        failureCode: FailureCodeValues.unknown,
+      ));
+      emit(AuthenticationUnauthenticated(
+          message: 'Apple sign-in failed. Please try again.'));
+    } catch (e) {
+      debugPrint('[AuthBloc] Apple sign-in error: $e');
+      _trackEvent(const SignInFailedEvent(
+        authMethod: AuthMethodValues.apple,
+        failureCode: FailureCodeValues.networkError,
+      ));
+      emit(AuthenticationUnauthenticated(
+          message: 'Apple sign-in failed. Please try again.'));
+    }
+  }
+
+  /// Cryptographically random nonce for the Apple credential.
+  ///
+  /// `Random.secure()` rather than `Random()`: this value is a replay
+  /// protection, so a predictable one is the same as none.
+  static String _generateNonce([int length = 32]) {
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final rand = Random.secure();
+    return List.generate(length, (_) => chars[rand.nextInt(chars.length)])
+        .join();
   }
 
   Future<void> _onFacebookSignIn(
@@ -311,6 +442,21 @@ class AuthenticationBloc
     // trigger onUnauthorized → AuthStatus.expired, which would show "Session
     // expired" UI during a voluntary logout.
     _notify(AuthStatus.guest);
+    // End the FIREBASE session too, not just the Servana one.
+    //
+    // Nothing in this app signed out of Firebase, so FirebaseAuth.currentUser
+    // survived a logout. That was a latent leak on shared devices; it became a
+    // live cross-user path once the API client began preferring the Firebase
+    // token — customer A signs in with Google, logs out, customer B signs in
+    // with email and password, and B's requests would carry A's credential.
+    //
+    // Best-effort: a failure here must not block a logout the customer asked
+    // for. The API client independently refuses a Firebase token whose subject
+    // does not match the active session, so this is one of two defences.
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (_) {}
+
     // LEAKSHIELD LEAK H-1: purge Hive registration box so the next user cannot
     // see Customer A's PII pre-populated in the registration form.
     try {
@@ -337,6 +483,14 @@ class AuthenticationBloc
       dpLocator<SupportCreateController>().resetPrivateData();
       dpLocator<SupportTicketController>().resetPrivateData();
       dpLocator<SupportDraftRepository>().clearAllDrafts().ignore();
+      // A threat detected during one customer's session must not be attributed
+      // to the next person who signs in on this device.
+      dpLocator<ThreatDetectionProvider>().reset();
+      // LAUNCHBANNER+ §25: cancel any pending campaign presentation and clear
+      // the session flag. Persisted frequency history is account-scoped and
+      // deliberately survives, so a permanent dismissal cannot be reset by
+      // signing out and back in.
+      dpLocator<HomeCampaignController>().resetSessionState();
       dpLocator<ReviewFormController>().resetPrivateData();
       dpLocator<ReviewDetailController>().resetPrivateData();
     } catch (_) {}

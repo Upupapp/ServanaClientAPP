@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:client/common/domain/helpers/session_service.dart';
@@ -106,16 +107,35 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  /// The splash must always resolve, even when the work behind it does not.
+  ///
+  /// `_maybeNavigate` is gated on `_sessionCheckDone`. Reading the session goes
+  /// through the Android keystore via a platform channel, and an unbounded
+  /// `await` on a wedged channel never throws — so the `catch` below cannot
+  /// help, the flag never flips, and the app sits on this screen indefinitely
+  /// with no error and no way forward. Observed on a clean emulator: the
+  /// session check never completed and not one network request was issued.
+  ///
+  /// A timeout converts an indefinite hang into a normal guest start. Being
+  /// wrongly treated as signed-out is recoverable in one tap; an app that never
+  /// opens is not.
+  static const Duration _sessionCheckBudget = Duration(seconds: 6);
+
   Future<void> _checkSession() async {
     bool hasSession = false;
     bool skipWelcome = false;
     try {
-      final session = await SessionService.getSession();
+      final session =
+          await SessionService.getSession().timeout(_sessionCheckBudget);
       hasSession = session != null;
       if (!hasSession) {
-        skipWelcome = await OnboardingStateService.hasCompletedOrSkipped();
+        skipWelcome = await OnboardingStateService.hasCompletedOrSkipped()
+            .timeout(_sessionCheckBudget);
       }
-    } catch (_) {}
+    } catch (_) {
+      // Includes TimeoutException. Falling through to the guest path is the
+      // point: the screen resolves either way.
+    }
     if (!mounted) return;
     dpLocator<AuthStateService>().update(
       hasSession ? AuthStatus.authenticated : AuthStatus.guest,

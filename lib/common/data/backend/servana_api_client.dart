@@ -1,15 +1,38 @@
 import 'dart:convert';
 import 'dart:developer' as dev;
 
+import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Thin, low-level client that wraps every Servana REST API endpoint.
 ///
-/// Auth is handled automatically: on each request the client reads the current
-/// session from [SessionService] and attaches a `Bearer` token if one exists.
+/// Auth is handled automatically: on each request the client resolves a token
+/// via [tokenProvider] and attaches it as a `Bearer` header if one exists.
 /// Callers never need to pass tokens manually.
+///
+/// ## Why [tokenProvider] exists
+///
+/// This used to read `SessionService.getSession()?.token` directly — a token
+/// persisted once at sign-in and never renewed. The backend verifies it with
+/// `admin.auth().verifyIdToken()` (servana_api/src/middleware/verifyAuth.ts:36),
+/// so it is a **Firebase ID token, which expires after one hour**; the backend
+/// has an explicit `auth/id-token-expired` branch that answers
+/// `TOKEN_EXPIRED — Session expired. Please log in again.`
+///
+/// The result was that every authenticated route started returning 401 an hour
+/// after sign-in, and `onUnauthorized` then dropped the session — so the app
+/// signed the customer out roughly hourly, mid-journey. That stayed invisible
+/// while only rarely used routes required auth. It stopped being invisible when
+/// the core booking flow was authenticated (52667b3) and the customer's booking
+/// list, addresses, cancellation and payment calls all moved behind `verifyAuth`.
+///
+/// `FirebaseAuth.currentUser.getIdToken()` renews automatically when the token
+/// is expired or close to it, and is a cheap in-memory read otherwise, so the
+/// fix is to ask per request rather than to cache at sign-in. It is injected
+/// rather than imported so this low-level client keeps no Firebase dependency
+/// and stays constructible in tests without initialising Firebase.
 class ServanaApiClient {
   static const Duration _kTimeout = Duration(seconds: 30);
 
@@ -20,10 +43,18 @@ class ServanaApiClient {
   /// Wire this in GetIt to update [AuthStateService] and clear the session.
   final void Function()? onUnauthorized;
 
+  /// Resolves the bearer token for each request.
+  ///
+  /// Defaults to the stored session token, which preserves the previous
+  /// behaviour for tests and for any caller constructing this directly. The
+  /// app wires a refreshing provider in `main_injector.dart`.
+  final Future<String?> Function()? tokenProvider;
+
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
     this.onUnauthorized,
+    this.tokenProvider,
   }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
@@ -34,9 +65,138 @@ class ServanaApiClient {
     );
   }
 
-  Future<Map<String, String>> _headers() async {
+  /// In-flight refresh, so a burst of parallel requests performs ONE exchange.
+  /// Google rotates refresh tokens, so without this every request but the first
+  /// would present one that had just been replaced.
+  static Future<String?>? _refreshInFlight;
+
+  Future<String?> _resolveToken() async {
     final session = await SessionService.getSession();
-    final token = session?.token;
+    final stored = session?.token;
+
+    // 1. Firebase SDK, for SOCIAL sign-in. getIdToken() renews when near expiry.
+    final provider = tokenProvider;
+    if (provider != null) {
+      try {
+        final fresh = await provider();
+        // The uid check is not paranoia. Logout never signed out of Firebase,
+        // so FirebaseAuth.currentUser survives it. Customer A signs in with
+        // Google, logs out, customer B signs in with email and password — the
+        // Servana session is B's, but the Firebase session is still A's, and
+        // preferring the Firebase token would send A's credential for B's
+        // requests and return A's data. Binding the token to the session that
+        // is actually active closes that regardless of what Firebase holds.
+        if (fresh != null &&
+            fresh.isNotEmpty &&
+            _matchesSession(fresh, session)) {
+          return fresh;
+        }
+      } catch (_) {
+        // Never let a refresh failure become a request failure: fall through.
+      }
+    }
+
+    if (stored == null || stored.isEmpty) return stored;
+
+    // 2. EMAIL/PASSWORD sign-in reaches here, and this is the case the first
+    //    version of this fix missed. Those sessions are established by the
+    //    BACKEND calling Firebase server-side, so FirebaseAuth.currentUser is
+    //    null on this device and step 1 always yields null. The stored ID token
+    //    then expires after an hour and the app signs the customer out —
+    //    exactly the bug the Firebase provider was added to fix, still live for
+    //    everyone who did not use Google or Facebook.
+    if (!_isExpiringSoon(stored)) return stored;
+
+    final refresh = session?.refreshToken ?? '';
+    if (refresh.isEmpty) return stored;
+
+    _refreshInFlight ??= _exchangeRefreshToken(refresh, session!)
+        .whenComplete(() => _refreshInFlight = null);
+    // Fall back to the stale token if the exchange fails: the server answers
+    // 401 and onUnauthorized decides, so one place owns sign-out.
+    return (await _refreshInFlight) ?? stored;
+  }
+
+  /// True when [jwt] belongs to the customer whose session is active.
+  ///
+  /// Compares the token's subject to the stored customerID. A token with no
+  /// readable subject is accepted — the alternative is refusing to authenticate
+  /// on an unparseable-but-possibly-fine token, which breaks more than it fixes.
+  static bool _matchesSession(String jwt, UserSession? session) {
+    final expected = session?.customerID;
+    if (expected == null || expected.isEmpty) return true;
+    final claims = _claimsOf(jwt);
+    final subject = (claims?['user_id'] ?? claims?['sub'])?.toString();
+    if (subject == null || subject.isEmpty) return true;
+    return subject == expected;
+  }
+
+  static Map<String, dynamic>? _claimsOf(String jwt) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length < 2) return null;
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      payload += '=' * ((4 - payload.length % 4) % 4);
+      final decoded = jsonDecode(utf8.decode(base64.decode(payload)));
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// True when [jwt] expires within two minutes, or is already expired.
+  ///
+  /// A token whose `exp` cannot be read is treated as healthy — guessing it is
+  /// expired would refresh on every single request.
+  static bool _isExpiringSoon(String jwt) {
+    final exp = _claimsOf(jwt)?['exp'];
+    if (exp is! int) return false;
+    final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+    return expiry.isBefore(DateTime.now().add(const Duration(minutes: 2)));
+  }
+
+  Future<String?> _exchangeRefreshToken(
+    String refreshToken,
+    UserSession session,
+  ) async {
+    try {
+      // Deliberately does NOT go through _headers(): that would call back into
+      // _resolveToken and recurse.
+      final res = await _client.post(
+        _uri('/api/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+      final body = jsonDecode(res.body);
+
+      if (res.statusCode != 200) {
+        // 401 means the refresh token is genuinely dead — expired, revoked, or
+        // the account disabled. Anything else (502, a network blip) is
+        // transient and must not end a working session.
+        if (res.statusCode == 401) onUnauthorized?.call();
+        return null;
+      }
+
+      final data = body is Map ? body['data'] : null;
+      final token = data is Map ? data['token'] : null;
+      if (token is! String || token.isEmpty) return null;
+
+      final rotated = data is Map ? data['refreshToken'] : null;
+      await SessionService.saveSession(
+        session.copyWith(
+          token: token,
+          refreshToken:
+              rotated is String && rotated.isNotEmpty ? rotated : refreshToken,
+        ),
+      );
+      return token;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, String>> _headers() async {
+    final token = await _resolveToken();
     if (token != null && token.isNotEmpty) {
       return {
         'Content-Type': 'application/json',
@@ -214,18 +374,46 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> verifyEmailOtp({required String otp}) async {
+  /// Verifies the emailed OTP.
+  ///
+  /// `email` is REQUIRED by the backend — auth.service.verifyEmailOtp rejects a
+  /// body without it ("Missing required parameters"), and the OTP row is looked
+  /// up by email, not by token. This client omitted it, so in-app verification
+  /// could never succeed for anyone. It cannot be derived server-side either:
+  /// these routes are unauthenticated by necessity, since a customer who has
+  /// not verified cannot sign in to obtain a token.
+  Future<Map<String, dynamic>> verifyEmailOtp({
+    required String email,
+    required String otp,
+  }) async {
     final uri = _uri('/api/auth/verify-email-otp');
     final res = await _client.post(
       uri,
       headers: await _headers(),
-      body: jsonEncode({'otp': otp}),
+      body: jsonEncode({'email': email, 'otp': otp}),
     );
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> resendEmailOtp() async {
+  /// Resends the verification OTP. `email` is required for the same reason.
+  Future<Map<String, dynamic>> resendEmailOtp({required String email}) async {
     final uri = _uri('/api/auth/resend-email-otp');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'email': email}),
+    );
+    return _decodeJson(res);
+  }
+
+  /// Ends the session server-side.
+  ///
+  /// POST /api/auth/logout revokes the Firebase refresh tokens and clears the
+  /// stored FCM token. Without it a logout was purely local: the refresh token
+  /// stayed valid, so anyone holding it could keep minting ID tokens, and the
+  /// device kept receiving that customer's push notifications.
+  Future<Map<String, dynamic>> logout() async {
+    final uri = _uri('/api/auth/logout');
     final res = await _client.post(uri, headers: await _headers());
     return _decodeJson(res);
   }
@@ -335,32 +523,47 @@ class ServanaApiClient {
 
   // ───────────────────── Workers ─────────────────────
 
-  Future<Map<String, dynamic>> listWorkersByRole(int role) async {
-    final uri = _uri('/api/workers/role/$role');
+  // listWorkersByRole (GET /api/workers/role/:role) removed. It was a directory
+  // listing of every provider on the platform, reachable by any caller, and no
+  // screen ever used it — its only remaining caller was a test that needed an
+  // arbitrary authenticated GET. Provider matching is a backend concern
+  // (eligibility is computed server-side and lists are filtered there), so a
+  // client should never ask this. The route is marked for deletion rather than
+  // replacement in servana_api/docs/WORKER_ROUTE_MIGRATION.md.
+
+  /// `GET /api/booking/:bookingId/provider` — who is coming to this booking.
+  ///
+  /// Replaces `GET /api/workers/:uid`, which let any authenticated caller name
+  /// any provider and pull their profile. That route was audience-projected, so
+  /// a customer only ever received a name and a phone number — but the request
+  /// could still be phrased about anyone, and it was the last thing keeping the
+  /// legacy `/api/workers/*` family alive.
+  ///
+  /// Keyed on a booking the caller already owns; `assertBookingAccess` decides
+  /// entitlement server-side. Returns `{assigned: false, worker: null}` before a
+  /// provider is matched, which is a normal state and not an error.
+  Future<Map<String, dynamic>> getBookingProvider(int bookingId) async {
+    final uri = _uri('/api/booking/$bookingId/provider');
     final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> getWorkerByUid(String uid) async {
-    final uri = _uri('/api/workers/$uid');
+  /// `GET /api/booking/:bookingId/provider-location` — where is the provider on
+  /// *this* booking.
+  ///
+  /// Replaces `GET /api/workers/location/:uid`, which carried no authentication
+  /// and let the caller name any provider, so anyone could follow any worker's
+  /// live position. Entitlement here is decided server-side by
+  /// `assertBookingAccess`, and the request cannot even express "where is some
+  /// other provider" — there is no worker id in it.
+  ///
+  /// Response distinguishes three states:
+  ///   `{assigned: false, location: null}` — not matched to a provider yet
+  ///   `{assigned: true,  location: null}` — matched, but no position reported
+  ///   `{assigned: true,  location: {...}}` — matched and reporting
+  Future<Map<String, dynamic>> getBookingProviderLocation(int bookingId) async {
+    final uri = _uri('/api/booking/$bookingId/provider-location');
     final res = await _client.get(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
-
-  Future<Map<String, dynamic>> getWorkerLocation(String uid) async {
-    final uri = _uri('/api/workers/location/$uid');
-    final res = await _client.get(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
-
-  Future<Map<String, dynamic>> updateWorkerLocation(
-      Map<String, dynamic> payload) async {
-    final uri = _uri('/api/workers/location');
-    final res = await _client.post(
-      uri,
-      headers: await _headers(),
-      body: jsonEncode(payload),
-    );
     return _decodeJson(res);
   }
 

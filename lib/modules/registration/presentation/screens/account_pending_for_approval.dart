@@ -1,3 +1,4 @@
+import 'package:client/common/constants/servana_urls.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -26,9 +27,9 @@ class _AccountPendingForApprovalScreenState
   void initState() {
     super.initState();
     _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.termsAndConditions));
     _privacyRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.privacyPolicy));
   }
 
   @override

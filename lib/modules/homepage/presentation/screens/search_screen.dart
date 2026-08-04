@@ -417,6 +417,12 @@ class _SearchScreenState extends State<SearchScreen> {
             child: SizedBox(
               height: 36,
               child: ListView.separated(
+                // A BoxScrollView with `padding: null` adopts MediaQuery
+                // padding. Horizontal, that means the left/right device insets
+                // — zero in portrait, non-zero in landscape on a cutout
+                // device, where the chip row would gain a phantom leading gap.
+                // Same defect the Home category grid had vertically.
+                padding: EdgeInsets.zero,
                 scrollDirection: Axis.horizontal,
                 itemCount: _kChips.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
@@ -558,7 +564,7 @@ class _SearchScreenState extends State<SearchScreen> {
               childAspectRatio: 0.72,
             ),
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _SearchResultCard(
+              (context, i) => SearchResultCard(
                 result: results[i],
                 onTap: () => _onResultTap(results[i]),
               ),
@@ -647,8 +653,17 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
-class _SearchResultCard extends StatelessWidget {
-  const _SearchResultCard({required this.result, required this.onTap});
+/// A single search result tile.
+///
+/// Public, and named without an underscore, so `test/homepage/
+/// search_result_card_overflow_test.dart` can render the REAL widget at real
+/// grid-tile sizes. It was private, and the overflow test had to pump a
+/// hand-written copy of its layout instead — which passed against the broken
+/// production card, because a copy only ever tests the copy.
+@visibleForTesting
+class SearchResultCard extends StatelessWidget {
+  const SearchResultCard(
+      {super.key, required this.result, required this.onTap});
 
   final SearchResult result;
   final VoidCallback onTap;
@@ -671,17 +686,36 @@ class _SearchResultCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 1,
+                // The image absorbs the slack, and gives it back when the text
+                // needs more room.
+                //
+                // This was `AspectRatio(aspectRatio: 1)` — a hard square whose
+                // height is the card's full width. The tile height comes from
+                // `childAspectRatio: 0.72`, so a square image plus the text
+                // below it does not fit: every card overflowed by 0.556px on a
+                // Pixel 8, and by ~24px on a 360-wide phone at 1.3x text scale,
+                // where it is a visibly clipped card rather than a debug stripe.
+                //
+                // `Expanded` inverts the relationship: the text block takes the
+                // height it needs and the image takes whatever is left. With
+                // BoxFit.cover the artwork still fills its box, so it reads the
+                // same at normal scale and simply gets shorter when the text
+                // grows. Wrapping the AspectRatio in Flexible was the other
+                // option and was rejected — it keeps the square by shrinking
+                // the image's WIDTH, leaving dead space beside it.
+                Expanded(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      result.imageAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: const Color(0xFFEEF2FF),
-                        child: Icon(Icons.home_repair_service,
-                            color: ColorPalette.primaryColorDark, size: 36),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Image.asset(
+                        result.imageAsset,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xFFEEF2FF),
+                          child: Icon(Icons.home_repair_service,
+                              color: ColorPalette.primaryColorDark, size: 36),
+                        ),
                       ),
                     ),
                   ),
@@ -701,6 +735,8 @@ class _SearchResultCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   result.priceDisplay,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: FontPalette.primaryFontFamily,
                     fontWeight: FontWeight.w700,
@@ -718,6 +754,8 @@ class _SearchResultCard extends StatelessWidget {
                   ),
                   child: Text(
                     result.categoryLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
                       fontSize: 11,

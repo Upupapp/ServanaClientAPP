@@ -23,12 +23,10 @@ if (flutterVersionName == null) {
 }
 
 def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+  def keystorePropertiesFile = rootProject.file('key.properties')
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
-
-def hasReleaseKeystore = System.getenv()["CM_KEYSTORE_PATH"] != null || keystorePropertiesFile.exists()
 
 android {
     namespace "com.servana.serviceclient"
@@ -69,22 +67,26 @@ android {
                 keyAlias System.getenv()["CM_KEY_ALIAS"]
                 keyPassword System.getenv()["CM_KEY_PASSWORD"]
             } else if (keystorePropertiesFile.exists()) {
-                // Local / Play Store release: android/key.properties
+                // Local release build: key.properties present
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
-                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
             }
+            // GitHub Actions / dev CI: no signing config set —
+            // release buildType uses signingConfigs.debug anyway
         }
     }
 
     buildTypes {
         release {
-            signingConfig hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            signingConfig signingConfigs.debug
+          // TODO: Add your own signing config for the release build.
+          // Signing with the debug keys for now, so `flutter run --release` works.
+          signingConfig signingConfigs.debug
         }
     }
 }
@@ -93,9 +95,12 @@ flutter {
     source '../..'
 }
 
-dependencies {
-   implementation 'com.aheaditec.talsec.security:TalsecSecurity-Community-Flutter:6.4.0'
-}
+// The Talsec native SDK is declared by the freerasp plugin itself
+// (freerasp/android/build.gradle: talsec_version). It was ALSO pinned here at
+// 6.4.0, twelve majors behind. Gradle's highest-wins hid that, but a
+// dependency lock or a resolutionStrategy would have resolved 6.4.0 and
+// silently reintroduced the 4 KB aligned native libraries. Let the plugin own
+// its own dependency.
 
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'

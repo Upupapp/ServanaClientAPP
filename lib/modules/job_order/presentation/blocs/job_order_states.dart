@@ -122,3 +122,16 @@ class TopayJOState extends JOState {
   @override
   List<Object> get props => ['TopayJOState', jobId];
 }
+
+/// The submission did not reach the server.
+///
+/// There was no such state before, which is why a failed submission still
+/// ended in [DoneJOState] with a "Job order submitted." snackbar and a local
+/// placeholder booking the server had never heard of.
+class FailedJOState extends JOState {
+  final String message;
+  const FailedJOState(this.message);
+
+  @override
+  List<Object> get props => ['FailedJOState', message];
+}

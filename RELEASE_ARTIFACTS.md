@@ -59,7 +59,24 @@ Dart obfuscation symbols (when `--obfuscate --split-debug-info` is enabled) must
 2. Stored in secure storage for the lifetime of the production release
 3. Tagged with version + build number + commit SHA
 
-**Current status**: Obfuscation not yet enabled. Add to release build before production submission.
+**Current status**: Obfuscation **is** enabled — `.github/workflows/flutter-ci.yml`
+runs `--obfuscate --split-debug-info=build/debug-info` in the release job.
+
+Requirement 3 is met: symbols upload as
+`servana-client-symbols-<versionName>-<versionCode>-<sha>`.
+
+Requirement 2 is **not fully met by CI alone**. GitHub Actions caps artifact
+retention at 90 days without an org-level increase, and this table asks for
+"duration of supported release + 12 months". Symbols must therefore be
+downloaded and archived off-CI before day 90, or the retention policy is
+missed silently — the artifact simply disappears.
+
+Requirement 1 (upload to Crashlytics immediately after build) is **not
+implemented**. The Crashlytics Gradle plugin auto-uploads the R8
+`mapping.txt`, but that only symbolicates the Java/Kotlin side. Flutter
+crashes come back as obfuscated **Dart** frames, and those need the
+`.symbols` files via `flutter symbolize`. `mapping.txt` is uploaded alongside
+the Dart symbols so the pair does not depend on the plugin having succeeded.
 
 ---
 

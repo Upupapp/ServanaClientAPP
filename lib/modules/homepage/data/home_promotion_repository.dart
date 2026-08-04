@@ -77,6 +77,40 @@ class HomePromotionRepository {
     motionPreset: HomeMotionPreset.productReveal,
   );
 
+  /// The Servana launch-benefits campaign (LAUNCHBANNER+).
+  ///
+  /// `enabled: false` is the production default §21 requires. The campaign
+  /// ships dark and is turned on through Remote Config after release-candidate
+  /// testing — so a bad creative or a mistimed launch is a console toggle, not
+  /// an app update.
+  ///
+  /// Reuses [HomeTargetSearch] so the CTA flows through Home's existing
+  /// `_handlePromotionTap`, which already validates the sealed target type.
+  /// §14 forbids inventing a route, and this is the one the previous spotlight
+  /// used for the identical "Explore Services" action.
+  static const launchBenefits = HomeCampaign(
+    id: 'servana_launch_benefits',
+    version: '1',
+    title: 'Everything you need, all in one app',
+    subtitle: 'Browse services, choose your schedule, and get updates right '
+        'from your phone.',
+    ctaLabel: 'Explore Services',
+    ctaTarget: HomeTargetSearch(),
+    motionPreset: HomeMotionPreset.productReveal,
+    enabled: false,
+    assetPath: 'assets/images/campaigns/servana_launch_benefits_v1.webp',
+    assetWidth: 941,
+    assetHeight: 1672,
+    maxImpressions: 3,
+    remindLaterCooldown: Duration(days: 7),
+    minTimeBetweenImpressions: Duration(days: 7),
+  );
+
+  /// Accessor for the launch campaign. The older [defaultSpotlight] had no
+  /// getter and tests reached the static field directly; this keeps the
+  /// repository the single source of campaign definitions.
+  HomeCampaign getLaunchCampaign() => launchBenefits;
+
   HomePromotion? getBannerA({required bool isAuthenticated}) =>
       _bannerA.isEligibleFor(isAuthenticated: isAuthenticated)
           ? _bannerA

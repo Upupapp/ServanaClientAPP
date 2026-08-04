@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Apple Push Notification service.
+	     firebase_messaging on iOS delivers nothing without this entitlement.
+	     Info.plist already declares UIBackgroundModes > remote-notification,
+	     which is the half of the pair that does not require signing — so the
+	     app looked configured for push while being incapable of receiving it.
+
+	     `development` is correct for debug and TestFlight-from-Xcode builds.
+	     Xcode rewrites it to `production` when exporting for the App Store, so
+	     this value does not need to change per build.
+
+	     Requires the matching capability on the App ID in the Apple Developer
+	     portal, and an APNs key uploaded to Firebase Console > Project settings
+	     > Cloud Messaging for the servana-59bee project. Neither can be done
+	     from this repository. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Sign in with Apple.
+	     App Store Review Guideline 4.8 requires a privacy-preserving login
+	     option whenever an app offers third-party or social login. This app
+	     offers Google and Facebook, so this is mandatory, not optional.
+
+	     Requires the "Sign In with Apple" capability enabled on App ID
+	     com.servana.client in the Apple Developer portal, and the Apple
+	     provider enabled in Firebase Console for servana-59bee. Neither can be
+	     done from this repository. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>

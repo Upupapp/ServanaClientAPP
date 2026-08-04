@@ -39,12 +39,18 @@ class TrackingRepository {
     }
 
     // Fire both calls in parallel. Location failure is isolated.
-    final locationFuture = knownWorkerUid != null && knownWorkerUid.isNotEmpty
-        ? _dataSource.getProviderLocation(knownWorkerUid).catchError((e) {
-            debugPrint('[TrackingRepo] location fetch failed: $e');
-            return null;
-          })
-        : Future.value(null);
+    //
+    // The location fetch is keyed on the BOOKING now, not on a worker uid, so
+    // it no longer has to wait to learn who is assigned. That removed a real
+    // defect as well as a branch: when the uid arrived only with the booking
+    // response, the first fetch was skipped and a second one issued afterwards,
+    // so the very first tracking frame had no position on it — two round trips
+    // to render what one now renders.
+    final locationFuture =
+        _dataSource.getProviderLocation(bookingIdInt).catchError((e) {
+      debugPrint('[TrackingRepo] location fetch failed: $e');
+      return null;
+    });
 
     final bookingRaw = await _dataSource.getBookingDetail(bookingIdInt);
     final b = bookingRaw['booking'] as Map<String, dynamic>? ??
@@ -55,20 +61,14 @@ class TrackingRepository {
       (b['status'] ?? '').toString().toUpperCase(),
     );
 
+    // Still resolved for display (name/phone lookup and the caller's seed), but
+    // no longer needed to ask where the provider is.
     final workerUid = b['workerUid']?.toString() ??
         b['worker_uid']?.toString() ??
         b['providerUid']?.toString() ??
         knownWorkerUid;
 
-    // If we now know the uid but didn't before, fire a fresh location fetch.
-    final locationResult = await (workerUid != null &&
-            workerUid.isNotEmpty &&
-            knownWorkerUid == null
-        ? _dataSource.getProviderLocation(workerUid).catchError((e) {
-            debugPrint('[TrackingRepo] location fetch (late uid) failed: $e');
-            return null;
-          })
-        : locationFuture);
+    final locationResult = await locationFuture;
 
     final eta = TrackingEta.fromBookingMap(b);
 

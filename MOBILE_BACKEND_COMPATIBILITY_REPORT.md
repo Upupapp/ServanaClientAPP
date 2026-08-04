@@ -83,7 +83,7 @@ Generated: 2026-07-30 | Backend: https://api.servana.com.ph
 This mobile release requires:
 - Backend commit supporting all routes in the table above
 - Socket.IO server v2.x compatible events
-- Firebase project `servana-1d13b` for push notifications
+- Firebase project `servana-59bee` for push notifications
 
 ---
 

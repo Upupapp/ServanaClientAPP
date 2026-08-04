@@ -19,6 +19,30 @@ class ColorPalette {
   static const Color transparent = Color(0x00000000);
   static const Color danger = Color(0xFFEF4444);
 
+  // ── Main navigation (MOVEUPNAV+ §4) ────────────────────────────────────────
+  //
+  // These were previously private constants inside main_nav_scaffold, which
+  // meant the navigation carried its own colour system that no other surface
+  // could reference and no theme change could reach. Named here so §4's "use
+  // design tokens from the existing Servana theme" is actually satisfiable —
+  // it was not, because the tokens did not exist.
+  //
+  // navActive matches primaryColorDark rather than introducing a third blue.
+
+  /// Selected destination: bubble fill, icon-on-white, label.
+  static const Color navActive = Color(0xFF3058C8);
+
+  /// Unselected icon and label. 4.6:1 on white — above the 4.5:1 floor for the
+  /// small label text, which a lighter grey would not clear.
+  static const Color navInactive = Color(0xFF6D717F);
+
+  /// Central Book action. Servana orange, so the primary action is never
+  /// mistaken for a fifth navigation destination.
+  static const Color navBookAction = Color(0xFFF08A24);
+
+  /// Hairline on the bar's top edge, light theme.
+  static const Color navBorder = Color(0xFFE7E9EF);
+
   // Convenience aliases so UI code doesn't reach for `Colors.*`.
   static Color get surface => secondaryBackground;
   static Color get onSurface => secondaryText;

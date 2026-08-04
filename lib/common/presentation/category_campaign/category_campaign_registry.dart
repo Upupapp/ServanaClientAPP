@@ -1,0 +1,172 @@
+import 'package:flutter/widgets.dart';
+
+import 'package:client/common/domain/services/service_category_config.dart';
+
+/// Everything a category campaign popup needs, per category.
+///
+/// One record per creative. Adding a campaign is a matter of measuring its
+/// artwork and adding an entry here — no new modal, no new tap handler, no new
+/// route.
+@immutable
+class CategoryCampaign {
+  const CategoryCampaign({
+    required this.categoryId,
+    required this.campaignKey,
+    required this.categoryKey,
+    required this.assetPath,
+    required this.assetWidth,
+    required this.assetHeight,
+    required this.ctaRect,
+    required this.semanticSummary,
+    required this.primaryActionLabel,
+    required this.closeLabel,
+  });
+
+  final ServiceCategoryId categoryId;
+
+  /// Stable analytics identifier for this creative.
+  final String campaignKey;
+
+  /// The Home grid key, matching `_categoryIdFromKey` in the router.
+  final String categoryKey;
+
+  final String assetPath;
+
+  /// Real pixel dimensions of the shipped PNG.
+  ///
+  /// Stored rather than assumed: both creatives were specified as 928x1648 and
+  /// delivered as 941x1672. Driving [aspectRatio] from the spec instead of the
+  /// file would inset the artwork inside its own box, and the CTA overlay —
+  /// which is positioned against that box — would drift off the drawn button.
+  final int assetWidth;
+  final int assetHeight;
+
+  double get aspectRatio => assetWidth / assetHeight;
+
+  /// The drawn call-to-action as fractions of the artboard, measured from the
+  /// shipped PNG by locating the saturated pill against the dark backdrop.
+  final Rect ctaRect;
+
+  /// One coherent sentence for a screen reader, replacing the ~20 fragments of
+  /// text baked into the artwork.
+  final String semanticSummary;
+
+  final String primaryActionLabel;
+  final String closeLabel;
+}
+
+/// The campaigns that currently exist.
+///
+/// A category with no entry keeps its previous behaviour — tapping navigates
+/// straight through — so adding a creative here is the only thing that turns a
+/// popup on, and removing it is the only thing needed to turn one off.
+abstract final class CategoryCampaignRegistry {
+  /// Beauty & Wellness.
+  ///
+  /// CTA pill measured at x 133..806, y 1492..1585 of 941x1672.
+  static const CategoryCampaign beautyWellness = CategoryCampaign(
+    categoryId: ServiceCategoryId.beautyWellness,
+    campaignKey: 'beauty_wellness_category_popup_v1',
+    categoryKey: 'beauty_wellness',
+    assetPath: 'assets/images/categories/beauty_wellness_popup_v1.png',
+    assetWidth: 941,
+    assetHeight: 1672,
+    ctaRect: Rect.fromLTWH(0.1413, 0.8923, 0.7163, 0.0562),
+    semanticSummary:
+        'Beauty and Wellness. Feel refreshed, confident, and cared for. '
+        'Book beauty, massage, facial, nail, and salon services with trusted '
+        'providers and convenient scheduling.',
+    primaryActionLabel: 'Explore Beauty and Wellness',
+    closeLabel: 'Close Beauty and Wellness promotion',
+  );
+
+  /// Hair & Nails.
+  ///
+  /// CTA pill measured at x 119..816, y 1503..1598 of 941x1672.
+  static const CategoryCampaign hairAndNails = CategoryCampaign(
+    categoryId: ServiceCategoryId.hairAndNails,
+    campaignKey: 'hair_nails_category_popup_v1',
+    categoryKey: 'hair_nails',
+    assetPath: 'assets/images/categories/hair_nails_popup_v1.png',
+    assetWidth: 941,
+    assetHeight: 1672,
+    ctaRect: Rect.fromLTWH(0.1265, 0.8989, 0.7418, 0.0574),
+    semanticSummary:
+        'Hair and Nails. Look your best, every day. Book haircut, styling, '
+        'hair-treatment, manicure, pedicure, and nail-art services with '
+        'skilled professionals and easy scheduling.',
+    primaryActionLabel: 'Explore Hair and Nails',
+    closeLabel: 'Close Hair and Nails promotion',
+  );
+
+  /// Massage & Wellness.
+  ///
+  /// CTA pill measured at x 134..805, y 1497..1590 of 941x1672.
+  ///
+  /// NOTE the category key. The MASSAGEWELLNESSPOPUP+ command specifies
+  /// `massage_wellness`, and **no such key exists in this app** — the Home
+  /// grid, the router and `home_promotion.dart` all use `massage`
+  /// (`main_router.dart:76`, `home_category_grid.dart:38`). Taking the command
+  /// literally would have registered a campaign nothing could ever look up:
+  /// `forCategoryKey('massage')` returns null, the popup never appears, and
+  /// nothing fails loudly. The creative's own name is preserved in
+  /// [campaignKey], which is only an analytics label.
+  static const CategoryCampaign massageWellness = CategoryCampaign(
+    categoryId: ServiceCategoryId.massage,
+    campaignKey: 'massage_wellness_category_popup_v1',
+    categoryKey: 'massage',
+    assetPath: 'assets/images/categories/massage_wellness_popup_v1.png',
+    assetWidth: 941,
+    assetHeight: 1672,
+    ctaRect: Rect.fromLTWH(0.1424, 0.8953, 0.7141, 0.0562),
+    semanticSummary:
+        'Massage and Wellness. Relax, recharge, and feel your best. Book '
+        'full-body massage, home spa, foot massage, and aromatherapy services '
+        'with trusted wellness professionals and easy scheduling.',
+    primaryActionLabel: 'Explore Massage and Wellness',
+    closeLabel: 'Close Massage and Wellness promotion',
+  );
+
+  /// Aircon Repair.
+  ///
+  /// CTA pill measured at x 135..801, y 1445..1561 of 941x1672. Noticeably
+  /// taller than the other three creatives (0.070 vs ~0.056 of artboard
+  /// height); verified against the row profile rather than assumed to be a
+  /// detector artefact — the pill really is a 116px orange-to-red gradient
+  /// with empty rows either side.
+  ///
+  /// Category key is `aircon`, not the `aircon_repair` the AIRCONREPAIRPOPUP+
+  /// command specifies — same mismatch as the massage creative. See
+  /// [massageWellness] for why registering the command's value verbatim would
+  /// fail silently.
+  static const CategoryCampaign airconRepair = CategoryCampaign(
+    categoryId: ServiceCategoryId.aircon,
+    campaignKey: 'aircon_repair_category_popup_v1',
+    categoryKey: 'aircon',
+    assetPath: 'assets/images/categories/aircon_repair_popup_v1.png',
+    assetWidth: 941,
+    assetHeight: 1672,
+    ctaRect: Rect.fromLTWH(0.1435, 0.8642, 0.7088, 0.0700),
+    semanticSummary: 'Aircon Repair. Stay cool with fast, reliable help. Book '
+        'air-conditioner cleaning, repair, preventive maintenance, '
+        'installation, and checkup services with trusted technicians and '
+        'convenient scheduling.',
+    primaryActionLabel: 'Explore Aircon Repair',
+    closeLabel: 'Close Aircon Repair promotion',
+  );
+
+  static const List<CategoryCampaign> all = <CategoryCampaign>[
+    beautyWellness,
+    hairAndNails,
+    massageWellness,
+    airconRepair,
+  ];
+
+  /// The campaign for [key], or null when that category has none.
+  static CategoryCampaign? forCategoryKey(String key) {
+    for (final c in all) {
+      if (c.categoryKey == key) return c;
+    }
+    return null;
+  }
+}

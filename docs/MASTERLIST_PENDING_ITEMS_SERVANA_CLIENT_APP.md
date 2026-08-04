@@ -1,0 +1,439 @@
+# Masterlist — Pending Items, Servana Customer Mobile App
+
+Every open finding for ServanaClient. Companion to the worker app list at
+`ServanaWorker/docs/MASTERLIST_PENDING_ITEMS_SERVANA_WORKER_APP.md`.
+
+**Maintenance rule.** Update at the end of every command. Add new findings, move resolved ones to Closed with the commit that closed them, and move disproved ones to Corrections. **Never delete a row.**
+
+- **Last updated:** 2026-08-02, release-pipeline session
+- **App:** `Heatclift/ServanaClient` @ `da02f94` (branch `chore/16kb-alignment`; `dbe636e` on main) — 1095 tests, `flutter analyze --no-fatal-infos` exit 0
+- **Backend:** `servana_api` @ `9a07330` — 1317 tests, 11 local security commits
+- **Per-finding detail:** `docs/audit/<PASS>_CLIENT.md`; release-path detail in `docs/DEPLOYMENT_ERRORS.md` and `docs/SIXTEEN_KB_ALIGNMENT.md`
+
+## Correction to the round-1 numbers
+
+The first run of this file reported **95 open / 25 closed**. That closed count was too high. Closure is matched by substring against the finding title, and three keys were single words — `cancel`, `approve`, `mark-cash-paid`. `cancel` alone matched 11 findings when the commit it pointed at fixed 2, sweeping in the provider-calendar bug, the cancellation-notification gap and the duplicate-timeline bug, none of which were touched. Those rows are open again and the keys are now specific. **A masterlist that reports an open bug as fixed is worse than no masterlist**, so the number going up here is the file working.
+
+Round 2 was scoped to verify the eleven prior fixes rather than re-audit from scratch: 32 held, 19 partial, 3 unchanged-since-round-1, 6 not checkable from the repositories. Rows carry `round` and, where the agent said so, `isNew`. Nine round-2 rows self-declare as pre-existing without matching a round-1 row automatically — some are restatements, some are new findings in a known area. They are kept as separate rows rather than silently merged, because guessing wrong in either direction loses information.
+
+**Three of the five P0s closed in round 2 were introduced or missed by the round-1 remediation itself** — see `a062ef9` and `9a07330`.
+
+## At a glance
+
+| Severity | Open | Closed (round 2) | Closed (release session) |
+| --- | ---: | ---: | ---: |
+| **P0** | 0 | 20 | 0 |
+| **P1** | 88 | 5 | 6 |
+| **P2** | 48 | 2 | 5 |
+| **P3** | 10 | 0 | 2 |
+| **info** | 5 | 0 | 0 |
+
+**151 open (146 + 5 info) · 27 closed (round 2) · 13 closed (release session, `SC-R01`–`SC-R13`) · 3 closed + 1 disproved (local-fixes session).**
+
+Open went **up** by 8 while 13 were closed. That is the file working: the
+release-pipeline session opened SC-166 through SC-173, most of which were
+always true and simply had nobody looking. SC-166 in particular — a RASP SDK
+whose output no code reads — has been shipping that way for some time.
+
+> **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
+
+## P1 — open (84)
+
+| ID | Pass | Finding | Fix in | Release | Verified |
+| --- | --- | --- | --- | --- | --- |
+| SC-021 | SWEEP | 'Pay Now' CTA is unreachable on booking detail — `_needsPayment` can never be true | backend | no | agent |
+| SC-023 | SWEEP | `paymentMethod` value vocabulary diverges: 'PAYMONGO' is never written to `payments.method` or `bookings.payment_method` | backend | no | agent |
+| SC-024 | SWEEP | `totalAmount` is not a registered alias of `finalPrice` — customer booking detail renders ₱0.00 for every booking | backend | no | agent |
+| SC-025 | SWEEP | Booking response carries no `latitude`/`longitude` — live-tracking destination pin resolves to (0,0) | backend | no | agent |
+| SC-026 | SWEEP | Bookings list invents the service name — every booking without addons is labelled 'Beauty & Wellness' | client-mobile | yes | agent |
+| SC-027 | SWEEP | Customer booking payload omits `serviceName`/`serviceCategory` — admin and provider get them, customer does not | backend | no | agent |
+| SC-028 | SWEEP | Customer notification taxonomy: client recognises 22 types, backend emits exactly 1 | backend | no | agent |
+| SC-030 | SWEEP | Provider live-location response nests the GPS doc under `location`; the client only accepts it at the root or under `data` — the tracking map's provid | ? | no | agent |
+| SC-031 | STITCH | 'Resend code' on the booking OTP screen calls a route that does not exist, leaving the OTP step with no recovery path | backend | no | agent |
+| SC-032 | STITCH | 'Resend email OTP' sends no request body at all, so it always returns 400 | backend | no | agent |
+| SC-033 | STITCH | `AssignmentPollResult.isAssigned` can never be true for a real assignment, so both confirmation screens always run the full 60 s poll and then report  | client-mobile | yes | agent |
+| SC-034 | STITCH | `assignNearestWorker` returning `{assigned:false}` is silently discarded — the booking is stranded at CONFIRMED with no worker, no notification and no | backend | no | agent |
+| SC-035 | STITCH | `confirmOtp` is non-atomic: the booking is set CONFIRMED before worker assignment, so an assignment failure is reported to the customer as an invalid  | backend | no | agent |
+| SC-036 | STITCH | `POST /api/bookings` has no idempotency — the client sends `X-Idempotency-Key` and the backend never reads it | backend | no | **yes** |
+| SC-037 | STITCH | `WORKER_ASSIGNED` maps to `enRoute`, so the customer is told 'Your service professional is on the way' the instant a provider is assigned — potentiall | client-mobile | yes | agent |
+| SC-038 | STITCH | A booking chat conversation is created the moment the customer opens the screen, with no provider-assignment or confirmation gate | backend | no | agent |
+| SC-039 | STITCH | Address coordinates are supplied by the client and written verbatim — they then drive service-area eligibility and transport-fee pricing | backend | no | agent |
+| SC-040 | STITCH | Address save shows 'Address saved!' while the coordinate write is fire-and-forget; a failed Mongo write makes the address silently unbookable forever | backend | no | agent |
+| SC-041 | STITCH | Chat messages emit a Socket.IO event but never an FCM push, so a backgrounded customer never learns a provider replied | backend | no | agent |
+| SC-042 | STITCH | Customer cancellation does not notify the assigned provider — the provider can travel to a job that was cancelled hours earlier | backend | no | agent |
+| SC-043 | STITCH | Editing a saved address is implemented as delete-then-recreate, so a failure between the two calls destroys the customer's address | backend | yes | agent |
+| SC-044 | STITCH | In-app email verification is permanently broken: the client posts `{otp}` but the backend requires `{email, otp}` | backend | no | agent |
+| SC-045 | STITCH | Logout is still purely local — the client never calls POST /api/auth/logout, and the FCM clear that would work fires after the session is deleted | ? | yes | agent |
+| SC-046 | STITCH | Logout never calls `POST /api/auth/logout`, so the Firebase token is never revoked server-side — the stale credential stays valid after sign-out | client-mobile | yes | agent |
+| SC-047 | STITCH | ServanaClient @4868aca cannot be built from a clean checkout — main.dart imports a file that is no longer tracked | ? | unknown | agent |
+| SC-048 | STITCH | The booking OTP step still has no recovery: Resend calls a route that does not exist, and confirmOtp is still non-atomic so an assignment failure is r | ? | no | agent |
+| SC-049 | STITCH | The bookings list returns guest bookings matched by phone number, but the detail route refuses them — tapping such a booking always 403s | backend | no | agent |
+| SC-050 | STITCH | The entire customer notification system has exactly one producer — nothing notifies the customer of assignment, payment, completion or cancellation | backend | no | agent |
+| SC-051 | STITCH | The Firebase ID token is stored as the Servana session token and never refreshed — sessions die roughly hourly with no recovery | client-mobile | yes | agent |
+| SC-052 | STITCH | The first-pass remediation record is wrong — five findings are annotated 'FIXED in <commit>' but are demonstrably still open, three of them client-sid | ? | no | agent |
+| SC-053 | STITCH | The PayMongo webhook confirms payment in the database but notifies neither the customer nor the provider, unlike the manual `approve` path | backend | no | agent |
+| SC-054 | STITCH | The typed booking-error layer is dead code — BookingErrorMapper and BookingSubmissionResult have zero production call sites, so the now-reachable 401  | ? | yes | agent |
+| SC-055 | STITCH | Two parallel timeline tables: the customer's own cancellation is written to `booking_timeline_events` but the customer app reads `booking_tracking`, s | backend | no | agent |
+| SC-058 | ALIGN | `X-Idempotency-Key` is sent on booking creation and read by nothing — the customer path has no idempotency while the admin path has a full implementat | backend | no | agent |
+| SC-059 | ALIGN | Admin read model places `guestCustomerId` inside `customerUid` — direct §7 violation | backend | no | agent |
+| SC-060 | ALIGN | Bookings list hardcodes every booking's service as "Beauty & Wellness" | client-mobile | yes | agent |
+| SC-061 | ALIGN | Cancelled bookings still occupy the provider's calendar — three availability queries match only the single-L 'CANCELED' | servana_api-main/src/services/technicianService.ts:577, :831, :901; src/services/bookingService.ts:443 | no | agent |
+| SC-062 | ALIGN | Customer booking read model omits canonical service identity — booking detail shows an empty service name | backend | no | agent |
+| SC-063 | ALIGN | Customer booking surface receives no §13 canonical status; `statusLower` is a false normalisation | backend | no | agent |
+| SC-064 | ALIGN | Customer notifications have one producer for a client that implements 22 types and 9 deep-link targets | backend | no | agent |
+| SC-065 | ALIGN | Email-OTP verification is permanently broken on customer mobile — the backend requires `email` in the body, the client sends only the token | backend | no | agent |
+| SC-066 | ALIGN | Live provider tracking never plots the provider — the backend wraps the location doc under `location`, the client only unwraps `data` or the root | servana_api-main/src/controllers/technicianController.ts:177-180 (and providerLocationAccessController.ts:75,82,85 for the successor) | yes | agent |
+| SC-067 | ALIGN | No customer-originated mutation produces a backend audit event | backend | no | agent |
+| SC-068 | ALIGN | PayMongo webhook overwrites `bookings.status` with `PAID`, regressing an in-progress or completed booking | backend | no | agent |
+| SC-069 | ALIGN | POST /api/:bookingId/paymongo/create is now authorized but still has no booking-state guard — a customer can mint a live checkout for their own cancel | servana_api-main/src/services/paymentService.ts:155-170 | no | agent |
+| SC-070 | ALIGN | POST /api/:bookingId/resend-otp still does not exist — the OTP screen's only recovery path always fails | servana_api-main/src/routes/booking.routes.ts:36 and src/controllers/bookingController.ts | no | agent |
+| SC-071 | ALIGN | Two parallel booking timelines — the customer's own cancellation is written to the table the customer cannot read | backend | no | agent |
+| SC-073 | LEAK | Client — the 401/session-expiry path deletes the session but does not reset any private-data store, so the next account signing in on the same device  | client-mobile | yes | agent |
+| SC-074 | LEAK | POST /api/admin/admin-users/bootstrap-super-admin is callable with any customer's Firebase token and fails OPEN when no active super admin exists | backend | no | agent |
+| SC-075 | LEAK | Socket.IO root namespace join_room — a client-supplied `type` label bypasses the booking ownership check, allowing any authenticated identity into any | backend | no | **yes** |
+| SC-076 | LEAK | verifyAuthOptional silently downgrades an invalid or expired token to anonymous, making "no credentials" the most privileged state on all three routes | backend | no | agent |
+| SC-077 | REPEAT | Booking lifecycle status and assignment status are collapsed into one wire field; the customer app maps WORKER_ASSIGNED to 'en route' and never reads  | backend | no | agent |
+| SC-078 | REPEAT | BOOKING.ADDONS: relational booking_addons rows are written only by the admin path — add-ons the customer paid for are invisible to provider and admin | backend | no | agent |
+| SC-079 | REPEAT | BOOKING.ADDRESS: customer bookings hold a mutable FK instead of a booking-time snapshot, so editing a saved address rewrites past bookings | backend | no | agent |
+| SC-080 | REPEAT | BOOKING.CREATE: app-originated bookings write no timeline or audit event, so Admin Booking 360 shows two different histories depending on origin | backend | no | agent |
+| SC-081 | REPEAT | BOOKING.CREATE: the customer path ignores X-Idempotency-Key while the admin path has a full idempotency table | backend | no | agent |
+| SC-082 | REPEAT | BOOKING.DETAIL.READ has no audience projection — the sibling 65b4337 missed; the assigned provider receives the customer's OTP and GCash payment evide | ? | no | agent |
+| SC-083 | REPEAT | BOOKING.OWNERSHIP.RESOLVE is implemented twice with different rules — the list endpoint returns bookings the detail endpoint then refuses | backend | no | agent |
+| SC-084 | REPEAT | BOOKING.PROVIDER.ASSIGN has four independent implementations with different guards, different side effects and different prices | backend | no | agent |
+| SC-085 | REPEAT | legacyRouteTelemetry records no uid on 30 of the 36 legacy routes, and its test injects the field Express cannot supply | ? | no | agent |
+| SC-086 | REPEAT | LOCATION.ID is derived in four places, and the admin path coerces the canonical loc_<lat>_<lon> string to a Number so it is always null | backend | no | agent |
+| SC-087 | REPEAT | NOTIFICATION.CUSTOMER.EMIT: the app understands 21 notification types, the backend produces exactly one, and the two route shapes are incompatible | backend | no | agent |
+| SC-088 | REPEAT | PAYMENT.RECORD.RESOLVE: the booking↔payment join is scoped by additional_request_id in the provider read model but not in the customer or payment-muta | backend | no | agent |
+| SC-089 | REPEAT | PAYMENT.SETTLE has four implementations that leave the system in four different states | backend | no | agent |
+| SC-090 | REPEAT | PROVIDER.LOCATION.READ has three response shapes and ServanaClient parses none — live tracking never shows the provider | ? | no | agent |
+| SC-091 | REPEAT | SERVICE.OPTIONS.LIST is the one route in service.route.ts registered outside the /services family, and the only live caller 404s | backend | no | agent |
+| SC-092 | REPEAT | The customer app re-parses a human display label as if it were a canonical status code | client-mobile | yes | agent |
+| SC-093 | REPEAT | Two complete booking read stacks inside the customer app — the canonical model, mapper and repository are dead code | client-mobile | yes | agent |
+| SC-094 | TEST | Backend contract tests catalog-service.test.ts and admin-dedup.test.ts are excluded from jest and pass vacuously when no server is running | backend | no | agent |
+| SC-095 | TEST | Backend production deploy runs no tests, no typecheck and no contract guard — 22 jest suites gate nothing | backend | no | agent |
+| SC-096 | TEST | CI never runs the test suite — all 1280 tests, including the nine new security regression suites, are unenforced on deploy | servana_api-main/.github/workflows/deploy.yml:44 (insert before), :161 | no | agent |
+| SC-097 | TEST | createBooking's identity-from-token fix — the core of 52667b3 for the customer app — has no test of any kind | servana_api-main/tests/create-booking-identity.test.ts (new); covers src/controllers/bookingController.ts:9-52 | no | agent |
+| SC-098 | TEST | Entire messaging module has 0% test coverage; ConversationMapper's unguarded `as num?` cast on a COUNT(*)-derived field silently empties the Messages  | backend | no | agent |
+| SC-099 | TEST | Five of seven assertBookingAccess call sites have no controller test, and there is no catch-all that would have caught the original approve/mark-cash- | servana_api-main/tests/booking-access.test.ts (extend); targets src/controllers/bookingController.ts:71,92,153 and src/controllers/paymentController.ts:14,80 | no | agent |
+| SC-100 | TEST | guard-protected-contracts.mjs cannot detect removal of any route ServanaClient actually calls, and is not wired to CI | backend | no | agent |
+| SC-101 | TEST | leak-isolation.test.js still green-asserts the vulnerability bd8c355 removed, and passes only because of a comment | servana_api-main/tests/leak-isolation.test.js:117-146; tests/anonymous-bypass.test.ts:89-94 | no | agent |
+| SC-102 | TEST | Logout is entirely untested — all six skipped tests defer to an integration_test harness that does not exist | client-mobile | yes | agent |
+| SC-103 | TEST | No test asserts the Authorization header is sent, and onUnauthorized (which wipes the session globally on any 401) has zero coverage | client-mobile | no | agent |
+| SC-104 | TEST | No test asserts X-Idempotency-Key is sent, and the backend does not read it for customer booking creation — double-submit creates two bookings | backend | no | agent |
+| SC-105 | TEST | resolveProviderAudience is untested — the projection tests prove the filter works but never that it is applied to the right callers | servana_api-main/tests/provider-profile-projection.test.ts:111 (extend); covers src/controllers/technicianController.ts:1022-1038 | no | agent |
+| SC-106 | TEST | The auth-guard test re-implements the router's guard instead of executing it, and explicitly asserts the /settings deep-link gap is correct | client-mobile | yes | agent |
+| SC-107 | TEST | verifyAuth.ts — the single middleware all nine security fixes rest on — has zero behavioural tests, including its production TEMP_ID kill-switch | servana_api-main/tests/verify-auth.test.ts (new); covers src/middleware/verifyAuth.ts:8-63 | no | agent |
+| SC-169 | RELEASE | JobOrder submission has no backend endpoint. `HttpBackend.insertJobOrder` (`http_backend.dart:571`) is a stub returning false; `servana_api` exposes no job-order route. `da02f94` made the failure honest — it no longer fabricates a booking — but the flow is now visibly non-functional on a path customers can reach from Store Items and the category tiles. Decide: wire an endpoint, route through `POST /api/bookings`, or remove the entry points. | backend + client-mobile | no | **verified — flow traced end to end** |
+| SC-174 | RELEASE | **Google Sign-In cannot work in any build.** The Firebase Android app `com.servana.serviceclient` has NO SHA certificate fingerprints registered, so `android/app/google-services.json` contains only a WEB oauth client (`client_type: 3`) and no ANDROID one (`client_type: 1`). The app ships `google_sign_in: ^6.2.1` and constructs `GoogleSignIn()` at `authentication_bloc.dart:54` with no `serverClientId`, which requires the ANDROID client — it fails with `ApiException: 10` (DEVELOPER_ERROR) in debug AND release. This predates the sign-up social buttons; those simply surfaced it on a second screen. Fix: register the debug SHA-1 `92:6E:B8:…:91:33`, the upload SHA-1 `38:40:B7:…:25:FF`, and (after the first Play upload) Play's app-signing SHA-1, then **re-download google-services.json and commit it** — adding fingerprints does not update the file already in the repo. | Firebase Console + client-mobile | yes | **verified — oauth_client inspected, only type 3 present** |
+
+## P2 — open (48)
+
+| ID | Pass | Finding | Fix in | Release | Verified |
+| --- | --- | --- | --- | --- | --- |
+| SC-108 | SWEEP | Booking reference diverges between the app's own two screens: list shows `BK-<id>`, detail shows `SVN-000<id>` | client-mobile | yes | agent |
+| SC-109 | SWEEP | Customer app reads five booking fields that no backend response anywhere produces | backend | no | agent |
+| SC-110 | SWEEP | Customer mobile generates the canonical `locationId` and supplies raw coordinates the backend persists unvalidated | backend | no | agent |
+| SC-111 | SWEEP | Parity registry mirrors are out of sync — `token` and `email` groups exist only in the backend | admin | no | agent |
+| SC-112 | SWEEP | Parity registry mirrors remain two groups behind the backend and there is still no CI check | ? | no | agent |
+| SC-113 | SWEEP | The authenticated successor route repeats the same `location` wrapper, so the worker-route migration cannot be completed without a protected client re | ? | yes | agent |
+| SC-114 | STITCH | confirmOtp is the one route that got assertBookingAccess without sendBookingAccessError — a 403 collapses to 400 and the OTP screen renders 'You do no | ? | no | agent |
+| SC-115 | STITCH | Logout deletes the session before calling `DELETE /api/user/fcm-token`, so the request 401s and the device token is never cleared server-side | client-mobile | yes | agent |
+| SC-116 | STITCH | Notification deep link for `SettingsTarget` pushes `/settings`, which is not a registered route | client-mobile | yes | agent |
+| SC-117 | STITCH | Payment settlement is not idempotent — approve and mark-cash-paid re-fire the provider's 'Payment Received' notification and reset paid_at on every re | ? | no | agent |
+| SC-118 | STITCH | PayMongo verification falls back from `paymentStatus` to booking status, so a null payment status makes a merely-CONFIRMED booking read as paid | client-mobile | yes | agent |
+| SC-119 | STITCH | Submitting a review overwrites `bookings.status` with `REVIEWED`, which can remove a still-active paid job from the provider's list | backend | no | agent |
+| SC-120 | STITCH | The authenticated successor routes have zero adopters in either mobile app, so the legacy-retirement gate can never be met and customer tracking still | ? | yes | agent |
+| SC-121 | STITCH | The booking OTP screen tells the customer the code was sent by SMS; the backend emails it | client-mobile | yes | agent |
+| SC-122 | STITCH | The cancellation sheet collapses every backend error into one message, discarding actionable state and authorization errors | client-mobile | yes | agent |
+| SC-123 | STITCH | The operation journal and the persisted booking idempotency key are written but never read — crash recovery for booking creation does not exist | client-mobile | yes | agent |
+| SC-124 | STITCH | User/address controllers return raw exception text to the client and mutate module-level shared response objects | backend | no | agent |
+| SC-125 | ALIGN | `approvePayment` / `markCashPaid` have no state guard and no idempotency — replay resets paid_at and re-fires the provider payout notification | backend | no | agent |
+| SC-126 | ALIGN | `booking_tracking.status` is an undeclared fourth status vocabulary, and its free-text `note` is returned verbatim to customers | backend | no | agent |
+| SC-127 | ALIGN | `GET /api/:id/tracking` runs timeline rows through the booking formatter, stamping every event with `bookingCode: "SVN-undefined"` | backend | no | agent |
+| SC-128 | ALIGN | `POST /api/auth/logout` exists but the customer app never calls it — no server-side session termination | client-mobile | yes | agent |
+| SC-129 | ALIGN | `WORKER_ASSIGNED` renders as "On the way" on customer mobile but "assigned" in admin — same row, two realities | client-mobile | yes | agent |
+| SC-130 | ALIGN | Booking conversation is created before a provider is assigned or confirmed | backend | no | agent |
+| SC-132 | ALIGN | Notification `route` payload has two incompatible shapes and neither is in the parity registry | backend | no | agent |
+| SC-133 | ALIGN | Payment response envelopes diverge three ways on one surface, and `checkout_url` is the only snake_case key in the customer contract | backend | no | agent |
+| SC-135 | LEAK | Admin-linked guest bookings are listed to the linked customer but cannot be opened — assertBookingAccess ignores the link | ? | no | agent |
+| SC-136 | LEAK | Booking conversation is created on the customer's first access with no assigned/confirmed state gate (§24) | backend | unknown | agent |
+| SC-137 | LEAK | Client router guard is case-sensitive — six /settings/* routes and /HelpSupport fall outside the isProtected prefix list | client-mobile | yes | agent |
+| SC-138 | LEAK | FCM token deactivation on logout always 401s — the session is deleted before the call that needs it | ? | yes | agent |
+| SC-139 | REPEAT | ADDRESS.CREATE has three client implementations and one endpoint that silently doubles as ADDRESS.UPDATE | backend | no | agent |
+| SC-140 | REPEAT | AUTH.SIGN_IN returns two different session shapes, reconciled by scattered client-side fallback chains | backend | no | agent |
+| SC-141 | REPEAT | Class F: otp_code and worker_code are produced by one generator but mean two different things, and the app carries both names for one field | backend | no | agent |
+| SC-142 | REPEAT | createBooking returns the plaintext booking OTP to the caller as otpDevOnly, with no environment guard | ? | no | agent |
+| SC-143 | REPEAT | JOB_CARD.READ has two independent formatters over one canonical query, and they disagree on address.instructions | ? | no | agent |
+| SC-144 | REPEAT | The existing REPEAT parity test suite covers only provider capabilities — no customer capability has a parity test | backend | no | agent |
+| SC-145 | TEST | CI collects coverage but enforces no threshold — measured line coverage is 17.10%, and 149 of 470 lib files have no coverage record at all | client-mobile | no | agent |
+| SC-146 | TEST | CustomerBooking.fromApiMap silently substitutes DateTime.now() for a missing schedule and no test pins that fallback | client-mobile | yes | agent |
+| SC-147 | TEST | guard-protected-contracts checks route prefixes, not the specific routes ServanaClient calls — and never runs | servana_api-main/scripts/guard-protected-contracts.mjs:53-56; .github/workflows/deploy.yml:44 | no | agent |
+| SC-148 | TEST | http_backend.dart is 0% covered and holds a second divergent status mapper plus an unauthenticated address write | client-mobile | yes | agent |
+| SC-149 | TEST | No payment-state tests: PayMongo WebView, pending-payment recovery and the payment chips are all 0% covered | client-mobile | yes | agent |
+| SC-150 | TEST | No session-expiry or token-validity test; splash and the auth bloc disagree on what counts as a valid session and neither branch is tested | client-mobile | yes | agent |
+| SC-151 | TEST | No test enforces auth coverage across the route surface — 65 routes register without verifyAuth, 35 of them on the technician router | servana_api-main/tests/route-auth-inventory.test.ts (new); src/routes/technician.routes.ts:18-19,57; src/routes/additional.routes.ts:11-16 | no | agent |
+| SC-152 | TEST | ServanaClient has zero tests for the /workers/:uid contract that 65b4337 reshaped, and the backend test's claim about the client's field list is incom | servana_api-main/tests/provider-profile-projection.test.ts:44-52; servana_client-main/test/modules/bookings/worker_profile_parse_test.dart (new) | no | agent |
+| SC-153 | TEST | ServanaClient's six skipped tests defer to an integration_test/ directory that does not exist, and they cover exactly the token lifecycle this session | servana_client-main/test/common/data/backend/api_client_headers_test.dart (new); test/bloc/authentication_bloc_test.dart:123,139,168,283,317,602 | no | agent |
+| SC-154 | TEST | The column-does-not-exist defect class hit twice this session; the check that would catch it exists but is scoped to one alias in one function | servana_api-main/tests/sql-column-contract.test.ts (new); generalizes tests/guest-booking-link.test.ts:50-66 | no | agent |
+| SC-155 | TEST | Two test suites are silently excluded from jest, and they are the only ones that exercise real HTTP routes | servana_api-main/jest.config.js:5; tests/route-contract.test.ts (new) | no | agent |
+| SC-168 | RELEASE | freeRASP has never started on iOS. `iosConfig` is commented out at `free_rasp_service.dart:23-26`, and freeRASP throws `ConfigurationException` when it is absent — which `main.dart` discarded with `.ignore()`. `da02f94` reports the failure to Crashlytics instead of swallowing it, so it is now visible, but iOS still has no RASP. Needs the bundle ID and team ID. | client-mobile | yes | **verified** |
+| SC-172 | RELEASE | Symbol retention cannot meet its own policy from CI alone. `RELEASE_ARTIFACTS.md` requires "duration of supported release + 12 months"; GitHub caps artifacts at 90 days without an org-level increase. Symbols must be downloaded and archived off-CI before day 90 or the artifact silently disappears and every crash from that release becomes unreadable. | process | n/a | **verified** |
+
+## P3 — open (10)
+
+| ID | Pass | Finding | Fix in | Release | Verified |
+| --- | --- | --- | --- | --- | --- |
+| SC-156 | SWEEP | `currency` is invented client-side on customer bookings while every other platform receives it from the backend | backend | no | agent |
+| SC-157 | SWEEP | `formatBooking` is applied to booking_tracking rows, fabricating `bookingCode: "SVN-undefined"` on the customer tracking response | ? | no | agent |
+| SC-158 | SWEEP | `fullname` is bridged by ad-hoc service code instead of the parity registry, and splits names naively | backend | no | agent |
+| SC-159 | SWEEP | Provider-profile projection drops `email`, removing the last name fallback on the booking detail screen | ? | no | agent |
+| SC-160 | SWEEP | Three more booking fields fabricated by the customer app: `downPayment`, `numberOfPersonnel`, `distanceFromOffice` | none | no | agent |
+| SC-161 | ALIGN | Client resolves customer identity with the canonical `customerUid` last in precedence | client-mobile | yes | agent |
+| SC-162 | LEAK | A provider removed from a booking keeps the conversation in their chat inbox | ? | no | agent |
+| SC-163 | REPEAT | Class F confirmed still live at 799b6aa: otp_code and worker_code are one generator behind two business meanings, and the assignment service returns w | ? | no | agent |
+| SC-164 | TEST | Canonical §13 statuses `new` and `disputed` are unmapped and untested; unknown statuses are grouped under cancelled | client-mobile | yes | agent |
+| SC-165 | TEST | No test covers the §21 safe-error boundary, and several hardened controllers return raw exception text | servana_api-main/tests/booking-access.test.ts:167 (extend); src/controllers/bookingController.ts:51, src/controllers/paymentController.ts:25, src/controllers/technicianController.ts:97 | no | agent |
+
+## Corrections — findings disproved on investigation
+
+Kept rather than deleted, per the maintenance rule. A masterlist that quietly
+drops a wrong row teaches nobody why it was wrong.
+
+| ID | Original claim | What investigation found |
+| --- | --- | --- |
+| SC-175 | `com.servana.worker` may have the same missing-ANDROID-oauth-client defect as SC-174 | **Disproved.** ServanaWorker does not depend on `google_sign_in` at all — it is absent from its `pubspec.yaml` and `GoogleSignIn(` appears nowhere in its `lib/`. The missing ANDROID oauth client in its `google-services.json` is therefore inert. The row was written as a conditional ("if ServanaWorker uses Google Sign-In"), and the condition is false. |
+
+## Closed — dead legal links (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-185 | **Every legal link in the app 404'd.** It pointed at `servana.com.ph/privacy`, `/terms`, `/cancellation` and `/refunds`; the real pages are `www.servana.com.ph/privacy-policy` and `/terms-and-conditions`. 13 literals across 5 files — sign-in, create-account, pending-approval, About, Privacy & Legal. A customer tapping "Privacy Policy" during sign-up reached a dead end, and a reachable privacy policy is mandatory for Play review. | All 13 replaced with `ServanaUrls` constants. Cancellation and refunds now resolve to the T&C, whose section 8 is "Cancellations and Refunds" — there is no standalone page, and inventing those two paths is what produced two of the four 404s. Both live URLs verified 200. |
+
+### Why nothing caught it
+
+`launchUrl` to a 404 is not an error. The browser opens, the page says "not
+found", and the app never learns — there is no exception, no log line, and no
+failing test. The only way to find it is to open the link, which no automated
+check did.
+
+A test now asserts the constants point at the surviving paths, that none ends
+with a dead one, and that no file re-introduces a hard-coded marketing URL.
+Deliberately offline: a test that hits the network fails whenever the marketing
+site is slow, and a legal-link check that cries wolf is one people stop reading.
+
+## Closed — startup hang (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-180 | **The app hung before Flutter drew a single frame.** Diagnosed by instrumenting `_bootstrap()`: it reached `hive done` at 36 ms and never printed the next mark, so it stalled inside `await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)`. What made it hard to see is that everything *looked* healthy — the native SDK logged "FirebaseApp initialization successful", Crashlytics started, and analytics sent a session event. Only Dart was stuck, and the screen showing was the **Android launch drawable**, not Flutter's splash. | Root cause was SC-176. Fixed by resyncing the Android `apiKey`. Verified on a clean emulator: colour count goes 324 → 9,221 at t+24 s and Home renders. |
+| SC-176 | `firebase_options.dart` carried `AIzaSyA5lwcYyg…` while `google-services.json` carried `AIzaSyAJhIszBq…`. Recorded earlier as harmless — "both keys are active, nothing breaks today". **That assessment was wrong.** | Re-initialising the `[DEFAULT]` app from Dart with options that differ from the ones the native `FirebaseInitProvider` already used does not throw — it never returns. `4` tests now assert apiKey, appId and every field agree between the two files. |
+
+### How it was introduced, and what that teaches
+
+Self-inflicted, this session. Regenerating `google-services.json` to fix Google
+Sign-In (SC-174) also swapped the Android API key, because Firebase hands back
+the newer of the project's two Android keys. The mismatch was noticed at the
+time, recorded as SC-176, and **deferred as cosmetic**.
+
+Two bisects were spent on the wrong suspects — `firebase_remote_config` and the
+freerasp 8 bump — because both had landed the same day and the hang appeared
+right after. Neither was involved. The actual cause was already written down as
+a known, deferred finding.
+
+The lesson is narrow and worth keeping: **a config mismatch between two files
+that each look individually valid is not cosmetic.** Nothing validates that
+`firebase_options.dart` and `google-services.json` agree; the only symptom was
+an app that never started.
+
+## Closed — Play signing chain (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-182 | **Google Sign-In would have failed for every Play install.** Play App Signing re-signs the bundle with Google's key, so a Play-installed build presents `EA:3D:E8:C6:…:EF:E0`, which `google-services.json` had never been told about → `ApiException: 10`. It worked perfectly for App Distribution testers. | Play app-signing SHA-1 registered in Firebase and `google-services.json` regenerated — three ANDROID oauth clients now (debug, upload, Play). `9e990d4` |
+| SC-183 | **Maps would have rendered grey for every Play install**, same root cause: the Maps API key was Android-restricted to the upload fingerprint only. | Play app-signing SHA-1 added to the key's Android restrictions alongside the upload fingerprint. |
+| SC-184 | **versionCode 35 was already burned.** Play had `35 (1.0.0)` in the internal testing track from 27 Jul, and Play rejects a versionCode present in ANY track — the next upload would have been refused before anything else was examined. | Bumped to `1.0.0+36`. First bump since versionCode stopped being hardcoded in the workflow, so editing pubspec is now genuinely sufficient. `0bf483c` |
+
+**The pattern worth remembering.** Three of these four fail *only* on the Play
+channel and work perfectly through Firebase App Distribution — the channel used
+for testing. A build can pass on every tester's device and still break Sign-In,
+maps and integrity checks for every real customer, because Google re-signs the
+bundle and the app has never seen that certificate. Any future credential
+pinned to a signing key needs **both** fingerprints, not just the upload one.
+
+## Closed — Play signing chain (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-173 | The upload keystore had never been matched against Play. If it differed, every upload would be rejected regardless of a green pipeline. | **Verified identical.** Play Console → App signing → Upload key certificate reports SHA-256 `70:28:36:3C:…:68:29`, byte for byte the SHA-256 of `Desktop/keys/upload-keystore.jks` (alias `upload`). No key reset needed. |
+| SC-182 | **Google Sign-In would have failed for every Play install.** Play App Signing re-signs the bundle with Google's key, so a Play-installed build presents `EA:3D:E8:C6:…:EF:E0`, which `google-services.json` had never been told about → `ApiException: 10`. It worked perfectly for App Distribution testers. | Play app-signing SHA-1 registered in Firebase and `google-services.json` regenerated — three ANDROID oauth clients now (debug, upload, Play). `9e990d4` |
+| SC-183 | **Maps would have rendered grey for every Play install**, same root cause: the Maps API key was Android-restricted to the upload fingerprint only. | Play app-signing SHA-1 added to the key's Android restrictions alongside the upload fingerprint. |
+| SC-184 | **versionCode 35 was already burned.** Play had `35 (1.0.0)` in the internal testing track from 27 Jul, and Play rejects a versionCode present in ANY track — the next upload would have been refused before anything else was examined. | Bumped to `1.0.0+36`. First bump since versionCode stopped being hardcoded in the workflow, so editing pubspec is now genuinely sufficient. `0bf483c` |
+
+**The pattern worth remembering.** Three of these four fail *only* on the Play
+channel and work perfectly through Firebase App Distribution — the channel used
+for testing. A build can pass on every tester's device and still break Sign-In,
+maps and integrity checks for every real customer, because Google re-signs the
+bundle and the app has never seen that certificate. Any future credential
+pinned to a signing key needs **both** fingerprints, not just the upload one.
+
+## Closed — freeRASP hardening (2026-08-02)
+
+| ID | Finding | Resolution |
+| --- | --- | --- |
+| SC-166 | freeRASP detected root, hooks, debuggers, emulators and tampering, and funnelled every callback into a bool no code read | `ThreatDetectionProvider` now records threats **by type**, exposes `indicatesTampering` separately from ordinary device-state findings, and reports each detection to Crashlytics as a non-fatal. Non-fatal because the app keeps working, and a crash rate nobody trusts is a metric nobody reads. **Deliberately does not block**: enforcing on an integrity signal whose Play certificate is still unverified would risk locking out legitimate customers, which is a worse failure than the one it prevents. Enforcement remains a separate decision. |
+| SC-167 | Two pinned `signingCertHashes` of unknown provenance, matching neither the upload nor the debug keystore | Replaced with the verified upload certificate `cCg2PG…faCk=`. The debug hash is deliberately **excluded** — debug keys are trivially obtainable, so trusting one in production would make the check meaningless. A test decodes the constant and checks it really is `70:28:36:3C:…:68:29`, not a plausible-looking string. |
+| SC-179 | freeRASP 8 logged `TalsecScreenProtector` registration failures at every launch | `DETECT_SCREEN_CAPTURE` and `DETECT_SCREEN_RECORDING` declared. Both are install-time permissions with no runtime prompt; they only let the app be told a capture happened and grant no access to screen content. A test asserts no runtime-dangerous permission rode in alongside them. |
+| SC-181 | **freeRASP 8 exposes 21 threat callbacks; the integration wired 9.** The 6.12→8.0 bump did not revisit the list, so the app was blind to malware, screen recording, automation, ADB, VPN, multi-instance, and time/location spoofing. Found while fixing SC-166. | All 21 wired. Debug/simulator/dev-mode/ADB/unofficial-store are suppressed in debug builds so developer machines do not drown the real signal. `onMalware`'s payload — the list of other apps installed on the customer's device — is discarded at the callback boundary rather than collected. A test enumerates every callback name and fails if one is unwired. |
+
+### Still required before enforcement
+
+Adding the **Play app-signing certificate hash** (Play Console → App integrity)
+is a hard prerequisite. With Play App Signing, Google re-signs the bundle, so a
+Play-installed build presents a different certificate from the upload key — and
+switching on enforcement first would flag **every Play customer** as tampered.
+Recorded as a `TODO(SC-167)` at the pin site.
+
+## Closed — local fixes session (2026-08-02, while CI ran)
+
+| ID | Finding | Commit |
+| --- | --- | --- |
+| SC-171 | Category hero subtitle rendered underneath the back arrow. Root cause is more specific than first recorded: `_HeroBackground` is the `FlexibleSpaceBar` **background**, whose origin is the raw top of the app bar — above the status bar. A fixed `top: 60` therefore lands inside the toolbar band on any device where `statusBar + kToolbarHeight > 60`, which is nearly all of them. Now derived from `MediaQuery.paddingOf(context).top + kToolbarHeight + 8`, with `maxLines: 2` so large text cannot overflow the fixed 180pt hero. 6 tests assert the clearance across the 0–59pt inset range, because a single-viewport widget test would have passed against the OLD code at a 0pt inset. | see below |
+| SC-170 | `search_screen.dart` chip row inherited the left/right insets via `padding: null` | see below |
+| SC-177 | **Bookings empty and error states gained a phantom top gap.** Three vertical `ListView`s (`_buildLoadError`, `_buildEmpty`, `_buildGlobalEmpty`) omitted `padding`, so each adopted `MediaQuery.padding.top`. The inset was still live at that point: the shell Scaffold has a `bottomNavigationBar` but no `appBar`, so it strips only the BOTTOM inset, and `_GradientHeader` consumes the top one *visually* without removing it from the MediaQuery it is a sibling of. The status-bar height was therefore applied twice — once by the header, once invisibly by the list. The populated state uses a `CustomScrollView`, which performs no such substitution, so only the empty and error states drifted. A fourth, horizontal `ListView` (segment strip) had the landscape-only variant. | see below |
+
+**Swept for the class, not just the instances.** All 10 padding-less scroll
+views in `lib/` were classified by tracing each one's ancestors: 4 defects (all
+in `bookings_screen.dart`), 6 correct as-is. The 6 sit under a `Scaffold` with
+an `appBar` or inside a `SafeArea`, both of which consume the inset before it
+arrives — and for a page-body list, adopting the *bottom* inset is desirable,
+since it keeps content clear of the gesture bar. Blanket-applying
+`EdgeInsets.zero` would have broken those.
+
+## Closed — release-pipeline session (2026-08-02)
+
+Everything below was found and fixed in the same session. Kept as its own
+section rather than merged into the round-2 table, because mixing sessions is
+how the round-1 closure count went wrong.
+
+| ID | Finding | Commit |
+| --- | --- | --- |
+| SC-R01 | `flutter analyze` failed CI on two warnings — a spotlight removal orphaned the `home_campaign_controller` import, and removing the traveling cards orphaned `_CardChip` and the sole use of its `ColorPalette` import. `--no-fatal-infos` makes infos non-fatal but **warnings still fail**. | `72dd3a1` |
+| SC-R02 | `versionCode` was hardcoded to 35 in the workflow's `local.properties`, which `build.gradle:57` reads — so it silently overrode pubspec. Every push to main built the same versionCode, and Play rejects duplicates: the first upload would work and every later one fail, while bumping pubspec did nothing. | `c90cd00` |
+| SC-R03 | "Verify signing" could not fail. `jarsigner -verify` prints "jar is unsigned" and exits 0, so the step verified nothing. Now asserts on "jar verified" and re-checks the signer certificate. | `c90cd00` |
+| SC-R04 | `GOOGLE_MAPS_API_KEY` was consumed by the build but absent from the preflight. Unset, `sed` substitutes an empty key, the build goes green, and the release ships `com.google.android.geo.API_KEY=""` — grey tracking maps, no error anywhere. | `c90cd00` |
+| SC-R05 | The release job had none of the disk mitigations the test job needs, while building a full multi-ABI obfuscated bundle rather than a debug arm64 APK. | `c90cd00` |
+| SC-R06 | `--obfuscate --split-debug-info` symbols were discarded with the runner. Dart stack traces would be unrecoverable addresses permanently — a rebuild yields a different mapping. Now uploaded with `mapping.txt`, tagged versionName-versionCode-sha. See SC-172 for the retention gap that remains. | `c90cd00`, `dbe636e` |
+| SC-R07 | 16 KB misalignment was only discoverable in Play Console. CI now reads `PT_LOAD p_align` from every arm64 ELF in the bundle and fails with the offending libraries named. Tested both ways against real fixtures. | `dbe636e` |
+| SC-R08 | Six arm64 libraries shipped 4 KB aligned against `targetSdkVersion 36`, blocking the Play upload. freerasp 6.12.0→8.0.0 consolidated five into one aligned `libts.so`; `librive_text.so` left entirely with `awesome_dialog`. Now 0 of 4 misaligned. | `da02f94` |
+| SC-R09 | `rive` could not be bumped: `awesome_dialog 3.2.1` declares `rive: ^0.13.2`, which under pub's pre-1.0 caret rule excludes 0.14.x, and `rive` pins `rive_common` exactly. Removed `awesome_dialog` instead — 6 call sites in 3 files replaced by `ServanaAlertDialog`. | `da02f94` |
+| SC-R10 | `attachListener` returned `void` in freerasp 6.x and is `Future<void>` in 8.x, where it awaits `detachListener()` before subscribing. Called unawaited immediately before `start()`, the native SDK could report before the Dart listener existed. Compiles clean; `unawaited_futures` is not enabled. | `da02f94` |
+| SC-R11 | `android/app/build.gradle` pinned the Talsec **native** SDK to 6.4.0 while the plugin declares 18.3.0 — twelve majors apart. Gradle highest-wins resolved 18.3.0, which is the only reason the build produced an aligned `libts.so`; a dependency lock or `resolutionStrategy` would have selected 6.4.0 and silently restored the misaligned libraries. | `da02f94` |
+| SC-R12 | **JobOrder ghost success.** `onJoRequested` called `repo.insertJobOrder(...)` without `await` and never read the bool. In release the Backend is `HttpBackend`, whose stub returns false — so submission always failed and the customer was always told it worked: a "Job order submitted." snackbar, the screen popped, and a placeholder booking with status "For Review" appeared that the server never received. `JobOrderScreen` is routed and reachable, so this was a live path. Now awaited and checked; a rejection emits `FailedJOState` and writes nothing. 6 regression tests. | `da02f94` |
+| SC-R13 | Home spacing: the category grid inherited `MediaQuery.padding` because a vertical `GridView` with `padding: null` adopts it, opening a device-dependent ~48pt gap; and the header computed its own height from assumed child sizes, producing `BOTTOM OVERFLOWED BY 5.0 PIXELS`. | `06bedfd`, `72dd3a1` |
+
+## Closed this session
+
+| ID | Finding | Commit |
+| --- | --- | --- |
+| SC-001 | `addUserAddress` update branch overwrites any address by ID — the authenticated uid is never used in the WHERE clause | `6d78313` |
+| SC-002 | Guest-owned bookings can be cancelled by any authenticated user — POST /api/bookings/:id/cancel fails open when bookings.user_id is NULL | `a062ef9` |
+| SC-003 | Payment settlement handlers `approve` and `mark-cash-paid` skip the booking-ownership check — any authenticated user can mark any booking PAID | `6d78313` |
+| SC-004 | `POST /api/:bookingId/approve` and `/mark-cash-paid` skip the booking-access check their sibling payment routes enforce | `6d78313` |
+| SC-005 | `POST /api/bookings/:id/cancel` is auth-optional and its ownership check short-circuits for anonymous callers — cancellation is unauthenticated and un | `bd8c355` |
+| SC-006 | Guest bookings can be cancelled by ANY authenticated customer — the cancel guard short-circuits on a NULL owner, and the timeline records the wrong ac | `a062ef9` |
+| SC-007 | The newly-revived payment retry job excludes 'CANCELED' while every cancel writes 'CANCELLED' — Servana emails a live PayMongo checkout link for a can | `a062ef9` |
+| SC-008 | ANSWER TO OPEN QUESTION — PUT /api/workers/bookings/:id/{accept,start,complete,decline} has NO auth middleware and the ?workerUid= query param is neve | `9a07330` |
+| SC-009 | GET /api/user/:userId/addresses — identical anonymous-bypass; unauthenticated read of any customer's saved home addresses | `bd8c355` |
+| SC-010 | GET /api/users/:userId/bookings — ownership check is skipped entirely when the caller omits the Authorization header | `bd8c355` |
+| SC-011 | GET /api/workers/:workerId/job-cards is unauthenticated and returns every customer's name, phone and full street address | `a062ef9` |
+| SC-012 | POST /api/:bookingId/approve — any authenticated user can mark any booking PAID (no ownership assertion, unlike its sibling payment routes) | `6d78313` |
+| SC-013 | POST /api/:bookingId/mark-cash-paid — same missing ownership assertion; any authenticated user can force any booking to CASH/PAID | `6d78313` |
+| SC-014 | POST /api/bookings/:id/cancel — an anonymous caller can cancel any customer's booking, and the audit row records a NULL actor | `bd8c355` |
+| SC-015 | POST /api/user/adduseraddress with an addressId performs a cross-user UPDATE — the owner uid is never in the WHERE clause | `6d78313` |
+| SC-016 | The whole /api/additional/* family is unauthenticated — anyone can read a booking's extra charges, invent new ones in any customer's name, and trigger | `a062ef9` |
+| SC-017 | CUSTOMER.BOOKING.LIST joins guest_customers on a column that does not exist (gc.phone_number) | `880d5bc` |
+| SC-018 | PROVIDER.PROFILE.READ has one unprojected implementation serving provider, admin and customer — customer app pulls the provider's earnings ledger and  | `65b4337` |
+| SC-019 | leak-isolation.test.js pins three address operations but omits updateUserAddress, whose UPDATE has no uid predicate (cross-user address overwrite) | `6d78313` |
+| SC-020 | The only ServanaApiClient contract test pins a URL the backend does not serve, certifying a broken booking flow as green | `65b4337` |
+| SC-022 | `GET /api/services/:id/options-with-addons` — client path has one more segment than the registered route (404) | `65b4337` |
+| SC-029 | Linked guest bookings appear in the customer's list but 403 on tap — 880d5bc fixed the query and left the access check behind | `a062ef9` |
+| SC-056 | 880d5bc repaired the guest booking LIST but not the sibling ownership resolver — an admin-linked guest booking appears in the customer's list and 403s | `a062ef9` |
+| SC-057 | `options-with-addons` path mismatch — ServanaClient calls a 3-segment path the backend does not register | `65b4337` |
+| SC-072 | All six /api/additional/* customer-and-worker lifecycle routes are completely unauthenticated, including a booking-scoped read | `a062ef9` |
+| SC-131 | Guest bookings are linked to a client account by an unverified, non-unique phone number — any customer can harvest another party's guest bookings | `880d5bc` |
+| SC-134 | Residual fail-open ownership shape and stale comments survive bd8c355 in listUserBookings | `a062ef9` |
+
+## Carried over from other work
+
+| Item | Where |
+| --- | --- |
+| Rotate Firebase keys — previously-committed ones remain in git history | ServanaClient |
+| Set the 5 `production` environment secrets; `release-android` fails its preflight until then | GitHub → Settings → Environments → production |
+| Rotate the upload keystore password — it was pasted into a chat transcript — and move `upload-keystore.jks` out of `Downloads` | ServanaClient release process |
+| Merge `chore/16kb-alignment` into main; the 16 KB fix and the JobOrder fix both live there | `Heatclift/ServanaClient` |
+| 36 unauthenticated legacy worker routes; migration step 2 needs a mobile release | `servana_api` + ServanaWorker |
+| 4 backend security commits are local-only and undeployed | `servana_api`, no upstream configured |
+
+## Unverified — evidence not obtainable
+
+- Actual production impact of the untested five assertBookingAccess sites. I verified the guard is present and correctly ordered in the source at bookingController.ts:71,92,153 and paymentController.ts:14,80 by reading them; what is untested is that it STAYS there. I did not exercise them against a running server, so I cannot confirm there is no path that reaches the handler body with the guard skipped (e.g. an express error-handler shortcut). Evidence needed: the supertest harness recommended in TEST-07.
+- Authorization verdicts for 52667b3, bd8c355 and the auth half of a85958e/a85978e are outside the SWEEP remit. I did not re-derive route → middleware → SQL for them and am not endorsing the prior agent's HELD/PARTIAL verdicts. Evidence needed: an independent LEAK pass over booking.routes.ts, payment.routes.ts, user.route.ts and the middleware/ directory at 799b6aa.
+- Chat/messaging field parity beyond the mapper level. ConversationMapper and MessageMapper accept both camel and snake forms for every field they read, and the envelopes match (chat.controller.ts:30,50,77 vs messaging_repository.dart:17,30,51), but I did not verify the `type` value vocabulary — the client's MessageMapper._typeFrom expects lowercase 'text'|'image'|'system' and I only confirmed 'system' is written (chat.repository.ts:303). Evidence needed: the enumerated values chat.service.ts writes to chat_messages.type.
+- Client suite state IS verified: I ran `flutter test --no-pub -r compact` in servana_client-main and observed 983 passed, 6 skipped, 0 failed. I did NOT run `flutter analyze`, so the stated 46-info baseline is unconfirmed. Note the local Flutter SDK's own git checkout is corrupt (`flutter --version` reports a packfile inflate error on `fetch --tags`); the tooling still runs but SDK self-update is broken, which may affect CI-vs-local parity.
+- Customer WEB portal test coverage: UNAVAILABLE. The repository has 0 committed files; nothing is inferred about it in any finding above.
+- Customer WEB portal — UNAVAILABLE. The repo has 0 committed files; no inference drawn about its authorization surface.
+- Customer WEB portal — UNAVAILABLE. The repo has 0 committed files; no inference of any kind was drawn from it, in either direction.
+- Customer WEB portal — UNAVAILABLE. The repository has 0 committed files; no field-parity inference of any kind was made from or about it.
+- Customer WEB portal: UNAVAILABLE, as instructed. C:/Users/paulg/OneDrive/Desktop/servana_Customer_WebPortal contains only a `docs` directory and no committed source. Every REPEAT §20 Customer Mobile ↔ Customer Web parity obligation is unassessable this pass; I inferred nothing from its absence.
+- Customer Web portal: UNAVAILABLE. The servana_Customer_WebPortal repo contains zero committed files, so no claim in this report describes customer-web behaviour, and every 'both customer surfaces' statement covers customer mobile only.
+- Customer Web portal: UNAVAILABLE. servana_Customer_WebPortal contains 0 committed files, so no customer-web routes, models or status handling could be inspected. Every 'Customer Mobile ↔ Customer Web parity' obligation in REPEAT §20 is unassessable in this pass.
+- Deployed backend commit on production. Every finding is stated against the local servana_api-main working tree, which is AHEAD of the inventory supplied with this task — booking.routes.ts:20,28-30 and payment.routes.ts:8-11 now carry verifyAuth and bookingAccessService.ts exists, contradicting the inventory's §3.1/3.3/3.6 LEAK claims. Evidence needed: `git rev-parse HEAD` in the deploy directory on Linode 192.46.224.126 and `pm2 describe servana-prod`, to confirm which of these routes are actually hardened in production.
+- Field parity for customer support tickets (/api/support/*) and reviews (/api/bookings/:id/reviews, /api/reviews/*). I confirmed the route surface and envelope style — reviews return bare objects with no success wrapper (customerReviewController.ts:28,59,76) while support and notifications use {status,data} — but did not field-by-field diff ReviewEligibility/ServanaReview/SupportTicket against their backend producers. Evidence needed: a mapping pass over customerReviewService.ts and customerSupportController.ts against lib/modules/review/domain/ and the support models.
+- I did not audit the chat/messaging parity group (conversationId, senderUid, senderRole, clientMsgId, unreadCount, isClosed, lastMessageAt, lastReadMessageId) or the support/review groups field-by-field. Spot checks showed the backend emits camelCase via toCamel() and the client mappers accept camel+snake for every field, so I found no gap, but this is not an exhaustive result. Evidence needed: a field-by-field diff of servana_api-main/src/chat/chat.repository.ts:13-350 against servana_client-main/lib/modules/messaging/data/models/*.
+- I did not execute anything: no `flutter analyze`, no `flutter test`, no `npm run build`, no route-level request tests (§60). Every claim here is source-read plus grep. In particular the confirmOtp 400-instead-of-403 claim and the guest-cancel claim would each be settled definitively by one request-level test.
+- I did not execute the backend jest suite (`npm run test:ci`) — I only enumerated it with `npx jest --listTests` (22 suites). Its current pass/fail state is unknown; the CI-gate finding stands regardless of whether the suites currently pass.
+- I did not run the Flutter toolchain — no `flutter analyze` and no `flutter test` on servana_client-main. All client claims are from reading source and its committed tests. Backend checks WERE run: `npx tsc --noEmit` clean, `npx jest --runInBand --ci` 1280/1280 pass across 29 suites, `node scripts/guard-protected-contracts.mjs` green — but note the guard only asserts that route PREFIXES exist (/worker/, /workers/, /booking, /auth/, /admin/), so its green tells you nothing about any finding here, which re-confirms the first pass's TEST P1 on that script.
+- I did not verify whether ServanaWorker sends an Authorization header on the unauthenticated /workers/* routes — that bears on whether the provider-side routes can be hardened without a protected release, but it is outside this SWEEP pass. Evidence needed: the HTTP client/interceptor in C:/Users/paulg/OneDrive/Desktop/ServanaWorker.
+- REP-01: I proved the null-return by tracing the parser against the two backend response shapes, and confirmed tracking_map.dart:177 gates the marker on non-null. I did not run the app, so I cannot state what the tracking screen renders in that state — whether it shows a truthful 'locating provider' message or an empty map. Evidence needed: an executable run of the live-tracking screen against a booking with an assigned provider who has pushed a position.
+- REP-02: I established that ServanaClient never reads otpCode, proofUrl or referenceNo. I did not audit the Admin portal or the provider web portal for readers of those fields on GET /api/:id. A projection that withholds them from audience 'provider' is safe for the customer app; before withholding from 'admin' as well, check the admin portal. Evidence needed: grep for proofUrl / referenceNo across servana_adminportal/src against the booking-detail view model.
+- REP-03: I proved req.params is empty inside the router.use() layer with a local Express harness using this repo's own express dependency. I did not confirm which Express major version is deployed. The behaviour is the same in Express 4 and 5, but if production runs a patched or forked router the empirical result should be re-taken there. Evidence needed: `npm ls express` on the deploy host.
+- Real-device verification of the FCM foreground/background/terminated paths generally. All notification-chain findings here are derived from source; none were observed on hardware. flutter analyze was not run because this pass made no code changes (§60 applies to implementation, not inspection).
+- Runtime confirmation of any finding. No server was started and no request was issued; every claim is read from route + middleware + SQL in servana_api-main @ 799b6aa. §60 checks (typecheck/route tests) were not run — this was an audit pass, no code was changed.
+- Runtime confirmation of the SW2-01 null-parse. The chain is fully traceable in source (controller envelope → data-source unwrap → fromApiMap guard) and no registry group can bridge `location`→`loc`, but I did not execute the app or hit a live endpoint. Evidence needed: one real response body from GET /api/workers/location/:uid against the deployed backend.
+- ServanaWorker's behaviour if verifyAuth is added to technician.routes.ts:10-21. I verified the Dio interceptor attaches a bearer token on every request (ServanaWorker/lib/core/api/servana_api_config.dart:75-78), but I did not verify the token is already present on the very first call after a cold start, before session restore completes.
+- Severity of the (0,0) tracking destination in practice — I confirmed the value chain produces 0.0 but did not run the app to see how the map widget behaves (it may clamp, or fit-bounds across half the globe). Evidence needed: an executable run of the live-tracking screen with a real assigned booking.
+- That node-pg returns the COUNT(*)-derived `unread_count` as a JavaScript string in this deployment. I verified there is no `pg.types.setTypeParser` anywhere in servana_api-main/src (0 grep hits) and that Postgres COUNT(*) is bigint, which is node-pg's documented string-returning case — but I did not observe an actual response body. Evidence needed: `curl -H 'Authorization: Bearer <customer token>' https://api.servana.com.ph/api/chat/conversations` and inspect the JSON type of unreadCount.
+- The BACKEND INVENTORY supplied with this task is STALE relative to servana_api-main @ 870fd28. I verified that several of its P0 LEAK claims no longer hold: POST /api/bookings now carries verifyAuth and takes identity from the token (src/routes/booking.routes.ts:20, src/controllers/bookingController.ts:16-22, which explicitly ignores ?userId=); GET /api/:id, GET /api/:id/tracking and POST /api/:id/confirm-otp now carry verifyAuth plus assertBookingAccess (booking.routes.ts:28-30, bookingController.ts:71,92). Any downstream pass that relies on that inventory's section 3 should re-verify against the actual route files.
+- The BACKEND INVENTORY supplied with this task is STALE. It describes servana_api-main @ 870fd28, but the local working tree is at commit 52667b35eb6211bbf4f365da4e0e5be3afd8845d. Many P0s listed in that inventory are already fixed in the code I read: POST /api/bookings now has verifyAuth and takes identity from the token (src/routes/booking.routes.ts:20, src/controllers/bookingController.ts:15-21); GET /api/:id, /api/:id/tracking and POST /api/:id/confirm-otp now have verifyAuth plus assertBookingAccess (booking.routes.ts:28-30, bookingController.ts:71,92,153); all four payment routes now have verifyAuth (payment.routes.ts:8-11). Findings above are stated against 52667b3, not 870fd28. Still open at 52667b3 and re-verified by me: address.service.ts:56-60 (no uid predicate) and provider.gateway.ts:96-97 (join_room falls through without a DB check for any type label other than 'provider'/'booking', so {roomKey:'booking:123', type:'support'} joins a booking room unchecked).
+- The BookingStatusMapper label round-trip failures ('Worker Assigned' → unknown, 'In Progress' → unknown) are derived from reading booking_status.dart:51-53, which only uppercases and trims. I did not execute flutter test or flutter analyze in this pass (§60), so this is source-level reasoning, not an executed result. A three-line unit test in the client repo would confirm or refute it without requiring a release.
+- The customer WEB portal is UNAVAILABLE — the repo has 0 committed files. No inference of any kind was drawn from or about it.
+- The exact live column list of the `bookings` table. I established that no code path in servana_api-main writes or selects `bookings.latitude`/`bookings.longitude`/`service_name`, and that only five columns are added by runtime ALTER TABLE statements (guest_customer_id, admin_created, admin_created_by, service_address, cancelled_at). A column added out-of-band by a manual migration would not appear in the source. Evidence needed: `\d+ <schema>.bookings` against the production DB.
+- The severity ordering between my P0-2 (payment retry on a cancelled booking) and P1-5 (checkout for a cancelled booking on demand) assumes a customer who receives a Servana-branded 'complete your payment' email will pay it. I rated the scheduler path P0 because the solicitation is system-initiated and the customer has no way to know the booking is dead; if that judgement is wrong the two are the same severity.
+- Whether ServanaClient's Messages screen renders an empty state rather than an error banner if GET /api/bookings/:id/conversation starts returning 404 for unconfirmed bookings. This gates whether the §24 fix is release-free. Evidence needed: the error branch of servana_client-main/lib/modules/messaging/.../messaging_repository.dart:28 and its consuming store.
+- Whether ServanaWorker (provider mobile) still receives every field it renders from GET /api/workers/:uid after the 65b4337 projection. I verified only the ServanaClient side. A provider fetching their own profile resolves to audience 'self' (technicianController.ts:1027) and gets the full object, but I did not enumerate ServanaWorker's reads for the case where it fetches a *different* provider's profile. Evidence needed: grep of ServanaWorker for /workers/:uid call sites and the field names they parse.
+- Whether ServanaWorker attaches a Bearer token on the technician routes (technician.routes.ts:10-21, 28-36, 49-77). This determines whether those routes can be promoted to verifyAuth without a Provider Mobile release (§2). I inspected only ServanaClient's HTTP client in this pass. Evidence needed: the `_headers()` / interceptor equivalent in C:/Users/paulg/OneDrive/Desktop/ServanaWorker.
+- Whether ServanaWorker attaches a bearer token on its HTTP calls. I inspected only its service-catalog call (ServanaWorker/lib/core/api/servana_api.dart:305) this pass. This matters for any future tightening of the shared unauthenticated `/api/workers/*` routes — several ALIGN fixes above stop at the customer boundary specifically because provider-side header behaviour is unconfirmed. Evidence needed: the Dio interceptor / header builder in ServanaWorker/lib/core/api/.
+- Whether ServanaWorker attaches a bearer token on the technician routes. I did not open C:/Users/paulg/OneDrive/Desktop/ServanaWorker in this pass, so I cannot say whether the remaining unauthenticated /workers/* routes can be promoted to verifyAuth without a provider-mobile release. Evidence needed: the HTTP client / interceptor in ServanaWorker.
+- Whether ServanaWorker calls the /api/additional/* routes, and if so which ones. I confirmed ServanaWorker attaches a bearer token globally (ServanaWorker/lib/core/api/servana_api_config.dart:52,74-78), so adding verifyAuth is almost certainly release-free, but I did not enumerate its additional-work call sites. Evidence needed: grep for 'additional' in ServanaWorker/lib/core/api/servana_api.dart.
+- Whether ServanaWorker's Dio _AuthInterceptor token provider is populated at the moment job-cards is first requested (cold start before sign-in). Evidence needed: the _tokenProvider wiring in ServanaWorker's injector. If it can fire pre-auth, authenticating technician.routes.ts:39 would need a short migration window rather than a straight flip.
+- Whether ServanaWorker's Dio interceptor fires on GET /api/workers/:uid specifically. ServanaWorker/lib/core/api/servana_api_config.dart:77 sets `options.headers['Authorization'] = 'Bearer $t'` and servana_api.dart:313 issues the call, but I did not read the interceptor's guard conditions to confirm it is unconditional across all paths and not skipped when the token cache is cold. If it can fire without a token, 65b4337 turned a working provider-app call into a 401. Evidence needed: the full body of the interceptor in servana_api_config.dart, or a ServanaWorker run against 799b6aa.
+- Whether ServanaWorker's own booking-cancel handling reacts to a booking cancelled out from under it. I confirmed ServanaWorker calls /approve and /mark-cash-paid (lib/core/api/servana_api.dart:394,397) but did not trace its cancel/refresh path, so the provider-side blast radius of the guest-cancel P0 is characterised from the backend only.
+- Whether `POST /api/bookings` currently rejects ServanaClient in production. The route now requires verifyAuth (booking.routes.ts:20) and the client does send a bearer token (servana_api_client.dart:376), so it should pass — but I did not execute a live request to confirm the token is accepted by verifyIdToken for customer-role principals.
+- Whether `booking_tracking.note` is rendered verbatim in the customer timeline widget. I confirmed BookingRepository.getTimeline returns the raw maps unfiltered (booking_repository.dart:97-101) but did not open the consuming widget, so the severity of the 'Worker declined' text leak assumes it is displayed.
+- Whether `customer_reviews.client_request_id` carries a UNIQUE constraint. review_form_controller.dart:178-187 builds a deterministic key from (uid, bookingId), so a delete-then-re-review reuses the same key; customerReviewService.ts:277-281 excludes soft-deleted rows from the idempotency lookup, so a second INSERT is attempted with a previously-used key. Evidence needed: the DDL for customer_reviews.
+- Whether `guest_customers.phone_number` and `user_credentials.phone_number` are normalised to one Philippine format (§59). If they are not, the guest-linkage join matches only on exact string equality, narrowing but not closing the exposure. Evidence needed: a sample of both columns.
+- Whether `user_credentials.phone_number` carries a UNIQUE constraint at the database level. No migration/DDL file for that table was located in src/. If a UNIQUE constraint exists, the guest-linkage attack (P0) requires the victim's number to be unclaimed rather than merely known, which changes exploitability but not the fix. Evidence needed: `\d user_credentials` on the production schema.
+- Whether a `payments` row can be absent for a booking that reaches the PayMongo webview. This is the reachability condition for the ghost-success fallback in payment_webview_screen.dart:218-224. bookingService.ts:98-104 always inserts one for customer-created bookings, but I did not confirm whether adminCreateBookingService does, nor whether createCheckoutSession (paymentService.ts:224-234) fails loudly when its UPDATE matches zero rows. Evidence needed: read adminCreateBookingService.ts's payments INSERT and the rowCount handling at paymentService.ts:224-240.
+- Whether adminBookingService's payments joins also omit the additional_request_id discriminator. grep found the filter only in technicianService.ts:158 and :1529; I did not read every payments join in adminBookingService.ts to confirm each one lacks it.
+- Whether any customer has an actual guest link today (`guest_customers.linked_customer_uid IS NOT NULL`). This decides whether the list/detail disagreement is currently live or latent. Evidence needed: a row count on that column.
+- Whether any guest_customers row currently has linked_customer_uid set. That determines whether the list-vs-detail 403 divergence (P1) is live today or latent until the first admin link. Evidence needed: `SELECT count(*) FROM guest_customers WHERE linked_customer_uid IS NOT NULL` on prod.
+- Whether any live consumer calls the two-segment /api/:serviceId/options-with-addons form. I confirmed ServanaClient calls only the three-segment form; I did not exhaustively grep servana_adminportal or Servana.com.ph for it. Evidence needed: grep -r 'options-with-addons' across both web repos.
+- Whether any of the P0 routes have been exploited in production. This audit is static analysis only; I ran no requests against any environment. Evidence needed: access-log review for unauthenticated GET /api/users/*/bookings, GET /api/user/*/addresses, POST /api/bookings/*/cancel, and PUT /api/workers/bookings/*/complete.
+- Whether any rows currently satisfy the payment-retry query in production (payments.status='FAILED' AND provider='PAYMONGO' AND a CANCELLED booking). This sets whether my P0-2 is already firing or is armed for the next failed PayMongo payment on a cancelled booking. Evidence needed: a read-only count against the prod payments/bookings join.
+- Whether booking_addons is ever populated for app-created bookings by an out-of-repo job (cron, migration, manual backfill). I proved adminCreateBookingService.ts:724 is the only writer inside servana_api-main/src. Evidence needed: SELECT count(*) FROM booking_addons ba JOIN bookings b ON b.id=ba.booking_id WHERE b.admin_created IS NOT TRUE.
+- Whether bookings.otp_code is ever re-issued after the PENDING_OTP → CONFIRMED transition. I traced the only writes I could find (bookingService.ts:78 on create) and the only read (:145 on confirm), and on that basis stated the provider-visible OTP is a spent secret. A re-issue path added out of repo — an admin tool or a manual UPDATE — would make it live and raise REP-02 to P0. Evidence needed: SELECT count(*) FROM bookings WHERE status <> 'PENDING_OTP' AND otp_code IS NOT NULL, plus a search for otp_code writes outside src/.
+- Whether every Servana admin account carries user_credentials.role = 1. src/controllers/technicianController.ts:1033 gates the 'admin' audience on `Number(rows[0].role) === 1`, and servana_adminportal/src/app/shared/services/user.service.ts:54 plus src/app/core/adapters/admin-legacy-provider.adapter.ts:48 both call GET /workers/:uid expecting the full record (requirements, addresses, bookingHistory). I confirmed the admin portal attaches a Bearer token (src/app/shared/interceptors/authorize-interceptor.ts:5-11), so the verifyAuth half is safe, but an admin whose role is not exactly 1 now silently receives the customer projection and the provider-detail page loses documents and addresses with no error. Evidence needed: a SELECT of DISTINCT role from servana.user_credentials for accounts used by the admin portal, or an admin-portal e2e run against 799b6aa.
+- Whether firebaseAuthLoginController (/api/auth/firebase-login, upserts role '2') can be reached by a customer to create a provider-role account on first sign-in. Noted while tracing AUTH.SIGN_IN but not pursued — it belongs to the LEAK pass. Evidence needed: read userService.upsertFirebaseUser's INSERT/UPDATE role handling.
+- Whether guest bookings exist in production today with a non-null linked_customer_uid. The LEAK-P0-01 exploit needs only user_id IS NULL (guaranteed by adminCreateBookingService.ts:704 for every admin-created guest booking), so the finding stands regardless — but the blast radius is the count of such rows. Evidence needed: SELECT count(*) FROM bookings WHERE guest_customer_id IS NOT NULL AND status NOT IN (terminal states).
+- Whether payments.updated_at actually exists on the deployed database, and whether 799b6aa has been deployed at all — the commit message states the next deploy fails until the DB_PASSWORD secret is configured. Evidence needed: a production `\d servana.payments` or a green tests/payments-updated-at.test.ts run.
+

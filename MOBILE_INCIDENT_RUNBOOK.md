@@ -93,7 +93,7 @@ Last Updated: 2026-07-30 | Version: 1.0.0+35
 
 **Immediate actions**:
 1. Check Firebase Console → Cloud Messaging for delivery failures
-2. Verify `servana-1d13b` FCM project is active
+2. Verify `servana-59bee` FCM project is active
 3. Check backend FCM send code for token errors
 4. Verify production `google-services.json` sender ID matches backend FCM credentials
 5. Test with a controlled test device using Firebase Console direct send

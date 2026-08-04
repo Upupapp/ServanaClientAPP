@@ -16,6 +16,12 @@ abstract final class AnalyticsKeys {
   static const String screenClass = 'screen_class';
   static const String previousScreen = 'previous_screen';
   static const String entrySource = 'entry_source';
+
+  // Main navigation (MOVEUPNAV+ §24). The allow-list is exactly tab_key,
+  // previous_tab_key and entry_source — no customer id, booking id, message
+  // content or badge resource id may travel with these events.
+  static const String tabKey = 'tab_key';
+  static const String previousTabKey = 'previous_tab_key';
   static const String launchType = 'launch_type';
   static const String navigationType = 'navigation_type';
   static const String deepLinkType = 'deep_link_type';
@@ -126,6 +132,21 @@ abstract final class AnalyticsKeys {
   static const String utmCampaign = 'utm_campaign';
   static const String referralCategory = 'referral_category';
 
+  // ── Home campaigns (LAUNCHBANNER+ §27) ────────────────────────────────────
+  // Deliberately low-cardinality. campaignId and campaignVersion identify the
+  // CREATIVE, never the customer; impressionNumber is capped at 3 by the
+  // campaign itself, so a raw int stays safe without bucketing.
+  static const String campaignId = 'campaign_id';
+  static const String campaignVersion = 'campaign_version';
+  static const String impressionNumber = 'impression_number';
+  static const String suppressionReason = 'suppression_reason';
+
+  // Category campaign popups (CATEGORYPOPUP+). campaignKey identifies the
+  // CREATIVE, dismissalMethod is one of a closed set of four verbs — both are
+  // low-cardinality and neither can carry a customer identifier.
+  static const String campaignKey = 'campaign_key';
+  static const String dismissalMethod = 'dismissal_method';
+
   // ── Generic ───────────────────────────────────────────────────────────────
   static const String result = 'result';
   static const String modelVersion = 'model_version';
@@ -143,6 +164,7 @@ abstract final class AuthMethodValues {
   static const String email = 'email';
   static const String google = 'google';
   static const String facebook = 'facebook';
+  static const String apple = 'apple';
   static const String sessionRestore = 'session_restore';
 }
 

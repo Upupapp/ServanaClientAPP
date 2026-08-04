@@ -1,6 +1,9 @@
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:client/common/constants/servana_urls.dart';
+import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+
+import 'package:client/modules/authentication/presentation/widgets/social_auth_buttons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -41,9 +44,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     final bloc = BlocProvider.of<RegistrationBloc>(context);
     _toolTipController = TooltipController();
     _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/terms'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.termsAndConditions));
     _privacyRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('https://servana.com.ph/privacy'));
+      ..onTap = () => launchUrl(Uri.parse(ServanaUrls.privacyPolicy));
 
     final existing = (bloc.registration.ownerName ?? '').trim();
     if (existing.isNotEmpty) {
@@ -131,15 +134,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   context.loaderOverlay.hide();
 
                   if (state is RegistrationSubmittedState) {
-                    await AwesomeDialog(
-                            context: context,
-                            dialogType: DialogType.success,
-                            title: "Success",
-                            headerAnimationLoop: false,
-                            desc:
-                                "Your account has been created successfully. Please sign in to continue.",
-                            btnOkText: "Sign In")
-                        .show();
+                    await ServanaAlertDialog.show(
+                      context: context,
+                      type: ServanaAlertType.success,
+                      title: "Success",
+                      message:
+                          "Your account has been created successfully. Please sign in to continue.",
+                      okText: "Sign In",
+                    );
                     // ignore: use_build_context_synchronously
                     context.goNamed(WelcomeScreen.routeName);
                   }
@@ -149,15 +151,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   }
 
                   if (state is RegistrationSubmittedFailedState) {
-                    AwesomeDialog(
-                            // ignore: use_build_context_synchronously
-                            context: context,
-                            dialogType: DialogType.error,
-                            title: "Error",
-                            headerAnimationLoop: false,
-                            desc: state.error,
-                            btnOkText: "Okay")
-                        .show();
+                    ServanaAlertDialog.show(
+                      // ignore: use_build_context_synchronously
+                      context: context,
+                      type: ServanaAlertType.error,
+                      title: "Error",
+                      message: state.error,
+                      okText: "Okay",
+                    );
                   }
                 },
                 builder: (context, state) {
@@ -367,9 +368,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                       );
                                     },
                             ),
-                            const SizedBox(
-                              height: 20,
+                            const SizedBox(height: 20),
+
+                            // Social sign-up. The sign-in screen has offered
+                            // Google and Facebook since it was written and this
+                            // screen never did, so a customer who signs up
+                            // socially had to first tap "Sign in" — on a screen
+                            // titled Create your Account. Same widget, same
+                            // events; social auth upserts the account, so
+                            // signing up and signing in are one action.
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: SocialAuthButtons(
+                                isLoading: isLoading,
+                                verb: 'Sign up',
+                              ),
                             ),
+
+                            const SizedBox(height: 20),
                             GestureDetector(
                               onTap: () => context
                                   .goNamed(AuthenticationScreen.routeName),

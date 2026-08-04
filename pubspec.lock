@@ -57,14 +57,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
-  awesome_dialog:
-    dependency: "direct main"
-    description:
-      name: awesome_dialog
-      sha256: "41c41ae4b30b5c7f26bb3d9f9c87010ed1cab0bb4d4ac0cc513e5799c37e9d82"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.1"
   back_button_interceptor:
     dependency: transitive
     description:
@@ -537,6 +529,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.7+4"
+  firebase_remote_config:
+    dependency: "direct main"
+    description:
+      name: firebase_remote_config
+      sha256: "29619302396823622dd9d0ccb8ac2b48804c518c0c82aa85ef3d86b91fdf55ca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.5"
+  firebase_remote_config_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_remote_config_platform_interface
+      sha256: ae899364a77fdf706c2ec37f1336df1dd3cc6777f8cd6ce7cf0cae65830bf1cf
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.46"
+  firebase_remote_config_web:
+    dependency: transitive
+    description:
+      name: firebase_remote_config_web
+      sha256: "6f018a0d7ce4b67784d29ec7193806e494adc243a4c880a4fab49e59afca212f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.7.4"
   fixnum:
     dependency: transitive
     description:
@@ -820,10 +836,10 @@ packages:
     dependency: "direct main"
     description:
       name: freerasp
-      sha256: b3227665657d07431faaa7df8909d7848cb1098fa3dcc70d05b80974b574421b
+      sha256: "10dac84c12896a641ba6159f799e1cb9cb4529b928af4813b013dc9d1c172f5d"
       url: "https://pub.dev"
     source: hosted
-    version: "6.6.0"
+    version: "8.0.0"
   freezed:
     dependency: "direct dev"
     description:
@@ -1744,22 +1760,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
-  rive:
-    dependency: transitive
-    description:
-      name: rive
-      sha256: daa5394a7d064b4997b39e9afa02f6882c479c38b19fa0dd60f052b99c105400
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.13.13"
-  rive_common:
-    dependency: transitive
-    description:
-      name: rive_common
-      sha256: c7bf0781b1621629361579c300ac2f8aa1a238227a242202a596e82becc244d7
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.4.11"
   sanitize_html:
     dependency: transitive
     description:
@@ -1840,6 +1840,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  sign_in_with_apple:
+    dependency: "direct main"
+    description:
+      name: sign_in_with_apple
+      sha256: e84a62e17b7e463abf0a64ce826c2cd1f0b72dff07b7b275e32d5302d76fb4c5
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.4"
+  sign_in_with_apple_platform_interface:
+    dependency: transitive
+    description:
+      name: sign_in_with_apple_platform_interface
+      sha256: c2ef2ce6273fce0c61acd7e9ff5be7181e33d7aa2b66508b39418b786cca2119
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  sign_in_with_apple_web:
+    dependency: transitive
+    description:
+      name: sign_in_with_apple_web
+      sha256: "2f7c38368f49e3f2043bca4b46a4a61aaae568c140a79aa0675dc59ad0ca49bc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   sky_engine:
     dependency: transitive
     description: flutter
