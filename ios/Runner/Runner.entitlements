@@ -18,5 +18,18 @@
 	     from this repository. -->
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- Sign in with Apple.
+	     App Store Review Guideline 4.8 requires a privacy-preserving login
+	     option whenever an app offers third-party or social login. This app
+	     offers Google and Facebook, so this is mandatory, not optional.
+
+	     Requires the "Sign In with Apple" capability enabled on App ID
+	     com.servana.client in the Apple Developer portal, and the Apple
+	     provider enabled in Firebase Console for servana-59bee. Neither can be
+	     done from this repository. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

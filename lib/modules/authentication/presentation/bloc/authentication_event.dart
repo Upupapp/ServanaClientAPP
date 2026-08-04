@@ -42,3 +42,11 @@ class LoggedIn extends AuthenticationEvent {}
 
 /// Kept for backward compatibility; use [AuthLogout] for new code.
 class LoggedOut extends AuthenticationEvent {}
+
+/// Sign in with Apple.
+///
+/// Required by App Store Review Guideline 4.8 because the app also offers
+/// Google and Facebook. Unlike those two, Apple returns the customer's name
+/// and email only on the FIRST authorisation for a given Apple ID — see
+/// AuthenticationBloc._onAppleSignIn.
+class AuthAppleSignIn extends AuthenticationEvent {}
