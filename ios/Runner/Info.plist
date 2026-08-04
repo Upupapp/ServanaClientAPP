@@ -37,10 +37,9 @@
 	<!-- Google Sign-In client id.
 	     google_sign_in_ios resolves the client id from GIDClientID here, or
 	     failing that from a GoogleService-Info.plist inside the app bundle.
-	     GoogleService-Info.plist exists on disk but is NOT referenced by
-	     Runner.xcodeproj, so it is never copied into the bundle and the
-	     fallback does not apply — without this key, Google Sign-In fails at
-	     runtime on iOS with no build-time warning.
+	     Both paths now work — the plist was unreferenced by Runner.xcodeproj
+	     and so never reached the bundle, which is fixed — but this key is kept
+	     as the explicit, primary source rather than relying on the fallback.
 	     Must equal CLIENT_ID in ios/Runner/GoogleService-Info.plist; asserted
 	     by test/common/firebase_single_project_test.dart. -->
 	<key>GIDClientID</key>

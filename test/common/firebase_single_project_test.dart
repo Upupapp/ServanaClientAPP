@@ -204,6 +204,57 @@ void main() {
       }
     });
 
+    test('GoogleService-Info.plist is copied into the app bundle', () {
+      // Existing on disk is not enough: unless the file is in the RUNNER
+      // target's Resources build phase, Xcode never copies it into Runner.app,
+      // and anything that reads it at runtime finds nothing. It sat unreferenced
+      // here for months while ServanaWorker had it wired correctly.
+      //
+      // Resolved through the target graph rather than by hard-coded UUID, so
+      // this cannot be satisfied by the RunnerTests phase — which is a separate,
+      // empty Resources phase and the easy thing to patch by mistake.
+      final pbx =
+          File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
+
+      final fileRef = RegExp(
+        r'([0-9A-F]{24}) /\* GoogleService-Info\.plist \*/ = \{isa = PBXFileReference',
+      ).firstMatch(pbx);
+      expect(fileRef, isNotNull, reason: 'no PBXFileReference for the plist');
+
+      final refId = fileRef!.group(1)!;
+      final buildFile = RegExp(
+        r'([0-9A-F]{24}) /\* GoogleService-Info\.plist in Resources \*/ = '
+        r'\{isa = PBXBuildFile; fileRef = '
+        '$refId',
+      ).firstMatch(pbx);
+      expect(buildFile, isNotNull,
+          reason: 'no PBXBuildFile linking the plist to a build phase');
+
+      // Find the Runner native target and the Resources phase it owns.
+      final target = RegExp(
+        r'[0-9A-F]{24} /\* Runner \*/ = \{\s*isa = PBXNativeTarget;'
+        r'[\s\S]*?buildPhases = \(([\s\S]*?)\);',
+      ).firstMatch(pbx);
+      expect(target, isNotNull, reason: 'Runner native target not found');
+
+      final resourcesPhaseId = RegExp(r'([0-9A-F]{24}) /\* Resources \*/')
+          .firstMatch(target!.group(1)!)
+          ?.group(1);
+      expect(resourcesPhaseId, isNotNull,
+          reason: 'Runner target has no Resources build phase');
+
+      final phase = RegExp(
+        '$resourcesPhaseId /\\* Resources \\*/ = \\{[\\s\\S]*?files = \\(([\\s\\S]*?)\\);',
+      ).firstMatch(pbx);
+      expect(phase, isNotNull);
+      expect(
+        phase!.group(1),
+        contains(buildFile!.group(1)!),
+        reason: 'the plist is declared but is NOT in the Runner target\'s '
+            'Resources phase, so it never reaches Runner.app',
+      );
+    });
+
     test('bundle id matches the Xcode target', () {
       final pbx =
           File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
