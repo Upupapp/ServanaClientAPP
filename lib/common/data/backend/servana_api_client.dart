@@ -594,14 +594,27 @@ class ServanaApiClient {
   }
 
   /// Verifies the booking's `otpCode` while it is still in `PENDING_OTP`.
-  /// The code travels in the query string with an empty body, and the BE
-  /// returns 400 (`{success:false,message:...}`) for a wrong code.
+  /// The BE returns 400 (`{success:false,message:...}`) for a wrong code.
+  ///
+  /// The code travels in the BODY. It used to be sent as `?otp=123456`, and a
+  /// query string is written to the nginx access log on every request — so each
+  /// verification wrote a live credential into a plaintext log that is rotated,
+  /// backed up, and readable by anyone with host access. The OTP is what proves
+  /// the customer is present, so that log line is a credential.
+  ///
+  /// The request was already a POST; the body was simply going unused. The
+  /// backend now reads the body first and falls back to the query, so builds
+  /// already in customers' hands keep working.
   Future<Map<String, dynamic>> confirmOtp({
     required int bookingId,
     required String otp,
   }) async {
-    final uri = _uri('/api/$bookingId/confirm-otp', {'otp': otp});
-    final res = await _client.post(uri, headers: await _headers());
+    final uri = _uri('/api/$bookingId/confirm-otp');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'otp': otp}),
+    );
     return _decodeJson(res);
   }
 

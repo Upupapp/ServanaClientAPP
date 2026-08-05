@@ -227,7 +227,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 b['addressLine']?.toString() ?? b['address']?.toString() ?? '',
             latitude: (b['latitude'] as num?)?.toDouble() ?? 0,
             longitude: (b['longitude'] as num?)?.toDouble() ?? 0,
-            totalAmount: (b['totalAmount'] as num?)?.toDouble() ?? 0,
+            // `totalAmount` is not a column on the bookings table and never
+            // was — it stores quoted_price and final_price. So this key was
+            // absent from every response, the `?? 0` default took over, and the
+            // Payment section rendered "₱0.00" on every booking ever opened.
+            //
+            // The backend now aliases COALESCE(final_price, quoted_price) AS
+            // total_amount, but the fallbacks stay: they make the screen
+            // correct against a backend that has not been deployed yet, and
+            // finalPrice/quotedPrice are the names the admin portal and
+            // provider app already use.
+            //
+            // num covers both int and double — Postgres numeric arrives as
+            // either depending on the value, and casting to double directly
+            // throws on an int.
+            totalAmount: (b['totalAmount'] as num?)?.toDouble() ??
+                (b['finalPrice'] as num?)?.toDouble() ??
+                (b['quotedPrice'] as num?)?.toDouble() ??
+                double.tryParse(b['finalPrice']?.toString() ?? '') ??
+                double.tryParse(b['quotedPrice']?.toString() ?? '') ??
+                0,
             downPayment: (b['downPayment'] as num?)?.toDouble() ?? 0,
             numberOfPersonnel: (b['numberOfPersonnel'] as num?)?.toInt() ?? 0,
             distanceFromOffice: 0,
