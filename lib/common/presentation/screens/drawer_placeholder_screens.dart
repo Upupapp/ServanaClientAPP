@@ -490,7 +490,7 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 8),
-          _SettingsSectionLabel('Account'),
+          const _SettingsSectionLabel('Account'),
           _SettingsGroup(children: [
             _SettingsNavItem(
               icon: Icons.person_outline_rounded,
@@ -502,7 +502,7 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-          _SettingsSectionLabel('Preferences'),
+          const _SettingsSectionLabel('Preferences'),
           _SettingsGroup(children: [
             _SettingsNavItem(
               icon: Icons.palette_outlined,
@@ -523,7 +523,7 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-          _SettingsSectionLabel('Permissions'),
+          const _SettingsSectionLabel('Permissions'),
           _SettingsGroup(children: [
             _SettingsNavItem(
               icon: Icons.tune_rounded,
@@ -535,7 +535,7 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-          _SettingsSectionLabel('Security'),
+          const _SettingsSectionLabel('Security'),
           _SettingsGroup(children: [
             _SettingsNavItem(
               icon: Icons.lock_outline_rounded,
@@ -546,7 +546,7 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ]),
-          _SettingsSectionLabel('Legal & Info'),
+          const _SettingsSectionLabel('Legal & Info'),
           _SettingsGroup(children: [
             _SettingsNavItem(
               icon: Icons.privacy_tip_outlined,

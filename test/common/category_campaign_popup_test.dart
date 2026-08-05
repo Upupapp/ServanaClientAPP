@@ -23,12 +23,47 @@ import 'package:client/common/presentation/category_campaign/servana_category_ca
 
 String _read(String p) => File(p).readAsStringSync();
 
-/// Reads a PNG's IHDR dimensions without decoding the image.
-({int width, int height}) _pngSize(String path) {
+/// Reads an image's dimensions from its header, without decoding it.
+///
+/// Handles PNG and WebP. The creatives moved to WebP in 1.0.0+38 after Play
+/// flagged the download size — the same artwork at 86% of the bytes — and this
+/// helper read PNG IHDR only, so every dimension assertion started reading
+/// whatever happened to sit at those offsets in a RIFF header.
+({int width, int height}) _imageSize(String path) {
   final b = File(path).readAsBytesSync();
-  int be32(int o) =>
-      (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
-  return (width: be32(16), height: be32(20));
+
+  if (b.length > 24 && b[0] == 0x89 && b[1] == 0x50) {
+    int be32(int o) =>
+        (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
+    return (width: be32(16), height: be32(20));
+  }
+
+  final riff = String.fromCharCodes(b.sublist(0, 4));
+  final webp = String.fromCharCodes(b.sublist(8, 12));
+  if (riff != 'RIFF' || webp != 'WEBP') {
+    throw StateError('$path is neither PNG nor WebP');
+  }
+
+  switch (String.fromCharCodes(b.sublist(12, 16))) {
+    case 'VP8X':
+      return (
+        width: (b[24] | (b[25] << 8) | (b[26] << 16)) + 1,
+        height: (b[27] | (b[28] << 8) | (b[29] << 16)) + 1,
+      );
+    case 'VP8 ':
+      return (
+        width: (b[26] | (b[27] << 8)) & 0x3FFF,
+        height: (b[28] | (b[29] << 8)) & 0x3FFF,
+      );
+    case 'VP8L':
+      final bits = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24);
+      return (
+        width: (bits & 0x3FFF) + 1,
+        height: ((bits >> 14) & 0x3FFF) + 1,
+      );
+    default:
+      throw StateError('$path has an unrecognised WebP chunk');
+  }
 }
 
 /// Holds a popup's outcome without blocking on it.
@@ -79,7 +114,7 @@ Future<_Harness> _openPopup(
               ServanaCategoryCampaignPopup.show(
                 context: context,
                 assetPath: forceFallback
-                    ? 'assets/images/categories/__does_not_exist__.png'
+                    ? 'assets/images/categories/__does_not_exist__.webp'
                     : campaign.assetPath,
                 assetAspectRatio: campaign.aspectRatio,
                 ctaRect: campaign.ctaRect,
@@ -128,20 +163,20 @@ void main() {
             reason: '${c.assetPath} is registered but not on disk');
       });
 
-      test('${c.categoryKey}: the registry matches the real PNG dimensions',
+      test('${c.categoryKey}: the registry matches the real image dimensions',
           () {
         // The specs said 928x1648; both files shipped at 941x1672. Driving the
         // AspectRatio from the spec would inset the artwork inside its own box
         // and the CTA overlay — positioned against that box — would drift off
         // the drawn button.
-        final size = _pngSize(c.assetPath);
+        final size = _imageSize(c.assetPath);
         expect(size.width, c.assetWidth);
         expect(size.height, c.assetHeight);
       });
 
       test('${c.categoryKey}: the filename is lowercase', () {
         // Windows is case-insensitive, iOS and Android are not. A file named
-        // BEAUTY_WELLNESS_POPUP_V1.png resolves on a dev machine and fails on
+        // BEAUTY_WELLNESS_POPUP_V1.webp resolves on a dev machine and fails on
         // device — which is exactly how it was first delivered.
         final name = c.assetPath.split('/').last;
         expect(name, name.toLowerCase(),

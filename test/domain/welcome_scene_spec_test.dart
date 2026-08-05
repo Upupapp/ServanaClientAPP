@@ -31,9 +31,9 @@ void main() {
       expect(
           assets,
           containsAll([
-            'assets/images/welcome/page_1_bg.png',
-            'assets/images/welcome/page_2_bg.png',
-            'assets/images/welcome/page_3_bg.png',
+            'assets/images/welcome/page_1_bg.webp',
+            'assets/images/welcome/page_2_bg.webp',
+            'assets/images/welcome/page_3_bg.webp',
           ]));
     });
 
