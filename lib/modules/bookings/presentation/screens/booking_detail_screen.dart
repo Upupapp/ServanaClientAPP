@@ -198,13 +198,27 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 b['bookingNumber']?.toString() ??
                 _bookingId,
             scheduleDate: scheduleDate ?? now,
-            merchantServiceName: b['serviceName']?.toString() ??
+            // `serviceOptionName` is the specific thing booked (service_options
+            // .level_3, e.g. "Emperor's Drip"); `serviceName` is its parent
+            // (level_2). Prefer the specific one — it is what the customer
+            // chose and what the checkout screen showed them.
+            //
+            // Until the backend joined service_options none of these keys were
+            // in the response at all, so this whole chain resolved to '' and the
+            // row rendered as a lone "Service" label.
+            merchantServiceName: b['serviceOptionName']?.toString() ??
+                b['serviceName']?.toString() ??
                 (b['service'] is Map
                     ? (b['service'] as Map)['name']?.toString()
                     : null) ??
                 '',
+            // "Brand" on this screen is the place the service belongs to. The
+            // branch was already joined and returned as branchName; it simply
+            // was not read. serviceCategory is the family fallback.
             merchantName: b['merchantName']?.toString() ??
+                b['branchName']?.toString() ??
                 b['providerName']?.toString() ??
+                b['serviceCategory']?.toString() ??
                 '',
             merchantServicePhoto: b['servicePhotoUrl']?.toString() ??
                 b['servicePhoto']?.toString() ??
@@ -213,7 +227,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 b['addressLine']?.toString() ?? b['address']?.toString() ?? '',
             latitude: (b['latitude'] as num?)?.toDouble() ?? 0,
             longitude: (b['longitude'] as num?)?.toDouble() ?? 0,
-            totalAmount: (b['totalAmount'] as num?)?.toDouble() ?? 0,
+            // `totalAmount` is not a column on the bookings table and never
+            // was — it stores quoted_price and final_price. So this key was
+            // absent from every response, the `?? 0` default took over, and the
+            // Payment section rendered "₱0.00" on every booking ever opened.
+            //
+            // The backend now aliases COALESCE(final_price, quoted_price) AS
+            // total_amount, but the fallbacks stay: they make the screen
+            // correct against a backend that has not been deployed yet, and
+            // finalPrice/quotedPrice are the names the admin portal and
+            // provider app already use.
+            //
+            // num covers both int and double — Postgres numeric arrives as
+            // either depending on the value, and casting to double directly
+            // throws on an int.
+            totalAmount: (b['totalAmount'] as num?)?.toDouble() ??
+                (b['finalPrice'] as num?)?.toDouble() ??
+                (b['quotedPrice'] as num?)?.toDouble() ??
+                double.tryParse(b['finalPrice']?.toString() ?? '') ??
+                double.tryParse(b['quotedPrice']?.toString() ?? '') ??
+                0,
             downPayment: (b['downPayment'] as num?)?.toDouble() ?? 0,
             numberOfPersonnel: (b['numberOfPersonnel'] as num?)?.toInt() ?? 0,
             distanceFromOffice: 0,
@@ -336,11 +369,33 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         workerName: _workerName,
         workerPhone: _workerPhone,
         serviceAddress: _booking?.address,
-        serviceLatitude: _booking?.latitude,
-        serviceLongitude: _booking?.longitude,
+        // Absent coordinates must arrive as null, not 0.
+        //
+        // JobOrder.latitude is a non-nullable double, so this screen collapses
+        // a missing value to 0 when it builds the model. TrackingRepository
+        // then does `latitude ?? seedLatitude ?? 14.5995` — a deliberate
+        // fallback to Manila when nothing is known. But 0.0 is not null, so it
+        // wins that chain and the tracking map opens on 0°N 0°E, in the Gulf of
+        // Guinea, instead of the city the booking is in.
+        //
+        // getBookingById cannot supply these today: user_address has no
+        // lat/lon columns at all — the coordinates live in MongoDB, keyed by
+        // location_id — so the field is absent from every response and this
+        // path is always taken.
+        //
+        // Exactly (0, 0) is in the Atlantic off West Africa and cannot be a
+        // Philippine service address, so treating it as "unknown" is safe.
+        serviceLatitude: _nullIfZero(_booking?.latitude),
+        serviceLongitude: _nullIfZero(_booking?.longitude),
       ),
     );
   }
+
+  /// Treats a zero coordinate as unknown.
+  ///
+  /// Named rather than inlined so both call sites read the same and neither can
+  /// drift back to passing the raw value.
+  static double? _nullIfZero(double? v) => (v == null || v == 0) ? null : v;
 
   /// Open the booking's chat conversation via C14 MessagingStore.
   Future<void> _openMessaging() async {
@@ -545,6 +600,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               booking: booking,
               needsOtp: _needsOtp,
               needsPayment: _needsPayment,
+              status: _bookingStatus,
             ),
 
             const SizedBox(height: 20),
@@ -866,26 +922,50 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 }
 
+/// The headline state of a booking.
+///
+/// This used to decide what to say from `paymentStatus` and whether the
+/// scheduled time was in the future, and never looked at the booking's actual
+/// status at all. Every combination it did not recognise fell through to a
+/// final `else` that rendered a green tick and "Your booking has been
+/// confirmed."
+///
+/// A cash booking still waiting for a technician hits exactly that path — not
+/// paid, nothing to pay, schedule already passed — so the screen showed
+/// "Confirmed" in green directly above a card reading "Pending / Awaiting
+/// technician". The two disagreed because only one of them was reading the
+/// status.
+///
+/// `BookingStatusMapper` already carries a customer-facing label and subtitle
+/// for all 22 states. The fix is to use it, and to make the fallback say it
+/// does not know rather than inventing the most reassuring answer available.
 class _StatusBanner extends StatelessWidget {
   const _StatusBanner({
     required this.booking,
     required this.needsOtp,
     required this.needsPayment,
+    required this.status,
   });
   final JobOrder booking;
   final bool needsOtp;
   final bool needsPayment;
 
+  /// Raw wire status, e.g. `PENDING`, `WORKER_ASSIGNED`. Null until first load.
+  final String? status;
+
   @override
   Widget build(BuildContext context) {
     final isPaid = booking.paymentStatus == 'PAID';
     final isUpcoming = booking.scheduleDate.isAfter(DateTime.now());
+    final s = BookingStatusMapper.fromString(status);
 
     Color color;
     IconData icon;
     String text;
     String subtitle;
 
+    // OTP and payment stay ahead of the status: both are things the customer
+    // must DO, and an actionable prompt outranks a description of state.
     if (needsOtp) {
       color = ColorPalette.primaryColorDark;
       icon = Icons.verified_user_outlined;
@@ -896,22 +976,51 @@ class _StatusBanner extends StatelessWidget {
       icon = Icons.payment_rounded;
       text = 'Payment Required';
       subtitle = 'Complete your payment to confirm this booking.';
-    } else if (isPaid && isUpcoming) {
-      color = ColorPalette.primaryColorDark;
-      icon = Icons.schedule_rounded;
-      text = 'Upcoming';
-      subtitle =
-          'Your booking is confirmed for ${DateFormat('MMM d').format(booking.scheduleDate)}.';
-    } else if (isPaid) {
-      color = Colors.green;
-      icon = Icons.check_circle_rounded;
-      text = 'Paid';
-      subtitle = 'Payment has been received.';
+    } else if (s == BookingStatus.unknown) {
+      // Deliberately neutral. An unrecognised status means the app and the
+      // backend disagree about the vocabulary, and the one thing that must not
+      // happen is telling the customer their booking is fine because we could
+      // not read it. Grey, and honest.
+      color = ColorPalette.accentText;
+      icon = Icons.help_outline_rounded;
+      text = 'Status Unavailable';
+      subtitle = 'Pull down to refresh, or contact support if this persists.';
     } else {
-      color = Colors.green;
-      icon = Icons.check_circle_rounded;
-      text = 'Confirmed';
-      subtitle = 'Your booking has been confirmed.';
+      text = BookingStatusMapper.customerLabel(s);
+      subtitle = BookingStatusMapper.heroSubtitle(s);
+
+      switch (BookingStatusMapper.groupCategory(s)) {
+        case 'needsAttention':
+          color = Colors.orange;
+          icon = Icons.error_outline_rounded;
+          break;
+        case 'active':
+          color = ColorPalette.primaryColorDark;
+          icon = Icons.directions_run_rounded;
+          break;
+        case 'completed':
+          color = Colors.green;
+          icon = Icons.check_circle_rounded;
+          break;
+        case 'cancelled':
+          color = ColorPalette.danger;
+          icon = Icons.cancel_outlined;
+          break;
+        case 'upcoming':
+        default:
+          color = ColorPalette.primaryColorDark;
+          icon = Icons.schedule_rounded;
+          break;
+      }
+
+      // Keep the two details the generic copy cannot know: the date of an
+      // upcoming paid booking, and that payment has landed.
+      if (isPaid && isUpcoming && s == BookingStatus.confirmed) {
+        subtitle =
+            'Your booking is confirmed for ${DateFormat('MMM d').format(booking.scheduleDate)}.';
+      } else if (isPaid && s == BookingStatus.paid) {
+        subtitle = 'Payment has been received.';
+      }
     }
 
     return Container(
@@ -1118,8 +1227,18 @@ class _InfoRow extends StatelessWidget {
   final String value;
   final Color? valueColor;
 
+  /// Shown when there is no value.
+  ///
+  /// An empty string rendered as a zero-width Text, so the row collapsed to its
+  /// label alone. On the booking detail screen that produced a "Service"
+  /// heading followed by the bare words "Service" and "Brand" with nothing
+  /// beside them, which reads as a broken screen rather than as missing data.
+  /// An em dash says "we don't have this" in a way a blank never can.
+  static const String _absent = '—';
+
   @override
   Widget build(BuildContext context) {
+    final display = value.trim().isEmpty ? _absent : value;
     final labelStyle = TextStyle(
       fontFamily: FontPalette.primaryFontFamily,
       color: ColorPalette.accentText,
@@ -1141,7 +1260,7 @@ class _InfoRow extends StatelessWidget {
           children: [
             Text(label, style: labelStyle),
             const SizedBox(height: 2),
-            Text(value, style: valueStyle),
+            Text(display, style: valueStyle),
           ],
         ),
       );
@@ -1156,7 +1275,7 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(label, style: labelStyle),
           ),
-          Expanded(child: Text(value, style: valueStyle)),
+          Expanded(child: Text(display, style: valueStyle)),
         ],
       ),
     );

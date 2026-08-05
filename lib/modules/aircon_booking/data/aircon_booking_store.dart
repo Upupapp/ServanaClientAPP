@@ -1,3 +1,4 @@
+import 'package:client/common/domain/address/address_display.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -457,7 +458,7 @@ abstract class _AirconBookingStore with Store {
       // permanently disabled after a booking is created.
     } catch (e) {
       submissionError = _errorMsg(e);
-      _track(BookingFailedEvent(
+      _track(const BookingFailedEvent(
         serviceCategory: 'aircon',
         failureCode: FailureCodeValues.networkError,
       ));
@@ -613,7 +614,10 @@ abstract class _AirconBookingStore with Store {
       scheduleDate: selectedSchedule ?? DateTime.now(),
       jobOrderStatus: JobOrderStatus.forReview,
       jobOrderStatusToString: 'For Review',
-      address: '${addr?['addressOne'] ?? ''}, ${addr?['postTown'] ?? ''}',
+      address: formatAddressLine(
+        addr?['addressOne']?.toString(),
+        addr?['postTown']?.toString(),
+      ),
       latitude: (addr?['lat'] as num?)?.toDouble() ?? 0,
       longitude: (addr?['lon'] as num?)?.toDouble() ?? 0,
       numberOfPersonnel: 1,

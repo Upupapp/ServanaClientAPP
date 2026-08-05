@@ -231,6 +231,28 @@ class ServanaApiClient {
   // ───────────────────────── Auth ─────────────────────────
   // Auth endpoints intentionally skip the auto-token (user isn't logged in yet).
 
+  /// Account creation.
+  ///
+  /// **Not the live path, and it has already drifted.** Nothing in `lib/` or
+  /// `test/` calls this. Registration goes through
+  /// `RegistrationRepository.submitRegistration` → `Backend.registerCustomer`
+  /// → `HttpBackend.registerCustomer`, which posts to this same endpoint but
+  /// also sends `phoneNumber`.
+  ///
+  /// This copy never sent it. The Create Account screen collects "Mobile Number
+  /// (optional)" into `RegistrationFormModel.ownerPhoneNo`, so anyone who
+  /// switched the app to this method — the shorter, more obvious-looking one on
+  /// the API client — would silently stop persisting every customer's phone
+  /// number, with nothing failing to show for it.
+  ///
+  /// Kept rather than deleted because it is a legitimate description of the
+  /// endpoint's shape, but marked so it cannot be adopted by accident. If it is
+  /// ever made live, add `phoneNumber` first and delete
+  /// `HttpBackend.registerCustomer` in the same change — two implementations of
+  /// one operation is what produced this drift.
+  @Deprecated(
+    'Dead code that omits phoneNumber. Use Backend.registerCustomer instead.',
+  )
   Future<Map<String, dynamic>> signup({
     required String email,
     required String password,
@@ -594,14 +616,27 @@ class ServanaApiClient {
   }
 
   /// Verifies the booking's `otpCode` while it is still in `PENDING_OTP`.
-  /// The code travels in the query string with an empty body, and the BE
-  /// returns 400 (`{success:false,message:...}`) for a wrong code.
+  /// The BE returns 400 (`{success:false,message:...}`) for a wrong code.
+  ///
+  /// The code travels in the BODY. It used to be sent as `?otp=123456`, and a
+  /// query string is written to the nginx access log on every request — so each
+  /// verification wrote a live credential into a plaintext log that is rotated,
+  /// backed up, and readable by anyone with host access. The OTP is what proves
+  /// the customer is present, so that log line is a credential.
+  ///
+  /// The request was already a POST; the body was simply going unused. The
+  /// backend now reads the body first and falls back to the query, so builds
+  /// already in customers' hands keep working.
   Future<Map<String, dynamic>> confirmOtp({
     required int bookingId,
     required String otp,
   }) async {
-    final uri = _uri('/api/$bookingId/confirm-otp', {'otp': otp});
-    final res = await _client.post(uri, headers: await _headers());
+    final uri = _uri('/api/$bookingId/confirm-otp');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'otp': otp}),
+    );
     return _decodeJson(res);
   }
 

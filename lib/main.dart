@@ -242,7 +242,33 @@ class _MyAppState extends State<MyApp> {
           builder: (context, _) => MaterialApp.router(
             title: widget.config.brand.appName,
             theme: buildAppTheme(widget.config.brand),
-            darkTheme: buildDarkAppTheme(widget.config.brand),
+
+            // Dark mode is not implemented, so a device in dark mode must still
+            // get the light theme.
+            //
+            // `ColorPalette` is a set of mutable statics with one set of values:
+            // secondaryText is #111827 (near-black) and accentText is #6B7280
+            // (grey), and `applyBrand()` reassigns them to those same light
+            // values at startup. Nothing anywhere sets a dark variant. Those two
+            // colours are read directly in 79 files, 530 times, bypassing the
+            // ThemeData entirely — so `buildDarkAppTheme` produced dark surfaces
+            // underneath text that stayed near-black.
+            //
+            // 39 of the 59 screens hardcode a light scaffold background and were
+            // unaffected, which is why this survived: the app looked fine
+            // wherever someone had pinned a colour, and broke on the screens
+            // that trusted the theme. Create Account declares no background at
+            // all, so on a dark phone its heading, its "Already have an account?"
+            // line and its terms-and-conditions text were near-black on
+            // near-black — the signup screen, unreadable, in production.
+            //
+            // Settings → Appearance already tells the truth here: it offers only
+            // System Default and Light, and shows Dark as "being added in a
+            // future update". This makes the app behave the way that screen
+            // already describes. Restore `buildDarkAppTheme` once the palette
+            // has real dark values — the theme itself is fine, the tokens it
+            // sits on are not.
+            darkTheme: buildAppTheme(widget.config.brand),
             themeMode: _settingsCtrl.themeMode,
             routeInformationParser: _router.routeInformationParser,
             routeInformationProvider: _router.routeInformationProvider,
