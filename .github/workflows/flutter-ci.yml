@@ -63,7 +63,8 @@ jobs:
         with:
           name: coverage-${{ github.sha }}
           path: coverage/lcov.info
-          retention-days: 14
+          # A few KB, read within days of a run or never.
+          retention-days: 7
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
@@ -157,13 +158,29 @@ jobs:
         timeout-minutes: 15
         run: flutter build apk --debug --target-platform android-arm64 --no-tree-shake-icons
 
-      - name: Upload debug APK
-        if: steps.build_apk.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: servana-client-debug-${{ github.sha }}
-          path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 14
+      # The debug APK is deliberately NOT uploaded.
+      #
+      # It was, at ~89 MB on every run with 14-day retention, and it grew to
+      # 3.59 GB — 60% of an artifact store whose free private-repo allowance is
+      # 500 MB. On 2026-08-05 the quota filled and every run began failing with
+      # `Failed to CreateArtifact: Artifact storage quota has been hit`.
+      #
+      # The way it failed is worth remembering. The error surfaced in validate's
+      # "Upload coverage" step — the last step of the first job, over a file of
+      # a few KB. build-android, build-ios and release-android all
+      # `needs: validate`, so all three were skipped and no release bundle could
+      # be produced at all. The thing that filled the quota and the thing that
+      # reported it were in different jobs.
+      #
+      # Nothing consumed this artifact. There is no `download-artifact` anywhere
+      # in this repo, and no other Servana repo references it. Firebase App
+      # Distribution sends testers `app-release.apk` read straight off the
+      # filesystem in the release job, not an artifact, so testers are
+      # unaffected either way.
+      #
+      # The build above still runs and still gates the pipeline — a compile
+      # failure fails this job. Storing its output for two weeks was the only
+      # part that bought nothing.
 
   # ---------------------------------------------------------------------------
   # iOS assembly check.
@@ -229,7 +246,8 @@ jobs:
         with:
           name: ios-podfile-lock-${{ github.sha }}
           path: ios/Podfile.lock
-          retention-days: 14
+          # Diagnostic only; useful while a Pods problem is fresh.
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Build iOS (release, unsigned)
@@ -684,7 +702,10 @@ jobs:
           path: |
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/bundle/release/app-release.aab.sha256
-          retention-days: 90
+          # The shippable bundle. 30 days is long past the point it would be
+          # uploaded to Play, and at ~88 MB a run this is the second-largest
+          # consumer after the debug APK that used to sit beside it.
+          retention-days: 14
 
       # The APK was previously built and then thrown away with the runner unless
       # Firebase App Distribution happened to be configured — so there was no way
@@ -705,7 +726,8 @@ jobs:
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/flutter-apk/app-release.apk.sha256
-          retention-days: 90
+          # Sideload and QA only — Play never takes an APK.
+          retention-days: 7
           if-no-files-found: error
 
       # The build runs --obfuscate --split-debug-info, which moves every symbol
@@ -741,7 +763,7 @@ jobs:
           # RELEASE_ARTIFACTS.md asks for "supported release + 12 months", so
           # these must ALSO be archived off-CI before day 90 or the retention
           # policy is not actually met. Tracked in that doc.
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
 
       # Runs AFTER the artifacts are uploaded, deliberately: a bundle Play will
