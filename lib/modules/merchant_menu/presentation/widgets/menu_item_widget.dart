@@ -33,7 +33,7 @@ class MenuItemWidget extends StatelessWidget {
             AspectRatio(
               aspectRatio: 1,
               child: Image.asset(
-                "assets/images/Default.png",
+                "assets/images/Default.webp",
               ),
             ),
             const Gap(10),

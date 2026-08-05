@@ -57,7 +57,7 @@ class WelcomeSceneSpec {
       headline: 'Everyday services,\nall in one place.',
       subtext:
           'Find and book available home and personal services in one convenient app.',
-      backgroundAsset: 'assets/images/welcome/page_1_bg.png',
+      backgroundAsset: 'assets/images/welcome/page_1_bg.webp',
       semanticDescription:
           'Page 1 of 3: A Filipino customer using Servana at home',
       gradientStops: [0.058, 0.607, 0.738],
@@ -70,7 +70,7 @@ class WelcomeSceneSpec {
       headline: 'Find the right\nservice for every need.',
       subtext:
           'Explore available aircon, beauty, wellness, and home-care services in a few taps.',
-      backgroundAsset: 'assets/images/welcome/page_2_bg.png',
+      backgroundAsset: 'assets/images/welcome/page_2_bg.webp',
       semanticDescription:
           'Page 2 of 3: A range of Servana service professionals',
       gradientStops: [0.058, 0.552, 0.854],
@@ -83,7 +83,7 @@ class WelcomeSceneSpec {
       headline: 'Simple booking.\nClear updates. Better service.',
       subtext:
           'Choose your service, select a schedule, and manage everything from Servana.',
-      backgroundAsset: 'assets/images/welcome/page_3_bg.png',
+      backgroundAsset: 'assets/images/welcome/page_3_bg.webp',
       semanticDescription:
           'Page 3 of 3: A booking confirmation and provider update',
       gradientStops: [0.058, 0.552, 0.854],

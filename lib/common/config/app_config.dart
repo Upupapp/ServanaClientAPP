@@ -48,14 +48,14 @@ class AppConfig {
         seedColor: Color(0xFFF89040),
         // Primary brand color (used in app bars/buttons) - logo blue (#3058C8)
         primary: Color(0xFF3058C8),
-        logoAsset: 'assets/images/Default.png',
+        logoAsset: 'assets/images/Default.webp',
       ),
       'default': AppBrand(
         id: 'default',
         appName: 'App',
         seedColor: Color(0xFFF89040),
         primary: Color(0xFF3058C8),
-        logoAsset: 'assets/images/Default.png',
+        logoAsset: 'assets/images/Default.webp',
       ),
     };
 

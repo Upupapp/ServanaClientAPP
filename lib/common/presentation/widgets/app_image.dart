@@ -2,7 +2,7 @@ import 'package:client/common/config/app_config.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:flutter/material.dart';
 
-const String kDefaultPlaceholderAsset = 'assets/images/Default.png';
+const String kDefaultPlaceholderAsset = 'assets/images/Default.webp';
 
 bool _isHttpUrl(String? url) {
   final u = url?.trim();

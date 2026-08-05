@@ -342,7 +342,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: const SizedBox.expand(
                           child: Image(
                             image: AssetImage(
-                                'assets/images/welcome/page_1_bg.png'),
+                                'assets/images/welcome/page_1_bg.webp'),
                             fit: BoxFit.cover,
                           ),
                         ),
