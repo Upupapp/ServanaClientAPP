@@ -57,8 +57,23 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
+      # Coverage is a convenience. It must never be able to fail this job.
+      #
+      # On 2026-08-05 it did. The artifact store was full, this upload returned
+      # `Failed to CreateArtifact: Artifact storage quota has been hit`, and
+      # because it is the LAST step of the FIRST job — and build-android,
+      # build-ios and release-android all `needs: validate` — every build was
+      # skipped. No release bundle could be produced, for days, because an lcov
+      # file of a few KB could not be stored.
+      #
+      # `if-no-files-found: ignore` already said this step is optional when the
+      # file is missing. It was silent about the upload itself failing, which is
+      # the case that actually stopped releases. continue-on-error says the rest
+      # of it: nothing here is worth blocking a build over. The tests that
+      # produced this file have already passed or failed on their own step.
       - name: Upload coverage
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.sha }}
@@ -240,8 +255,16 @@ jobs:
       # so a resolution drift is visible: if CI resolves something other than
       # the committed lock, the uploaded file differs from the one in git and
       # the diff is right here rather than only on a developer's Mac.
+      # Same class as the coverage upload: a diagnostic that must not be able to
+      # fail the iOS build. A full artifact store would otherwise turn "we could
+      # not save a lock file for you to look at" into "iOS does not compile".
+      #
+      # The three release uploads are deliberately NOT continue-on-error. They
+      # are the deliverables — a green run that quietly produced no bundle is
+      # worse than a red one.
       - name: Upload generated Podfile.lock
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: ios-podfile-lock-${{ github.sha }}
