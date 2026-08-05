@@ -369,11 +369,33 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         workerName: _workerName,
         workerPhone: _workerPhone,
         serviceAddress: _booking?.address,
-        serviceLatitude: _booking?.latitude,
-        serviceLongitude: _booking?.longitude,
+        // Absent coordinates must arrive as null, not 0.
+        //
+        // JobOrder.latitude is a non-nullable double, so this screen collapses
+        // a missing value to 0 when it builds the model. TrackingRepository
+        // then does `latitude ?? seedLatitude ?? 14.5995` — a deliberate
+        // fallback to Manila when nothing is known. But 0.0 is not null, so it
+        // wins that chain and the tracking map opens on 0°N 0°E, in the Gulf of
+        // Guinea, instead of the city the booking is in.
+        //
+        // getBookingById cannot supply these today: user_address has no
+        // lat/lon columns at all — the coordinates live in MongoDB, keyed by
+        // location_id — so the field is absent from every response and this
+        // path is always taken.
+        //
+        // Exactly (0, 0) is in the Atlantic off West Africa and cannot be a
+        // Philippine service address, so treating it as "unknown" is safe.
+        serviceLatitude: _nullIfZero(_booking?.latitude),
+        serviceLongitude: _nullIfZero(_booking?.longitude),
       ),
     );
   }
+
+  /// Treats a zero coordinate as unknown.
+  ///
+  /// Named rather than inlined so both call sites read the same and neither can
+  /// drift back to passing the raw value.
+  static double? _nullIfZero(double? v) => (v == null || v == 0) ? null : v;
 
   /// Open the booking's chat conversation via C14 MessagingStore.
   Future<void> _openMessaging() async {
