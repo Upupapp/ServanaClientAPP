@@ -20,8 +20,6 @@ class RegistrationFormModelAdapter extends TypeAdapter<RegistrationFormModel> {
       ownerName: fields[1] as String?,
       ownerEmail: fields[2] as String?,
       ownerPhoneNo: fields[3] as String?,
-      ownerPassword: fields[4] as String?,
-      ownerConfirmPassword: fields[5] as String?,
       nameOfBusiness: fields[6] as String?,
       typeOfBusiness: fields[7] as String?,
       businessPhone: fields[8] as String?,
@@ -66,17 +64,13 @@ class RegistrationFormModelAdapter extends TypeAdapter<RegistrationFormModel> {
   @override
   void write(BinaryWriter writer, RegistrationFormModel obj) {
     writer
-      ..writeByte(43)
+      ..writeByte(41)
       ..writeByte(1)
       ..write(obj.ownerName)
       ..writeByte(2)
       ..write(obj.ownerEmail)
       ..writeByte(3)
       ..write(obj.ownerPhoneNo)
-      ..writeByte(4)
-      ..write(obj.ownerPassword)
-      ..writeByte(5)
-      ..write(obj.ownerConfirmPassword)
       ..writeByte(6)
       ..write(obj.nameOfBusiness)
       ..writeByte(7)
@@ -176,8 +170,6 @@ _$RegistrationFormModelImpl _$$RegistrationFormModelImplFromJson(
       ownerName: json['ownerName'] as String?,
       ownerEmail: json['ownerEmail'] as String?,
       ownerPhoneNo: json['ownerPhoneNo'] as String?,
-      ownerPassword: json['ownerPassword'] as String?,
-      ownerConfirmPassword: json['ownerConfirmPassword'] as String?,
       nameOfBusiness: json['nameOfBusiness'] as String?,
       typeOfBusiness: json['typeOfBusiness'] as String?,
       businessPhone: json['businessPhone'] as String?,
@@ -216,8 +208,6 @@ Map<String, dynamic> _$$RegistrationFormModelImplToJson(
       'ownerName': instance.ownerName,
       'ownerEmail': instance.ownerEmail,
       'ownerPhoneNo': instance.ownerPhoneNo,
-      'ownerPassword': instance.ownerPassword,
-      'ownerConfirmPassword': instance.ownerConfirmPassword,
       'nameOfBusiness': instance.nameOfBusiness,
       'typeOfBusiness': instance.typeOfBusiness,
       'businessPhone': instance.businessPhone,

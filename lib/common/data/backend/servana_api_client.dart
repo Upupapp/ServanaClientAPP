@@ -231,6 +231,28 @@ class ServanaApiClient {
   // ───────────────────────── Auth ─────────────────────────
   // Auth endpoints intentionally skip the auto-token (user isn't logged in yet).
 
+  /// Account creation.
+  ///
+  /// **Not the live path, and it has already drifted.** Nothing in `lib/` or
+  /// `test/` calls this. Registration goes through
+  /// `RegistrationRepository.submitRegistration` → `Backend.registerCustomer`
+  /// → `HttpBackend.registerCustomer`, which posts to this same endpoint but
+  /// also sends `phoneNumber`.
+  ///
+  /// This copy never sent it. The Create Account screen collects "Mobile Number
+  /// (optional)" into `RegistrationFormModel.ownerPhoneNo`, so anyone who
+  /// switched the app to this method — the shorter, more obvious-looking one on
+  /// the API client — would silently stop persisting every customer's phone
+  /// number, with nothing failing to show for it.
+  ///
+  /// Kept rather than deleted because it is a legitimate description of the
+  /// endpoint's shape, but marked so it cannot be adopted by accident. If it is
+  /// ever made live, add `phoneNumber` first and delete
+  /// `HttpBackend.registerCustomer` in the same change — two implementations of
+  /// one operation is what produced this drift.
+  @Deprecated(
+    'Dead code that omits phoneNumber. Use Backend.registerCustomer instead.',
+  )
   Future<Map<String, dynamic>> signup({
     required String email,
     required String password,

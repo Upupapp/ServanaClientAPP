@@ -26,10 +26,30 @@ mixin _$RegistrationFormModel {
   @HiveField(02)
   String? get ownerEmail => throw _privateConstructorUsedError;
   @HiveField(03)
-  String? get ownerPhoneNo => throw _privateConstructorUsedError;
-  @HiveField(04)
+  String? get ownerPhoneNo =>
+      throw _privateConstructorUsedError; // The password fields are deliberately NOT @HiveField and NOT serialised.
+//
+// They carried @HiveField(04) and @HiveField(05), so the generated adapter
+// contained `..write(obj.ownerPassword)` and the generated toJson emitted
+// it. `RegistrationBloc` calls saveRegistrationToLocalUseCase with the full
+// form the moment signup succeeds — password included. The only reason a
+// plaintext password was not already on disk is that
+// RegistrationRepository.saveRegistrationToLocal is a `//todo: implement`
+// stub that returns without writing anything.
+//
+// That is not a safeguard, it is an accident of timing. The call site is
+// live, the serialiser is generated and ready, and the day somebody
+// implements that TODO the password lands in a Hive box with no further
+// review — the change would look like "finish the draft-saving feature".
+//
+// Dropping the annotations makes it structurally impossible instead: the
+// adapter cannot write a field it does not know about. Nothing has ever
+// been persisted, so there is no stored data to migrate and the field
+// numbers can simply retire. A resumed registration draft asking for the
+// password again is the correct behaviour anyway.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get ownerPassword => throw _privateConstructorUsedError;
-  @HiveField(05)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get ownerConfirmPassword => throw _privateConstructorUsedError;
   @HiveField(06)
   String? get nameOfBusiness => throw _privateConstructorUsedError;
@@ -141,8 +161,10 @@ abstract class $RegistrationFormModelCopyWith<$Res> {
       {@HiveField(01) String? ownerName,
       @HiveField(02) String? ownerEmail,
       @HiveField(03) String? ownerPhoneNo,
-      @HiveField(04) String? ownerPassword,
-      @HiveField(05) String? ownerConfirmPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      String? ownerPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      String? ownerConfirmPassword,
       @HiveField(06) String? nameOfBusiness,
       @HiveField(07) String? typeOfBusiness,
       @HiveField(08) String? businessPhone,
@@ -468,8 +490,10 @@ abstract class _$$RegistrationFormModelImplCopyWith<$Res>
       {@HiveField(01) String? ownerName,
       @HiveField(02) String? ownerEmail,
       @HiveField(03) String? ownerPhoneNo,
-      @HiveField(04) String? ownerPassword,
-      @HiveField(05) String? ownerConfirmPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      String? ownerPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      String? ownerConfirmPassword,
       @HiveField(06) String? nameOfBusiness,
       @HiveField(07) String? typeOfBusiness,
       @HiveField(08) String? businessPhone,
@@ -775,8 +799,9 @@ class _$RegistrationFormModelImpl implements _RegistrationFormModel {
       {@HiveField(01) this.ownerName,
       @HiveField(02) this.ownerEmail,
       @HiveField(03) this.ownerPhoneNo,
-      @HiveField(04) this.ownerPassword,
-      @HiveField(05) this.ownerConfirmPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false) this.ownerPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      this.ownerConfirmPassword,
       @HiveField(06) this.nameOfBusiness,
       @HiveField(07) this.typeOfBusiness,
       @HiveField(08) this.businessPhone,
@@ -850,11 +875,31 @@ class _$RegistrationFormModelImpl implements _RegistrationFormModel {
   @override
   @HiveField(03)
   final String? ownerPhoneNo;
+// The password fields are deliberately NOT @HiveField and NOT serialised.
+//
+// They carried @HiveField(04) and @HiveField(05), so the generated adapter
+// contained `..write(obj.ownerPassword)` and the generated toJson emitted
+// it. `RegistrationBloc` calls saveRegistrationToLocalUseCase with the full
+// form the moment signup succeeds — password included. The only reason a
+// plaintext password was not already on disk is that
+// RegistrationRepository.saveRegistrationToLocal is a `//todo: implement`
+// stub that returns without writing anything.
+//
+// That is not a safeguard, it is an accident of timing. The call site is
+// live, the serialiser is generated and ready, and the day somebody
+// implements that TODO the password lands in a Hive box with no further
+// review — the change would look like "finish the draft-saving feature".
+//
+// Dropping the annotations makes it structurally impossible instead: the
+// adapter cannot write a field it does not know about. Nothing has ever
+// been persisted, so there is no stored data to migrate and the field
+// numbers can simply retire. A resumed registration draft asking for the
+// password again is the correct behaviour anyway.
   @override
-  @HiveField(04)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final String? ownerPassword;
   @override
-  @HiveField(05)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final String? ownerConfirmPassword;
   @override
   @HiveField(06)
@@ -1137,8 +1182,10 @@ abstract class _RegistrationFormModel implements RegistrationFormModel {
       {@HiveField(01) final String? ownerName,
       @HiveField(02) final String? ownerEmail,
       @HiveField(03) final String? ownerPhoneNo,
-      @HiveField(04) final String? ownerPassword,
-      @HiveField(05) final String? ownerConfirmPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      final String? ownerPassword,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      final String? ownerConfirmPassword,
       @HiveField(06) final String? nameOfBusiness,
       @HiveField(07) final String? typeOfBusiness,
       @HiveField(08) final String? businessPhone,
@@ -1213,11 +1260,30 @@ abstract class _RegistrationFormModel implements RegistrationFormModel {
   @override
   @HiveField(03)
   String? get ownerPhoneNo;
-  @override
-  @HiveField(04)
+  @override // The password fields are deliberately NOT @HiveField and NOT serialised.
+//
+// They carried @HiveField(04) and @HiveField(05), so the generated adapter
+// contained `..write(obj.ownerPassword)` and the generated toJson emitted
+// it. `RegistrationBloc` calls saveRegistrationToLocalUseCase with the full
+// form the moment signup succeeds — password included. The only reason a
+// plaintext password was not already on disk is that
+// RegistrationRepository.saveRegistrationToLocal is a `//todo: implement`
+// stub that returns without writing anything.
+//
+// That is not a safeguard, it is an accident of timing. The call site is
+// live, the serialiser is generated and ready, and the day somebody
+// implements that TODO the password lands in a Hive box with no further
+// review — the change would look like "finish the draft-saving feature".
+//
+// Dropping the annotations makes it structurally impossible instead: the
+// adapter cannot write a field it does not know about. Nothing has ever
+// been persisted, so there is no stored data to migrate and the field
+// numbers can simply retire. A resumed registration draft asking for the
+// password again is the correct behaviour anyway.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get ownerPassword;
   @override
-  @HiveField(05)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get ownerConfirmPassword;
   @override
   @HiveField(06)
