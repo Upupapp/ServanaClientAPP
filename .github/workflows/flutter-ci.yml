@@ -718,7 +718,69 @@ jobs:
             > build/app/outputs/flutter-apk/app-release.apk.sha256
           cat build/app/outputs/flutter-apk/app-release.apk.sha256
 
+      # ── Primary delivery: a GitHub Release ──────────────────────────────────
+      #
+      # The shippable bundle goes here, not only to an Actions artifact, because
+      # the two draw on different quotas. Actions artifact storage is a small
+      # ACCOUNT-WIDE pool — 500 MB on the free plan, shared across every repo the
+      # account owns. On 2026-08-05 it filled, and the AAB upload failed for two
+      # days running with `Failed to CreateArtifact: Artifact storage quota has
+      # been hit`. The bundle built fine every time; there was simply nowhere to
+      # put it, so there was no way to ship a release at all.
+      #
+      # Worse, the quota figure GitHub enforces is cached and recalculated only
+      # every 6-12 hours, so deleting artifacts does not unblock a build now — it
+      # unblocks one later. That is not a property you want between a finished
+      # bundle and the store.
+      #
+      # Release assets are not counted against that pool, do not expire in 30
+      # days, and are addressable by tag rather than by run id, which is what you
+      # actually want for something you are going to upload to Play.
+      #
+      # `gh release` is used rather than a third-party action: it ships on the
+      # runner and needs no extra token.
+      - name: Publish the bundle to a GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="build-${VERSION_CODE}"
+          TITLE="${VERSION_NAME} (${VERSION_CODE})"
+
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          APK=build/app/outputs/flutter-apk/app-release.apk
+
+          # Re-runs and re-pushes of the same versionCode must not fail here.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG exists — replacing its assets."
+            gh release upload "$TAG" \
+              "$AAB" "$AAB.sha256" "$APK" "$APK.sha256" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" \
+              "$AAB" "$AAB.sha256" "$APK" "$APK.sha256" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes "Automated build of \`${GITHUB_SHA}\`.
+
+          \`app-release.aab\` is the bundle to upload to Play Console.
+          \`app-release.apk\` is for sideloading and QA only — Play does not accept an APK.
+
+          Verify before uploading:
+          \`\`\`
+          sha256sum -c app-release.aab.sha256
+          \`\`\`" \
+              --target "$GITHUB_SHA"
+          fi
+
+          echo "### Release \`$TAG\` published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the AAB from the Releases page — it does not expire." >> "$GITHUB_STEP_SUMMARY"
+
+      # The artifact copies below are now a convenience, not the delivery path,
+      # so a full artifact store no longer stops a release. The Release step
+      # above is the one that must succeed.
       - name: Upload release AAB
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: servana-client-release-aab-${{ github.sha }}
@@ -743,6 +805,7 @@ jobs:
       # off-store distribution; the AAB above remains the only thing that ships
       # to the store.
       - name: Upload release APK
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: servana-client-release-apk-${{ github.sha }}
@@ -762,6 +825,7 @@ jobs:
       # Retention is deliberately longer than the AAB's: crashes get reported
       # long after a release ships.
       - name: Upload obfuscation symbols
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           # RELEASE_ARTIFACTS.md requires symbols be tagged with version, build
