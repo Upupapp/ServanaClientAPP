@@ -304,6 +304,18 @@ jobs:
   release-android:
     name: Release Build (Android)
     runs-on: ubuntu-latest
+
+    # Needed to publish the bundle as a GitHub Release.
+    #
+    # This repository's default GITHUB_TOKEN is read-only — the right setting,
+    # and the reason `gh release create` answered
+    # `HTTP 403: Resource not accessible by integration`. Granting it here
+    # rather than repository-wide keeps every other job read-only: validate,
+    # build-android and build-ios have no business writing to the repo, and a
+    # blanket setting would have handed them the ability anyway.
+    permissions:
+      contents: write
+
     if: >-
       (github.ref == 'refs/heads/main' && github.event_name == 'push')
       || github.event_name == 'workflow_dispatch'
