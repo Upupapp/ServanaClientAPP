@@ -1,5 +1,6 @@
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
+import 'package:client/common/domain/booking/payment_status_parser.dart';
 
 /// Domain model representing a booking from the customer's perspective.
 ///
@@ -115,7 +116,7 @@ class CustomerBooking {
   /// | 'cancelled'.
   String get groupCategory => BookingStatusMapper.groupCategory(status);
 
-  bool get isPaid => paymentStatus.toUpperCase() == 'PAID';
+  bool get isPaid => PaymentStatusParser.normalize(paymentStatus) == 'PAID';
 
   // ── Factories ───────────────────────────────────────────────────────────────
 
@@ -218,9 +219,18 @@ class CustomerBooking {
       fullAddress: json['fullAddress']?.toString(),
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
       currency: (json['currency'] as String?) ?? 'PHP',
-      paymentStatus: (json['paymentStatus'] as String?) ?? 'PENDING',
-      paymentMethod:
-          (json['paymentMethod'] ?? json['paymentMethodUsed'])?.toString(),
+      paymentStatus: PaymentStatusParser.fromBooking(json).isEmpty
+          ? 'PENDING'
+          : PaymentStatusParser.fromBooking(json),
+      paymentMethod: (json['paymentMethod'] ??
+              json['paymentMethodUsed'] ??
+              json['payment_method'] ??
+              (json['payment'] is Map
+                  ? (json['payment'] as Map)['method']
+                  : null))
+          ?.toString()
+          .trim()
+          .toUpperCase(),
       workerUid:
           (json['workerUid'] ?? json['worker_uid'] ?? json['providerUid'])
               ?.toString(),

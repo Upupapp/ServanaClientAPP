@@ -5,6 +5,7 @@ import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/confirm_assignment_banner.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/common/services/assignment_polling_service.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
@@ -41,7 +42,8 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
     super.initState();
     if (store.paymentMethod == 'PAYMONGO') {
       store.createPaymongoSession();
-    } else if (store.createdBookingId != null) {
+    }
+    if (store.createdBookingId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _startPolling());
     }
   }
@@ -99,6 +101,11 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
+                  const BookingStageHeader(
+                    current: 5,
+                    total: 5,
+                    label: 'Booking created',
+                  ),
                   const SizedBox(height: 24),
                   Container(
                     width: 80,
@@ -121,9 +128,7 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    isPendingPayment
-                        ? 'Payment Required'
-                        : 'Booking Confirmed!',
+                    'Booking Created',
                     style: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
                       fontWeight: FontWeight.w800,
@@ -133,9 +138,7 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isPendingPayment
-                        ? 'Your booking has been created but requires payment to be confirmed.'
-                        : 'Your beauty & wellness service has been booked successfully.',
+                    'Your booking was created successfully. Awaiting an assigned worker.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
@@ -178,13 +181,15 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                             '${DateFormat('EEE, MMM d yyyy').format(store.selectedDate!)} • ${_slotTime()}',
                       ),
                     _DetailRow(
-                      label: 'Amount',
+                      label: 'Estimated Total',
                       value: '₱${store.estimatedTotal.toStringAsFixed(2)}',
                       valueColor: ColorPalette.primaryColorDark,
                     ),
                     _DetailRow(
                       label: 'Payment',
-                      value: isPaymongo ? 'Online Payment' : 'Cash',
+                      value: isPaymongo
+                          ? 'PayMongo — available now'
+                          : 'Cash — pay provider after service',
                     ),
                     if (store.selectedAddress != null)
                       _DetailRow(
@@ -302,8 +307,7 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
                       ),
                     ),
                   ],
-                  if (store.createdBookingId != null &&
-                      (!isPaymongo || _paymongoCompleted)) ...[
+                  if (store.createdBookingId != null) ...[
                     const SizedBox(height: 16),
                     ConfirmAssignmentBanner(
                       isAssigned: _isAssigned,

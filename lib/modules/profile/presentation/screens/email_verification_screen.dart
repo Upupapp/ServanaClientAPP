@@ -3,11 +3,29 @@ import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/profile/data/profile_repository.dart';
+import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+class SignupEmailVerificationArgs {
+  const SignupEmailVerificationArgs({required this.email});
+
+  final String email;
+}
 
 class EmailVerificationScreen extends StatefulWidget {
-  const EmailVerificationScreen({super.key});
+  const EmailVerificationScreen({
+    super.key,
+    this.signupEmail,
+    this.codeAlreadySent = false,
+  });
+
+  static const routeName = 'SignupEmailVerification';
+  static const route = '/signup/verify-email';
+
+  final String? signupEmail;
+  final bool codeAlreadySent;
 
   @override
   State<EmailVerificationScreen> createState() =>
@@ -21,9 +39,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   bool _isSending = false;
   bool _isVerifying = false;
-  bool _otpSent = false;
+  late bool _otpSent;
   bool _verified = false;
   String? _error;
+
+  bool get _isSignup => widget.signupEmail != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _otpSent = widget.codeAlreadySent;
+  }
 
   @override
   void dispose() {
@@ -37,7 +63,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   /// unauthenticated by necessity, since an unverified customer cannot sign in
   /// to obtain a token. Sending the code without it is what made in-app
   /// verification impossible.
-  String get _email => _profileCtrl.profile?.email ?? '';
+  String get _email => widget.signupEmail ?? _profileCtrl.profile?.email ?? '';
 
   Future<void> _sendOtp() async {
     final email = _email;
@@ -52,11 +78,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     });
     try {
       await _repo.resendEmailVerification(email);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isSending = false;
           _otpSent = true;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -86,15 +113,24 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     });
     try {
       await _repo.verifyEmailOtp(email, otp);
-      // Refresh the profile so the verification badge appears.
-      await _profileCtrl.loadProfile();
-      if (mounted)
+      if (!_isSignup) {
+        // Refresh the profile so the verification badge appears.
+        await _profileCtrl.loadProfile();
+      }
+      if (mounted) {
         setState(() {
           _isVerifying = false;
           _verified = true;
         });
+      }
       await Future.delayed(const Duration(milliseconds: 1200));
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        if (_isSignup) {
+          context.goNamed(WelcomeScreen.routeName);
+        } else {
+          Navigator.of(context).pop();
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -109,7 +145,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final email = _profileCtrl.profile?.email ?? '';
+    final email = _email;
     return Scaffold(
       backgroundColor: ColorPalette.primaryBackground,
       appBar: AppBar(

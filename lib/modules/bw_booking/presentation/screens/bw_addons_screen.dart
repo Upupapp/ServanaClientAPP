@@ -1,6 +1,7 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_branch_slot_screen.dart';
@@ -82,6 +83,11 @@ class _BwAddOnsScreenState extends State<BwAddOnsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BookingStageHeader(
+                current: 2,
+                total: 5,
+                label: 'Optional add-ons',
+              ),
               // Service summary
               Container(
                 width: double.infinity,

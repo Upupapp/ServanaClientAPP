@@ -1,4 +1,5 @@
 import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:client/common/domain/pricing/catalog_price.dart';
@@ -89,12 +90,11 @@ abstract final class ServiceOptionSummaryMapper {
   static ServiceOptionSummary fromMap(Map<String, dynamic> o) {
     final id =
         (o['serviceOptionId'] ?? o['id'] ?? o['optionId'] ?? '').toString();
-    final name =
-        (o['level3'] ?? o['name'] ?? o['optionName'] ?? 'Service').toString();
+    final name = ServiceOptionDisplay.name(o);
     final description =
         o['shortDescription']?.toString() ?? o['description']?.toString();
     final price = _extractPrice(o);
-    final level2 = (o['level2'] ?? '').toString();
+    final level2 = ServiceOptionDisplay.level2(o);
     final addons = o['addons'];
     final hasAddons = addons is List && addons.isNotEmpty;
 

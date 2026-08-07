@@ -3,6 +3,7 @@ import 'package:client/modules/categories/data/category_addon_filter.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_branch_slot_screen.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,9 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
       ),
       body: Observer(builder: (context) {
         if (store.isLoading && store.optionsWithAddons.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: BookingLoadingState('Loading beauty and wellness services'),
+          );
         }
 
         if (store.errorMessage != null && store.optionsWithAddons.isEmpty) {
@@ -109,6 +112,11 @@ class _BwOptionsScreenState extends State<BwOptionsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BookingStageHeader(
+                current: 1,
+                total: 5,
+                label: 'Choose service',
+              ),
               // Render grouped services with section headers
               for (final entry in grouped.entries) ...[
                 _SectionTitle(entry.key),
@@ -351,6 +359,10 @@ class _OptionTile extends StatelessWidget {
                           : ColorPalette.primaryColorDark,
                     ),
                   ),
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check_circle, size: 20, color: Colors.white),
+                ],
               ],
             ),
           ),

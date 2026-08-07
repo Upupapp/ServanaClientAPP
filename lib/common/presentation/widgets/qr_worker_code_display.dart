@@ -21,11 +21,11 @@ class QrWorkerCodeDisplay extends StatelessWidget {
     super.key,
     required this.bookingId,
     required this.workerCode,
-    this.title = 'Service Worker Code',
+    this.title = 'Provider Service Code',
     this.subtitle =
-        'Show this QR to your technician to start the service. They can also type the code.',
+        'Show this QR to your provider to start the service. They can also type the code.',
     this.pendingSubtitle =
-        'Your worker code will appear here once a technician accepts your booking.',
+        'Your service code will appear here once a provider accepts your booking.',
   });
 
   final int? bookingId;
@@ -151,7 +151,7 @@ class _PendingPlaceholder extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Awaiting technician',
+            'Awaiting provider',
             style: TextStyle(
               fontFamily: FontPalette.primaryFontFamily,
               color: ColorPalette.accentText.withOpacity(.7),

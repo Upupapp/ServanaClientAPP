@@ -1,6 +1,7 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_checkout_screen.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,9 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
       ),
       body: Observer(builder: (context) {
         if (store.isLoading && store.branches.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: BookingLoadingState('Loading available providers and times'),
+          );
         }
 
         if (store.errorMessage != null && store.branches.isEmpty) {
@@ -89,6 +92,11 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BookingStageHeader(
+                current: 3,
+                total: 5,
+                label: 'Choose schedule',
+              ),
               // ──── Select Date ────
               const _SectionTitle('Select Date'),
               const SizedBox(height: 8),
@@ -134,7 +142,12 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                 if (store.isLoading && store.slots.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: BookingLoadingState(
+                        'Loading available times',
+                        compact: true,
+                      ),
+                    ),
                   )
                 else if (store.slots.isEmpty)
                   Padding(
@@ -182,6 +195,7 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                         ),
                         selected: isSelected,
                         selectedColor: ColorPalette.primaryColorDark,
+                        checkmarkColor: ColorPalette.primaryText,
                         disabledColor:
                             ColorPalette.secondaryBackground.withOpacity(.5),
                         labelStyle: TextStyle(

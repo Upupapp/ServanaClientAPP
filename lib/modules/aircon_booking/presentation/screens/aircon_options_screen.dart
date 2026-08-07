@@ -3,6 +3,7 @@ import 'package:client/modules/categories/data/category_addon_filter.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_checkout_screen.dart';
 import 'package:flutter/material.dart';
@@ -70,7 +71,9 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
       ),
       body: Observer(builder: (context) {
         if (store.isLoading && store.optionsWithAddons.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: BookingLoadingState('Loading aircon services'),
+          );
         }
 
         if (store.errorMessage != null && store.optionsWithAddons.isEmpty) {
@@ -122,6 +125,11 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BookingStageHeader(
+                current: 1,
+                total: 3,
+                label: 'Choose service',
+              ),
               const _SectionTitle('Select Service'),
               const SizedBox(height: 8),
               ...displayOptions.map((opt) {
@@ -156,6 +164,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
                     label: Text(k),
                     selected: selected,
                     selectedColor: ColorPalette.primaryColorDark,
+                    checkmarkColor: ColorPalette.primaryText,
                     labelStyle: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
                       color: selected
@@ -180,6 +189,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
                     label: Text(_labelify(k)),
                     selected: selected,
                     selectedColor: ColorPalette.primaryColorDark,
+                    checkmarkColor: ColorPalette.primaryText,
                     labelStyle: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
                       color: selected
@@ -204,6 +214,7 @@ class _AirconOptionsScreenState extends State<AirconOptionsScreen> {
                     label: Text(k),
                     selected: selected,
                     selectedColor: ColorPalette.primaryColorDark,
+                    checkmarkColor: ColorPalette.primaryText,
                     labelStyle: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
                       color: selected
@@ -460,6 +471,10 @@ class _OptionTile extends StatelessWidget {
                           : ColorPalette.primaryColorDark,
                     ),
                   ),
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check_circle, size: 20, color: Colors.white),
+                ],
               ],
             ),
           ),

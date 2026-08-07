@@ -10,9 +10,11 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/domain/booking/booking_status.dart';
+import 'package:client/common/domain/booking/payment_status_parser.dart';
 import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
 import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
 import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
@@ -89,7 +91,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   bool get _needsPayment =>
-      _booking?.paymentStatus == 'PENDING' &&
+      PaymentStatusParser.requiresPayment(_booking?.paymentStatus) &&
       _booking?.paymentMethodUsed == 'PAYMONGO';
 
   /// A freshly-created booking sits in PENDING_OTP (or FOR_OTP alias) until the
@@ -133,10 +135,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   bool get _shouldPoll {
     if (_isAssigned) return false;
-    if (_needsPayment) return false; // assignment only happens after payment
     if (_needsOtp) return false; // BE assigns only after OTP confirm
     final s = _bookingStatus?.toUpperCase();
-    return s == null || s == 'CONFIRMED' || s == 'PAID' || s == 'PENDING';
+    return s == null ||
+        s == 'CONFIRMED' ||
+        s == 'PAID' ||
+        s == 'PENDING' ||
+        s == 'AWAITING_ASSIGNMENT';
   }
 
   /// Re-fetch this booking from the API and update state.
@@ -157,7 +162,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           res['data'] as Map<String, dynamic>? ??
           res;
 
-      final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
+      final paymentStatus = PaymentStatusParser.fromBooking(b);
       final status = (b['status'] ?? '').toString().toUpperCase();
       final workerUid = b['workerUid']?.toString() ??
           b['worker_uid']?.toString() ??
@@ -165,7 +170,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       final eta = b['etaMinutes'];
       final assignedAtRaw = b['assignedAt']?.toString();
       final workerCode = b['workerCode']?.toString();
-      final paymentMethod = (b['paymentMethod'] ?? b['paymentMethodUsed'] ?? '')
+      final paymentMethod = (b['paymentMethod'] ??
+              b['paymentMethodUsed'] ??
+              b['payment_method'] ??
+              (b['payment'] is Map ? (b['payment'] as Map)['method'] : null) ??
+              '')
           .toString()
           .toUpperCase();
 
@@ -178,11 +187,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
       String statusLabel;
       if (status == 'WORKER_ASSIGNED') {
-        statusLabel = 'Worker Assigned';
-      } else if (paymentStatus == 'PAID') {
-        statusLabel = 'Paid';
-      } else if (status == 'CONFIRMED' && paymentStatus == 'PENDING') {
-        statusLabel = 'Payment Required';
+        statusLabel = 'Provider Assigned';
+      } else if (status == 'CONFIRMED' &&
+          (workerUid == null || workerUid.isEmpty)) {
+        statusLabel = paymentMethod == 'PAYMONGO' && paymentStatus != 'PAID'
+            ? 'PENDING_PAYMENT'
+            : 'AWAITING_ASSIGNMENT';
       } else {
         statusLabel = b['statusLower']?.toString() ?? status;
       }
@@ -332,7 +342,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       final composed = '$first $last'.trim();
       final name = composed.isNotEmpty
           ? composed
-          : (w['name']?.toString() ?? w['email']?.toString() ?? 'Technician');
+          : (w['name']?.toString() ?? w['email']?.toString() ?? 'Provider');
       final phone = w['phoneNumber']?.toString();
       if (!mounted) return;
       setState(() {
@@ -586,12 +596,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               bookingId: int.tryParse(_bookingId),
               workerCode: _workerCode,
               subtitle:
-                  'Show this QR to your technician to start the service. They can also type the code.',
+                  'Show this QR to your provider to start the service. They can also type the code.',
               pendingSubtitle: _needsOtp
                   ? 'Confirm your booking with the OTP below to continue.'
                   : _needsPayment
-                      ? 'Complete your payment first. Once paid and a technician accepts, your worker code will appear here.'
-                      : 'Your worker code will appear here once a technician accepts your booking.',
+                      ? 'You can pay now while we assign a provider. Your service code will appear after assignment.'
+                      : 'Your service code will appear here once a provider accepts your booking.',
             ),
             const SizedBox(height: 20),
 
@@ -601,6 +611,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               needsOtp: _needsOtp,
               needsPayment: _needsPayment,
               status: _bookingStatus,
+            ),
+
+            const SizedBox(height: 16),
+            CompactBookingLifecycle(
+              status: BookingStatusMapper.fromString(_bookingStatus),
+              isAssigned: _isAssigned,
             ),
 
             const SizedBox(height: 20),
@@ -646,7 +662,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Payment info
             _Section(title: 'Payment', children: [
               _InfoRow(
-                label: 'Amount',
+                label: _isCompleted ? 'Final Total' : 'Estimated Total',
                 value: '₱${booking.totalAmount.toStringAsFixed(2)}',
                 valueColor: ColorPalette.primaryColorDark,
               ),
@@ -1092,15 +1108,10 @@ class _AssignmentCard extends StatelessWidget {
     final String title;
     final String subtitle;
 
-    if (needsPayment) {
-      color = Colors.orange;
-      icon = Icons.payment_rounded;
-      title = 'Awaiting payment';
-      subtitle = 'A technician will be assigned once payment is received.';
-    } else if (isAssigned) {
+    if (isAssigned) {
       color = ColorPalette.primaryColorDark;
       icon = Icons.person_pin_rounded;
-      title = workerName ?? 'Technician assigned';
+      title = workerName ?? 'Provider assigned';
       final parts = <String>[];
       if (workerPhone != null) parts.add(workerPhone!);
       if (etaMinutes != null) parts.add('ETA $etaMinutes min');
@@ -1112,13 +1123,17 @@ class _AssignmentCard extends StatelessWidget {
     } else if (isPolling) {
       color = Colors.blueGrey;
       icon = Icons.search_rounded;
-      title = 'Assigning a technician';
-      subtitle = 'A technician will be assigned to your booking soon.';
+      title = 'Assigning a provider';
+      subtitle = needsPayment
+          ? 'You can pay with PayMongo now while assignment is in progress.'
+          : 'A provider will be assigned to your booking soon.';
     } else {
       color = Colors.blueGrey;
       icon = Icons.hourglass_empty_rounded;
-      title = 'Awaiting technician assignment';
-      subtitle = 'Pull-to-refresh or tap the refresh icon to check again.';
+      title = 'Awaiting provider assignment';
+      subtitle = needsPayment
+          ? 'You can pay with PayMongo now; assignment does not need to finish first.'
+          : 'Pull-to-refresh or tap the refresh icon to check again.';
     }
 
     return Container(
@@ -1146,7 +1161,7 @@ class _AssignmentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Technician',
+                  'Provider',
                   style: TextStyle(
                     fontFamily: FontPalette.primaryFontFamily,
                     color: ColorPalette.accentText,

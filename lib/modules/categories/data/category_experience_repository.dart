@@ -1,4 +1,5 @@
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/modules/categories/data/category_addon_filter.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
 
@@ -33,7 +34,7 @@ class CategoryExperienceRepository {
     String? pattern,
   ) {
     if (allowList == null && pattern == null) return true;
-    final level2 = (option['level2'] ?? '').toString().toLowerCase();
+    final level2 = ServiceOptionDisplay.level2(option).toLowerCase();
     if (level2.isEmpty) return true; // include options with no category tag
 
     // Substring, not equality.
@@ -55,8 +56,9 @@ class CategoryExperienceRepository {
     if (allowList != null) {
       return allowList.any((allowed) => level2.contains(allowed));
     }
-    if (pattern != null)
+    if (pattern != null) {
       return RegExp(pattern, caseSensitive: false).hasMatch(level2);
+    }
     return true;
   }
 

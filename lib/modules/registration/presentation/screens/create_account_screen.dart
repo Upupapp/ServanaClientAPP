@@ -16,6 +16,7 @@ import 'package:client/common/presentation/widgets/custom_text_field.dart';
 import 'package:client/common/presentation/widgets/primary_button.dart';
 import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
+import 'package:client/modules/profile/presentation/screens/email_verification_screen.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_events.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_states.dart';
@@ -134,22 +135,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   context.loaderOverlay.hide();
 
                   if (state is RegistrationSubmittedState) {
+                    final email = state.registration?.ownerEmail?.trim() ?? '';
                     await ServanaAlertDialog.show(
                       context: context,
                       type: ServanaAlertType.success,
                       title: "Success",
                       message:
-                          "Your account has been created successfully. Please sign in to continue.",
-                      okText: "Sign In",
+                          "Your account has been created. Enter the verification code sent to $email.",
+                      okText: "Verify Email",
                     );
                     // ignore: use_build_context_synchronously
-                    context.goNamed(WelcomeScreen.routeName);
+                    context.goNamed(
+                      EmailVerificationScreen.routeName,
+                      extra: SignupEmailVerificationArgs(email: email),
+                    );
                   }
-                  if (state is RegistrationSavedToCacheState) {
-                    // ignore: use_build_context_synchronously
-                    context.goNamed(WelcomeScreen.routeName);
-                  }
-
                   if (state is RegistrationSubmittedFailedState) {
                     ServanaAlertDialog.show(
                       // ignore: use_build_context_synchronously

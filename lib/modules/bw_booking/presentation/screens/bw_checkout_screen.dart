@@ -9,6 +9,7 @@ import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/address_form_screen.dart';
 import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
 import 'package:client/common/presentation/screens/booking_otp_screen.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_screen.dart';
@@ -61,6 +62,11 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BookingStageHeader(
+                current: 4,
+                total: 5,
+                label: 'Details & payment',
+              ),
               // ──── Booking summary ────
               Container(
                 width: double.infinity,
@@ -151,7 +157,7 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
               const SizedBox(height: 8),
 
               if (store.isLoading && store.savedAddresses.isEmpty)
-                const Center(child: CircularProgressIndicator())
+                const BookingLoadingState('Loading saved addresses')
               else if (store.savedAddresses.isEmpty)
                 InkWell(
                   onTap: _addNewAddress,
@@ -316,6 +322,7 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                     child: _PaymentMethodTile(
                       icon: Icons.payments_rounded,
                       label: 'Cash',
+                      subtitle: 'Pay provider after service',
                       selected: store.paymentMethod == 'CASH',
                       onTap: () => store.setPaymentMethod('CASH'),
                     ),
@@ -325,6 +332,7 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                     child: _PaymentMethodTile(
                       icon: Icons.credit_card_rounded,
                       label: 'PayMongo',
+                      subtitle: 'Pay securely now',
                       selected: store.paymentMethod == 'PAYMONGO',
                       onTap: () => store.setPaymentMethod('PAYMONGO'),
                     ),
@@ -346,6 +354,9 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                     ),
                   ),
                 ),
+
+              const BookingCancellationDisclosure(),
+              const SizedBox(height: 16),
 
               SizedBox(
                 width: double.infinity,
@@ -565,18 +576,20 @@ class _PaymentMethodTile extends StatelessWidget {
   const _PaymentMethodTile({
     required this.icon,
     required this.label,
+    required this.subtitle,
     required this.selected,
     required this.onTap,
   });
   final IconData icon;
   final String label;
+  final String subtitle;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: label,
+      label: '$label. $subtitle',
       button: true,
       selected: selected,
       excludeSemantics: true,
@@ -599,11 +612,23 @@ class _PaymentMethodTile extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon,
-                  size: 28,
-                  color: selected
-                      ? ColorPalette.primaryText
-                      : ColorPalette.primaryColorDark),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon,
+                      size: 28,
+                      color: selected
+                          ? ColorPalette.primaryText
+                          : ColorPalette.primaryColorDark),
+                  if (selected)
+                    const Positioned(
+                      right: -18,
+                      top: -10,
+                      child: Icon(Icons.check_circle,
+                          size: 18, color: Colors.white),
+                    ),
+                ],
+              ),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -614,6 +639,18 @@ class _PaymentMethodTile extends StatelessWidget {
                   color: selected
                       ? ColorPalette.primaryText
                       : ColorPalette.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryFontFamily,
+                  fontSize: 10,
+                  color: selected
+                      ? ColorPalette.primaryText.withOpacity(.85)
+                      : ColorPalette.accentText,
                 ),
               ),
             ],

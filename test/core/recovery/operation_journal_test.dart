@@ -64,6 +64,30 @@ void main() {
       expect(ops.first.id, 'op-2');
     });
 
+    test('resolveIdempotencyKey removes all retries but not other work',
+        () async {
+      final journal = OperationJournal();
+      for (final id in ['retry-1', 'retry-2']) {
+        await journal.record(JournaledOperation(
+          id: id,
+          type: 'booking.create',
+          customerUid: 'uid1',
+          payload: const {},
+          startedAt: DateTime.now(),
+          idempotencyKey: 'shared-key',
+        ));
+      }
+      await journal.record(makeOp('other'));
+
+      await journal.resolveIdempotencyKey(
+        'uid1',
+        type: 'booking.create',
+        idempotencyKey: 'shared-key',
+      );
+
+      expect((await journal.load('uid1')).map((op) => op.id), ['other']);
+    });
+
     test('expired operations are pruned on load', () async {
       final journal = OperationJournal();
       await journal.record(makeOp('op-old', old: true));

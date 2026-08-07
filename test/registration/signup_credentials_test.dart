@@ -121,4 +121,19 @@ void main() {
       expect(screen, contains('ownerPhoneNo:'));
     });
   });
+
+  group('mobile signup sends exactly one verification message', () {
+    test('success does not call the legacy verification-link resend', () {
+      final bloc = _code(
+          'lib/modules/registration/presentation/bloc/registration_bloc.dart');
+      final submitStart = bloc.indexOf('Future<void> onSubmitRegistrationForm');
+      final resendStart =
+          bloc.indexOf('Future<void> onResendVerificationEmail');
+      final submitFlow = bloc.substring(submitStart, resendStart);
+
+      expect(submitFlow, isNot(contains('resendVerificationEmail(')),
+          reason: 'mobile signup already sends an OTP; a second link email is '
+              'redundant and selects the wrong verification channel');
+    });
+  });
 }

@@ -349,6 +349,21 @@ void main() {
       expect(CustomerBooking.fromApiMap(map).paymentMethod, 'CARD');
     });
 
+    test('reads authoritative snake and nested payment contracts', () {
+      final snake = minimalMap()
+        ..remove('paymentStatus')
+        ..['payment_status'] = 'paid'
+        ..['payment_method'] = 'cash';
+      expect(CustomerBooking.fromApiMap(snake).paymentStatus, 'PAID');
+      expect(CustomerBooking.fromApiMap(snake).paymentMethod, 'CASH');
+
+      final nested = minimalMap()
+        ..remove('paymentStatus')
+        ..['payment'] = {'status': 'payment_paid', 'method': 'paymongo'};
+      expect(CustomerBooking.fromApiMap(nested).paymentStatus, 'PAID');
+      expect(CustomerBooking.fromApiMap(nested).paymentMethod, 'PAYMONGO');
+    });
+
     test('maps status string to canonical enum value', () {
       final map = minimalMap()..['status'] = 'IN_PROGRESS';
       expect(CustomerBooking.fromApiMap(map).status, BookingStatus.inProgress);

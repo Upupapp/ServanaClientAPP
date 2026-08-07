@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
-import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/common/domain/booking/payment_status_parser.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/payment_events.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -70,8 +70,16 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
   };
 
   // Approved callback paths that signal a payment redirect.
-  static const _successPaths = {'/payment/success', '/checkout/success'};
-  static const _cancelPaths = {'/payment/cancel', '/checkout/cancel'};
+  static const _successPaths = {
+    '/payment-success',
+    '/payment/success',
+    '/checkout/success',
+  };
+  static const _cancelPaths = {
+    '/payment-cancel',
+    '/payment/cancel',
+    '/checkout/cancel',
+  };
 
   WebViewController? _webController;
   bool _isPageLoading = true;
@@ -79,6 +87,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
   bool _pollExpired = false;
   bool _isChecking = false;
   bool _dismissed = false;
+  bool _confirmingReturn = false;
 
   Timer? _pollTimer;
   DateTime? _pollStart;
@@ -97,7 +106,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
 
     // Validate URL scheme — only HTTPS is permitted.
     final uri = Uri.tryParse(url);
-    if (uri == null || uri.scheme != 'https') {
+    if (uri == null || uri.scheme != 'https' || !_isApprovedHost(uri.host)) {
       _isPageLoading = false;
       return;
     }
@@ -149,7 +158,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
     final host = uri.host.toLowerCase();
 
     // Check for a payment-success callback from an approved host.
-    if (_approvedHosts.any((h) => host == h || host.endsWith('.$h'))) {
+    if (_isApprovedHost(host)) {
       final path = uri.path.toLowerCase();
       if (_successPaths.any((p) => path.startsWith(p))) {
         // Redirect is a signal only — verify with backend before closing.
@@ -173,7 +182,14 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
     return NavigationDecision.prevent;
   }
 
+  bool _isApprovedHost(String host) {
+    final normalized = host.toLowerCase();
+    return _approvedHosts.any((approved) =>
+        normalized == approved || normalized.endsWith('.$approved'));
+  }
+
   void _startPolling() {
+    _stopPolling();
     _pollStart = DateTime.now();
     _pollTimer = Timer.periodic(_pollInterval, (_) => _checkPayment());
   }
@@ -215,13 +231,9 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
       final booking = res['booking'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
           res;
-      final status = BookingStatusMapper.fromString(
-        booking['paymentStatus']?.toString() ?? booking['status']?.toString(),
-      );
-      return status == BookingStatus.paid ||
-          status == BookingStatus.confirmed ||
-          status == BookingStatus.awaitingAssignment ||
-          status == BookingStatus.assigned;
+      // Booking lifecycle and provider assignment are intentionally ignored:
+      // only the authoritative payment record can close checkout as paid.
+      return PaymentStatusParser.isPaid(booking);
     } catch (_) {
       return false;
     }
@@ -229,16 +241,25 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
 
   Future<void> _verifyAndClose() async {
     _track(const CheckoutReturnedEvent(paymentStatus: 'pending'));
+    if (mounted) setState(() => _confirmingReturn = true);
     final paid = await _verifyPayment();
     if (!mounted || _dismissed) return;
-    _dismissed = true;
     if (paid) {
+      _dismissed = true;
       _track(const PaymentSucceededObservedEvent(
         paymentMethod: 'paymongo',
         amountBand: 'unknown',
       ));
+      Navigator.of(context).pop(true);
+      return;
     }
-    Navigator.of(context).pop(paid);
+    setState(() => _confirmingReturn = false);
+    _startPolling();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Payment submitted. Waiting for confirmation…'),
+      ),
+    );
   }
 
   Future<void> _manualCheck() async {
@@ -347,7 +368,10 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
 
   Widget _buildBody() {
     final uri = Uri.tryParse(widget.checkoutUrl);
-    if (widget.checkoutUrl.isEmpty || uri == null || uri.scheme != 'https') {
+    if (widget.checkoutUrl.isEmpty ||
+        uri == null ||
+        uri.scheme != 'https' ||
+        !_isApprovedHost(uri.host)) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -385,6 +409,24 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
       children: [
         if (_webController != null) WebViewWidget(controller: _webController!),
         if (_isPageLoading) const Center(child: CircularProgressIndicator()),
+        if (_confirmingReturn)
+          ColoredBox(
+            color: const Color(0xCCFFFFFF),
+            child: Center(
+              child: Semantics(
+                liveRegion: true,
+                label: 'Confirming PayMongo payment',
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Confirming your payment…'),
+                  ],
+                ),
+              ),
+            ),
+          ),
         if (_pollExpired)
           _ManualCheckBanner(onTap: _manualCheck, isChecking: _isChecking),
       ],

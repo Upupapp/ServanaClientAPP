@@ -116,6 +116,30 @@ void main() {
 
       expect(capturedId, 7);
     });
+
+    test('legacy snake_case rows remain visible and retain their real name',
+        () async {
+      final repo = CategoryExperienceRepository(_FakeApiClient({
+        'data': [
+          {
+            'id': 'legacy-1',
+            'level_2': 'Beauty Drip',
+            'level_3': 'Vitamin C Drip',
+            'base_price': '1250.00',
+          },
+        ],
+      }));
+
+      final results = await repo.loadOptions(
+        serviceId: 2,
+        level2AllowList: {'drip'},
+      );
+
+      expect(results, hasLength(1));
+      expect(results.single.name, 'Vitamin C Drip');
+      expect(results.single.categoryKey, 'Beauty Drip');
+      expect(results.single.basePrice, 1250);
+    });
   });
 }
 

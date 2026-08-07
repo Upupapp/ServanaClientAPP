@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/domain/booking/payment_status_parser.dart';
+import 'package:client/common/domain/booking/booking_create_response_parser.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
@@ -383,8 +385,24 @@ abstract class _AirconBookingStore with Store {
       final userId = session?.customerID ?? '';
       if (userId.isEmpty) {
         submissionError = 'You must be signed in to create a booking.';
+        isSubmitting = false;
         _track(const BookingFailedEvent(
             serviceCategory: 'aircon', failureCode: 'unauthenticated'));
+        return;
+      }
+
+      if (selectedOption == null ||
+          selectedAddress == null ||
+          selectedSchedule == null ||
+          !selectedSchedule!.isAfter(DateTime.now()) ||
+          !const {'CASH', 'PAYMONGO'}.contains(paymentMethod)) {
+        submissionError =
+            'Complete the service, address, schedule, and payment details.';
+        isSubmitting = false;
+        _track(const BookingFailedEvent(
+          serviceCategory: 'aircon',
+          failureCode: 'invalid_draft',
+        ));
         return;
       }
 
@@ -406,11 +424,7 @@ abstract class _AirconBookingStore with Store {
       final payload = <String, dynamic>{
         'userAddressId': addressId,
         'serviceOptionId': optionId,
-        'schedule': selectedSchedule?.toUtc().toIso8601String() ??
-            DateTime.now()
-                .add(const Duration(days: 1))
-                .toUtc()
-                .toIso8601String(),
+        'schedule': selectedSchedule!.toUtc().toIso8601String(),
         'paymentMethod': paymentMethod,
         'pricing': pricing,
       };
@@ -418,16 +432,15 @@ abstract class _AirconBookingStore with Store {
       // Journal the operation before the API call so a process kill during
       // the network request leaves a reconcilable record.
       final opId = _uuidV4();
-      dpLocator<OperationJournal>()
-          .record(JournaledOperation(
-            id: opId,
-            type: 'booking.create',
-            customerUid: userId,
-            payload: {'category': 'aircon', 'paymentMethod': paymentMethod},
-            startedAt: DateTime.now(),
-            idempotencyKey: _idempotencyKey,
-          ))
-          .ignore();
+      final journal = dpLocator<OperationJournal>();
+      await journal.record(JournaledOperation(
+        id: opId,
+        type: 'booking.create',
+        customerUid: userId,
+        payload: {'category': 'aircon', 'paymentMethod': paymentMethod},
+        startedAt: DateTime.now(),
+        idempotencyKey: _idempotencyKey,
+      ));
 
       final res = await api.createBooking(
         userId: userId,
@@ -435,19 +448,16 @@ abstract class _AirconBookingStore with Store {
         idempotencyKey: _idempotencyKey,
       );
       bookingResult = res;
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      createdBookingId = _parseInt(booking['bookingId']) ??
-          _parseInt(booking['id']) ??
-          _parseInt(res['bookingId']) ??
-          _parseInt(res['id']);
-      workerCode =
-          (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
-      if (workerCode!.isEmpty) workerCode = null;
+      final created = BookingCreateResponseParser.parse(res);
+      createdBookingId = created.bookingId;
+      workerCode = created.workerCode;
 
       // Booking confirmed — remove the pending journal entry.
-      dpLocator<OperationJournal>().resolve(userId, opId).ignore();
+      await journal.resolveIdempotencyKey(
+        userId,
+        type: 'booking.create',
+        idempotencyKey: _idempotencyKey!,
+      );
 
       _track(BookingCreatedEvent(
         serviceCategory: 'aircon',
@@ -469,9 +479,10 @@ abstract class _AirconBookingStore with Store {
 
   @action
   Future<void> createPaymongoSession() async {
-    if (createdBookingId == null) return;
+    if (createdBookingId == null || isPaymentLoading) return;
     isPaymentLoading = true;
     errorMessage = null;
+    paymongoCheckoutUrl = null;
     try {
       final session = await SessionService.getSession();
       final uid = session?.customerID ?? '';
@@ -513,9 +524,7 @@ abstract class _AirconBookingStore with Store {
       final booking = res['booking'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
           res;
-      final paymentStatus =
-          (booking['paymentStatus'] ?? '').toString().toUpperCase();
-      return paymentStatus == 'PAID';
+      return PaymentStatusParser.isPaid(booking);
     } catch (e) {
       errorMessage = _errorMsg(e);
       return false;
@@ -565,13 +574,6 @@ abstract class _AirconBookingStore with Store {
       if (t is String) return double.tryParse(t) ?? 0;
     }
     return 0;
-  }
-
-  int? _parseInt(dynamic v) {
-    if (v is int) return v;
-    if (v is String) return int.tryParse(v);
-    if (v is double) return v.toInt();
-    return null;
   }
 
   String _errorMsg(Object e) {
