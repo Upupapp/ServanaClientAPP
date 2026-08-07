@@ -25,6 +25,7 @@ import 'package:client/modules/messaging/presentation/screens/messages_inbox_scr
 import 'package:client/modules/merchant_menu/presentation/screens/item_option_menu_screen.dart';
 import 'package:client/modules/merchant_menu/presentation/screens/merchant_menu_screen.dart';
 import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
+import 'package:client/modules/profile/presentation/screens/email_verification_screen.dart';
 import 'package:client/common/presentation/widgets/main_nav_scaffold.dart';
 import 'package:client/modules/registration/presentation/screens/create_account_screen.dart';
 import 'package:client/modules/store_items/presentation/screens/store_items_screen.dart';
@@ -172,6 +173,21 @@ class MainRouter {
           path: CreateAccountScreen.route,
           name: CreateAccountScreen.routeName,
           builder: (context, state) => const CreateAccountScreen(),
+        ),
+        GoRoute(
+          path: EmailVerificationScreen.route,
+          name: EmailVerificationScreen.routeName,
+          builder: (context, state) {
+            final args = state.extra;
+            if (args is! SignupEmailVerificationArgs ||
+                args.email.trim().isEmpty) {
+              return const WelcomeScreen();
+            }
+            return EmailVerificationScreen(
+              signupEmail: args.email.trim(),
+              codeAlreadySent: true,
+            );
+          },
         ),
         StatefulShellRoute.indexedStack(
           // Page-level fade so splash → home dissolves rather than slides.

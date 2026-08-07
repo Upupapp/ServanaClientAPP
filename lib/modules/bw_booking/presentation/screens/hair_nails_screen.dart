@@ -1,4 +1,5 @@
 import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/category_delight/category_reveal_overlay.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
@@ -22,8 +23,7 @@ class HairNailsScreen extends StatefulWidget {
 class _HairNailsScreenState extends State<HairNailsScreen> {
   static const _categoryId = ServiceCategoryId.hairAndNails;
   static const _config = CategoryRegistry.hairAndNails;
-  static final _matcher =
-      RegExp(r'hair|nail|manicure|pedicure', caseSensitive: false);
+  static const _terms = {'hair', 'nail', 'manicure', 'pedicure'};
 
   final store = dpLocator<BwBookingStore>();
   late bool _isFirstView;
@@ -44,15 +44,14 @@ class _HairNailsScreenState extends State<HairNailsScreen> {
       children: [
         Observer(builder: (context) {
           final items = store.bookableOptions
-              .where((o) => _matcher.hasMatch((o['level_2'] ?? '').toString()))
+              .where((o) => ServiceOptionDisplay.matchesAny(o, _terms))
               .map((o) => ServiceCardModel(
                     raw: o,
-                    name: (o['level_3'] ??
-                            o['name'] ??
-                            o['optionName'] ??
-                            'Service')
-                        .toString(),
-                    categoryKey: (o['level_2'] ?? '').toString(),
+                    name: ServiceOptionDisplay.name(o),
+                    categoryKey: ServiceOptionDisplay.categoryFor(o, const {
+                      'Hair': ['hair'],
+                      'Nails': ['nail', 'manicure', 'pedicure'],
+                    }),
                     price: ServiceCardModel.extractPrice(o),
                   ))
               .toList();

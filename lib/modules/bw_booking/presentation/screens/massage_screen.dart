@@ -1,4 +1,5 @@
 import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/category_delight/category_reveal_overlay.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
@@ -42,18 +43,12 @@ class _MassageScreenState extends State<MassageScreen> {
       children: [
         Observer(builder: (context) {
           final items = store.bookableOptions
-              .where((o) => (o['level_2'] ?? '')
-                  .toString()
-                  .toLowerCase()
-                  .contains('massage'))
+              .where(
+                  (o) => ServiceOptionDisplay.matchesAny(o, const {'massage'}))
               .map((o) => ServiceCardModel(
                     raw: o,
-                    name: (o['level_3'] ??
-                            o['name'] ??
-                            o['optionName'] ??
-                            'Service')
-                        .toString(),
-                    categoryKey: (o['level_2'] ?? '').toString(),
+                    name: ServiceOptionDisplay.name(o),
+                    categoryKey: 'Massage',
                     price: ServiceCardModel.extractPrice(o),
                   ))
               .toList();

@@ -57,13 +57,29 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
+      # Coverage is a convenience. It must never be able to fail this job.
+      #
+      # On 2026-08-05 it did. The artifact store was full, this upload returned
+      # `Failed to CreateArtifact: Artifact storage quota has been hit`, and
+      # because it is the LAST step of the FIRST job — and build-android,
+      # build-ios and release-android all `needs: validate` — every build was
+      # skipped. No release bundle could be produced, for days, because an lcov
+      # file of a few KB could not be stored.
+      #
+      # `if-no-files-found: ignore` already said this step is optional when the
+      # file is missing. It was silent about the upload itself failing, which is
+      # the case that actually stopped releases. continue-on-error says the rest
+      # of it: nothing here is worth blocking a build over. The tests that
+      # produced this file have already passed or failed on their own step.
       - name: Upload coverage
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.sha }}
           path: coverage/lcov.info
-          retention-days: 14
+          # A few KB, read within days of a run or never.
+          retention-days: 7
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
@@ -157,13 +173,29 @@ jobs:
         timeout-minutes: 15
         run: flutter build apk --debug --target-platform android-arm64 --no-tree-shake-icons
 
-      - name: Upload debug APK
-        if: steps.build_apk.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: servana-client-debug-${{ github.sha }}
-          path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 14
+      # The debug APK is deliberately NOT uploaded.
+      #
+      # It was, at ~89 MB on every run with 14-day retention, and it grew to
+      # 3.59 GB — 60% of an artifact store whose free private-repo allowance is
+      # 500 MB. On 2026-08-05 the quota filled and every run began failing with
+      # `Failed to CreateArtifact: Artifact storage quota has been hit`.
+      #
+      # The way it failed is worth remembering. The error surfaced in validate's
+      # "Upload coverage" step — the last step of the first job, over a file of
+      # a few KB. build-android, build-ios and release-android all
+      # `needs: validate`, so all three were skipped and no release bundle could
+      # be produced at all. The thing that filled the quota and the thing that
+      # reported it were in different jobs.
+      #
+      # Nothing consumed this artifact. There is no `download-artifact` anywhere
+      # in this repo, and no other Servana repo references it. Firebase App
+      # Distribution sends testers `app-release.apk` read straight off the
+      # filesystem in the release job, not an artifact, so testers are
+      # unaffected either way.
+      #
+      # The build above still runs and still gates the pipeline — a compile
+      # failure fails this job. Storing its output for two weeks was the only
+      # part that bought nothing.
 
   # ---------------------------------------------------------------------------
   # iOS assembly check.
@@ -223,13 +255,22 @@ jobs:
       # so a resolution drift is visible: if CI resolves something other than
       # the committed lock, the uploaded file differs from the one in git and
       # the diff is right here rather than only on a developer's Mac.
+      # Same class as the coverage upload: a diagnostic that must not be able to
+      # fail the iOS build. A full artifact store would otherwise turn "we could
+      # not save a lock file for you to look at" into "iOS does not compile".
+      #
+      # The three release uploads are deliberately NOT continue-on-error. They
+      # are the deliverables — a green run that quietly produced no bundle is
+      # worse than a red one.
       - name: Upload generated Podfile.lock
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: ios-podfile-lock-${{ github.sha }}
           path: ios/Podfile.lock
-          retention-days: 14
+          # Diagnostic only; useful while a Pods problem is fresh.
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Build iOS (release, unsigned)
@@ -263,6 +304,18 @@ jobs:
   release-android:
     name: Release Build (Android)
     runs-on: ubuntu-latest
+
+    # Needed to publish the bundle as a GitHub Release.
+    #
+    # This repository's default GITHUB_TOKEN is read-only — the right setting,
+    # and the reason `gh release create` answered
+    # `HTTP 403: Resource not accessible by integration`. Granting it here
+    # rather than repository-wide keeps every other job read-only: validate,
+    # build-android and build-ios have no business writing to the repo, and a
+    # blanket setting would have handed them the ability anyway.
+    permissions:
+      contents: write
+
     if: >-
       (github.ref == 'refs/heads/main' && github.event_name == 'push')
       || github.event_name == 'workflow_dispatch'
@@ -677,14 +730,79 @@ jobs:
             > build/app/outputs/flutter-apk/app-release.apk.sha256
           cat build/app/outputs/flutter-apk/app-release.apk.sha256
 
+      # ── Primary delivery: a GitHub Release ──────────────────────────────────
+      #
+      # The shippable bundle goes here, not only to an Actions artifact, because
+      # the two draw on different quotas. Actions artifact storage is a small
+      # ACCOUNT-WIDE pool — 500 MB on the free plan, shared across every repo the
+      # account owns. On 2026-08-05 it filled, and the AAB upload failed for two
+      # days running with `Failed to CreateArtifact: Artifact storage quota has
+      # been hit`. The bundle built fine every time; there was simply nowhere to
+      # put it, so there was no way to ship a release at all.
+      #
+      # Worse, the quota figure GitHub enforces is cached and recalculated only
+      # every 6-12 hours, so deleting artifacts does not unblock a build now — it
+      # unblocks one later. That is not a property you want between a finished
+      # bundle and the store.
+      #
+      # Release assets are not counted against that pool, do not expire in 30
+      # days, and are addressable by tag rather than by run id, which is what you
+      # actually want for something you are going to upload to Play.
+      #
+      # `gh release` is used rather than a third-party action: it ships on the
+      # runner and needs no extra token.
+      - name: Publish the bundle to a GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="build-${VERSION_CODE}"
+          TITLE="${VERSION_NAME} (${VERSION_CODE})"
+
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          APK=build/app/outputs/flutter-apk/app-release.apk
+
+          # Re-runs and re-pushes of the same versionCode must not fail here.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG exists — replacing its assets."
+            gh release upload "$TAG" \
+              "$AAB" "$AAB.sha256" "$APK" "$APK.sha256" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" \
+              "$AAB" "$AAB.sha256" "$APK" "$APK.sha256" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes "Automated build of \`${GITHUB_SHA}\`.
+
+          \`app-release.aab\` is the bundle to upload to Play Console.
+          \`app-release.apk\` is for sideloading and QA only — Play does not accept an APK.
+
+          Verify before uploading:
+          \`\`\`
+          sha256sum -c app-release.aab.sha256
+          \`\`\`" \
+              --target "$GITHUB_SHA"
+          fi
+
+          echo "### Release \`$TAG\` published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the AAB from the Releases page — it does not expire." >> "$GITHUB_STEP_SUMMARY"
+
+      # The artifact copies below are now a convenience, not the delivery path,
+      # so a full artifact store no longer stops a release. The Release step
+      # above is the one that must succeed.
       - name: Upload release AAB
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: servana-client-release-aab-${{ github.sha }}
           path: |
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/bundle/release/app-release.aab.sha256
-          retention-days: 90
+          # The shippable bundle. 30 days is long past the point it would be
+          # uploaded to Play, and at ~88 MB a run this is the second-largest
+          # consumer after the debug APK that used to sit beside it.
+          retention-days: 14
 
       # The APK was previously built and then thrown away with the runner unless
       # Firebase App Distribution happened to be configured — so there was no way
@@ -699,13 +817,15 @@ jobs:
       # off-store distribution; the AAB above remains the only thing that ships
       # to the store.
       - name: Upload release APK
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: servana-client-release-apk-${{ github.sha }}
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/flutter-apk/app-release.apk.sha256
-          retention-days: 90
+          # Sideload and QA only — Play never takes an APK.
+          retention-days: 7
           if-no-files-found: error
 
       # The build runs --obfuscate --split-debug-info, which moves every symbol
@@ -717,6 +837,7 @@ jobs:
       # Retention is deliberately longer than the AAB's: crashes get reported
       # long after a release ships.
       - name: Upload obfuscation symbols
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           # RELEASE_ARTIFACTS.md requires symbols be tagged with version, build
@@ -741,7 +862,7 @@ jobs:
           # RELEASE_ARTIFACTS.md asks for "supported release + 12 months", so
           # these must ALSO be archived off-CI before day 90 or the retention
           # policy is not actually met. Tracked in that doc.
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
 
       # Runs AFTER the artifacts are uploaded, deliberately: a bundle Play will

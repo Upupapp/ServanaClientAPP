@@ -37,12 +37,23 @@ class ValidateRegistrationFormUseCase
   }
 
   ({bool isValid, String? error}) isNameValid(RegistrationFormModel params) {
-    if ((params.ownerName?.length ?? 0) <= 0) {
+    final name = (params.ownerName ?? '').trim();
+
+    if (name.isEmpty) {
       return (isValid: false, error: "This field is required!");
     }
 
-    if ((params.ownerName?.length ?? 0) > 60) {
+    if (name.length > 60) {
       return (isValid: false, error: "Max length is 60");
+    }
+
+    // The signup API requires firstName and lastName separately. The client
+    // stores both UI fields in ownerName for backwards compatibility, so make
+    // sure splitting that value will produce two non-empty API fields.
+    // Whitespace is the delimiter; punctuation and Unicode within either part
+    // remain valid (for example O'Connor, Reyes-Santos, or non-Latin names).
+    if (name.split(RegExp(r'\s+')).length < 2) {
+      return (isValid: false, error: "Enter both your first and last name.");
     }
 
     return (isValid: true, error: null);
@@ -64,11 +75,11 @@ class ValidateRegistrationFormUseCase
 
   ({bool isValid, String? error}) isPasswordValid(
       RegistrationFormModel params) {
-    if ((params.ownerPassword?.length ?? 0) < 6) {
-      return (
-        isValid: false,
-        error: "Password must be more than 6 characters."
-      );
+    // Keep this boundary identical to backend validatePassword(), which
+    // rejects length <= 6. Allowing exactly six here made the form appear
+    // valid only for the API to reject it.
+    if ((params.ownerPassword?.length ?? 0) <= 6) {
+      return (isValid: false, error: "Password must be at least 7 characters.");
     }
 
     if ((params.ownerPassword?.length ?? 0) > 60) {

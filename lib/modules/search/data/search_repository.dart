@@ -18,27 +18,35 @@ class SearchRepository {
     final json = await _api.listFullCatalog();
     final services = json['services'] as List<dynamic>? ?? [];
     final results = <SearchResult>[];
-    for (final svc in services) {
-      final serviceId = (svc['serviceId'] as num?)?.toInt() ?? 0;
-      final name = (svc['name'] as String?) ?? '';
-      final cat = (svc['category'] as String?) ?? '';
+    for (final rawService in services) {
+      if (rawService is! Map) continue;
+      final svc = Map<String, dynamic>.from(rawService);
+      final serviceId = _asInt(svc['serviceId'] ?? svc['service_id']);
+      final name = (svc['name'] ?? '').toString().trim();
+      final cat = (svc['category'] ?? '').toString();
       final requiresBranch = cat == 'BRANCH_SERVICE';
       final catId = categoryIdFromService(serviceId: serviceId, name: name);
       if (catId == null) continue;
       final label = categoryLabel(catId);
-      for (final opt in (svc['options'] as List<dynamic>? ?? [])) {
-        final level2 = (opt['level2'] as String?) ?? '';
+      final options = svc['options'];
+      if (options is! List) continue;
+      for (final rawOption in options) {
+        if (rawOption is! Map) continue;
+        final opt = Map<String, dynamic>.from(rawOption);
+        final level2 =
+            (opt['level2'] ?? opt['level_2'] ?? '').toString().trim();
         if (level2.isEmpty) continue;
-        final items = opt['items'] as List<dynamic>? ?? [];
+        final rawItems = opt['items'];
+        final items = rawItems is List
+            ? rawItems.whereType<Map>().map(Map<String, dynamic>.from).toList()
+            : const <Map<String, dynamic>>[];
         if (items.isEmpty) continue;
         // Shared resolver: this used to read only `base_price` and cast it
         // `as num?`, so a price arriving as a string — or under the camelCase
         // spelling that /options-with-addons uses — became 0 and rendered as
         // "Get a quote" on a priced service.
         final prices = items
-            .map((i) => extractCatalogPricePesosInt(
-                  Map<String, dynamic>.from(i as Map),
-                ))
+            .map(extractCatalogPricePesosInt)
             .whereType<int>()
             .where((p) => p > 0)
             .toList();
@@ -58,6 +66,11 @@ class SearchRepository {
     }
     _cache = results;
     return results;
+  }
+
+  static int _asInt(Object? value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   void clearCache() => _cache = null;

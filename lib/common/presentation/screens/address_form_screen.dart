@@ -301,7 +301,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                               // instead of leaving a fallback pin looking like
                               // a result.
                               ? "We couldn't detect your location. Pan the map to your address, or type it in below."
-                              : 'Pan the map to drop the pin where the technician should arrive. Edit any field below if the auto-fill is wrong.',
+                              : 'Pan the map to drop the pin where the provider should arrive. Edit any field below if the auto-fill is wrong.',
                       style: TextStyle(
                         fontFamily: FontPalette.primaryFontFamily,
                         color: _pinIsUnconfirmed && !kIsWeb

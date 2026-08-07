@@ -25,7 +25,6 @@ library;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yaml/yaml.dart';
 
 /// Above this, a single MEDIA asset is worth a conversation.
 ///
@@ -66,15 +65,47 @@ String? _ext(File f) {
   return f.path.toLowerCase().substring(dot);
 }
 
+/// Reads the `flutter: assets:` list without a YAML parser.
+///
+/// The first version imported `package:yaml`, which is not a declared
+/// dependency — it only resolved because something else pulls it in
+/// transitively. `flutter analyze` said so (`depend_on_referenced_packages`),
+/// and a test that works only while an unrelated package keeps a transitive
+/// dependency is a test that breaks for a reason nobody will connect to it.
+///
+/// The list being read is a flat sequence of quoted-or-bare paths under one
+/// key, so a parser is more machinery than the job needs.
 List<Directory> _declaredAssetDirs() {
-  final doc = loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
-  final assets = (doc['flutter'] as YamlMap)['assets'] as YamlList;
-  return assets
-      .map((e) => e.toString())
-      .where((e) => e.endsWith('/'))
-      .map(Directory.new)
-      .where((d) => d.existsSync())
-      .toList();
+  final lines = File('pubspec.yaml').readAsLinesSync();
+  final dirs = <Directory>[];
+  var inAssets = false;
+
+  for (final raw in lines) {
+    final line = raw.replaceAll('\r', '');
+    final trimmed = line.trim();
+    if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+
+    if (RegExp(r'^\s{2,}assets:\s*$').hasMatch(line)) {
+      inAssets = true;
+      continue;
+    }
+    if (!inAssets) continue;
+
+    // A list entry under assets:, e.g. "    - assets/images/"
+    final item = RegExp(r'^\s+-\s+(.+?)\s*$').firstMatch(line);
+    if (item != null) {
+      final path = item.group(1)!.replaceAll(RegExp(r'''^["']|["']$'''), '');
+      if (path.endsWith('/')) {
+        final d = Directory(path);
+        if (d.existsSync()) dirs.add(d);
+      }
+      continue;
+    }
+
+    // Any other key at this indent ends the assets block.
+    if (RegExp(r'^\s{2,}\w[\w-]*:').hasMatch(line)) break;
+  }
+  return dirs;
 }
 
 /// Files Flutter actually bundles: the declared directory, NOT its subtrees.

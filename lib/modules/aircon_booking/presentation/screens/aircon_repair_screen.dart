@@ -1,4 +1,5 @@
 import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/category_delight/category_reveal_overlay.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
@@ -44,12 +45,15 @@ class _AirconRepairScreenState extends State<AirconRepairScreen> {
           final items = store.bookableOptions
               .map((o) => ServiceCardModel(
                     raw: o,
-                    name: (o['level_3'] ??
-                            o['name'] ??
-                            o['optionName'] ??
-                            'Aircon Service')
-                        .toString(),
-                    categoryKey: (o['level_2'] ?? '').toString(),
+                    name: ServiceOptionDisplay.name(
+                      o,
+                      fallback: 'Aircon Service',
+                    ),
+                    categoryKey: ServiceOptionDisplay.categoryFor(o, const {
+                      'Cleaning': ['clean'],
+                      'Installation': ['install'],
+                      'Repair': ['repair', 'checkup', 'diagnostic'],
+                    }),
                     price: ServiceCardModel.extractPrice(o),
                   ))
               .toList();

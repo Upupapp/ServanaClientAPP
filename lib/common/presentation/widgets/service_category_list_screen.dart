@@ -2,6 +2,7 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
+import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -99,11 +100,10 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => context.pop(),
-                behavior: HitTestBehavior.opaque,
-                child:
-                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
+              IconButton(
+                onPressed: () => context.pop(),
+                tooltip: 'Back',
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
               Expanded(
                 child: Text(
@@ -117,11 +117,12 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => context.pushNamed(NotificationsScreen.routeName),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 26),
+              IconButton(
+                onPressed: () =>
+                    context.pushNamed(NotificationsScreen.routeName),
+                tooltip: 'Notifications',
+                icon: const Icon(Icons.notifications_outlined,
+                    color: Colors.white),
               ),
             ],
           ),
@@ -174,18 +175,15 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                   ),
                 ),
                 if (_searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
+                  IconButton(
+                    onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.close,
-                          color: ColorPalette.secondaryText.withOpacity(0.5),
-                          size: 18),
-                    ),
+                    tooltip: 'Clear search',
+                    icon: Icon(Icons.close,
+                        color: ColorPalette.secondaryText.withOpacity(0.5),
+                        size: 18),
                   ),
               ],
             ),
@@ -200,37 +198,54 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
       color: ColorPalette.primaryBackground,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: SizedBox(
-        height: 36,
+        height: 44,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: widget.filterChips.length,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, i) {
             final selected = i == _selectedChip;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedChip = i),
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color:
-                      selected ? ColorPalette.primaryColorDark : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selected
-                        ? ColorPalette.primaryColorDark
-                        : Colors.black.withOpacity(0.08),
+            return Semantics(
+              button: true,
+              selected: selected,
+              label: '${widget.filterChips[i]} filter',
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedChip = i),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color:
+                        selected ? ColorPalette.primaryColorDark : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selected
+                          ? ColorPalette.primaryColorDark
+                          : Colors.black.withOpacity(0.08),
+                    ),
                   ),
-                ),
-                child: Text(
-                  widget.filterChips[i],
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: selected ? Colors.white : ColorPalette.secondaryText,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (selected) ...[
+                        const Icon(Icons.check_rounded,
+                            size: 16, color: Colors.white),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        widget.filterChips[i],
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: selected
+                              ? Colors.white
+                              : ColorPalette.secondaryText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -243,7 +258,9 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
 
   Widget _buildBody() {
     if (widget.isLoading && widget.items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: BookingLoadingState('Loading ${widget.title} services'),
+      );
     }
     if (widget.errorMessage != null && widget.items.isEmpty) {
       return Center(
@@ -299,6 +316,20 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
                   color: ColorPalette.secondaryText.withOpacity(0.6),
                 ),
               ),
+              if (hasFilter) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                      _selectedChip = 0;
+                    });
+                  },
+                  icon: const Icon(Icons.filter_alt_off_outlined),
+                  label: const Text('Clear search and filters'),
+                ),
+              ],
             ],
           ),
         ),
@@ -395,9 +426,13 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final priceLabel = item.price > 0
+        ? ', estimated price ₱${ServiceCardModel.formatPrice(item.price)}'
+        : '';
     return Semantics(
       button: true,
-      label: item.name,
+      label: '${item.name}$priceLabel. Open service details',
+      excludeSemantics: true,
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),

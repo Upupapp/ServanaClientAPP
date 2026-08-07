@@ -109,6 +109,24 @@ class OperationJournal {
     await _persist(uid, existing.where((op) => op.id != operationId).toList());
   }
 
+  /// Removes every retry of the same logical mutation after the backend has
+  /// confirmed it. Retries share an idempotency key but have distinct entry IDs.
+  Future<void> resolveIdempotencyKey(
+    String uid, {
+    required String type,
+    required String idempotencyKey,
+  }) async {
+    final existing = await load(uid);
+    await _persist(
+      uid,
+      existing
+          .where(
+            (op) => op.type != type || op.idempotencyKey != idempotencyKey,
+          )
+          .toList(),
+    );
+  }
+
   /// Removes ALL journaled operations for [uid] — call on logout.
   Future<void> clearForAccount(String uid) async {
     await _storage.delete(key: _key(uid));

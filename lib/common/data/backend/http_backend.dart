@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:client/common/data/backend/backend.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/common/domain/booking/payment_status_parser.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/common/data/models/job_order_item.dart';
 import 'package:client/common/data/models/job_order_model.dart';
@@ -146,9 +147,24 @@ class HttpBackend implements Backend {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final nested = body['data'];
+      final data = nested is Map<String, dynamic> ? nested : body;
+      final declaredSuccess = data['success'] ?? body['success'];
+      final declaredStatus =
+          (data['status'] ?? body['status'])?.toString().trim().toLowerCase();
+      final isSuccess = declaredSuccess is bool
+          ? declaredSuccess
+          : declaredStatus == 'error' || declaredStatus == 'failed'
+              ? false
+              : true;
       return (
-        isSuccess: true,
-        message: body['message'] as String? ?? 'Registration successful.',
+        // Newer API responses wrap the contract in `data`; older deployments
+        // returned it at the root. A 2xx without an explicit flag remains a
+        // success for compatibility with both shapes.
+        isSuccess: isSuccess,
+        message: data['message']?.toString() ??
+            body['message']?.toString() ??
+            'Registration successful.',
       );
     }
 
@@ -379,8 +395,13 @@ class HttpBackend implements Backend {
   static JobOrder _mapApiBookingToJobOrder(Map<String, dynamic> b) {
     final id = b['id']?.toString() ?? '';
     final status = (b['status'] ?? '').toString().toUpperCase();
-    final paymentStatus = (b['paymentStatus'] ?? '').toString().toUpperCase();
-    final paymentMethod = (b['paymentMethod'] ?? '').toString().toUpperCase();
+    final paymentStatus = PaymentStatusParser.fromBooking(b);
+    final paymentMethod = (b['paymentMethod'] ??
+            b['paymentMethodUsed'] ??
+            b['payment_method'] ??
+            '')
+        .toString()
+        .toUpperCase();
 
     // Map API status to JobOrderStatus enum
     JobOrderStatus jobStatus;
@@ -396,7 +417,7 @@ class HttpBackend implements Backend {
         // TODO: when the BE renames this status to PENDING_WORKER_CODE (or
         //       similar), update this case literal and the matching equality
         //       check in `booking_detail_screen.dart`'s `_shouldPoll`.
-        if (paymentStatus == 'PENDING' &&
+        if (PaymentStatusParser.requiresPayment(paymentStatus) &&
             (paymentMethod == 'PAYMONGO' || paymentMethod == 'GCASH')) {
           jobStatus = JobOrderStatus.forReview;
           statusLabel = 'Payment Required';
@@ -406,7 +427,8 @@ class HttpBackend implements Backend {
         }
         break;
       case 'CONFIRMED':
-        if (paymentStatus == 'PENDING' && paymentMethod == 'PAYMONGO') {
+        if (PaymentStatusParser.requiresPayment(paymentStatus) &&
+            paymentMethod == 'PAYMONGO') {
           jobStatus = JobOrderStatus.forReview;
           statusLabel = 'Payment Required';
         } else {
@@ -415,7 +437,8 @@ class HttpBackend implements Backend {
         }
         break;
       case 'WORKER_ASSIGNED':
-        if (paymentStatus == 'PENDING' && paymentMethod == 'PAYMONGO') {
+        if (PaymentStatusParser.requiresPayment(paymentStatus) &&
+            paymentMethod == 'PAYMONGO') {
           jobStatus = JobOrderStatus.forReview;
           statusLabel = 'Payment Required';
         } else {

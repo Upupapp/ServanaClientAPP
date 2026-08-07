@@ -37,15 +37,14 @@ class ConfirmAssignmentBanner extends StatelessWidget {
     if (isAssigned) {
       color = ColorPalette.primaryColorDark;
       icon = Icons.person_pin_circle_rounded;
-      title = workerName == null
-          ? 'Technician assigned'
-          : 'Assigned to $workerName';
-      subtitle = 'Your technician will reach out shortly.';
+      title =
+          workerName == null ? 'Provider assigned' : 'Assigned to $workerName';
+      subtitle = 'Your provider will reach out shortly.';
     } else if (isPolling) {
       color = Colors.blueGrey;
       icon = Icons.search_rounded;
-      title = 'Assigning a technician';
-      subtitle = 'A technician will be assigned to your booking soon.';
+      title = 'Assigning a provider';
+      subtitle = 'A provider will be assigned to your booking soon.';
     } else if (timedOut) {
       color = Colors.blueGrey;
       icon = Icons.info_outline_rounded;
@@ -55,7 +54,7 @@ class ConfirmAssignmentBanner extends StatelessWidget {
     } else {
       color = Colors.blueGrey;
       icon = Icons.hourglass_empty_rounded;
-      title = 'Awaiting technician assignment';
+      title = 'Awaiting provider assignment';
       subtitle = 'You\'ll see the assignment in your bookings shortly.';
     }
 

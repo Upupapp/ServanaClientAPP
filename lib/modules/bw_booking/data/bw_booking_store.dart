@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/common/domain/booking/payment_status_parser.dart';
+import 'package:client/common/domain/booking/booking_create_response_parser.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
@@ -364,9 +366,38 @@ abstract class _BwBookingStore with Store {
       final userId = session?.customerID ?? '';
       if (userId.isEmpty) {
         submissionError = 'You must be signed in to create a booking.';
+        isSubmitting = false;
         _track(const BookingFailedEvent(
             serviceCategory: 'beauty_wellness',
             failureCode: 'unauthenticated'));
+        return;
+      }
+
+      if (selectedOption == null ||
+          selectedBranch == null ||
+          selectedDate == null ||
+          selectedSlot == null ||
+          !_hasValidSelectedSlot() ||
+          selectedAddress == null ||
+          !const {'CASH', 'PAYMONGO'}.contains(paymentMethod)) {
+        submissionError =
+            'Complete the service, branch, schedule, address, and payment details.';
+        isSubmitting = false;
+        _track(const BookingFailedEvent(
+          serviceCategory: 'beauty_wellness',
+          failureCode: 'invalid_draft',
+        ));
+        return;
+      }
+
+      final schedule = _buildScheduleDateTime();
+      if (!schedule.isAfter(DateTime.now())) {
+        submissionError = 'Choose a future booking schedule.';
+        isSubmitting = false;
+        _track(const BookingFailedEvent(
+          serviceCategory: 'beauty_wellness',
+          failureCode: 'invalid_schedule',
+        ));
         return;
       }
 
@@ -376,9 +407,6 @@ abstract class _BwBookingStore with Store {
       final addressId =
           selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
-
-      // Build schedule from selectedDate + selectedSlot time
-      final schedule = _buildScheduleDateTime();
 
       final payload = <String, dynamic>{
         'userAddressId': addressId,
@@ -393,19 +421,18 @@ abstract class _BwBookingStore with Store {
       // Journal the operation before the API call so a process kill during
       // the network request leaves a reconcilable record.
       final opId = _uuidV4();
-      dpLocator<OperationJournal>()
-          .record(JournaledOperation(
-            id: opId,
-            type: 'booking.create',
-            customerUid: userId,
-            payload: {
-              'category': 'beauty_wellness',
-              'paymentMethod': paymentMethod
-            },
-            startedAt: DateTime.now(),
-            idempotencyKey: _idempotencyKey,
-          ))
-          .ignore();
+      final journal = dpLocator<OperationJournal>();
+      await journal.record(JournaledOperation(
+        id: opId,
+        type: 'booking.create',
+        customerUid: userId,
+        payload: {
+          'category': 'beauty_wellness',
+          'paymentMethod': paymentMethod
+        },
+        startedAt: DateTime.now(),
+        idempotencyKey: _idempotencyKey,
+      ));
 
       final res = await api.createBooking(
         userId: userId,
@@ -413,20 +440,16 @@ abstract class _BwBookingStore with Store {
         idempotencyKey: _idempotencyKey,
       );
       bookingResult = res;
-      // Try every possible nesting: top-level, under 'data', under 'booking'.
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      createdBookingId = _parseInt(booking['bookingId']) ??
-          _parseInt(booking['id']) ??
-          _parseInt(res['bookingId']) ??
-          _parseInt(res['id']);
-      workerCode =
-          (booking['workerCode'] ?? res['workerCode'] ?? '').toString();
-      if (workerCode!.isEmpty) workerCode = null;
+      final created = BookingCreateResponseParser.parse(res);
+      createdBookingId = created.bookingId;
+      workerCode = created.workerCode;
 
       // Booking confirmed — remove the pending journal entry.
-      dpLocator<OperationJournal>().resolve(userId, opId).ignore();
+      await journal.resolveIdempotencyKey(
+        userId,
+        type: 'booking.create',
+        idempotencyKey: _idempotencyKey!,
+      );
 
       _track(BookingCreatedEvent(
         serviceCategory: 'beauty_wellness',
@@ -455,9 +478,7 @@ abstract class _BwBookingStore with Store {
       final booking = res['booking'] as Map<String, dynamic>? ??
           res['data'] as Map<String, dynamic>? ??
           res;
-      final paymentStatus =
-          (booking['paymentStatus'] ?? '').toString().toUpperCase();
-      return paymentStatus == 'PAID';
+      return PaymentStatusParser.isPaid(booking);
     } catch (e) {
       errorMessage = _errorMsg(e);
       return false;
@@ -468,9 +489,10 @@ abstract class _BwBookingStore with Store {
 
   @action
   Future<void> createPaymongoSession() async {
-    if (createdBookingId == null) return;
+    if (createdBookingId == null || isPaymentLoading) return;
     isPaymentLoading = true;
     errorMessage = null;
+    paymongoCheckoutUrl = null;
     try {
       final session = await SessionService.getSession();
       final uid = session?.customerID ?? '';
@@ -515,6 +537,20 @@ abstract class _BwBookingStore with Store {
       }
     }
     return date;
+  }
+
+  bool _hasValidSelectedSlot() {
+    final slotTime = selectedSlot?['slotTime']?.toString() ?? '';
+    final parts = slotTime.split(':');
+    if (parts.length < 2) return false;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    return hour != null &&
+        minute != null &&
+        hour >= 0 &&
+        hour <= 23 &&
+        minute >= 0 &&
+        minute <= 59;
   }
 
   List<Map<String, dynamic>> _extractList(Map<String, dynamic> res) {

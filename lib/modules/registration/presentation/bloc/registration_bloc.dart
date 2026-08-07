@@ -447,10 +447,6 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
           final res = await repo.submitRegistration(registration: registration);
 
           if (res.isSuccess) {
-            final email = event.registration.ownerEmail;
-            if (email != null && email.isNotEmpty) {
-              repo.resendVerificationEmail(email: email);
-            }
             _track(const RegistrationSucceededEvent());
             emit(RegistrationSubmittedState(
                 registration: event.registration, formState: formState));
