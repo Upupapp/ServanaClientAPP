@@ -392,6 +392,18 @@ class HttpBackend implements Backend {
     }
   }
 
+  /// First value that is a non-blank string, or `''`.
+  ///
+  /// A LEFT JOIN produces nulls, and a text column can hold an empty string, so
+  /// `??` alone is not enough — it accepts `''` as a value and stops looking.
+  static String _firstNonEmpty(List<dynamic> candidates) {
+    for (final candidate in candidates) {
+      final value = candidate?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '';
+  }
+
   static JobOrder _mapApiBookingToJobOrder(Map<String, dynamic> b) {
     final id = b['id']?.toString() ?? '';
     final status = (b['status'] ?? '').toString().toUpperCase();
@@ -488,15 +500,39 @@ class HttpBackend implements Backend {
         statusLabel = status;
     }
 
-    // Extract service name from pricing breakdown
-    String serviceName = 'Beauty & Wellness';
-    final breakdown = b['pricingBreakdown'] as Map<String, dynamic>?;
-    if (breakdown != null) {
-      final addons = breakdown['addons'] as List?;
-      if (addons != null && addons.isNotEmpty) {
-        final first = addons.first as Map<String, dynamic>?;
-        if (first != null && first['level_3'] != null) {
-          serviceName = first['level_3'].toString();
+    // The name of the thing that was booked.
+    //
+    // This used to start at the literal 'Beauty & Wellness' and only move off
+    // it if the booking happened to carry an addon with a level_3. A booking
+    // with no addons — a plumbing job, an aircon clean — was therefore labelled
+    // Beauty & Wellness in the customer's own list. The name was invented here
+    // because the list endpoint genuinely did not return one: it joined
+    // payments, branches, addresses and workers, but never the service.
+    //
+    // It does now (backend 23a28e2), under the same aliases the booking detail
+    // response has used for a while, so the name can simply be read.
+    //
+    // The addon fallback is kept below it rather than deleted: an app build
+    // outlives a deploy, and a released binary talking to an API that has not
+    // shipped the columns yet should degrade to the old behaviour instead of
+    // showing nothing. The invented default is what is gone — when nothing
+    // knows the name, the label stays empty and the caller decides, rather than
+    // this function asserting a service category that was never booked.
+    String serviceName = _firstNonEmpty([
+      b['serviceOptionName'],
+      b['serviceName'],
+      b['serviceCategory'],
+    ]);
+
+    if (serviceName.isEmpty) {
+      final breakdown = b['pricingBreakdown'] as Map<String, dynamic>?;
+      if (breakdown != null) {
+        final addons = breakdown['addons'] as List?;
+        if (addons != null && addons.isNotEmpty) {
+          final first = addons.first as Map<String, dynamic>?;
+          if (first != null && first['level_3'] != null) {
+            serviceName = first['level_3'].toString();
+          }
         }
       }
     }
