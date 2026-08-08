@@ -725,16 +725,23 @@ class ServanaApiClient {
 
   /// Returns booking timeline events for a given booking.
   ///
-  // BACKEND_GAP-C15-002: The full timeline endpoint is admin-only:
-  //   GET /api/admin/bookings/:id/timeline
-  //   Requires: verifyAuth + verifyRoles([1]) + requirePermission('bookings.timeline.view')
-  // The customer-facing equivalent is GET /api/:id/tracking (already wired as
-  // [getBookingTracking]).  This method delegates to tracking so the repository
-  // has a uniform surface — replace the path once a customer timeline route is
-  // available.  Priority: MEDIUM — tracking rows cover the essential use-case.
-  Future<Map<String, dynamic>> getBookingTimeline(int bookingId) {
-    // Falls back to the customer tracking endpoint (same data, different shape).
-    return getBookingTracking(bookingId);
+  /// GET /api/:id/timeline — customer-facing route (GAP-C15-002 closed).
+  /// verifyAuth + assertBookingAccess: the same ownership check /api/:id and
+  /// /api/:id/tracking already apply, so somebody else's booking answers 403.
+  ///
+  /// Envelope: { success: true, timeline: [ { code, label, at, actor,
+  /// sequence } ] }.  The events are voiced for the CUSTOMER — `actor` is
+  /// "YOU" for the customer, "PROVIDER" for the professional, "SERVANA" for
+  /// the platform.  This is not the provider route's vocabulary, where "YOU"
+  /// means the provider; the backend projects between the two deliberately.
+  ///
+  /// This used to delegate to [getBookingTracking] because no customer route
+  /// existed.  Tracking is a different thing — live position — and remains
+  /// wired separately for the callers that want it.
+  Future<Map<String, dynamic>> getBookingTimeline(int bookingId) async {
+    final uri = _uri('/api/$bookingId/timeline');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
   }
 
   // ���──────────────────── FCM Token ───────��─────────────
