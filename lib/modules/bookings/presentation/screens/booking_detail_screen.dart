@@ -163,7 +163,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           res;
 
       final paymentStatus = PaymentStatusParser.fromBooking(b);
-      final status = (b['status'] ?? '').toString().toUpperCase();
+      final bookingStatus = (b['status'] ?? '').toString().toUpperCase();
+      final workerStatus = (b['workerStatus'] ??
+              b['worker_status'] ??
+              b['assignmentStatus'] ??
+              '')
+          .toString()
+          .toUpperCase();
+      final status = BookingStatusMapper.effectiveWireStatus(
+        bookingStatus: bookingStatus,
+        effectiveStatus: b['effectiveStatus']?.toString(),
+        workerStatus: workerStatus,
+      );
       final workerUid = b['workerUid']?.toString() ??
           b['worker_uid']?.toString() ??
           b['providerUid']?.toString();

@@ -44,6 +44,11 @@ class ConversationClosedEvent extends ChatSocketEvent {
   ConversationClosedEvent(this.conversationId);
 }
 
+class ConversationAccessRevokedEvent extends ChatSocketEvent {
+  final int conversationId;
+  ConversationAccessRevokedEvent(this.conversationId);
+}
+
 class SocketConnectedEvent extends ChatSocketEvent {}
 
 class SocketDisconnectedEvent extends ChatSocketEvent {}
@@ -145,6 +150,14 @@ class ChatSocketService {
         final d = _asMap(data);
         final convId = _convId(d);
         if (convId != null) _emit(ConversationClosedEvent(convId));
+      })
+      ..on('conversation:access-revoked', (data) {
+        final d = _asMap(data);
+        final convId = _convId(d);
+        if (convId != null) {
+          _joinedRooms.remove(convId);
+          _emit(ConversationAccessRevokedEvent(convId));
+        }
       });
   }
 

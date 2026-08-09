@@ -48,6 +48,39 @@ enum BookingStatus {
 /// so callers are forced to handle the unknown case explicitly rather than
 /// defaulting to success.
 abstract final class BookingStatusMapper {
+  /// Selects the customer-visible wire status across the split booking and
+  /// provider-assignment projections. Booking-owned terminal states win.
+  static String effectiveWireStatus({
+    String? bookingStatus,
+    String? effectiveStatus,
+    String? workerStatus,
+  }) {
+    final booking = (bookingStatus ?? '').toUpperCase().trim();
+    final projected = (effectiveStatus ?? '').toUpperCase().trim();
+    if (projected.isNotEmpty) return projected;
+    if (const {
+      'CANCELLED',
+      'CANCELED',
+      'COMPLETED',
+      'REFUNDED',
+      'FAILED',
+      'EXPIRED',
+    }.contains(booking)) {
+      return booking;
+    }
+    final worker = (workerStatus ?? '').toUpperCase().trim();
+    if (const {
+      'ACCEPTED',
+      'EN_ROUTE',
+      'ARRIVED',
+      'IN_PROGRESS',
+      'COMPLETED',
+    }.contains(worker)) {
+      return worker;
+    }
+    return booking;
+  }
+
   static BookingStatus fromString(String? raw) {
     if (raw == null || raw.isEmpty) return BookingStatus.unknown;
     switch (raw.toUpperCase().trim()) {
@@ -76,6 +109,7 @@ abstract final class BookingStatusMapper {
         return BookingStatus.awaitingAssignment;
       case 'ASSIGNED':
       case 'ACCEPTED':
+      case 'WORKER_ASSIGNED':
         return BookingStatus.assigned;
       case 'CONFIRMED':
         return BookingStatus.confirmed;
@@ -83,7 +117,6 @@ abstract final class BookingStatusMapper {
       case 'ENROUTE':
       case 'IN_TRANSIT':
       case 'INTRANSIT':
-      case 'WORKER_ASSIGNED':
         return BookingStatus.enRoute;
       case 'ARRIVED':
       case 'AT_LOCATION':
