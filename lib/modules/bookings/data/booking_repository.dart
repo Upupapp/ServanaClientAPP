@@ -82,19 +82,25 @@ class BookingRepository {
 
   // ──────────────────────────── Timeline ──────────────────────────────────────
 
-  /// Fetch timeline / tracking events for [bookingId].
+  /// Fetch the customer's timeline for [bookingId].
   ///
-  /// Delegates to [ServanaApiClient.getBookingTimeline] which currently falls
-  /// back to the customer tracking endpoint (GET /api/<id>/tracking) because
-  /// the full timeline route is admin-only.
+  /// GAP-C15-002 is closed: [ServanaApiClient.getBookingTimeline] now calls the
+  /// real customer route (GET /api/<id>/timeline) instead of falling back to
+  /// tracking.  Each event is `{ code, label, at, actor, sequence }`, already
+  /// worded for the customer by the backend — `label` is safe to render as-is
+  /// and `actor` is "YOU" | "PROVIDER" | "SERVANA" from the CUSTOMER's seat.
   ///
-  // BACKEND_GAP-C15-002: Admin-quality timeline events are not available to
-  // mobile callers.  Tracking rows still convey key lifecycle milestones.
+  /// `tracking` and `data` stay in the fallback chain. An app build outlives a
+  /// deploy in both directions, and a released binary pointed at an API that
+  /// has not shipped the route yet should degrade to an empty timeline rather
+  /// than throw. Nothing calls this method yet — Command 6 built the route and
+  /// the web portal consumes it; this keeps the mobile surface honest for the
+  /// screen that eventually will.
   Future<List<Map<String, dynamic>>> getTimeline(String bookingId) async {
     final result = await _api.getBookingTimeline(int.parse(bookingId));
 
-    // Tracking envelope: { success: true, tracking: [...] }
-    final raw = result['tracking'] ?? result['data'];
+    // Timeline envelope: { success: true, timeline: [...] }
+    final raw = result['timeline'] ?? result['tracking'] ?? result['data'];
     if (raw == null) return const [];
 
     final list = raw is List ? raw : <dynamic>[];

@@ -2,6 +2,40 @@ import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('BookingStatusMapper.effectiveWireStatus', () {
+    test('shows provider acceptance while bookings.status remains assigned',
+        () {
+      expect(
+        BookingStatusMapper.effectiveWireStatus(
+          bookingStatus: 'WORKER_ASSIGNED',
+          workerStatus: 'ACCEPTED',
+        ),
+        'ACCEPTED',
+      );
+    });
+
+    test('booking cancellation overrides a stale accepted assignment', () {
+      expect(
+        BookingStatusMapper.effectiveWireStatus(
+          bookingStatus: 'CANCELLED',
+          workerStatus: 'ACCEPTED',
+        ),
+        'CANCELLED',
+      );
+    });
+
+    test('prefers the backend effectiveStatus projection', () {
+      expect(
+        BookingStatusMapper.effectiveWireStatus(
+          bookingStatus: 'WORKER_ASSIGNED',
+          workerStatus: 'ASSIGNED',
+          effectiveStatus: 'ARRIVED',
+        ),
+        'ARRIVED',
+      );
+    });
+  });
+
   group('BookingStatusMapper.fromString', () {
     test('maps common backend strings', () {
       expect(BookingStatusMapper.fromString('PENDING_OTP'),

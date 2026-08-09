@@ -89,8 +89,9 @@ class SupportTicketController extends ChangeNotifier {
     } catch (e) {
       // Mark optimistic reply as failed
       final failedReplies = _ticket!.replies.map((r) {
-        if (r.clientReplyId == clientReplyId)
+        if (r.clientReplyId == clientReplyId) {
           return r.copyWith(isPending: false, isFailed: true);
+        }
         return r;
       }).toList();
       _ticket = _ticket!.copyWith(replies: failedReplies);
@@ -201,8 +202,9 @@ class SupportTicketController extends ChangeNotifier {
   String _sanitize(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('401')) return 'Session expired. Please sign in again.';
-    if (msg.contains('network') || msg.contains('socket'))
+    if (msg.contains('network') || msg.contains('socket')) {
       return 'No internet connection.';
+    }
     return 'Something went wrong. Please try again.';
   }
 }

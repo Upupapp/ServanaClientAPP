@@ -219,8 +219,9 @@ class SupportCreateController extends ChangeNotifier {
   String _sanitize(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('401')) return 'Session expired. Please sign in again.';
-    if (msg.contains('network') || msg.contains('socket'))
+    if (msg.contains('network') || msg.contains('socket')) {
       return 'No internet connection. Please try again.';
+    }
     return 'Could not submit your request. Please try again.';
   }
 }

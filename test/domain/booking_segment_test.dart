@@ -25,6 +25,8 @@ void main() {
           BookingStatusMapper.fromString('ASSIGNED'), BookingStatus.assigned);
       expect(
           BookingStatusMapper.fromString('ACCEPTED'), BookingStatus.assigned);
+      expect(BookingStatusMapper.fromString('WORKER_ASSIGNED'),
+          BookingStatus.assigned);
       expect(
           BookingStatusMapper.fromString('CONFIRMED'), BookingStatus.confirmed);
     });
@@ -33,8 +35,6 @@ void main() {
       expect(BookingStatusMapper.fromString('EN_ROUTE'), BookingStatus.enRoute);
       expect(
           BookingStatusMapper.fromString('IN_TRANSIT'), BookingStatus.enRoute);
-      expect(BookingStatusMapper.fromString('WORKER_ASSIGNED'),
-          BookingStatus.enRoute);
       expect(BookingStatusMapper.fromString('ARRIVED'), BookingStatus.arrived);
       expect(BookingStatusMapper.fromString('IN_PROGRESS'),
           BookingStatus.inProgress);

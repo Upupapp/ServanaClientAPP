@@ -407,10 +407,12 @@ abstract class _BwBookingStore with Store {
       final addressId =
           selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
+      final branchId = selectedBranch?['branchId'] ?? selectedBranch?['id'];
 
       final payload = <String, dynamic>{
         'userAddressId': addressId,
         'serviceOptionId': optionId,
+        'branchId': branchId,
         'schedule': schedule.toUtc().toIso8601String(),
         'paymentMethod': paymentMethod,
         'pricing': <String, dynamic>{

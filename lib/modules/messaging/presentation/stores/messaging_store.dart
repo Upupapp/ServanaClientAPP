@@ -344,6 +344,18 @@ abstract class _MessagingStore with Store {
       case TypingEvent():
       case ConversationClosedEvent():
         break;
+      case ConversationAccessRevokedEvent(:final conversationId):
+        messagesByConvId.remove(conversationId);
+        oldestIdByConvId.remove(conversationId);
+        hasMoreByConvId.remove(conversationId);
+        final bookingKeys = convsByBookingId.entries
+            .where((entry) => entry.value.id == conversationId)
+            .map((entry) => entry.key)
+            .toList(growable: false);
+        for (final key in bookingKeys) {
+          convsByBookingId.remove(key);
+        }
+        _recalcTotalUnread();
     }
   }
 
@@ -451,7 +463,9 @@ abstract class _MessagingStore with Store {
   static String _generateClientMsgId() {
     final ts = DateTime.now().millisecondsSinceEpoch;
     final rand = _rng.nextInt(0xFFFFFF);
-    return '${ts.toRadixString(16)}-${rand.toRadixString(16)}';
+    // The backend requires 16+ characters. Padding avoids rare short random
+    // values turning an otherwise valid send into a deterministic 422.
+    return '${ts.toRadixString(16)}-${rand.toRadixString(16).padLeft(8, '0')}';
   }
 
   Future<T> _perf<T>(String name, Future<T> Function() fn) async {
