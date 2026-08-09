@@ -51,7 +51,8 @@ void main() {
       expect(backend, isNot(contains("String serviceName = 'Beauty")));
     });
 
-    test('serviceName still starts from something, so it is never unassigned', () {
+    test('serviceName still starts from something, so it is never unassigned',
+        () {
       expect(backend, contains('String serviceName = _firstNonEmpty('));
     });
   });
@@ -66,8 +67,10 @@ void main() {
       final chain = backend.substring(start, start + 200);
 
       expect(chain.indexOf("b['serviceOptionName']"), greaterThan(-1));
-      expect(chain.indexOf("b['serviceName']"), greaterThan(chain.indexOf("b['serviceOptionName']")));
-      expect(chain.indexOf("b['serviceCategory']"), greaterThan(chain.indexOf("b['serviceName']")));
+      expect(chain.indexOf("b['serviceName']"),
+          greaterThan(chain.indexOf("b['serviceOptionName']")));
+      expect(chain.indexOf("b['serviceCategory']"),
+          greaterThan(chain.indexOf("b['serviceName']")));
     });
 
     test('keeps the addon fallback for a build older than the deploy', () {
