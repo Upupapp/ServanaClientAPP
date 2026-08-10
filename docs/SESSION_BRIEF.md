@@ -20,7 +20,7 @@ the admin portal.
 | Branch | `main`, HEAD `66a15b9`, clean; **2 commits ahead of origin** (both this brief) |
 | Version | `1.0.0+38` in `pubspec.yaml` |
 | **On Play** | **`1.0.0+37`** — see the warning below |
-| +38 artifact | at `Desktop\servana-38-release\` — verified, but **built at `38576a2` and now four fix commits stale**. See item 4. |
+| +38 artifact | at `Desktop\servana-38-release\` — **rebuilt 2026-08-10 from `bab19da`, verified, ready to upload** (`sha256 c5d20c1c…`). See item 4. |
 | Backend | `https://api.servana.com.ph/api` |
 | Firebase | `servana-59bee` — the ONLY project, for every platform |
 | Tests | 1466, CI green |
@@ -120,9 +120,16 @@ and it throws → **500, retried forever, money captured and never recorded**.
 Contained fix: keep `prior_session_ids TEXT[]`, append on supersede, widen only
 the webhook's not-found branch — leave the primary UPDATE alone.
 
-**4. Ship +38 — but REBUILD it first. Do not upload the artifact on the Desktop.**
-The bundle at `Desktop\servana-38-release\` was built at `38576a2` and verified
-properly at the time. **Four fix commits have landed since**, none of them in it:
+**4. Ship +38. REBUILT 2026-08-10 — the bundle on the Desktop is now current and
+ready to upload.** `sha256 c5d20c1c…`, built from `bab19da` (last code commit
+`503bc57`), 78.2 MB, all five verifier checks pass, `jar verified` as
+`CN=Servana Client`. Gate on that exact tree: format 0, analyze 0 (41 infos),
+1466 tests / 6 skipped. Provenance is in `servana-38-release\BUILD_INFO.txt`.
+The stale bundle is preserved at `superseded-38576a2\` — **do not upload it.**
+
+*Kept below because the reasoning is the reusable part.* The old bundle was
+built at `38576a2` and verified properly at the time. **Four fix commits had
+landed since**, none of them in it:
 
 | commit | what uploading the stale bundle costs users |
 | --- | --- |
