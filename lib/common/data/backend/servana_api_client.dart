@@ -71,7 +71,30 @@ class ServanaApiClient {
   static Future<String?>? _refreshInFlight;
 
   Future<String?> _resolveToken() async {
-    final session = await SessionService.getSession();
+    // Reading the session must never be able to fail a request.
+    //
+    // This read was unguarded, and it is on the path of EVERY call — including
+    // the ones that need no token at all, like the service catalog. Secure
+    // storage can throw for reasons that have nothing to do with the request:
+    // a MissingPluginException before the plugin registers, or a
+    // PlatformException from EncryptedSharedPreferences / Keychain when the
+    // key has been invalidated by a restore, an upgrade or a lock-screen
+    // change. Any of those took down every category screen and the Explore
+    // list with "Could not load services. Please check your connection" —
+    // which sends the customer to check their wifi over a local storage fault.
+    //
+    // Degrading to an anonymous request is correct here: the catalog routes
+    // are unauthenticated server-side, so they answer 200 without a token, and
+    // a genuinely authenticated call still fails honestly with a 401 that
+    // onUnauthorized already handles.
+    UserSession? session;
+    try {
+      session = await SessionService.getSession();
+    } catch (e) {
+      debugPrint(
+          '[ServanaApi] session read failed, continuing anonymously: $e');
+      session = null;
+    }
     final stored = session?.token;
 
     // 1. Firebase SDK, for SOCIAL sign-in. getIdToken() renews when near expiry.
