@@ -136,10 +136,25 @@ class _CategoryRevealOverlayState extends State<CategoryRevealOverlay>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
+        // The content sizes the card; the decoration only fills whatever the
+        // content produces.
+        //
+        // A Stack takes its size from its first NON-POSITIONED child. The
+        // decoration used to be that child, so it — not the Column — decided
+        // the card's height, and the card grew to most of the screen with the
+        // headline, subtext and button clustered at the top over a large empty
+        // gradient. Wrapping the decoration in Positioned.fill removes it from
+        // the sizing calculation, which is what `mainAxisSize: MainAxisSize.min`
+        // on the Column was always trying to express.
         child: Stack(
           children: [
+            // Positioned, so it fills the card without sizing it. Listed first
+            // so it still paints BEHIND the content.
             if (!_reduced)
-              _CategoryDecoration(config: widget.config, progress: _decor),
+              Positioned.fill(
+                child: _CategoryDecoration(
+                    config: widget.config, progress: _decor),
+              ),
             Padding(
               padding: const EdgeInsets.all(32),
               child: Column(
