@@ -120,11 +120,17 @@ and it throws → **500, retried forever, money captured and never recorded**.
 Contained fix: keep `prior_session_ids TEXT[]`, append on supersede, widen only
 the webhook's not-found branch — leave the primary UPDATE alone.
 
-**4. DONE — 1.0.0+39 SUBMITTED to Play production 2026-08-10, 100% rollout,
-awaiting review.** `sha256 de904643…` at `servana-39-release\`, built from
-`074ecdf`, all five verifier checks pass, `jar verified` as `CN=Servana Client`,
-mapping + native symbols embedded (the AAB is the only upload). Gate: format 0,
-analyze 0 (41 infos), 1466 tests / 6 skipped.
+**4. SHIPPED — 1.0.0+39 is LIVE on Play production, 100%, published
+2026-08-10.** Approved within the hour. `sha256 de904643…` at
+`servana-39-release\`, built from `074ecdf`, all five verifier checks pass,
+`jar verified` as `CN=Servana Client`, mapping + native symbols embedded (the
+AAB was the only upload). Gate: format 0, analyze 0 (41 infos), 1466 tests /
+6 skipped.
+
+**This is the first build carrying `e5648fa..503bc57` to reach any user.**
+Android is now AHEAD of iOS, which is still on TestFlight build 39 from Aug 6 —
+a PRE-FIX build, and a different numbering space that happens to share the
+number 39. iOS needs `1.0.0+40`; 39 is consumed on App Store Connect.
 
 **Two beliefs recorded in this brief were wrong, and both were inferences:**
 
