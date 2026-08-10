@@ -1,6 +1,6 @@
 # Servana Client App — session brief
 
-Last updated 2026-08-10. Read this before touching code.
+Last updated 2026-08-10 (second revision). Read this before touching code.
 
 ---
 
@@ -17,7 +17,7 @@ the admin portal.
 | | |
 | --- | --- |
 | Repo | `Upupapp/ServanaClient` (moved — the old repo hit a CI billing block) |
-| Branch | `main`, HEAD `503bc57`, clean and in sync with origin |
+| Branch | `main`, HEAD `48b8232`, clean; **1 commit ahead of origin** (this brief) |
 | Version | `1.0.0+38` in `pubspec.yaml` |
 | **On Play** | **`1.0.0+37`** — see the warning below |
 | +38 artifact | built and verified at `Desktop\servana-38-release\` |
@@ -63,9 +63,10 @@ app.servana.com.ph · servana.com.ph · api.servana.com.ph
 ```
 
 `client.servana.com.ph` is not there and appears nowhere in this repo. The
-backend builds every PayMongo redirect from a single `PAYMONGO_RETURN_URL`, so
-the web portal cannot get its own return origin without breaking this app's
-redirect handling.
+backend builds every PayMongo redirect from a single `PAYMONGO_RETURN_URL` —
+**now set to `https://app.servana.com.ph`** (2026-08-10), which this allowlist
+does accept, so mobile is correct today. The collision is unchanged in kind: the
+web portal still cannot get its own return origin without breaking this app.
 
 **Adding the host here is worth doing for +38 but is NOT the fix** — every
 installed +37 keeps the old allowlist. The real fix is a per-request origin in
@@ -77,14 +78,49 @@ path calls `_verifyAndClose()`. So a blocked success redirect costs seconds, not
 the payment. The cancel path has no poll and falls back to the existing
 "Cancel payment?" dialog.
 
-**2. Unresolved: is online payment working at all in production?**
-`getReturnUrl` throws 503 when `PAYMONGO_RETURN_URL` and `APP_URL` are both
-unset, and two greps against the production env returned nothing — though
-without a control, so that is not yet evidence. If it really is unset, checkout
-has been failing closed for this app. That would sit uncomfortably close to the
-production numbers below and must be ruled in or out before anything else.
+**2. ~~Unresolved: is online payment working in production?~~ ANSWERED — it was
+not, and it is now fixed (2026-08-10).** It was worse than the suspicion above.
+Both were true at once:
 
-**3. Ship +38.** The AAB is built and verified locally.
+- `PAYMONGO_RETURN_URL` and `APP_URL` were **both unset**, so `new URL("")` threw
+  and **every** `POST /:bookingId/paymongo/create` returned 503 *"Online payment
+  is temporarily unavailable"* — which reads like a PayMongo outage.
+- Every call site reads `process.env.PAYMONGO_SECRET_KEY || process.env.PAYMONGO_SK_DEV`.
+  `PAYMONGO_SECRET_KEY` was **never set**, so all of them fell through to the
+  **test** key. The live key sat in `PAYMONGO_SK`, a name no code reads.
+  Production was transacting in test mode with live credentials unused.
+
+Fixed and verified live: `PAYMONGO_RETURN_URL=https://app.servana.com.ph`,
+`NODE_ENV=production`, `PAYMONGO_SECRET_KEY=sk_live_…`. Confirmed by running
+dotenv inside the app dir: `EXPECT_LIVE_MODE=true`, return URL parses OK.
+Backups `*.bak-2026-08-10`.
+
+**All three had to change together.** The live key without `NODE_ENV` makes the
+webhook expect `livemode:false` and reject every real payment 401 — money
+captured, never recorded. That is the one ordering that loses money.
+
+**There are TWO env files.** `/home/github-runner/env/servana_api.env` (the
+deploy source) and the runner workspace `.env` the process actually reads via
+`dotenv.config()`. Editing only the source does nothing until the next deploy.
+The workspace copy is **not** a verbatim copy — `deploy.yml` appends
+`ALLOW_BASELINE_DOCUMENT_SCAN=true` — so append to it, never overwrite.
+`pm2 env` shows none of this; it only lists PM2's 21-var launch environment.
+
+**Still unproven:** no real payment has gone through since the fix. One live
+low-value transaction is the only thing that closes this, then check for
+`environment mismatch` / `Invalid signature` in the PM2 log — both should be
+absent.
+
+**3. Superseded checkout session is unrecoverable (backend, untested).**
+`createCheckoutSession` reuses a session for 2 h, then mints a new one and
+**overwrites** `provider_payment_id` and `raw_response`. The old session is
+neither voided at PayMongo (they live ~24 h) nor retained. Pay a superseded
+session and the webhook UPDATE matches nothing, the fallback lookup also misses,
+and it throws → **500, retried forever, money captured and never recorded**.
+Contained fix: keep `prior_session_ids TEXT[]`, append on supersede, widen only
+the webhook's not-found branch — leave the primary UPDATE alone.
+
+**4. Ship +38.** The AAB is built and verified locally.
 
 ---
 
@@ -124,7 +160,14 @@ production numbers below and must be ruled in or out before anything else.
 - **Branch on `error.recovery`, not HTTP status.**
 - **PowerShell 5.1 mangles SSH commands** — it strips embedded double quotes for
   native exes and `\$` is not an escape. Remote commands must contain no `"`,
-  `(`, `)`, `$` or `\`.
+  `(`, `)`, `$` or `\`. **Better: run them yourself.** `ssh -o BatchMode=yes
+  root@192.46.224.126 '<single-quoted command>'` works directly from the agent's
+  Bash tool, with no PowerShell in the path at all. Three commands were mangled
+  before anyone checked whether that detour was necessary.
+- **A config value can be absent from `pm2 env` and still be set.** Anything
+  loaded by `dotenv.config()` lives only in the process's memory, never in the
+  launch environment. Reading `pm2 env` and concluding "unset" produced a false
+  P0 alarm before the `.env` file settled it.
 
 ---
 
@@ -135,6 +178,12 @@ production numbers below and must be ruled in or out before anything else.
 account holds 65 of the 109. Almost all of that traffic came through this app,
 so these numbers are the closest thing to a verdict on it that exists — and
 "0 completions ever" is the number to explain before building anything new.
+
+**Read those numbers against open item 2.** Online checkout returned 503 on
+every attempt, and when it did not, it was on a test key. That does not explain
+everything — `PENDING_OTP` sits *before* payment — but a checkout that could
+never succeed is now a known, dated contributor rather than a mystery. The
+figures above predate the fix; re-measure before drawing conclusions from them.
 
 Also open on the infrastructure side: **no database backup of any kind**, two
 Firebase Admin keys in git history whose IAM deletion is unverified, and 85
