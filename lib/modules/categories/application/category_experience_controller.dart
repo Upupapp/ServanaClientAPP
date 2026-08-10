@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
@@ -15,6 +16,10 @@ class CategoryExperienceController extends ChangeNotifier {
   CategoryExperienceStatus get status => _status;
 
   String? _error;
+
+  /// Cause of the most recent load failure. Diagnostic only — never rendered.
+  String? _lastFailureDiagnostic;
+  String? get lastFailureDiagnostic => _lastFailureDiagnostic;
   String? get error => _error;
 
   List<ServiceOptionSummary> _allOptions = [];
@@ -76,7 +81,20 @@ class CategoryExperienceController extends ChangeNotifier {
       if (_revealDecision != RevealDecision.skipReveal) {
         CategoryRevealPolicy.markSeen(categoryId);
       }
-    } catch (_) {
+    } catch (e, s) {
+      // The message shown to the customer is unchanged and stays generic —
+      // raw exception text must never reach the UI.
+      //
+      // But swallowing the cause entirely made "Could not load services"
+      // undiagnosable from a real device: every category failed and the only
+      // evidence was a screenshot. The endpoint, the service ids, the auth
+      // headers, the decode and the price mapper were all verified healthy
+      // against production while this was `catch (_)`, and none of them
+      // explained it — because the actual exception had already been thrown
+      // away. Keep the cause.
+      _lastFailureDiagnostic = '$e';
+      debugPrint('[CategoryExperience] load failed for '
+          'serviceId=${config.serviceId} category=$categoryId: $e\n$s');
       _error = 'Unable to load services.';
       _status = CategoryExperienceStatus.failure;
     }
