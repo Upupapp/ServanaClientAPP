@@ -120,12 +120,27 @@ and it throws → **500, retried forever, money captured and never recorded**.
 Contained fix: keep `prior_session_ids TEXT[]`, append on supersede, widen only
 the webhook's not-found branch — leave the primary UPDATE alone.
 
-**4. Ship +38. REBUILT 2026-08-10 — the bundle on the Desktop is now current and
-ready to upload.** `sha256 c5d20c1c…`, built from `bab19da` (last code commit
-`503bc57`), 78.2 MB, all five verifier checks pass, `jar verified` as
-`CN=Servana Client`. Gate on that exact tree: format 0, analyze 0 (41 infos),
-1466 tests / 6 skipped. Provenance is in `servana-38-release\BUILD_INFO.txt`.
-The stale bundle is preserved at `superseded-38576a2\` — **do not upload it.**
+**4. DONE — 1.0.0+39 SUBMITTED to Play production 2026-08-10, 100% rollout,
+awaiting review.** `sha256 de904643…` at `servana-39-release\`, built from
+`074ecdf`, all five verifier checks pass, `jar verified` as `CN=Servana Client`,
+mapping + native symbols embedded (the AAB is the only upload). Gate: format 0,
+analyze 0 (41 infos), 1466 tests / 6 skipped.
+
+**Two beliefs recorded in this brief were wrong, and both were inferences:**
+
+- *"Play serves +37."* It served **+38**, published Aug 7. The +38 upload was
+  rejected with *"Version code 38 has already been used."*
+- *"versionCode 38 is not burned, so a rebuild at the same version is free."*
+  **A version code is consumed by ANY upload to ANY track, including drafts and
+  discarded releases.** What Play currently *serves* tells you nothing about
+  which codes are spent. Check Latest releases and bundles before choosing one.
+
+The live +38 was a PRE-FIX build, so the four fixes below had reached **nobody**.
+It reported **0 installs / 0.0% install base**, which is the only reason that
+cost nothing. **Every +38 bundle on this machine is now dead — do not upload
+one.** `verify_aab.py` no longer hardcodes the expected code; it reads
+`pubspec.yaml` or takes an argument, because a frozen `vc == 38` would have kept
+asserting the old version forever.
 
 *Kept below because the reasoning is the reusable part.* The old bundle was
 built at `38576a2` and verified properly at the time. **Four fix commits had
