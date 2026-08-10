@@ -17,10 +17,10 @@ the admin portal.
 | | |
 | --- | --- |
 | Repo | `Upupapp/ServanaClient` (moved — the old repo hit a CI billing block) |
-| Branch | `main`, HEAD `48b8232`, clean; **1 commit ahead of origin** (this brief) |
+| Branch | `main`, HEAD `66a15b9`, clean; **2 commits ahead of origin** (both this brief) |
 | Version | `1.0.0+38` in `pubspec.yaml` |
 | **On Play** | **`1.0.0+37`** — see the warning below |
-| +38 artifact | built and verified at `Desktop\servana-38-release\` |
+| +38 artifact | at `Desktop\servana-38-release\` — verified, but **built at `38576a2` and now four fix commits stale**. See item 4. |
 | Backend | `https://api.servana.com.ph/api` |
 | Firebase | `servana-59bee` — the ONLY project, for every platform |
 | Tests | 1466, CI green |
@@ -120,7 +120,29 @@ and it throws → **500, retried forever, money captured and never recorded**.
 Contained fix: keep `prior_session_ids TEXT[]`, append on supersede, widen only
 the webhook's not-found branch — leave the primary UPDATE alone.
 
-**4. Ship +38.** The AAB is built and verified locally.
+**4. Ship +38 — but REBUILD it first. Do not upload the artifact on the Desktop.**
+The bundle at `Desktop\servana-38-release\` was built at `38576a2` and verified
+properly at the time. **Four fix commits have landed since**, none of them in it:
+
+| commit | what uploading the stale bundle costs users |
+| --- | --- |
+| `e5648fa` | booking / payment / signup hardening |
+| `7690556` | booking timeline pointed at the wrong route (GAP-C15-002) |
+| `5725746` | every booking labelled "Beauty & Wellness" |
+| `9d57839` | `WORKER_ASSIGNED` told customers their professional was **on the way** when they had only been assigned; messaging access-revocation; a short client msg-id causing deterministic 422s on send |
+
+The P0 dark-mode signup and status-banner fixes (`eb2b411`) **are** in the built
+artifact — verified as an ancestor of `38576a2`, so that much is not at risk.
+
+**Rebuilding is free: versionCode 38 is not burned on Play** (Play serves 37), so
+a rebuild at the same version is valid and strictly better than shipping the old
+bundle. Use the local recipe and re-run `verify_aab.py` — and self-test the
+verifier against the previous AAB first, or a verifier that only ever passes
+proves nothing.
+
+**The general rule this is an instance of:** a verified artifact is verified
+against the commit it was built from, not against `main`. Re-check
+`git log <build-sha>..HEAD` before every upload.
 
 ---
 
