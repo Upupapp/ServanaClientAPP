@@ -68,36 +68,43 @@ class _TravelingPetal extends StatelessWidget {
   static const _op1 = 0.14;
   static const _op2 = 0.22;
 
+  /// The petal is placed by the PAINTER, not by a [Positioned].
+  ///
+  /// It used to return `RepaintBoundary(ListenableBuilder(... Positioned ...))`.
+  /// `Positioned` only takes effect as a DIRECT child of a [Stack]; buried
+  /// under the RepaintBoundary its `left`/`top`/`width`/`height` were inert.
+  /// The parent `Stack` is `StackFit.expand`, so this widget was treated as a
+  /// non-positioned child and stretched to the whole screen — and
+  /// [_PetalPainter] fills whatever canvas it is given. The result was a
+  /// screen-sized petal at 14–22% opacity: the grey-blue veil over all three
+  /// onboarding photos, on every release build since the effect landed.
+  ///
+  /// Keeping the geometry in the painter means there is no ParentData
+  /// relationship to get wrong, and the RepaintBoundary still isolates the
+  /// per-frame repaint.
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: ListenableBuilder(
-        listenable: controller,
-        builder: (_, __) {
-          final size = MediaQuery.sizeOf(context);
-          final t01 = controller.travelProgress(0, 1);
-          final t12 = controller.travelProgress(1, 2);
+    return Positioned.fill(
+      child: RepaintBoundary(
+        child: ListenableBuilder(
+          listenable: controller,
+          builder: (_, __) {
+            final t01 = controller.travelProgress(0, 1);
+            final t12 = controller.travelProgress(1, 2);
 
-          final ax = _lerp3(_s0.dx, _s1.dx, _s2.dx, t01, t12);
-          final ay = _lerp3(_s0.dy, _s1.dy, _s2.dy, t01, t12);
-          final sz = _lerp3(_sz0, _sz1, _sz2, t01, t12);
-          final op = _lerp3(_op0, _op1, _op2, t01, t12);
-
-          final dim = size.shortestSide * sz;
-          final left = ax * size.width - dim / 2;
-          final top = ay * size.height - dim / 2;
-
-          return Positioned(
-            left: left,
-            top: top,
-            width: dim,
-            height: dim,
-            child: Opacity(
-              opacity: op,
-              child: CustomPaint(painter: _PetalPainter()),
-            ),
-          );
-        },
+            return CustomPaint(
+              size: Size.infinite,
+              painter: _PetalPainter(
+                anchor: FractionalOffset(
+                  _lerp3(_s0.dx, _s1.dx, _s2.dx, t01, t12),
+                  _lerp3(_s0.dy, _s1.dy, _s2.dy, t01, t12),
+                ),
+                sizeFactor: _lerp3(_sz0, _sz1, _sz2, t01, t12),
+                opacity: _lerp3(_op0, _op1, _op2, t01, t12),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -109,24 +116,54 @@ class _TravelingPetal extends StatelessWidget {
 }
 
 /// Draws a simplified Servana-blue petal shape using a cubic Bézier.
+///
+/// The petal is drawn into a sub-rectangle of the canvas rather than filling
+/// it. This painter is handed the FULL screen, and filling it is exactly the
+/// bug this replaced — see [WelcomeTravelingOverlay.build].
 class _PetalPainter extends CustomPainter {
+  const _PetalPainter({
+    required this.anchor,
+    required this.sizeFactor,
+    required this.opacity,
+  });
+
+  /// Petal centre as a fraction of the canvas.
+  final FractionalOffset anchor;
+
+  /// Petal edge length as a fraction of the canvas's shortest side.
+  final double sizeFactor;
+
+  final double opacity;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
+    final dim = size.shortestSide * sizeFactor;
+    final left = anchor.dx * size.width - dim / 2;
+    final top = anchor.dy * size.height - dim / 2;
+
     final paint = Paint()
-      ..color = const Color(0xFF2D56CC)
+      ..color = const Color(0xFF2D56CC).withValues(alpha: opacity)
       ..style = PaintingStyle.fill;
 
+    // Geometry is expressed in petal-local coordinates and translated, so the
+    // shape stays identical to the original — only its extent changed.
+    final w = dim;
+    final h = dim;
     final path = Path()
       ..moveTo(w * 0.50, 0)
       ..cubicTo(w * 0.95, h * 0.05, w, h * 0.55, w * 0.50, h)
       ..cubicTo(0, h * 0.55, w * 0.05, h * 0.05, w * 0.50, 0)
       ..close();
 
+    canvas.save();
+    canvas.translate(left, top);
     canvas.drawPath(path, paint);
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_PetalPainter old) => false;
+  bool shouldRepaint(_PetalPainter old) =>
+      old.anchor != anchor ||
+      old.sizeFactor != sizeFactor ||
+      old.opacity != opacity;
 }

@@ -55,9 +55,19 @@ flutter build "$TARGET" --release \
 
 # Belt and braces: prove the key is gone before the trap even runs, so a
 # green build never coexists with a dirty tree.
+#
+# Check the INJECTED key specifically, not /AIzaSy/. The broad pattern was a
+# false positive on its first real run: android/app/google-services.json and
+# ios/Runner/GoogleService-Info.plist are committed Firebase client config and
+# legitimately contain AIzaSy... values. A guard that fails on a correct tree
+# gets disabled, which is worse than no guard.
 git checkout -- "$STRINGS"
-if git grep -qI "AIzaSy" -- . ; then
-  echo "[build_release] FATAL: an API key is present in tracked files" >&2
+if ! grep -q "$PLACEHOLDER" "$STRINGS"; then
+  echo "[build_release] FATAL: $STRINGS does not hold the placeholder" >&2
+  exit 1
+fi
+if git grep -qI "$GOOGLE_MAPS_API_KEY_ANDROID" -- . ; then
+  echo "[build_release] FATAL: the injected Maps key is in a tracked file" >&2
   exit 1
 fi
 echo "[build_release] OK — key restored, tree clean"
