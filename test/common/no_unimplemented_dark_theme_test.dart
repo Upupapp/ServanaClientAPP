@@ -6,7 +6,7 @@
 /// fields and buttons were fine; the words were not there.
 ///
 /// `ColorPalette` holds mutable statics with exactly one set of values —
-/// `secondaryText` is #111827 and `accentText` is #6B7280 — and `applyBrand()`
+/// `secondaryText` is #111827 and `accentText` is #6A717F — and `applyBrand()`
 /// reassigns them to those same light values at startup. No dark variant exists
 /// anywhere. Those two colours are read directly, bypassing `ThemeData`, in
 /// hundreds of places, so `buildDarkAppTheme` swapped the surfaces to dark and
@@ -27,6 +27,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:client/common/config/app_config.dart';
+import 'package:client/common/constants/color_palette.dart';
 
 String _read(String p) => File(p).readAsStringSync();
 
@@ -81,6 +83,47 @@ void main() {
       final ratio = _contrast(bodyText, scaffold);
       expect(ratio, greaterThanOrEqualTo(4.5),
           reason: 'WCAG AA for body text; measured $ratio:1');
+    });
+
+    testWidgets('secondary text clears the floor on the same scaffold', (
+      tester,
+    ) async {
+      // Added 2026-08-11, because it did not. `accentText` was #6B7280, which
+      // measures **4.485:1** on #F6F6FA — under the 4.5:1 floor, on the
+      // commonest text-on-surface pairing in the app, and it shipped that way.
+      // Nothing here covered the pair; the test above only covers the near-black
+      // body colour, which is why the miss survived.
+      //
+      // Caught in the provider app, which was being aligned to this palette and
+      // has a contrast test over its token pairs — it refused the value on the
+      // way in. Corrected to #6A717F, same hue and saturation, four thousandths
+      // of HSL lightness darker.
+      //
+      // Read from ColorPalette rather than retyped, so the test cannot pass
+      // against a value the app no longer uses — and checked BOTH BEFORE AND
+      // AFTER `applyBrand()`. The colour is assigned in two places: the field
+      // default, and again inside applyBrand, which runs before the first frame.
+      // Fixing one and not the other leaves the app shipping the old value while
+      // a test reading the other passes, and that is not a hypothetical — it is
+      // the shape of this file's original bug.
+      const scaffold = Color(0xFFF6F6FA);
+
+      void check(String when) {
+        final ratio = _contrast(ColorPalette.accentText, scaffold);
+        expect(
+          ratio,
+          greaterThanOrEqualTo(4.5),
+          reason:
+              'accentText on primaryBackground measured $ratio:1 $when. This is '
+              'helper copy, captions and metadata across the app — it is body '
+              'text and the 4.5:1 floor applies. #6B7280 measures 4.485:1; do '
+              'not go back.',
+        );
+      }
+
+      check('as declared');
+      ColorPalette.applyBrand(AppConfig.fromEnv().brand);
+      check('after applyBrand(), which is what actually ships');
     });
 
     testWidgets('the same text would fail on a dark surface', (tester) async {

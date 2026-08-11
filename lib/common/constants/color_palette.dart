@@ -6,7 +6,26 @@ class ColorPalette {
   static Color primaryBackground = const Color(0xFFF3F4F6);
   static Color secondaryBackground = Colors.white;
   static Color secondaryText = const Color(0xFF111827); // near-black
-  static Color accentText = const Color(0xFF6B7280); // grey
+
+  /// Secondary text: metadata, captions, helper copy.
+  ///
+  /// #6A717F, not the #6B7280 this was until 2026-08-11. Four thousandths of HSL
+  /// lightness darker, same hue and saturation — visually indistinguishable, and
+  /// not a whim:
+  ///
+  /// **#6B7280 on [primaryBackground] (#F6F6FA) measures 4.485:1**, which fails
+  /// the WCAG 2.2 SC 1.4.3 floor of 4.5:1. That is the commonest text-on-surface
+  /// pairing in the app and it has been shipping. #6A717F measures 4.55:1 there
+  /// and 4.91:1 on white.
+  ///
+  /// Measured in the provider app, which was being aligned to this palette and
+  /// has a contrast test over its token pairs — it refused the value on the way
+  /// in. This app had no such test for this pair; it does now, in
+  /// `test/common/no_unimplemented_dark_theme_test.dart`.
+  ///
+  /// Both assignments matter. This one is the default, and `applyBrand()` sets it
+  /// again at startup — changing only one leaves the other shipping.
+  static Color accentText = const Color(0xFF6A717F); // grey
   static Color primaryButtonTextColor = Colors.white;
   // Defaults (overridden by applyBrand at startup).
   // Logo orange (#F89040) is used as accent; logo blue (#3058C8) is primary.
@@ -74,7 +93,8 @@ class ColorPalette {
     primaryBackground = const Color(0xFFF6F6FA);
     secondaryBackground = Colors.white;
     secondaryText = const Color(0xFF111827);
-    accentText = const Color(0xFF6B7280);
+    // See the declaration: #6B7280 on #F6F6FA is 4.485:1 and fails the floor.
+    accentText = const Color(0xFF6A717F);
     primaryText = Colors.white;
     primaryButtonTextColor = Colors.white;
     // Light tint used for chips/background accents (keep this brand-friendly).
