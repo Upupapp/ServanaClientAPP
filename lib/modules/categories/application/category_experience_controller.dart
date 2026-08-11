@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
-import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:flutter/material.dart';
 
 enum CategoryExperienceStatus { idle, loading, success, failure }
@@ -45,26 +44,12 @@ class CategoryExperienceController extends ChangeNotifier {
         .toList();
   }
 
-  RevealDecision _revealDecision = RevealDecision.skipReveal;
-  RevealDecision get revealDecision => _revealDecision;
-
-  bool _overlayDismissed = false;
-  bool get showOverlay =>
-      !_overlayDismissed &&
-      _revealDecision != RevealDecision.skipReveal &&
-      _status == CategoryExperienceStatus.success;
-
   Future<void> load({
     required ServiceCategoryId categoryId,
     required CategoryPresentationConfig config,
     required bool reducedMotion,
   }) async {
     if (_status == CategoryExperienceStatus.loading) return;
-
-    _revealDecision = CategoryRevealPolicy.decide(
-      categoryId: categoryId,
-      reducedMotion: reducedMotion,
-    );
 
     _status = CategoryExperienceStatus.loading;
     _error = null;
@@ -78,9 +63,6 @@ class CategoryExperienceController extends ChangeNotifier {
       );
       _allOptions = options;
       _status = CategoryExperienceStatus.success;
-      if (_revealDecision != RevealDecision.skipReveal) {
-        CategoryRevealPolicy.markSeen(categoryId);
-      }
     } catch (e, s) {
       // The message shown to the customer is unchanged and stays generic —
       // raw exception text must never reach the UI.
@@ -110,18 +92,12 @@ class CategoryExperienceController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void dismissOverlay() {
-    _overlayDismissed = true;
-    notifyListeners();
-  }
-
   void retry({
     required ServiceCategoryId categoryId,
     required CategoryPresentationConfig config,
     required bool reducedMotion,
   }) {
     _allOptions = [];
-    _overlayDismissed = false;
     _status = CategoryExperienceStatus.idle;
     load(categoryId: categoryId, config: config, reducedMotion: reducedMotion);
   }

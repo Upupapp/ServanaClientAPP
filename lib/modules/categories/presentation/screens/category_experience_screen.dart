@@ -10,7 +10,6 @@ import 'package:client/modules/categories/presentation/widgets/category_empty_st
 import 'package:client/modules/categories/presentation/widgets/category_error_state.dart';
 import 'package:client/modules/categories/presentation/widgets/category_hero.dart';
 import 'package:client/modules/categories/presentation/widgets/category_quick_actions.dart';
-import 'package:client/modules/categories/presentation/widgets/category_reveal_overlay.dart';
 import 'package:client/modules/categories/presentation/widgets/category_service_card.dart';
 import 'package:client/modules/categories/presentation/widgets/category_skeleton.dart';
 import 'package:flutter/material.dart';
@@ -107,23 +106,17 @@ class _CategoryExperienceScreenState extends State<CategoryExperienceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      // The category reveal overlay was removed here.
+      //
+      // Arriving from the home screen's category campaign popup, it was a
+      // SECOND full-screen gate on the same category — the customer tapped
+      // "Explore Beauty & Wellness" and got another card telling them the same
+      // thing with an "Explore now" button, over a service list that had
+      // already loaded behind it. Two consecutive interstitials to reach
+      // content the customer had already asked for twice.
       body: ListenableBuilder(
         listenable: _controller,
-        builder: (context, _) {
-          return Stack(
-            children: [
-              _buildContent(context),
-              if (_controller.showOverlay)
-                Positioned.fill(
-                  child: CategoryRevealOverlay(
-                    config: _config,
-                    decision: _controller.revealDecision,
-                    onDismiss: _controller.dismissOverlay,
-                  ),
-                ),
-            ],
-          );
-        },
+        builder: (context, _) => _buildContent(context),
       ),
     );
   }

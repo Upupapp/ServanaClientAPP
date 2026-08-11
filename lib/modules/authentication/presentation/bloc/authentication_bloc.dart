@@ -12,7 +12,6 @@ import 'package:client/core/analytics/domain/analytics_property.dart';
 import 'package:client/core/analytics/domain/analytics_user_context.dart';
 import 'package:client/core/analytics/events/auth_events.dart';
 import 'package:client/core/observability/crashlytics_service.dart';
-import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:client/common/services/error_message_mapper.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
@@ -473,7 +472,6 @@ class AuthenticationBloc
       dpLocator<AirconBookingStore>().reset();
       dpLocator<BwBookingStore>().reset();
       dpLocator<BookingDraftService>().clear();
-      CategoryRevealPolicy.reset();
       SearchController.clearHistoryOnLogout().ignore();
       dpLocator<ProfileController>().resetPrivateData();
       dpLocator<AddressController>().resetPrivateData();

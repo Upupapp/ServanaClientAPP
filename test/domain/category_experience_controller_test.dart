@@ -3,7 +3,6 @@ import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/modules/categories/application/category_experience_controller.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
 import 'package:client/modules/categories/domain/category_experience.dart';
-import 'package:client/modules/categories/domain/category_reveal_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRepo extends CategoryExperienceRepository {
@@ -34,8 +33,6 @@ ServiceOptionSummary _opt(String id, {String categoryKey = ''}) =>
     });
 
 void main() {
-  setUp(CategoryRevealPolicy.reset);
-
   group('CategoryExperienceController.load()', () {
     test(
         'H1: success sets status=success, populates allOptions, marks category seen',
@@ -52,8 +49,6 @@ void main() {
 
       expect(ctrl.status, CategoryExperienceStatus.success);
       expect(ctrl.allOptions.length, 2);
-      expect(CategoryRevealPolicy.hasSeen(ServiceCategoryId.beautyWellness),
-          isTrue);
     });
 
     test('H2: failure sets status=failure and exposes a non-null error',
@@ -206,23 +201,6 @@ void main() {
 
       expect(ctrl.selectedChipLabel, isNull);
       expect(ctrl.visibleOptions.length, 2);
-    });
-  });
-
-  group('CategoryExperienceController.dismissOverlay()', () {
-    test('sets showOverlay to false', () async {
-      final ctrl =
-          CategoryExperienceController(_FakeRepo(options: [_opt('1')]));
-      await ctrl.load(
-        categoryId: ServiceCategoryId.beautyWellness,
-        config: CategoryPresentationRegistry.forId(
-            ServiceCategoryId.beautyWellness),
-        reducedMotion: false,
-      );
-
-      ctrl.dismissOverlay();
-
-      expect(ctrl.showOverlay, isFalse);
     });
   });
 }

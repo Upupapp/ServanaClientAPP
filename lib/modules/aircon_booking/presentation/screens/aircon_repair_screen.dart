@@ -1,7 +1,6 @@
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/common/injectors/main_injector.dart';
-import 'package:client/common/presentation/category_delight/category_reveal_overlay.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
 import 'package:client/common/services/category_experience_history.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
@@ -22,16 +21,12 @@ class AirconRepairScreen extends StatefulWidget {
 
 class _AirconRepairScreenState extends State<AirconRepairScreen> {
   static const _categoryId = ServiceCategoryId.aircon;
-  static const _config = CategoryRegistry.aircon;
 
   final store = dpLocator<AirconBookingStore>();
-  late bool _isFirstView;
-  bool _showReveal = true;
 
   @override
   void initState() {
     super.initState();
-    _isFirstView = !CategoryExperienceHistory.hasSeenFirstView(_categoryId);
     CategoryExperienceHistory.markFirstViewSeen(_categoryId);
     store.clearSelectionOnly();
     store.ensureOptionsLoaded(serviceId: 1);
@@ -71,14 +66,6 @@ class _AirconRepairScreenState extends State<AirconRepairScreen> {
             },
           );
         }),
-        if (_showReveal)
-          Positioned.fill(
-            child: CategoryRevealOverlay(
-              config: _config,
-              isFirstView: _isFirstView,
-              onDismiss: () => setState(() => _showReveal = false),
-            ),
-          ),
       ],
     );
   }
