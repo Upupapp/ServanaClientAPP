@@ -54,6 +54,9 @@ import 'package:client/modules/registration/domain/repositories/registration_rep
 import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
+import 'package:client/modules/catalog/application/catalog_controller.dart';
+import 'package:client/modules/catalog/application/service_detail_controller.dart';
+import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
@@ -254,6 +257,26 @@ void initInjector(AppConfig config) {
   dpLocator.registerLazySingleton(
     () => CategoryExperienceRepository(dpLocator()),
   );
+
+  // ── Canonical Catalog V2 ──────────────────────────────────────────────────
+  //
+  // The repository and the browse controller are singletons because the whole
+  // hierarchy arrives in one fetch and is then shared by every catalog screen —
+  // a per-screen instance would refetch on each push and defeat the single-read
+  // design (§92).
+  //
+  // ServiceDetailController is a FACTORY. It holds the selected add-ons for one
+  // Service, so sharing it would carry a previous Service's configuration onto
+  // the next one.
+  dpLocator.registerLazySingleton(
+    () => CatalogRepository(api: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => CatalogController(dpLocator()),
+  );
+  dpLocator.registerFactory(
+    () => ServiceDetailController(dpLocator()),
+  );
   dpLocator.registerLazySingleton(
       () => GetStoreOptionsUseCase(storeOptionsRepository: dpLocator()));
   dpLocator.registerLazySingleton(
@@ -283,7 +306,7 @@ void initInjector(AppConfig config) {
   );
 
   dpLocator.registerLazySingleton(
-    () => SearchRepository(api: dpLocator()),
+    () => SearchRepository(catalog: dpLocator()),
   );
   dpLocator.registerLazySingleton(
     () => SearchController(repository: dpLocator()),

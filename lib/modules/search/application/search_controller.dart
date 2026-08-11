@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
@@ -26,7 +25,7 @@ class SearchController extends ChangeNotifier {
   List<SearchResult> _allResults = [];
   List<SearchResult> _filteredResults = [];
   List<String> _history = [];
-  ServiceCategoryId? _categoryFilter;
+  int? _categoryFilter;
   SearchSort _sort = SearchSort.recommended;
   String? _error;
   bool _disposed = false;
@@ -36,7 +35,14 @@ class SearchController extends ChangeNotifier {
   SearchLoadState get state => _state;
   List<SearchResult> get results => List.unmodifiable(_filteredResults);
   List<String> get history => List.unmodifiable(_history);
-  ServiceCategoryId? get categoryFilter => _categoryFilter;
+
+  /// Canonical `catalog_categories.id`, or null for "all".
+  int? get categoryFilter => _categoryFilter;
+
+  /// Filter chips derived from the loaded catalog, not from a list compiled
+  /// into the binary. A Category an admin adds becomes filterable on the next
+  /// catalog refresh rather than on the next app release.
+  List<SearchCategoryChip> get categoryChips => _repository.categoryChips;
   SearchSort get sort => _sort;
   String? get error => _error;
   bool get hasQuery => _query.trim().isNotEmpty;
@@ -112,7 +118,7 @@ class SearchController extends ChangeNotifier {
     _applyFilters();
   }
 
-  void setCategoryFilter(ServiceCategoryId? id) {
+  void setCategoryFilter(int? id) {
     _categoryFilter = (_categoryFilter == id) ? null : id;
     _applyFilters();
   }
@@ -147,10 +153,10 @@ class SearchController extends ChangeNotifier {
       filtered = filtered.where((r) => r.categoryId == _categoryFilter);
     }
     if (q.isNotEmpty) {
-      filtered = filtered.where((r) =>
-          r.level2.toLowerCase().contains(q) ||
-          r.serviceName.toLowerCase().contains(q) ||
-          r.categoryLabel.toLowerCase().contains(q));
+      // Matched against the Service name AND its hierarchy, so "facial"
+      // surfaces every Service under the Facial Subcategory and "beauty"
+      // surfaces the Personal Care ones (§31, §32).
+      filtered = filtered.where((r) => r.searchHaystack.contains(q));
     }
     _filteredResults = _sortResults(filtered.toList());
     if (q.isNotEmpty && _filteredResults.isEmpty) {

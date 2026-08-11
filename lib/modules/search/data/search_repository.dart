@@ -1,77 +1,68 @@
-import 'package:client/common/data/backend/servana_api_client.dart';
+import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/modules/search/domain/search_result.dart';
-import 'package:client/common/domain/pricing/catalog_price.dart';
 
-/// Fetches and caches the full service catalog for in-memory search.
+/// Builds the search index from the canonical catalog.
 ///
-/// The backend's GET /api/services/full returns the complete structured
-/// catalog in a single request — no pagination, no search endpoint needed.
-/// Cache is kept for the session lifetime; call [clearCache] to force refresh.
+/// One entry per canonical Service, carrying its `services.id` and its
+/// hierarchy. The index is derived from `CatalogRepository`, so search and
+/// browse cannot disagree about what exists — previously they were two
+/// independent fetches of two different endpoints with two different
+/// filtering rules, and they did disagree.
+///
+/// No synonym table is maintained here. Aliases like `AC` / `aircon` /
+/// `air conditioner` belong to the catalog's own naming and to a backend search
+/// capability if one is ever added; inventing a client-side alias map would
+/// create a second taxonomy the Admin portal cannot see (§34).
 class SearchRepository {
-  SearchRepository({required ServanaApiClient api}) : _api = api;
+  SearchRepository({required CatalogRepository catalog}) : _catalog = catalog;
 
-  final ServanaApiClient _api;
+  final CatalogRepository _catalog;
+
   List<SearchResult>? _cache;
+  List<SearchCategoryChip> _chips = const [];
+
+  /// Category chips for the current index, in the backend's display order.
+  /// Empty until the first successful load.
+  List<SearchCategoryChip> get categoryChips => List.unmodifiable(_chips);
 
   Future<List<SearchResult>> fetchCatalog({bool forceRefresh = false}) async {
     if (!forceRefresh && _cache != null) return _cache!;
-    final json = await _api.listFullCatalog();
-    final services = json['services'] as List<dynamic>? ?? [];
+
+    final snapshot = await _catalog.load(forceRefresh: forceRefresh);
+
     final results = <SearchResult>[];
-    for (final rawService in services) {
-      if (rawService is! Map) continue;
-      final svc = Map<String, dynamic>.from(rawService);
-      final serviceId = _asInt(svc['serviceId'] ?? svc['service_id']);
-      final name = (svc['name'] ?? '').toString().trim();
-      final cat = (svc['category'] ?? '').toString();
-      final requiresBranch = cat == 'BRANCH_SERVICE';
-      final catId = categoryIdFromService(serviceId: serviceId, name: name);
-      if (catId == null) continue;
-      final label = categoryLabel(catId);
-      final options = svc['options'];
-      if (options is! List) continue;
-      for (final rawOption in options) {
-        if (rawOption is! Map) continue;
-        final opt = Map<String, dynamic>.from(rawOption);
-        final level2 =
-            (opt['level2'] ?? opt['level_2'] ?? '').toString().trim();
-        if (level2.isEmpty) continue;
-        final rawItems = opt['items'];
-        final items = rawItems is List
-            ? rawItems.whereType<Map>().map(Map<String, dynamic>.from).toList()
-            : const <Map<String, dynamic>>[];
-        if (items.isEmpty) continue;
-        // Shared resolver: this used to read only `base_price` and cast it
-        // `as num?`, so a price arriving as a string — or under the camelCase
-        // spelling that /options-with-addons uses — became 0 and rendered as
-        // "Get a quote" on a priced service.
-        final prices = items
-            .map(extractCatalogPricePesosInt)
-            .whereType<int>()
-            .where((p) => p > 0)
-            .toList();
-        results.add(SearchResult(
-          serviceId: serviceId,
-          serviceName: name,
-          level2: level2,
-          minPricePesos:
-              prices.isEmpty ? 0 : prices.reduce((a, b) => a < b ? a : b),
-          maxPricePesos:
-              prices.isEmpty ? 0 : prices.reduce((a, b) => a > b ? a : b),
-          requiresBranch: requiresBranch,
-          categoryId: catId,
-          categoryLabel: label,
-        ));
+    final chips = <SearchCategoryChip>[];
+
+    for (final category in snapshot.catalog.categories) {
+      chips.add(SearchCategoryChip(id: category.id, label: category.name));
+      for (final sub in category.subcategories) {
+        for (final service in sub.services) {
+          final price = service.basePrice?.round() ?? 0;
+          results.add(SearchResult(
+            serviceId: service.id,
+            serviceName: service.name,
+            subcategoryId: sub.id,
+            subcategoryName: sub.name,
+            categoryId: category.id,
+            categoryName: category.name,
+            // A Service has one price, so min and max coincide. Both are kept
+            // because the card renders "From ₱X" for a range and the shape
+            // should not have to change if per-option pricing returns.
+            minPricePesos: price,
+            maxPricePesos: price,
+            bookable: service.isBookable,
+          ));
+        }
       }
     }
+
     _cache = results;
+    _chips = chips;
     return results;
   }
 
-  static int _asInt(Object? value) {
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '') ?? 0;
+  void clearCache() {
+    _cache = null;
+    _chips = const [];
   }
-
-  void clearCache() => _cache = null;
 }

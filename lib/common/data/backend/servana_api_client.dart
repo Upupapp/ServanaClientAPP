@@ -505,6 +505,48 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  // ─── Canonical Catalog V2 ─────────────────────────────────────────────────
+  //
+  // Category → Subcategory → Service, keyed on `services.id`. These are the
+  // canonical reads; everything above them on this class is the legacy
+  // `service_families` + `service_options` projection, kept because builds in
+  // the field still call it.
+  //
+  // Public and unauthenticated, like their legacy neighbours. `_headers()` is
+  // still applied so an authenticated session sends its token and the backend
+  // can attribute the read — but nothing here requires one.
+
+  /// The whole customer-visible hierarchy in one request.
+  ///
+  /// One call, not `1 + categories + subcategories`. On today's 3/12 shape the
+  /// per-level alternative would be 16 round trips before the first card
+  /// renders.
+  Future<Map<String, dynamic>> getCanonicalCatalog() async {
+    final uri = _uri('/api/catalog');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// Shape counters plus `lastUpdatedAt`, for cheap cache revalidation.
+  Future<Map<String, dynamic>> getCanonicalCatalogSummary() async {
+    final uri = _uri('/api/catalog/summary');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// One Service by canonical `services.id`.
+  ///
+  /// Resolves regardless of status so a deep link to an archived Service lands
+  /// on an honest "currently unavailable" rather than a 404 the app would have
+  /// to render as a dead end. Read `available` on the response, never infer it.
+  Future<Map<String, dynamic>> getCanonicalService({
+    required int serviceId,
+  }) async {
+    final uri = _uri('/api/catalog/services/$serviceId');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getBeautyAndWellnessBranches({
     required int serviceId,
   }) async {

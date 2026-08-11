@@ -1,4 +1,3 @@
-import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/data/search_repository.dart';
@@ -46,26 +45,31 @@ class _CountingSearchRepository extends Fake implements SearchRepository {
   void clearCache() => _cleared = true;
 }
 
+// Canonical fixtures: `serviceId` is `services.id`, `categoryId` is
+// `catalog_categories.id`. Both are ints — the app-side ServiceCategoryId enum
+// is gone from search entirely.
 const _kAircon = SearchResult(
-  serviceId: 1,
-  serviceName: 'Aircon Services',
-  level2: 'Aircon Cleaning',
+  serviceId: 130,
+  serviceName: 'Aircon Cleaning',
+  subcategoryId: 2,
+  subcategoryName: 'Cleaning',
+  categoryId: 2,
+  categoryName: 'Home Services',
   minPricePesos: 700,
   maxPricePesos: 1200,
-  requiresBranch: false,
-  categoryId: ServiceCategoryId.aircon,
-  categoryLabel: 'Aircon',
+  bookable: true,
 );
 
 const _kMassage = SearchResult(
-  serviceId: 4,
-  serviceName: 'Massage',
-  level2: 'Swedish Massage',
+  serviceId: 44,
+  serviceName: 'Swedish Massage',
+  subcategoryId: 9,
+  subcategoryName: 'Massage',
+  categoryId: 3,
+  categoryName: 'Personal Care',
   minPricePesos: 500,
   maxPricePesos: 800,
-  requiresBranch: true,
-  categoryId: ServiceCategoryId.massage,
-  categoryLabel: 'Massage',
+  bookable: true,
 );
 
 SearchController _makeCtrl([List<SearchResult>? catalog]) => SearchController(
@@ -94,7 +98,7 @@ void main() {
       final ctrl = _makeCtrl();
       await ctrl.init();
       ctrl.onQueryChanged('aircon');
-      ctrl.setCategoryFilter(ServiceCategoryId.aircon);
+      ctrl.setCategoryFilter(2);
       ctrl.setSort(SearchSort.priceHighLow);
       await ctrl.init();
       expect(ctrl.query, '');
@@ -108,7 +112,7 @@ void main() {
       ctrl.onQueryChanged('aircon');
       await Future<void>.delayed(const Duration(milliseconds: 250));
       expect(ctrl.results, hasLength(1));
-      expect(ctrl.results.first.level2, 'Aircon Cleaning');
+      expect(ctrl.results.first.serviceName, 'Aircon Cleaning');
     });
 
     test('onQueryChanged() with empty string returns all results', () async {
@@ -125,7 +129,7 @@ void main() {
       final ctrl = _makeCtrl();
       await ctrl.init();
       ctrl.onQueryChanged('aircon');
-      ctrl.setCategoryFilter(ServiceCategoryId.aircon);
+      ctrl.setCategoryFilter(2);
       ctrl.clearQuery();
       expect(ctrl.query, '');
       expect(ctrl.categoryFilter, isNull);
@@ -135,18 +139,18 @@ void main() {
     test('setCategoryFilter() filters to matching category', () async {
       final ctrl = _makeCtrl();
       await ctrl.init();
-      ctrl.setCategoryFilter(ServiceCategoryId.massage);
+      ctrl.setCategoryFilter(3);
       expect(ctrl.results, hasLength(1));
-      expect(ctrl.results.first.categoryId, ServiceCategoryId.massage);
+      expect(ctrl.results.first.categoryId, 3);
     });
 
     test('setCategoryFilter() toggles — tapping same ID twice clears filter',
         () async {
       final ctrl = _makeCtrl();
       await ctrl.init();
-      ctrl.setCategoryFilter(ServiceCategoryId.aircon);
-      expect(ctrl.categoryFilter, ServiceCategoryId.aircon);
-      ctrl.setCategoryFilter(ServiceCategoryId.aircon);
+      ctrl.setCategoryFilter(2);
+      expect(ctrl.categoryFilter, 2);
+      ctrl.setCategoryFilter(2);
       expect(ctrl.categoryFilter, isNull);
       expect(ctrl.results, hasLength(2));
     });
@@ -254,80 +258,52 @@ void main() {
     test('SearchResult.priceDisplay formats correctly', () {
       expect(
         const SearchResult(
-          serviceId: 1,
-          serviceName: 's',
-          level2: 'Cleaning',
+          serviceId: 130,
+          serviceName: 'Aircon Cleaning',
+          subcategoryId: 2,
+          subcategoryName: 'Cleaning',
+          categoryId: 2,
+          categoryName: 'Home Services',
           minPricePesos: 700,
           maxPricePesos: 700,
-          requiresBranch: false,
-          categoryId: ServiceCategoryId.aircon,
-          categoryLabel: 'Aircon',
+          bookable: true,
         ).priceDisplay,
         '₱700',
       );
       expect(
         const SearchResult(
-          serviceId: 1,
-          serviceName: 's',
-          level2: 'Cleaning',
+          serviceId: 130,
+          serviceName: 'Aircon Cleaning',
+          subcategoryId: 2,
+          subcategoryName: 'Cleaning',
+          categoryId: 2,
+          categoryName: 'Home Services',
           minPricePesos: 500,
           maxPricePesos: 900,
-          requiresBranch: false,
-          categoryId: ServiceCategoryId.aircon,
-          categoryLabel: 'Aircon',
+          bookable: true,
         ).priceDisplay,
         'From ₱500',
       );
       expect(
         const SearchResult(
-          serviceId: 1,
-          serviceName: 's',
-          level2: 'Cleaning',
+          serviceId: 130,
+          serviceName: 'Aircon Cleaning',
+          subcategoryId: 2,
+          subcategoryName: 'Cleaning',
+          categoryId: 2,
+          categoryName: 'Home Services',
           minPricePesos: 0,
           maxPricePesos: 0,
-          requiresBranch: false,
-          categoryId: ServiceCategoryId.aircon,
-          categoryLabel: 'Aircon',
+          bookable: true,
         ).priceDisplay,
         'Get a quote',
       );
     });
   });
 
-  group('categoryIdFromService — name-fallback', () {
-    test('maps unknown serviceId via name: aircon', () {
-      expect(
-        categoryIdFromService(serviceId: 99, name: 'Aircon Maintenance'),
-        ServiceCategoryId.aircon,
-      );
-    });
-
-    test('maps unknown serviceId via name: massage', () {
-      expect(
-        categoryIdFromService(serviceId: 99, name: 'Spa & Massage Therapy'),
-        ServiceCategoryId.massage,
-      );
-    });
-
-    test('maps unknown serviceId via name: hair & nails', () {
-      expect(
-        categoryIdFromService(serviceId: 99, name: 'Hair Coloring'),
-        ServiceCategoryId.hairAndNails,
-      );
-    });
-
-    test('maps unknown serviceId via name: beauty & wellness', () {
-      expect(
-        categoryIdFromService(serviceId: 99, name: 'Facial Treatment'),
-        ServiceCategoryId.beautyWellness,
-      );
-    });
-
-    test('returns null for completely unrecognized name and id', () {
-      expect(
-        categoryIdFromService(serviceId: 99, name: 'Plumbing Services'),
-        isNull,
-      );
-    });
-  });
+  // The `categoryIdFromService` group was removed with the function it tested.
+  // It mapped a legacy family id (or, failing that, a regex over its name) onto
+  // a hardcoded app-side category enum, and anything it did not recognise was
+  // dropped from the index entirely — which is how Electrical Services became
+  // unsearchable. Search now carries the backend's own category id.
 }
