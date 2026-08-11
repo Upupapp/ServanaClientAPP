@@ -1,5 +1,28 @@
 # Backend Catalog contract (§4) — and why V2 cannot be built yet
 
+## CANONICAL STATEMENT (Catalog V2 identity correction, verbatim)
+
+```
+CANONICAL CATALOG V2 BOOKABLE ENTITY:
+services.id
+
+CURRENT PRODUCTION LEGACY BOOKABLE ENTITY:
+bookings.service_option_id -> legacy service_options Level 3
+
+CURRENT PRODUCTION PROVIDER CAPABILITY:
+employee_services.service_id -> legacy coarse services.id
+
+TARGET PROVIDER CAPABILITY:
+provider/employee service capability -> canonical specific services.id
+
+MIGRATION REQUIREMENT:
+Bookings and provider capabilities must be migrated independently and converge
+on the same canonical services.id BEFORE Catalog V2 matching is enabled.
+```
+
+Measured baseline, fan-out projection and the junk-catalog finding:
+see CATALOG_V2_DATA_MIGRATION_REPORT.md.
+
 Measured 2026-08-11 against `servana_api-main` @ `d0f1658` (= deployed HEAD)
 and production Postgres.
 
