@@ -1,13 +1,10 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/modules/aircon_booking/presentation/screens/aircon_repair_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/beauty_wellness_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/common/services/app_haptics.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:client/common/presentation/routes/category_routes.dart';
 
 /// Bottom sheet presented by the central Book action in [MainNavScaffold].
 ///
@@ -76,7 +73,7 @@ class QuickBookSheet extends StatelessWidget {
               color: const Color(0xFF2D78F5),
               onTap: () {
                 Navigator.pop(context);
-                context.pushNamed(AirconRepairScreen.routeName);
+                context.pushNamed(CategoryRoutes.aircon);
               },
             ),
             const SizedBox(height: 10),
@@ -86,7 +83,7 @@ class QuickBookSheet extends StatelessWidget {
               color: const Color(0xFFE96F9C),
               onTap: () {
                 Navigator.pop(context);
-                context.pushNamed(BeautyWellnessScreen.routeName);
+                context.pushNamed(CategoryRoutes.beautyWellness);
               },
             ),
             const SizedBox(height: 10),
@@ -96,7 +93,7 @@ class QuickBookSheet extends StatelessWidget {
               color: const Color(0xFF9B6DE3),
               onTap: () {
                 Navigator.pop(context);
-                context.pushNamed(HairNailsScreen.routeName);
+                context.pushNamed(CategoryRoutes.hairNails);
               },
             ),
             const SizedBox(height: 10),
@@ -106,7 +103,7 @@ class QuickBookSheet extends StatelessWidget {
               color: const Color(0xFF2DBBA7),
               onTap: () {
                 Navigator.pop(context);
-                context.pushNamed(MassageScreen.routeName);
+                context.pushNamed(CategoryRoutes.massage);
               },
             ),
             const SizedBox(height: 16),

@@ -44,7 +44,68 @@ garbage bearer token still returns 200.
 `slug`, `description`, `image`, `displayOrder`, `status`, `bookable`,
 `duration` (except `duration_mins` on options), and any subcategory id.
 
-## 3. THE BLOCKING DECISION — what is a "Specific Service"?
+## 3a. DECIDED 2026-08-11 — and my §3 below contained a factual error
+
+**Canonical rule (owner decision): `services.id` is the bookable entity.**
+Categories and Subcategories are discovery/taxonomy. `service_options` are
+configuration underneath a Service and must never be the canonical bookable
+identity.
+
+```
+categories.id -> subcategories.id -> services.id (BOOKABLE) -> service_options.id -> addons/questions
+bookings.service_id          -> services.id
+provider_services.service_id -> services.id
+```
+
+**Correction to §3 below: I wrote that bookings today carry `services.id`.
+They do not.** Measured on production:
+
+```
+bookings columns: id, user_id, user_address_id, service_option_id, schedule, ...
+                                                ^^^^^^^^^^^^^^^^^
+```
+
+There is **no `service_id` column on `bookings` at all**. Real rows:
+
+| booking | service_option_id | level_2 | level_3 | services.id |
+| --- | --- | --- | --- | --- |
+| 110 | 4 | Beauty Drip | Emperor's Drip | 2 |
+| 107 | 15 | Facial | Pimple Facial | 2 |
+
+So production **already books against `service_options.id` (level_3)** — the
+"legacy representation" the decision anticipates. That is now measured, not
+assumed, and it answers the question the decision left open.
+
+A second fact neither document had: **provider capability is at a different
+level from booking.** `employee_services.service_id` references `services.id`,
+so a provider is qualified for "Beauty & Wellness" as a whole while the customer
+books "Emperor's Drip". Promoting level_3 to `services` therefore does not just
+move a foreign key — it changes what provider qualification *means*, and
+`employee_services` rows must be expanded from 4 coarse services to ~90 specific
+ones or the matching pool collapses to zero.
+
+Scope of the migration this implies (backend-side, not mobile):
+
+1. Create `categories` and `subcategories` with `id, name, status, displayOrder`
+   (+ `categoryId` on subcategory).
+2. Promote each customer-selectable `level_3` to a `services` row with a NEW id,
+   `subcategory_id`, `status`, `displayOrder`, `bookable`.
+3. Keep a legacy map `service_options.id -> services.id` so the 109 existing
+   bookings stay readable without rewriting history.
+4. Add `bookings.service_id`, dual-write it alongside `service_option_id`, and
+   only later stop writing the old column.
+5. Expand `employee_services` from 4 rows-per-provider to the promoted services,
+   or auto-derive capability from the parent, before any matching runs on the
+   new ids.
+6. Verify against Mobile, Provider Web, Provider Mobile and Admin before
+   retiring level_3-as-bookable.
+
+**Mobile impact of the decision: none yet, and that is the point.** The app
+sends `serviceId` in the booking payload and the backend resolves the option;
+until `bookings.service_id` exists and is authoritative, there is nothing for
+the client to change. Client prep work that is safe today is in §5.
+
+## 3. THE BLOCKING DECISION — what is a "Specific Service"? (superseded by §3a)
 
 The command's own example is:
 

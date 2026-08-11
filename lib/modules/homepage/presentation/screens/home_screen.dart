@@ -22,17 +22,13 @@ import 'package:client/common/presentation/widgets/service_category_list_screen.
 import 'package:client/common/services/app_haptics.dart';
 import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
-import 'package:client/modules/aircon_booking/presentation/screens/aircon_repair_screen.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
-import 'package:client/modules/bw_booking/presentation/screens/beauty_wellness_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/homepage/data/home_promotion_repository.dart';
 import 'package:client/modules/homepage/domain/home_promotion.dart';
 import 'package:client/modules/homepage/presentation/dialogs/logout_dialog.dart';
@@ -55,6 +51,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:client/common/presentation/routes/category_routes.dart';
 
 class HomeScreen extends StatefulWidget {
   static String routeName = "HomeScreen";
@@ -375,13 +372,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToCategory(String key) {
     switch (key) {
       case 'beauty_wellness':
-        context.pushNamed(BeautyWellnessScreen.routeName);
+        context.pushNamed(CategoryRoutes.beautyWellness);
       case 'hair_nails':
-        context.pushNamed(HairNailsScreen.routeName);
+        context.pushNamed(CategoryRoutes.hairNails);
       case 'massage':
-        context.pushNamed(MassageScreen.routeName);
+        context.pushNamed(CategoryRoutes.massage);
       case 'aircon':
-        context.pushNamed(AirconRepairScreen.routeName);
+        context.pushNamed(CategoryRoutes.aircon);
       default:
         context.pushNamed(SearchScreen.routeName);
     }

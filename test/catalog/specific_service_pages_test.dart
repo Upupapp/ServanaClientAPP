@@ -72,19 +72,33 @@ void main() {
     });
   });
 
-  test('all specific service pages clear selection and preserve API routes',
+  // Retargeted 2026-08-11. This used to read the four per-category screens
+  // (aircon_repair / beauty_wellness / hair_nails / massage), which have been
+  // deleted: the router built CategoryExperienceScreen for all four of their
+  // routes and never called their build() methods. The guarantee is unchanged
+  // and now asserted against the screen that actually runs.
+  test('the live category screen clears selection and selects the option', () {
+    final source = File(
+      'lib/modules/categories/presentation/screens/category_experience_screen.dart',
+    ).readAsStringSync();
+    expect(source, contains('clearSelectionOnly();'));
+    expect(source, contains('selectOption('));
+    // Both booking stores must be handled, not just one.
+    expect(source, contains('BwBookingStore'));
+    expect(source, contains('AirconBookingStore'));
+  });
+
+  test('the four category route names are preserved as a deep-link contract',
       () {
-    for (final path in [
-      'lib/modules/aircon_booking/presentation/screens/aircon_repair_screen.dart',
-      'lib/modules/bw_booking/presentation/screens/beauty_wellness_screen.dart',
-      'lib/modules/bw_booking/presentation/screens/hair_nails_screen.dart',
-      'lib/modules/bw_booking/presentation/screens/massage_screen.dart',
-    ]) {
-      final source = File(path).readAsStringSync();
-      expect(source, contains('store.clearSelectionOnly();'), reason: path);
-      expect(source, contains('store.ensureOptionsLoaded'), reason: path);
-      expect(source, contains('store.selectOption'), reason: path);
-    }
+    final source = File(
+      'lib/common/presentation/routes/category_routes.dart',
+    ).readAsStringSync();
+    // Renaming any of these breaks existing deep links and notification
+    // payloads, which is why they outlived the widgets that declared them.
+    expect(source, contains("aircon = 'AirconRepair'"));
+    expect(source, contains("beautyWellness = 'BeautyWellness'"));
+    expect(source, contains("hairNails = 'HairNails'"));
+    expect(source, contains("massage = 'Massage'"));
   });
 
   test('shared service grid exposes accessible controls and recovery', () {

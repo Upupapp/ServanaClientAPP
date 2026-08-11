@@ -32,17 +32,14 @@ import 'package:client/modules/store_items/presentation/screens/store_items_scre
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_checkout_screen.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_confirmation_screen.dart';
-import 'package:client/modules/aircon_booking/presentation/screens/aircon_repair_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/beauty_wellness_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_options_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_branch_slot_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_checkout_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/presentation/routes/category_routes.dart';
 import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
 import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
@@ -271,32 +268,32 @@ class MainRouter {
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
-                      path: AirconRepairScreen.route,
-                      name: AirconRepairScreen.routeName,
+                      path: CategoryRoutes.aircon,
+                      name: CategoryRoutes.aircon,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
                               categoryId: ServiceCategoryId.aircon),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
-                      path: BeautyWellnessScreen.route,
-                      name: BeautyWellnessScreen.routeName,
+                      path: CategoryRoutes.beautyWellness,
+                      name: CategoryRoutes.beautyWellness,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
                               categoryId: ServiceCategoryId.beautyWellness),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
-                      path: HairNailsScreen.route,
-                      name: HairNailsScreen.routeName,
+                      path: CategoryRoutes.hairNails,
+                      name: CategoryRoutes.hairNails,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
                               categoryId: ServiceCategoryId.hairAndNails),
                     ),
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
-                      path: MassageScreen.route,
-                      name: MassageScreen.routeName,
+                      path: CategoryRoutes.massage,
+                      name: CategoryRoutes.massage,
                       builder: (context, state) =>
                           const CategoryExperienceScreen(
                               categoryId: ServiceCategoryId.massage),

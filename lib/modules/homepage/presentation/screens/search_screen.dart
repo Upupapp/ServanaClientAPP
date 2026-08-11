@@ -5,13 +5,12 @@ import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
 import 'package:client/modules/bw_booking/presentation/screens/bw_options_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/hair_nails_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/massage_screen.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/domain/search_result.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:go_router/go_router.dart';
+import 'package:client/common/presentation/routes/category_routes.dart';
 
 class _ChipData {
   const _ChipData(this.id, this.label);
@@ -62,9 +61,9 @@ class _SearchScreenState extends State<SearchScreen> {
       case ServiceCategoryId.beautyWellness:
         context.pushNamed(BwOptionsScreen.routeName);
       case ServiceCategoryId.hairAndNails:
-        context.pushNamed(HairNailsScreen.routeName);
+        context.pushNamed(CategoryRoutes.hairNails);
       case ServiceCategoryId.massage:
-        context.pushNamed(MassageScreen.routeName);
+        context.pushNamed(CategoryRoutes.massage);
       case ServiceCategoryId.generic:
         break;
     }
