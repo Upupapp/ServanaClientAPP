@@ -82,6 +82,11 @@ import 'package:client/common/services/threat_detection/provider/threat_detectio
 import 'package:client/core/network/canonical_availability.dart';
 import 'package:client/core/network/compat/canonical_router.dart';
 import 'package:client/core/network/v1_api_client.dart';
+import 'package:client/core/session/secure_session_store.dart';
+import 'package:client/core/session/session_cleanup_service.dart';
+import 'package:client/modules/authentication/data/identity_canonical_data_source.dart';
+import 'package:client/modules/authentication/data/identity_compatibility_data_source.dart';
+import 'package:client/modules/authentication/data/identity_repository.dart';
 import 'package:client/modules/notifications/data/notifications_canonical_data_source.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -211,6 +216,30 @@ void initInjector(AppConfig config) {
           SessionService.deleteSession().ignore();
         } catch (_) {}
       },
+    ),
+  );
+
+  // Session hardening (TAB 03).
+  //
+  // SecureSessionStore is additive: it keeps credentials in flutter_secure_storage
+  // with their own lifetime, alongside the existing Hive-backed SessionService
+  // rather than replacing it. Rewriting the read path would break every
+  // signed-in customer on the installed base, which still runs 1.0.0+37.
+  dpLocator.registerLazySingleton(() => SecureSessionStore());
+  dpLocator.registerLazySingleton(() => const SessionCleanupService());
+
+  // Identity: canonical /api/v1/me + verification, gated OFF; legacy otherwise.
+  dpLocator.registerLazySingleton(
+    () => IdentityCompatibilityDataSource(dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => IdentityCanonicalDataSource(dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => IdentityRepository(
+      compatibility: dpLocator<IdentityCompatibilityDataSource>(),
+      canonical: dpLocator<IdentityCanonicalDataSource>(),
+      router: dpLocator(),
     ),
   );
 

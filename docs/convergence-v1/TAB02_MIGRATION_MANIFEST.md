@@ -65,6 +65,9 @@ Every call the app makes is still served by a compatibility source today. This
 table is what changes that, per domain. "Blocked on" is the condition that must
 hold before the capability may be enabled — not a schedule.
 
+> **TAB 03 update (identity).** `V1Capability.identity` was added and the
+> authentication/verification domain now uses the same pattern. See §7.
+
 ### 3.1 Capabilities defined and ready to switch
 
 Complete canonical surfaces. Enabling them is a define and a test run.
@@ -175,3 +178,94 @@ navigation to anything absent from the set. Sourcing that list from
 configuration would make it extendable by whoever controls the build or the
 network, so it stays compiled in. The exemption is matched per file, so a new
 host literal anywhere else still fails the test.
+
+---
+
+## 7. TAB 03 — authentication, registration, verification and /me
+
+Added `V1Capability.identity`, gated OFF like every other capability.
+
+### 7.1 What moved behind the boundary
+
+| Operation | Compatibility (today) | Canonical successor | In `IdentityDataSource` |
+| --- | --- | --- | :---: |
+| Who am I | `GET /api/user/profile` (projected) | `GET /api/v1/me` | yes |
+| Resend email code | `POST /api/auth/resend-email-otp` | `POST /api/v1/auth/resend-verification` | yes |
+| Verify email | `POST /api/auth/verify-email-otp` | `POST /api/v1/auth/verify-email` | yes |
+| Verify mobile | **none — no legacy route exists** | `POST /api/v1/auth/verify-mobile` | yes |
+| Forgot password | **none — Firebase handles it on this client** | `POST /api/v1/auth/forgot-password` | yes |
+| Reset password | **none — Firebase handles it on this client** | `POST /api/v1/auth/reset-password` | yes |
+| Logout | `POST /api/auth/logout` | `POST /api/v1/auth/logout` | yes |
+
+The three "none" rows throw a deterministic `UnsupportedTransportOperation`,
+which the repository turns into a non-retryable failure. A silent no-op would
+report a mobile number as verified when nothing verified it.
+
+### 7.2 What is deliberately NOT in the capability
+
+**Sign-in.** The customer app authenticates via
+`POST /api/auth/customer-firebase-login`. The backend's migration matrix
+classifies it `ROLE_SPECIFIC` and explicitly does **not** collapse it into
+`POST /api/v1/auth/login`: its link-collision contract is a 200 carrying
+`status: "failed"` and no token, because the installed app throws on any
+non-2xx before reading the body and fires `onUnauthorized` on 401. Either
+alternative would show "session expired" to somebody who has no session yet.
+Changing that shape is a client release, so sign-in stays on the compatibility
+path in **every** configuration — which is why the capability is named
+`identity` and not `auth`.
+
+**Account creation.** Registration goes through the multi-step form and
+`Backend.registerCustomer`, a different payload from
+`POST /api/v1/auth/register`. Entangled with form state; out of scope here.
+
+### 7.3 Session hardening
+
+- `SecureSessionStore` (`lib/core/session/`) keeps the bearer and refresh
+  tokens in `flutter_secure_storage` with their own lifetime, instead of only
+  inside the general-purpose `UserSession` Hive object. **Additive**: the
+  existing `SessionService` and its box are unchanged, because rewriting the
+  read path would break every signed-in customer on the installed base, which
+  still runs `1.0.0+37`. This is the *expand* half of expand-migrate-contract;
+  contract belongs to a later tab once telemetry shows the base has moved.
+- It stores the token SUBJECT alongside the credential, so an account switch is
+  detectable and account A's token can never be handed to a process that now
+  believes it is account B.
+- Only credentials live there. No email, phone or name: a credential store is
+  not a profile store.
+- `SessionCleanupService` holds the customer-scoped teardown that was ~90 lines
+  inline in `AuthenticationBloc._onLogout`. Same steps, same order, two new
+  properties: each step is isolated (the old code grouped fifteen clears into
+  one `try`, so a throw in the second silently skipped thirteen) and the
+  outcome is reported rather than silent.
+
+### 7.4 Error and fallback UX
+
+`AuthFailureCopy` maps canonical **codes** to copy plus an `AuthRecovery`,
+replacing substring matching on backend prose. All six codes the Master Command
+names are handled — `INVALID_CREDENTIALS`, `ACCOUNT_UNVERIFIED`, `OTP_INVALID`,
+`OTP_EXPIRED`, `RATE_LIMITED`, `RESET_TOKEN_INVALID` — and crucially
+`OTP_INVALID` and `OTP_EXPIRED` now get different recoveries, which
+`e.toString().contains('400')` could not do.
+
+`EmailVerificationScreen` gained a resend countdown (fixed cooldown after a
+send; the server's `Retry-After` wins when it supplies one), an offline state
+via the transport-aware copy, and a "Sign in again" action on the one failure it
+cannot recover from in place. Its layout, palette and existing widgets are
+unchanged.
+
+### 7.5 Preserved
+
+`SplashScreen`, `WelcomeScreen`, `AuthenticationScreen` and
+`CreateAccountScreen` are **byte-identical** — verified by
+`git diff -- <those paths>` returning empty. Only data behaviour behind them
+changed.
+
+### 7.6 Remaining compatibility gaps after TAB 03
+
+| Gap | Blocked on |
+| --- | --- |
+| Sign-in stays legacy permanently | A backend decision to give `customer-firebase-login` a canonical successor with a compatible failure shape |
+| Registration stays legacy | Canonical registration aligned to the multi-step form |
+| Mobile verification unavailable | `/api/v1` deployment — there is no legacy route to fall back to |
+| Password reset via API unavailable | Same; the client uses Firebase today |
+| `SessionService` Hive box still holds a token copy | The contract phase, once installed-base telemetry allows |

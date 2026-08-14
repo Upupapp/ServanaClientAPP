@@ -70,6 +70,24 @@ enum V1Capability {
   /// `GET|PATCH /api/v1/customer/profile`, `/api/v1/customer/addresses*`.
   customerProfile,
 
+  /// `GET /api/v1/me` plus the verification and password-reset endpoints:
+  /// `POST /api/v1/auth/verify-email`, `…/verify-mobile`,
+  /// `…/resend-verification`, `…/forgot-password`, `…/reset-password`,
+  /// `…/logout`.
+  ///
+  /// Deliberately named `identity` and NOT `auth`. Sign-in is excluded: the
+  /// customer app authenticates through
+  /// `POST /api/auth/customer-firebase-login`, which the backend's migration
+  /// matrix classifies `ROLE_SPECIFIC` and explicitly does **not** collapse
+  /// into `POST /api/v1/auth/login` — its link-collision contract is a 200
+  /// carrying `status: "failed"`, and changing that shape is a client release.
+  /// Account creation is excluded for the same kind of reason: it goes through
+  /// the multi-step registration form and a different payload.
+  ///
+  /// So enabling this capability migrates identity reads and verification, and
+  /// leaves sign-in and registration on the compatibility path by design.
+  identity,
+
   /// `GET|POST /api/v1/conversations*`.
   conversations,
 }

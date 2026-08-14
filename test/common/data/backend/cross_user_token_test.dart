@@ -40,10 +40,21 @@ void main() {
     });
 
     test('a signOut failure cannot block the logout the user asked for', () {
+      // The guarantee is unchanged; the mechanism moved. signOut is now a
+      // CleanupStep, and SessionCleanupService.run isolates every step —
+      // recording a failure and continuing rather than propagating. That is a
+      // stronger promise than the old inline try/catch, because it also
+      // guarantees the steps AFTER signOut still run.
+      //
+      // Behaviour is asserted directly in
+      // test/core/session/session_cleanup_service_test.dart; this only checks
+      // the wiring, since a source scan cannot execute the bloc.
       final i = bloc.indexOf('FirebaseAuth.instance.signOut()');
-      final around = bloc.substring(i - 200, i + 120);
-      expect(around, contains('try {'));
-      expect(around, contains('catch (_) {}'));
+      final around = bloc.substring(i - 400, i + 120);
+      expect(around, contains('CleanupStep('),
+          reason: 'signOut must run as an isolated cleanup step');
+      expect(bloc, contains('_cleanup.run(customerScopedCleanupSteps('),
+          reason: 'the steps must be executed through the isolating runner');
     });
   });
 
