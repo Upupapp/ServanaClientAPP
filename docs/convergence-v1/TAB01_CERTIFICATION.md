@@ -86,14 +86,26 @@ TAB 01 constraint — no endpoint was assumed to exist from prose:
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Static analysis | `flutter analyze --no-fatal-infos` | **exit 0** — 0 errors, 0 warnings, 39 infos (ran in 215.7 s) |
-| Test suite | `flutter test` | **exit 0** — `All tests passed!` · 1519 passed, 6 skipped, 0 failed |
+Run against the final tree, after the arithmetic corrections.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Static analysis | `flutter analyze --no-fatal-infos` | **exit 0** — 0 errors, 0 warnings, 39 infos (213.1 s) |
+| Test suite | `flutter test` | **exit 0** — `All tests passed!` · 1519 passed, 6 skipped, 0 failed (56 s) |
+| Build | `flutter build apk --debug` | **exit 0** — `Built build\app\outputs\flutter-apk\app-debug.apk` (Gradle `assembleDebug` 201.0 s) |
+| Matrix self-consistency | row/tally audit of Matrix 2 against `servana_api_client.dart` | 76 numbered rows, ids 1–76, no gaps or duplicates; dispositions sum to 76; verdicts sum to 76 |
+| Cited counts re-verified | `find` / `grep` re-run for every figure in §2 | all match |
 | Protected assets untouched | `git status --porcelain -- assets assets_src pubspec.yaml` | **empty** |
 | Client code untouched by TAB 01 | `git status --porcelain -- lib test` | only the pre-existing `app_theme.dart` modification |
 
 The 39 analyzer infos are all `prefer_const*` in settings screens and two test
 files. They pre-date TAB 01 and are unrelated to it. The 6 skipped tests are
-likewise pre-existing skips, not skips introduced here.
+likewise pre-existing skips, not skips introduced here. The build emits a
+forward-compatibility warning that six plugins still apply the Kotlin Gradle
+Plugin (`freerasp`, `in_app_update`, `location`, `package_info_plus`,
+`sign_in_with_apple`, `webview_flutter_android`); it does not fail the build
+today, is unrelated to TAB 01, and belongs to release engineering rather than
+convergence.
 
 TAB 01 is a documentation-only tab: it added five Markdown files under
 `docs/convergence-v1/` and changed no Dart, no assets and no build
@@ -106,9 +118,10 @@ configuration.
 - **Branch** `main`. Base HEAD at task start `ce02830`. TAB 01 added two local
   commits and nothing else:
   - `d7701c4` — the five deliverables under `docs/convergence-v1/`.
-  - a follow-up commit correcting the call-set arithmetic in those documents
-    (76 distinct verb+path pairs, not 74) after an internal-consistency audit
+  - `0dc6e87` — corrects the call-set arithmetic in those documents (76
+    distinct verb+path pairs, not 74) after an internal-consistency audit
     against `servana_api_client.dart`.
+  - a third commit recording the final verification results in §4.
 - **Pre-existing unstaged modification preserved.**
   `lib/common/config/app_theme.dart` carries six `const` promotions in
   `buildDarkAppTheme` that were in the tree before this task began. TAB 01 did
