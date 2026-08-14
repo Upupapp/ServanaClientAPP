@@ -79,6 +79,10 @@ import 'package:client/modules/support/application/support_ticket_controller.dar
 import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/modules/support/data/support_repository.dart';
 import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
+import 'package:client/core/network/canonical_availability.dart';
+import 'package:client/core/network/compat/canonical_router.dart';
+import 'package:client/core/network/v1_api_client.dart';
+import 'package:client/modules/notifications/data/notifications_canonical_data_source.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final dpLocator = GetIt.instance;
@@ -170,6 +174,37 @@ void initInjector(AppConfig config) {
         return user.getIdToken();
       },
       // STITCH B1: force session expiry on any 401 so the router redirects to login.
+      onUnauthorized: () {
+        try {
+          dpLocator<AuthStateService>().update(AuthStatus.expired);
+          SessionService.deleteSession().ignore();
+        } catch (_) {}
+      },
+    ),
+  );
+
+  // Canonical /api/v1 transport.
+  //
+  // Registered unconditionally so it is constructible and testable, and gated
+  // by CanonicalAvailability so it carries no traffic. The gate is deny-by-
+  // default and can only be opened by a build define — never by the network.
+  // /api/v1 is absent from the backend's origin/main, so no shipped build
+  // enables it. See docs/convergence-v1/TAB02_MIGRATION_MANIFEST.md.
+  dpLocator.registerLazySingleton(() => const CanonicalAvailability());
+  dpLocator.registerLazySingleton(
+    () => CanonicalRouter(availability: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => V1ApiClient(
+      // Same environment switch as every other call. No literal host.
+      baseUrl: config.baseUrl,
+      tokenProvider: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return null;
+        return user.getIdToken();
+      },
+      // A 401 must mean the same thing on both transports, or the two would
+      // disagree about whether the session is alive.
       onUnauthorized: () {
         try {
           dpLocator<AuthStateService>().update(AuthStatus.expired);
@@ -320,9 +355,17 @@ void initInjector(AppConfig config) {
     () => NotificationsLocalDataSource(),
   );
   dpLocator.registerLazySingleton(
+    () => NotificationsCanonicalDataSource(dpLocator()),
+  );
+  // Both sources are constructed; the router decides which one answers. With
+  // CANONICAL_V1_ENABLED unset — every build today — that is always the legacy
+  // source, so this registration changes no runtime behaviour.
+  dpLocator.registerLazySingleton(
     () => NotificationsRepository(
       remote: dpLocator(),
       local: dpLocator(),
+      canonical: dpLocator<NotificationsCanonicalDataSource>(),
+      router: dpLocator(),
     ),
   );
   dpLocator.registerLazySingleton(

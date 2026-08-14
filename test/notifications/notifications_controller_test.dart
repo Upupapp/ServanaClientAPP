@@ -72,7 +72,10 @@ void main() {
       when(() => mockRepo.fetchNotifications(uid: any(named: 'uid')))
           .thenAnswer((_) async => [notif('n1'), notif('n2')]);
       when(() => mockRepo.fetchUnreadCount(any())).thenAnswer((_) async => 2);
-      when(() => mockRepo.markRead('n1')).thenAnswer((_) async {});
+      // Null is what the legacy route reports: it answers with no body, so
+      // there is no reconciled unread count and the optimistic decrement
+      // stands. See NotificationsDataSource.markRead.
+      when(() => mockRepo.markRead('n1')).thenAnswer((_) async => null);
 
       await ctrl.init('uid-123');
       await ctrl.markRead('n1');

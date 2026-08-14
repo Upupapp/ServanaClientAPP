@@ -113,7 +113,16 @@ class NotificationsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.markRead(key);
+      // The canonical route answers with the unread count recomputed from the
+      // same store the list was read from, so when it is available we take it
+      // instead of trusting the decrement above. The legacy route returns no
+      // body and therefore null, which leaves the optimistic value in place —
+      // the behaviour this screen has always had.
+      final reconciled = await _repository.markRead(key);
+      if (reconciled != null && reconciled != _unreadCount) {
+        _unreadCount = reconciled.clamp(0, 9999);
+        notifyListeners();
+      }
     } catch (_) {
       // Rollback on failure
       if (_activeUid != null) {

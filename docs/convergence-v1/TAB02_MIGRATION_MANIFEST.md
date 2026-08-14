@@ -1,0 +1,177 @@
+# TAB 02 — API client, DTO and compatibility architecture
+
+**Servana Client Mobile Backend Convergence V1**
+Client `servana_client-main`, branch `main`. Backend evidence `servana_api-main`.
+
+The local migration manifest the TAB 02 command asks for: what the canonical
+boundary is, which endpoints are still served by compatibility sources, and
+what has to be true before each one can move.
+
+---
+
+## 1. What was built
+
+| Layer | File | Role |
+| --- | --- | --- |
+| Failure model | `lib/core/network/api_failure.dart` | Nine sealed cases — the only vocabulary above the boundary |
+| Error mapping | `lib/core/network/api_error_mapper.dart` | Every wire shape → one `ApiFailure` |
+| Envelope | `lib/core/network/api_envelope.dart` | Reads all three response envelopes; `PageMeta`, `Page<T>` |
+| Correlation | `lib/core/network/request_id.dart` | `X-Request-Id` per attempt, `X-Correlation-Id` per intent |
+| Endpoints | `lib/core/network/v1_endpoints.dart` | The only place `/api/v1` paths are written |
+| Transport | `lib/core/network/v1_api_client.dart` | Auth, timeout, pagination, retry classification |
+| Gate | `lib/core/network/canonical_availability.dart` | Deny-by-default capability switch |
+| Router | `lib/core/network/compat/canonical_router.dart` | Canonical vs compatibility selection |
+
+Pilot vertical slice — notifications:
+
+| File | Role |
+| --- | --- |
+| `notifications_data_source.dart` | The interface both transports satisfy |
+| `notifications_canonical_data_source.dart` | `/api/v1/notifications*` |
+| `notifications_remote_data_source.dart` | `/api/user/notifications*` (compatibility) |
+| `notifications_repository.dart` | Selects one, returns `List<ServanaNotification>` either way |
+
+---
+
+## 2. The runtime state of every shipped build
+
+**Fully legacy. No canonical traffic. No behaviour change from TAB 01.**
+
+`CanonicalAvailability` is false unless a build passes *both*
+`--dart-define=CANONICAL_V1_ENABLED=true` and a non-empty
+`CANONICAL_V1_CAPABILITIES`. No production build passes either, because
+`/api/v1` is absent from the backend's `origin/main` — TAB 01 verified
+`src/api/v1/contract.ts` is not on the pushed branch and
+`origin/main:src/app.ts` mounts zero v1 routers.
+
+Three properties make that a fact about the build rather than a promise:
+
+1. The gate is a **compile-time** define. Nothing on the network can open it,
+   and there is no runtime probe that could guess wrong.
+2. The router **never falls back**. It does not catch a canonical failure and
+   retry on legacy — during a partial rollout that would double-send mutations
+   to two backends.
+3. A repository handed a canonical source but **no router** pins itself to
+   compatibility, so a half-wired injector fails toward legacy.
+
+Asserted by `test/core/network/canonical_availability_test.dart` and
+`test/modules/notifications/notifications_compatibility_test.dart`.
+
+---
+
+## 3. Remaining compatibility endpoints
+
+Every call the app makes is still served by a compatibility source today. This
+table is what changes that, per domain. "Blocked on" is the condition that must
+hold before the capability may be enabled — not a schedule.
+
+### 3.1 Capabilities defined and ready to switch
+
+Complete canonical surfaces. Enabling them is a define and a test run.
+
+| Capability | Compatibility endpoints today | Canonical successors | Blocked on |
+| --- | --- | --- | --- |
+| `notifications` | `GET /api/user/notifications`, `…/unread-count`, `PATCH …/:key/read`, `POST …/mark-all-read`, `POST\|DELETE /api/user/fcm-token` | `GET /api/v1/notifications`, `…/unread-count`, `PATCH …/:key/read`, `POST …/read-all`, `POST\|DELETE /api/v1/me/devices` | v1 deploy |
+| `catalog` | `GET /api/catalog`, `…/summary`, `…/services/:id` | `GET /api/v1/catalog`, `…/summary`, `…/services/:serviceId` | v1 deploy. **Also unpushed on legacy** — see §5 |
+| `customerProfile` | `GET /api/user/profile`, `PUT /api/user/updateprofile`, `GET /api/user/alluseraddresses`, `POST /api/user/adduseraddress`, `PUT /api/user/makeaddressprimary`, `DELETE /api/user/deleteaddress` | `GET\|PATCH /api/v1/customer/profile`, `/api/v1/customer/addresses*` | v1 deploy |
+| `conversations` | `GET /api/bookings/:id/conversation`, `GET /api/chat/conversations`, `GET\|POST …/:id/messages`, `POST …/:id/read` | `POST\|GET /api/v1/conversations`, `…/:id/messages`, `…/:id/read` | v1 deploy **and** a semantic decision — see §4 |
+
+### 3.2 Capabilities deliberately NOT defined
+
+`V1Capability` has no value for these. Adding one would let a build claim a
+migration it cannot make.
+
+| Domain | Why not | Blocked on |
+| --- | --- | --- |
+| **bookings** | `POST /api/bookings` is classified `KEEP` with **no canonical successor and none planned**. A "migrated" booking domain would still create bookings on a legacy route. | A backend contract entry for canonical booking creation |
+| **reviews** | 4 of 9 calls have successors. `GET\|PUT\|DELETE /api/reviews/:id`, `GET /api/reviews/me` and `POST …/report` do not. | Canonical review-lifecycle endpoints |
+| **support** | The v1 relative is booking-scoped only and documented as narrower, not equivalent: the general contact surface "carries no bookingId". | A canonical non-booking support surface |
+| **payments** | `paymongo/create` has a successor; `gcash-submit`, `approve`, `mark-cash-paid` do not — though none has a production caller. | Contract decision on the manual-payment family |
+| **tracking** | `GET /api/booking/:id/provider` has no successor; provider-location maps onto `…/tracking`. | Canonical provider identity endpoint |
+
+### 3.3 Calls with no canonical successor inside an otherwise complete domain
+
+The awkward case, and the reason the pattern allows a per-call escape.
+
+| Call | Domain | Handling |
+| --- | --- | --- |
+| `DELETE /api/user/notifications/:key` | `notifications` | Deliberately **absent** from `NotificationsDataSource`. `NotificationsRepository.dismiss` calls the compatibility source directly, in every configuration, even when the rest of the domain is canonical. Asserted by test. |
+
+Expressing that gap in the type system rather than in a comment is the point:
+the canonical implementation cannot invent an endpoint that does not exist, and
+cannot throw at runtime on a button the customer can see.
+
+---
+
+## 4. Decisions taken, and why
+
+**The canonical client is a second transport, not a replacement.**
+`ServanaApiClient` is untouched and still serves all 76 legacy calls. Collapsing
+the two before v1 deploys would mean editing the code path that currently
+serves customers, for no user-visible gain.
+
+**Retry is refused by default.** `ApiFailure.isRetryable` is false on the base
+class; only `RetryableFailure` and `RateLimitFailure` override it. A mutation is
+never retried without an idempotency key — enforced in `V1ApiClient._send`, so a
+data source cannot forget it.
+
+**`IDEMPOTENCY_KEY_REUSED` is its own failure case.** It shares HTTP 409 with
+every state conflict and means the opposite: a state conflict is "look again, it
+may not have happened", this is "it happened, do not send it again". Conflating
+them is how a customer ends up with two bookings.
+
+**`markRead` returns a nullable count.** v1 answers with the unread count
+recomputed from the store the list was read from; the legacy route returns no
+body. Null is "unknown, re-fetch if you need the badge" and never zero — zero
+would clear a badge that still has unread items. `NotificationsController` now
+takes the reconciled count when present and keeps its optimistic decrement
+otherwise, which is the behaviour it has always had on legacy.
+
+**Conversation creation changes meaning under v1.** Legacy
+`GET /api/bookings/:id/conversation` lazily creates; canonical is an explicit
+`POST /api/v1/conversations`. That is the fix for the finding that a
+conversation is created the moment the customer opens the screen with no
+assignment gate. It is a semantic change the client cannot make transparently,
+so `conversations` is defined as a capability but its migration needs a product
+decision about when a conversation should exist, not just a define.
+
+**No new dependency.** Request ids are generated locally. They are random and
+must not encode a uid, phone number, booking id or device identifier — a
+correlation id travels to server logs, crash reports and support tickets, which
+is exactly where a stable personal identifier should not go.
+
+---
+
+## 5. Upstream and environmental gaps
+
+Unchanged from TAB 01 and not closable from this repository.
+
+| Gap | Effect on TAB 02 |
+| --- | --- |
+| `/api/v1` absent from backend `origin/main` (51 unpushed commits) | The canonical sources cannot be exercised against a real server. They are covered by tests against a mock transport only. |
+| Four `/api/catalog*` routes also unpushed | The `catalog` capability is blocked twice over: its canonical successor is undeployed *and* the legacy route it would replace is undeployed. |
+| No canonical `POST /api/v1/bookings` | The largest domain cannot be defined as a capability at all. |
+| Production ≠ `origin/main`, unverifiable | No request was made to any environment. Availability claims remain `origin/main`-based. |
+| Installed base is `1.0.0+37` | Anything the installed base calls must keep working; the backend's own retirement rule requires 90 days of zero hits for a mobile alias. |
+
+---
+
+## 6. Acceptance gate
+
+| Gate condition | Status | Evidence |
+| --- | --- | --- |
+| No screen contains a new raw endpoint string | **met** | `test/core/network/no_raw_endpoints_in_presentation_test.dart` scans all presentation sources and fails on any path or host literal |
+| Canonical and compatibility responses normalise to one mobile model | **met** | `notifications_compatibility_test.dart` asserts field-by-field equivalence of `ServanaNotification` from both transports |
+| Production API base configuration unchanged | **met** | `AppConfig.baseUrl` untouched; `git diff` shows no change to `lib/common/config/` |
+| Focused tests for touched domains | **met** | 82 new tests across `test/core/network/` and `test/modules/notifications/` |
+| Full verification and build | **met** | See the certification section of the TAB 02 report |
+| Durable phase checkpoint | **met** | `tab02-canonical-api-boundary` in the project memory store |
+
+One documented exception to the host rule:
+`payment_webview_screen.dart` holds `_approvedHosts`, the deny-by-default set
+of origins the checkout WebView may navigate to. Those literals are a security
+boundary, not a call target — the screen never requests them, it refuses
+navigation to anything absent from the set. Sourcing that list from
+configuration would make it extendable by whoever controls the build or the
+network, so it stays compiled in. The exemption is matched per file, so a new
+host literal anywhere else still fails the test.
