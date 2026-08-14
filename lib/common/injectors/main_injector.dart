@@ -84,6 +84,7 @@ import 'package:client/core/network/compat/canonical_router.dart';
 import 'package:client/core/network/v1_api_client.dart';
 import 'package:client/core/session/secure_session_store.dart';
 import 'package:client/core/session/session_cleanup_service.dart';
+import 'package:client/core/session/session_token_store.dart';
 import 'package:client/modules/authentication/data/identity_canonical_data_source.dart';
 import 'package:client/modules/authentication/data/identity_compatibility_data_source.dart';
 import 'package:client/modules/authentication/data/identity_repository.dart';
@@ -226,6 +227,10 @@ void initInjector(AppConfig config) {
   // rather than replacing it. Rewriting the read path would break every
   // signed-in customer on the installed base, which still runs 1.0.0+37.
   dpLocator.registerLazySingleton(() => SecureSessionStore());
+  // The one authority for token material: secure storage, with a verified
+  // one-time migration of any legacy Hive token. Registered as a singleton so
+  // the in-memory cache is shared rather than re-read per consumer.
+  dpLocator.registerLazySingleton(() => SessionTokenStore(secure: dpLocator()));
   dpLocator.registerLazySingleton(() => const SessionCleanupService());
 
   // Identity: canonical /api/v1/me + verification, gated OFF; legacy otherwise.

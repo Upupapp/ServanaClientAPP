@@ -220,6 +220,11 @@ path in **every** configuration — which is why the capability is named
 
 ### 7.3 Session hardening
 
+> **Closed after the first TAB 03 pass.** `SecureSessionStore` originally had
+> no production write path — tokens kept being persisted inside the
+> `UserSession` Hive record and the secure store was only ever cleared. §7.7
+> records the storage lifecycle that closes it.
+
 - `SecureSessionStore` (`lib/core/session/`) keeps the bearer and refresh
   tokens in `flutter_secure_storage` with their own lifetime, instead of only
   inside the general-purpose `UserSession` Hive object. **Additive**: the
@@ -269,3 +274,67 @@ changed.
 | Mobile verification unavailable | `/api/v1` deployment — there is no legacy route to fall back to |
 | Password reset via API unavailable | Same; the client uses Firebase today |
 | `SessionService` Hive box still holds a token copy | The contract phase, once installed-base telemetry allows |
+
+### 7.7 Token storage lifecycle (expand → migrate → contract)
+
+`SessionTokenStore` (`lib/core/session/session_token_store.dart`) is the single
+authority for token material. Nothing else reads or writes a bearer or refresh
+token.
+
+**Read path**
+
+1. In-memory cache, if warm. `read()` is on the path of every authenticated
+   request; secure storage is a platform channel, so hitting it per request
+   would add a hop to every call the app makes.
+2. `SecureSessionStore` (Keychain / EncryptedSharedPreferences).
+3. **Legacy fallback, once.** If secure storage is empty and the Hive
+   `UserSession` still carries a token, the store migrates it (below) and
+   returns working credentials either way.
+
+**Migration, and why it is ordered this way**
+
+```
+write secure  →  READ IT BACK  →  compare  →  only then strip legacy
+```
+
+The read-back is the load-bearing step. A corrupt keystore can accept a write
+and store nothing; a naive "write then strip" passes that and then loses the
+credential. On any failure — throwing write, or a read-back mismatch — the
+legacy token is left **exactly as it was**, the customer stays signed in, and
+the migration retries next launch. Nothing about the failure is logged, because
+anything derived from it could carry the value being protected.
+
+**Write path.** Steady-state writes are secure-storage only, and each one also
+strips any legacy copy so a later sign-in cannot resurrect a token in Hive.
+`AuthenticationBloc._persistSession` writes the session record with **empty**
+token fields for the same reason.
+
+**Clear path.** `clear()` wipes both locations. It runs from the
+`sessionTokens` cleanup step on logout, and from the account-switch branch of
+`_persistSession` — signing in as somebody else on a device that never signed
+out is the same leak as a missed logout and does not go through `_onLogout`.
+
+**What stays in Hive.** Only non-secret session fields — customer id, display
+name, email, mobile — which about twenty screens read. Deleting the record
+would sign the customer out of screens that have nothing to do with credentials.
+
+**Contract phase, NOT done here.** `UserSession.token` and
+`UserSession.refreshToken` remain declared. Removing fields from a persisted
+Hive adapter is its own migration, and doing it now would break the record for
+every installed customer. `SessionTokenStore.didFallBackToLegacy` is the signal
+that phase needs: when no device reports a fallback, the fields can go. It is
+exposed as a plain flag and deliberately not reported anywhere automatically —
+shipping telemetry for it is a separate, consented decision.
+
+**Guards.** `test/core/session/session_token_store_test.dart` covers migration
+success, write failure preserving legacy material, the silently-dropped-write
+case, post-migration cleanup, secure reads, caching, clear-both-locations and
+account-switch detection. `test/core/session/no_hive_token_writes_test.dart`
+fails if any code path writes token material back into the Hive record, and
+asserts the read-back-before-strip ordering.
+
+**Environmental gap.** The migration has been exercised against an in-memory
+fake of `FlutterSecureStorage`, not against a real Keychain or a real
+EncryptedSharedPreferences store, and not against a device that has actually
+restored from backup. Those are the conditions the failure branches exist for,
+and they can only be confirmed on hardware.

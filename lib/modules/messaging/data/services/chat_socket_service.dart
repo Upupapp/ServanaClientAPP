@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/core/session/session_token_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -87,8 +87,10 @@ class ChatSocketService {
 
   Future<void> connect() async {
     if (_disposed || isConnected) return;
-    final session = await SessionService.getSession();
-    final token = session?.token ?? '';
+    // Token material comes from SessionTokenStore, not the Hive record: after
+    // the secure-storage migration the record's token field is empty, and
+    // reading it here would silently stop the chat socket from connecting.
+    final token = (await SessionTokenStore().read()).accessToken;
     if (token.isEmpty) return;
 
     _socket = io.io(

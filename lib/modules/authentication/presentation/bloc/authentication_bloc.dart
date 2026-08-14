@@ -38,6 +38,8 @@ import 'package:client/core/accessibility/live_region_manager.dart';
 import 'package:client/common/constants/boxes.dart';
 import 'package:client/core/session/secure_session_store.dart';
 import 'package:client/core/session/session_cleanup_service.dart';
+import 'package:client/core/session/session_token_store.dart';
+import 'package:client/common/data/models/user_session.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -87,6 +89,47 @@ class AuthenticationBloc
   /// Runs the customer-scoped teardown on logout, isolating each step.
   final SessionCleanupService _cleanup;
 
+  /// Persists a freshly established session.
+  ///
+  /// Token material goes to [SessionTokenStore] — secure storage only — and
+  /// the non-secret fields (customer id, display name, email, mobile) stay in
+  /// the established Hive record, which about twenty screens read. The session
+  /// is written with EMPTY token fields so a sign-in can never re-introduce a
+  /// credential into Hive after the migration has removed it.
+  ///
+  /// An account SWITCH is detected here rather than at logout: signing in as
+  /// somebody else on a device that never signed out must clear the previous
+  /// customer's cached state, or their drafts and inbox leak into the new
+  /// session.
+  Future<void> _persistSession(UserSession session) async {
+    final store = _tokenStore;
+    final switching = await store.isDifferentSubjectFrom(session.customerID);
+    if (switching) {
+      await _cleanup.run(customerScopedCleanupSteps(''));
+    }
+
+    await store.write(
+      accessToken: session.token,
+      refreshToken: session.refreshToken,
+      subject: session.customerID,
+    );
+    await SessionService.saveSession(
+      session.copyWith(token: '', refreshToken: null),
+    );
+  }
+
+  SessionTokenStore get _tokenStore => _tokenStoreOverride ?? _sharedTokenStore;
+
+  /// Injectable for tests; null in production so the shared store is used.
+  SessionTokenStore? _tokenStoreOverride;
+
+  @visibleForTesting
+  // ignore: use_setters_to_change_properties
+  void debugSetTokenStore(SessionTokenStore store) =>
+      _tokenStoreOverride = store;
+
+  static final SessionTokenStore _sharedTokenStore = SessionTokenStore();
+
   // ───────────────── event handlers ─────────────────
 
   Future<void> _onLogin(
@@ -101,7 +144,7 @@ class AuthenticationBloc
     );
 
     if (result.session != null) {
-      await SessionService.saveSession(result.session!);
+      await _persistSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
       _setAnalyticsUserContext(result.session!.customerID);
       _trackEvent(
@@ -360,7 +403,7 @@ class AuthenticationBloc
       fcmToken: fcmToken,
     );
     if (result.session != null) {
-      await SessionService.saveSession(result.session!);
+      await _persistSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
       _setAnalyticsUserContext(result.session!.customerID);
       _trackEvent(
@@ -403,7 +446,10 @@ class AuthenticationBloc
         // A logout fired concurrently — discard this stale session check.
         return;
       }
-      if (session != null && session.token.isNotEmpty) {
+      // The Hive token field is empty after migration, so "signed in" is
+      // now asked of the token store rather than of the session record.
+      final tokens = await _tokenStore.read();
+      if (session != null && tokens.isNotEmpty) {
         _notifyFcmLogin(session.customerID);
         _setAnalyticsUserContext(session.customerID); // STITCH WARN-01
         // STITCH B2: load payment context BEFORE emitting so the BlocListener
@@ -496,7 +542,10 @@ class AuthenticationBloc
         CleanupStep('firebaseSignOut', () => FirebaseAuth.instance.signOut()),
 
         // Credentials get their own step so a failure to clear a token is
-        // never hidden behind an unrelated cache error.
+        // never hidden behind an unrelated cache error. SessionTokenStore.clear
+        // wipes BOTH locations — secure storage and any legacy Hive token
+        // fields — so a device mid-migration cannot be left holding one copy.
+        CleanupStep('sessionTokens', () => _sharedTokenStore.clear()),
         CleanupStep('secureSessionStore', () async {
           await dpLocator<SecureSessionStore>().clear();
         }),

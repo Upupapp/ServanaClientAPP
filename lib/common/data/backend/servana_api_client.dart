@@ -3,6 +3,7 @@ import 'dart:developer' as dev;
 
 import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/core/session/session_token_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -50,12 +51,18 @@ class ServanaApiClient {
   /// app wires a refreshing provider in `main_injector.dart`.
   final Future<String?> Function()? tokenProvider;
 
+  /// Where session credentials live. Injectable for tests; defaults to the
+  /// shared store so every existing call site is unaffected.
+  final SessionTokenStore _tokenStore;
+
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
     this.onUnauthorized,
     this.tokenProvider,
-  }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
+    SessionTokenStore? tokenStore,
+  })  : _client = _TimeoutClient(client ?? http.Client(), _kTimeout),
+        _tokenStore = tokenStore ?? SessionTokenStore();
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     return Uri.parse('$baseUrl$path').replace(
@@ -95,7 +102,23 @@ class ServanaApiClient {
           '[ServanaApi] session read failed, continuing anonymously: $e');
       session = null;
     }
-    final stored = session?.token;
+
+    // Token material comes from SessionTokenStore, which prefers secure
+    // storage and migrates a pre-existing Hive copy on first read. The Hive
+    // record above is still read for the NON-SECRET fields — the subject that
+    // `_matchesSession` compares against — because those are not credentials
+    // and ~20 other call sites depend on them.
+    SessionTokens tokens = SessionTokens.none;
+    try {
+      tokens = await _tokenStore.read();
+    } catch (e) {
+      // Same rule as the session read: a storage fault degrades to anonymous,
+      // it does not fail the request. The message is the exception TYPE only —
+      // never the value.
+      debugPrint(
+          '[ServanaApi] token read failed (${e.runtimeType}), continuing anonymously');
+    }
+    final stored = tokens.accessToken.isEmpty ? null : tokens.accessToken;
 
     // 1. Firebase SDK, for SOCIAL sign-in. getIdToken() renews when near expiry.
     final provider = tokenProvider;
@@ -130,10 +153,10 @@ class ServanaApiClient {
     //    everyone who did not use Google or Facebook.
     if (!_isExpiringSoon(stored)) return stored;
 
-    final refresh = session?.refreshToken ?? '';
+    final refresh = tokens.refreshToken ?? '';
     if (refresh.isEmpty) return stored;
 
-    _refreshInFlight ??= _exchangeRefreshToken(refresh, session!)
+    _refreshInFlight ??= _exchangeRefreshToken(refresh, tokens.subject)
         .whenComplete(() => _refreshInFlight = null);
     // Fall back to the stale token if the exchange fails: the server answers
     // 401 and onUnauthorized decides, so one place owns sign-out.
@@ -180,7 +203,7 @@ class ServanaApiClient {
 
   Future<String?> _exchangeRefreshToken(
     String refreshToken,
-    UserSession session,
+    String subject,
   ) async {
     try {
       // Deliberately does NOT go through _headers(): that would call back into
@@ -205,12 +228,13 @@ class ServanaApiClient {
       if (token is! String || token.isEmpty) return null;
 
       final rotated = data is Map ? data['refreshToken'] : null;
-      await SessionService.saveSession(
-        session.copyWith(
-          token: token,
-          refreshToken:
-              rotated is String && rotated.isNotEmpty ? rotated : refreshToken,
-        ),
+      // Secure storage only. The rotated refresh token never touches Hive —
+      // this is the steady-state write path the migration exists to establish.
+      await _tokenStore.write(
+        accessToken: token,
+        refreshToken:
+            rotated is String && rotated.isNotEmpty ? rotated : refreshToken,
+        subject: subject,
       );
       return token;
     } catch (_) {
