@@ -38,10 +38,10 @@ first, and none of it is this repository's to change.
 | --- | ---: |
 | Screen classes catalogued | 67 |
 | Router entries catalogued | 64 |
-| `ServanaApiClient` REST methods traced to call sites | 78 |
-| …with no production caller | 14 |
-| Distinct legacy endpoints called | 74 |
-| DTO-bearing source files | 41 |
+| `ServanaApiClient` public methods traced to call sites | 78 |
+| …public methods with no production caller | 13 |
+| Distinct legacy endpoints called (verb + path) | 76 |
+| DTO-bearing source files | 42 |
 | Caches (Hive / secure storage / prefs / in-memory) | 10 |
 | Business assumptions registered | 18 |
 | Backend routes read as evidence | 235 at HEAD, 232 at `origin/main` |
@@ -63,11 +63,12 @@ TAB 01 constraint — no endpoint was assumed to exist from prose:
 
 ## 3. Principal findings
 
-1. **Zero client calls hit a missing backend route.** All 74 resolve to a
+1. **Zero client calls hit a missing backend route.** All 76 resolve to a
    mounted handler at backend HEAD.
-2. **Four resolve only at HEAD, not on `origin/main`** — the `/api/catalog*`
-   family the current release depends on. The shipped client is ahead of the
-   pushed backend.
+2. **Three resolve only at HEAD, not on `origin/main`** — the `/api/catalog*`
+   family the current release depends on (a fourth unpushed catalog route is
+   not called by the client). The shipped client is ahead of the pushed
+   backend.
 3. **The canonical namespace is not deployed.** `/api/v1` is absent from
    `origin/main`; the backend's own generated parity matrix reports 0 of 111
    surface × capability cells on canonical.
@@ -85,13 +86,14 @@ TAB 01 constraint — no endpoint was assumed to exist from prose:
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Static analysis | `flutter analyze --no-fatal-infos` | **exit 0** — 0 errors, 0 warnings, 39 infos |
-| Test suite | `flutter test` | see run record below |
+| Static analysis | `flutter analyze --no-fatal-infos` | **exit 0** — 0 errors, 0 warnings, 39 infos (ran in 215.7 s) |
+| Test suite | `flutter test` | **exit 0** — `All tests passed!` · 1519 passed, 6 skipped, 0 failed |
 | Protected assets untouched | `git status --porcelain -- assets assets_src pubspec.yaml` | **empty** |
 | Client code untouched by TAB 01 | `git status --porcelain -- lib test` | only the pre-existing `app_theme.dart` modification |
 
 The 39 analyzer infos are all `prefer_const*` in settings screens and two test
-files. They pre-date TAB 01 and are unrelated to it.
+files. They pre-date TAB 01 and are unrelated to it. The 6 skipped tests are
+likewise pre-existing skips, not skips introduced here.
 
 TAB 01 is a documentation-only tab: it added five Markdown files under
 `docs/convergence-v1/` and changed no Dart, no assets and no build
@@ -101,8 +103,12 @@ configuration.
 
 ## 5. Working tree, commits, and what was *not* done
 
-- **Branch** `main`, base HEAD `ce02830` — unchanged by TAB 01 other than the
-  commit recorded below.
+- **Branch** `main`. Base HEAD at task start `ce02830`. TAB 01 added two local
+  commits and nothing else:
+  - `d7701c4` — the five deliverables under `docs/convergence-v1/`.
+  - a follow-up commit correcting the call-set arithmetic in those documents
+    (76 distinct verb+path pairs, not 74) after an internal-consistency audit
+    against `servana_api_client.dart`.
 - **Pre-existing unstaged modification preserved.**
   `lib/common/config/app_theme.dart` carries six `const` promotions in
   `buildDarkAppTheme` that were in the tree before this task began. TAB 01 did

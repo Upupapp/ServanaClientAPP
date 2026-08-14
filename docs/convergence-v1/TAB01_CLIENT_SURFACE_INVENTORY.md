@@ -25,9 +25,11 @@ half is [TAB01_CONVERGENCE_RISK_MATRIX.md](TAB01_CONVERGENCE_RISK_MATRIX.md).
 | Test files under `test/` | 110 | `find test -name '*.dart'` |
 | `*Screen` classes | 67 | class scan of `lib/` |
 | `GoRoute` entries in the router | 64 | `lib/common/presentation/routes/main_router.dart` |
-| Distinct REST methods on `ServanaApiClient` | 78 | `lib/common/data/backend/servana_api_client.dart` |
-| …of which have **no production caller** | 14 | call-graph scan of `lib/` |
-| Distinct legacy endpoints called | 74 | de-duplicated from the above |
+| Declarations on `ServanaApiClient` | 82 | `lib/common/data/backend/servana_api_client.dart` |
+| …public | 78 | 4 are private helpers |
+| Public methods that name an endpoint | 76 | excludes the `getBookingDetail` delegator and the `_TimeoutClient.send` override |
+| **Distinct legacy endpoints called** (verb + path) | **76** | 77 endpoint-bearing methods, de-duplicated: `getUserProfile` and `loadProfile` share `GET /api/user/profile`, and the private `_exchangeRefreshToken` adds `POST /api/auth/refresh` |
+| …public methods with **no production caller** | 13 | call-graph scan of `lib/` |
 | `/api/v1` endpoints called | **0** | `grep -rn 'api/v1' lib test` → no match |
 | Hive boxes | 4 | `session`, `servana_onboarding`, `catalog_cache_v2`, `registration` |
 | Secure-storage caches | 3 | draft, operation journal, pending payment |
@@ -217,13 +219,16 @@ path reaches it.
 | `reportReview` | `POST /api/reviews/:reviewId/report` | reviews repository, review detail controller/screen |
 | `getProviderAggregate` | `GET /api/providers/:uid/rating` | reviews repository |
 
-### 3.1 The 14 methods with no production caller
+### 3.1 The 13 public methods with no production caller
 
 `signup`, `signin`, `resendVerification`, `getUserProfile`,
 `getRegisteredUsers`, `getAddressById`, `listFullCatalog`, `createBranchSlot`,
 `getGeoCoverage`, `createGeoCoverage`, `submitGcashProof`,
-`approveGcashPayment`, `approveCashPayment`, and the internal
-`_exchangeRefreshToken` helper (reachable only through the 401 path).
+`approveGcashPayment`, `approveCashPayment`.
+
+The private `_exchangeRefreshToken` also has no direct caller in `lib/`; it is
+reachable only through the 401 path inside the client itself, so it is counted
+separately rather than as dead surface.
 
 Three of those are the manual-payment family — `gcash-submit`, `approve`,
 `mark-cash-paid`. The customer app carries the code to approve its own payment
@@ -234,7 +239,7 @@ routes), but it is dead weight that a convergence pass should not port to v1.
 
 ## 4. DTOs
 
-41 hand-written files declare `fromJson`. Freezed generates a further 20-odd
+42 hand-written files declare `fromJson`. Freezed generates a further 20-odd
 `.g.dart`/`.freezed.dart` pairs from them, which are excluded here because they
 are derived, not authored.
 

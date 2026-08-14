@@ -35,7 +35,7 @@ Severity is about *convergence*, not about the app as it stands today.
 | **R-12** | Support migrates as one feature. | 11 support calls in `support_repository.dart` | Only `POST /api/support/tickets` has a v1 relative, and it is narrower — booking-scoped, `ROLE_SPECIFIC`, explicitly *"kept for contact that is genuinely not about a booking"* | **HOLDS** *(support stays legacy for V1)* | P2 | Deferred past V1 |
 | **R-13** | The client may supply address coordinates. | SC-039; address write path | `GET /api/location/address-suggestions`, `GET /api/location/address-details/:placeId` exist and the client calls neither; coordinates drive service-area eligibility and transport pricing | **UNVERIFIED** *(route exists; no evidence the write path was hardened)* | P1 | Backend + client |
 | **R-14** | The app the matrix describes is the app in customers' hands. | `pubspec.yaml` = `1.0.0+38`; `docs/SESSION_BRIEF.md`: Play serves **`+37`** | — | **BREAKS** | **P0** | Every TAB |
-| **R-15** | Unused API surface is harmless. | 14 `ServanaApiClient` methods have no production caller, including `approve` and `mark-cash-paid` — payment approval | routes are role-guarded server-side | **HOLDS** *(no live exposure)* | P3 | Client cleanup |
+| **R-15** | Unused API surface is harmless. | 13 public `ServanaApiClient` methods have no production caller, including `approve` and `mark-cash-paid` — payment approval | routes are role-guarded server-side | **HOLDS** *(no live exposure)* | P3 | Client cleanup |
 | **R-16** | Status strings map cleanly to customer-visible state. | `booking_status.dart:112` maps `WORKER_ASSIGNED` → `assigned` | v1 adds `GET /api/v1/bookings/:bookingId/transitions` — server-authored next actions | **HOLDS** *(SC-037 re-verified closed)* | P2 | Client, after R-03 |
 | **R-17** | Errors are strings. | `ServanaApiException(statusCode, body)`; the envelope comment records that *"ServanaClient casts `error` to String"* | v1 errors are typed `V1ErrorCode` with a `requestId` | **BREAKS** | P1 | Client TAB 02 |
 | **R-18** | The cached catalog and the live catalog have the same shape. | `catalog_cache_v2` stores canonical `Catalog` JSON; box name carries the version | if v1's `CatalogTree` differs from the legacy `/api/catalog` body, the cache must be versioned again | **UNVERIFIED** *(schemas not diffed — see Matrix 2 §13)* | P1 | Client TAB 02 |
@@ -75,7 +75,7 @@ Recorded as a finding of TAB 01, not as a plan. TAB 02 owns the plan.
 1. **Nothing client-side can start** until R-03 clears (backend deploy) — and
    deploying is outside this repository's authority.
 2. **R-04 and R-17 are one piece of work.** The envelope and the error type
-   change together, they touch every one of the 78 API methods, and doing them
+   change together, they touch all 76 endpoint-bearing methods, and doing them
    per-domain means the client holds two response conventions at once.
 3. **R-02, R-09 and R-11 are backend contract gaps**, not client work. Asking
    the client to migrate a domain whose canonical surface is partial produces

@@ -30,13 +30,18 @@ inferred from a written API description alone; every "exists" cell names a
 
 | Question | Answer | Evidence |
 | --- | --- | --- |
-| Client calls that hit **no backend route at all** | **0 of 74** | route-tree scan below |
-| Client calls whose route exists only in **unpushed** backend commits | **4** | all four `/api/catalog*` |
+| Client calls that hit **no backend route at all** | **0 of 76** | route-tree scan below |
+| Client calls whose route exists only in **unpushed** backend commits | **3** | rows 17–19, all `/api/catalog*`. A fourth catalog route, `GET /api/catalog/services`, is equally unpushed and the client does not call it. |
 | Client calls already on the canonical `/api/v1` namespace | **0** | `grep -rn 'api/v1' lib test` → no match |
 | Canonical `/api/v1` endpoints reachable in production | **0** | `src/api/v1/contract.ts` **absent** from `origin/main`; `origin/main:src/app.ts` contains **0** `api/v1` mounts |
-| Client legacy calls with a canonical v1 successor already built | 33 | `ALIAS_TEMPORARILY` rows |
+| Client legacy calls with a canonical v1 successor already built | 39 | `ALIAS_TEMPORARILY` rows |
 | Client legacy calls that must *become* canonical (no successor yet) | 3 | `CANONICALIZE` rows |
-| Client legacy calls with no successor and none planned | 38 | `KEEP` / `ROLE_SPECIFIC` rows |
+| Client legacy calls with no successor and none planned | 34 | 31 `KEEP` + 3 `ROLE_SPECIFIC` rows |
+
+39 + 3 + 34 = 76, the full client call set. By verdict the same 76 rows are
+36 `OK · V1_READY`, 34 `OK · NO_V1`, 3 `OK · CANONICALIZE` and 3 `LOCAL_ONLY` —
+the 3-row gap between 39 `ALIAS` and 36 `V1_READY` is exactly rows 17–19, which
+have a built successor *and* an unpushed legacy route.
 
 **Two findings dominate everything else in TAB 01.**
 
