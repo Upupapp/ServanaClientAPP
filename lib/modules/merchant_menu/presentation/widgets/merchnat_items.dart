@@ -20,7 +20,13 @@ class MerchantItems extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.goNamed(ItemOptionMenuScreen.routeName, extra: service);
+        // The route destructures a record, not a bare model. Passing the model
+        // alone failed its type check and bounced the customer Home — a tap
+        // that silently did the opposite of what it said.
+        context.goNamed(
+          ItemOptionMenuScreen.routeName,
+          extra: (service: service, joIId: null),
+        );
       },
       child: SizedBox(
         height: 100,
@@ -64,8 +70,10 @@ class MerchantItems extends StatelessWidget {
                       const Spacer(),
                       GestureDetector(
                         onTap: () {
-                          context.goNamed(ItemOptionMenuScreen.routeName,
-                              extra: service);
+                          context.goNamed(
+                            ItemOptionMenuScreen.routeName,
+                            extra: (service: service, joIId: null),
+                          );
                         },
                         child: Icon(
                           Icons.add_circle_rounded,

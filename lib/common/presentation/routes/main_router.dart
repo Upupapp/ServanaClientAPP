@@ -85,6 +85,32 @@ class MainRouter {
         _ => null,
       };
 
+  /// Reads a canonical `services.id` out of a route extra.
+  ///
+  /// Returns null when the extra is absent, unparseable, or not a positive id,
+  /// so the caller can bounce Home rather than continue with a placeholder.
+  ///
+  /// This exists because the alternative shipped: the Beauty & Wellness options
+  /// route coerced a bad extra with `int.tryParse('$extra') ?? 0` and handed
+  /// `serviceId: 0` to the screen, which then fetched options for a Service that
+  /// cannot exist. It is reachable — `StoreOptionItems.merchantServiceID` is a
+  /// String that DEFAULTS TO "0", so a row the API omits the id for walks
+  /// straight into it — and it fails silently, showing an empty options screen
+  /// instead of an error.
+  ///
+  /// Zero is rejected rather than treated as a sentinel: an id is a row that
+  /// exists, and every other identity-bearing route in this file already bounces
+  /// Home instead of inventing one.
+  @visibleForTesting
+  static int? asServiceId(Object? extra) {
+    final id = switch (extra) {
+      final int value => value,
+      final String value => int.tryParse(value.trim()),
+      _ => null,
+    };
+    return (id != null && id > 0) ? id : null;
+  }
+
   static CustomTransitionPage<T> _fadePage<T>(
     GoRouterState state,
     Widget child,
@@ -452,9 +478,16 @@ class MainRouter {
                       path: BwOptionsScreen.route,
                       name: BwOptionsScreen.routeName,
                       builder: (context, state) {
-                        final extra = state.extra;
-                        final serviceId =
-                            extra is int ? extra : int.tryParse('$extra') ?? 0;
+                        final serviceId = asServiceId(state.extra);
+                        if (serviceId == null) {
+                          // Same recovery every other identity-bearing route
+                          // uses. Booking options for a Service we cannot name
+                          // is not a degraded screen, it is a wrong one.
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => context.goNamed(HomeScreen.routeName),
+                          );
+                          return const Scaffold();
+                        }
                         return BwOptionsScreen(serviceId: serviceId);
                       },
                     ),
