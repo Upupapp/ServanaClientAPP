@@ -1,0 +1,27 @@
+{
+  "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
+  "repoPath": "C:\Users\paulg\OneDrive\Desktop\servana_client-mobile",
+  "backendPath": "C:\Users\paulg\OneDrive\Desktop\servana_api-main",
+  "currentTab": "TAB 07 - Service selection + merchant menu / booking entry normalization",
+  "currentTabIndex": 7,
+  "totalTabs": 20,
+  "completedTabs": [
+    "TAB 01 - Exact local repo sweep + backend delta matrix",
+    "TAB 02 - API client, DTO and compatibility architecture",
+    "TAB 03 - Authentication, registration, verification and /me",
+    "TAB 04 - Catalog V2: categories, subcategories, services",
+    "TAB 05 - Home composition + banners/campaigns preservation",
+    "TAB 06 - Search + canonical service discovery"
+  ],
+  "status": "RUNNING",
+  "supervisorCycleCount": 3,
+  "lastCheckpointAt": "2026-08-16",
+  "lastLocalCommit": "5e6fed3",
+  "workingTreeState": "app_theme.dart pre-existing modified and untouched; .gitignore + docs + supervisor pending commit",
+  "activeBlockers": [
+    "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). Canonical sources built, tested, gated OFF. Not a client defect, not a TAB blocker."
+  ],
+  "capabilitiesDefined": ["catalog", "notifications", "customerProfile", "identity", "conversations", "search", "home"],
+  "contextPressure": "MODERATE",
+  "remoteActions": { "push": "NO", "deploy": "NO", "productionAccess": "NO" }
+}
