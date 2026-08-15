@@ -58,6 +58,10 @@ import 'package:client/modules/catalog/application/catalog_controller.dart';
 import 'package:client/modules/catalog/application/service_detail_controller.dart';
 import 'package:client/modules/catalog/data/catalog_canonical_data_source.dart';
 import 'package:client/modules/catalog/data/catalog_repository.dart';
+import 'package:client/modules/homepage/data/home_composition_canonical_data_source.dart';
+import 'package:client/modules/homepage/data/home_composition_compatibility_data_source.dart';
+import 'package:client/modules/homepage/data/home_composition_repository.dart';
+import 'package:client/modules/homepage/domain/home_composition.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
@@ -350,6 +354,53 @@ void initInjector(AppConfig config) {
   );
   dpLocator.registerLazySingleton(
     () => CatalogController(dpLocator()),
+  );
+
+  // ── Home composition (TAB 05) ──────────────────────────────────────────────
+  //
+  // Both transports are constructed and the router decides, exactly as catalog
+  // and notifications do. With the `home` capability unset — every build today
+  // — the compatibility source answers, so this registration moves no traffic.
+  //
+  // Only `categories` has a loader, and that is deliberate rather than
+  // unfinished:
+  //
+  //  - featured/popular/recentServices have NO legacy endpoint. Reported
+  //    absent, not failed: there is nothing to retry until /api/v1/home ships.
+  //  - promotions/banners stays with HomeCampaignController, HomePromotionRepository
+  //    and its Remote Config kill switch. The backend reports this section
+  //    NOT_CONFIGURED on purpose — it has no promotions source and declines to
+  //    invent one — so routing banners through the composition would move
+  //    protected campaign creatives behind a transport that cannot serve them.
+  //  - notificationSummary already has one owner in NotificationsController.
+  //    A second unread count assembled here would be a duplicate truth.
+  //
+  // `categories` reads the canonical Catalog V2 hierarchy, so Home and the
+  // catalog cannot disagree about what exists.
+  dpLocator.registerLazySingleton(
+    () => HomeCompositionRepository(
+      compatibility: HomeCompositionCompatibilityDataSource(
+        loaders: <HomeSectionType, HomeSectionLoader>{
+          HomeSectionType.categories: () async {
+            final categories = await dpLocator<CatalogRepository>().categories();
+            return categories
+                .map((c) => <String, dynamic>{
+                      'id': c.id,
+                      'name': c.name,
+                      'slug': c.slug,
+                      'displayOrder': c.displayOrder,
+                      'description': c.description,
+                      'imageUrl': c.imageUrl,
+                      'subcategoryCount': c.subcategoryCount,
+                      'serviceCount': c.serviceCount,
+                    })
+                .toList(growable: false);
+          },
+        },
+      ),
+      canonical: HomeCompositionCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerFactory(
     () => ServiceDetailController(dpLocator()),

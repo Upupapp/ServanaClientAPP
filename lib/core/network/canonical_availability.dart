@@ -90,6 +90,16 @@ enum V1Capability {
 
   /// `GET|POST /api/v1/conversations*`.
   conversations,
+
+  /// `GET /api/v1/home` and `GET /api/v1/home/sections` — the Home composition.
+  ///
+  /// Safe to define as a unit because the compatibility source already
+  /// satisfies the same interface: enabling this swaps several assembled calls
+  /// for one composed fetch, and disabling it swaps back, with no screen
+  /// learning which answered. The sections the legacy transport cannot produce
+  /// are reported absent rather than failed, so neither direction of the flip
+  /// invents content or a retry affordance.
+  home,
 }
 
 class CanonicalAvailability {

@@ -1,3 +1,4 @@
+import 'package:client/modules/homepage/data/home_composition_repository.dart';
 import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
 import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -562,6 +563,11 @@ class AuthenticationBloc
         // Reset all private-data singletons so no previous account's data
         // leaks to the next user of the device (LEAKSHIELD §5).
         CleanupStep('homeStore', () async => dpLocator<HomeStore>().resetPrivateData()),
+        // The composition cache holds personalized sections — activeBooking and
+        // recentServices among them — so it is customer-scoped and must go with
+        // the rest of the account's state.
+        CleanupStep('homeComposition',
+            () async => dpLocator<HomeCompositionRepository>().clear()),
         CleanupStep('messagingStore',
             () async => dpLocator<MessagingStore>().resetPrivateData()),
         CleanupStep(
