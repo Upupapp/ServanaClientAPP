@@ -2,6 +2,7 @@ import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/modules/catalog/data/catalog_cache.dart';
 import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/modules/catalog/domain/catalog_models.dart';
+import 'package:client/modules/search/data/search_compatibility_data_source.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -80,7 +81,11 @@ Map<String, dynamic> _body(List<Map<String, dynamic>> services) => {
     };
 
 SearchRepository _repo(Map<String, dynamic> body) => SearchRepository(
-      catalog: CatalogRepository(api: _CatalogApi(body), cache: _NoCache()),
+      // TAB 06 moved index-building into the compatibility transport. The
+      // repository's contract is unchanged, which is what these tests assert.
+      compatibility: SearchCompatibilityDataSource(
+        catalog: CatalogRepository(api: _CatalogApi(body), cache: _NoCache()),
+      ),
     );
 
 void main() {

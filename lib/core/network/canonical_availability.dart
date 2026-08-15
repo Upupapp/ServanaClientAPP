@@ -91,6 +91,18 @@ enum V1Capability {
   /// `GET|POST /api/v1/conversations*`.
   conversations,
 
+  /// `GET /api/v1/search` — the first server-side catalog search.
+  ///
+  /// A unit because the compatibility source satisfies the same interface and
+  /// returns the same `SearchResults`. Enabling it moves matching from
+  /// `String.contains` over a downloaded catalog to the backend's term
+  /// expansion and scoring, which is what makes aliases work at all — `aircon`
+  /// and `air conditioning` resolve to the same Services with the same ids.
+  ///
+  /// The screen is unaffected either way: both transports emit qualified refs
+  /// (`service:180`) and both feed the same card view model.
+  search,
+
   /// `GET /api/v1/home` and `GET /api/v1/home/sections` — the Home composition.
   ///
   /// Safe to define as a unit because the compatibility source already

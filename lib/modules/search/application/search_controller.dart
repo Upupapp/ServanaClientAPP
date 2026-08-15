@@ -145,25 +145,93 @@ class SearchController extends ChangeNotifier {
   static Future<void> clearHistoryOnLogout() =>
       SearchLocalDataSource.clearHistory();
 
+  /// Kicks off a query. Returns immediately; the result arrives through
+  /// [notifyListeners] when its turn comes.
   void _applyFilters() {
-    if (_state != SearchLoadState.ready) return;
-    final q = _query.trim().toLowerCase();
-    Iterable<SearchResult> filtered = _allResults;
+    // `error` is allowed through deliberately. A failed query leaves the
+    // controller in `error`, and if that state blocked the next keystroke the
+    // screen would be stuck on its retry affordance with a text field that no
+    // longer did anything. Only `idle` and `loading` — where there is no index
+    // yet — are refused.
+    if (_state != SearchLoadState.ready && _state != SearchLoadState.error) {
+      return;
+    }
+
+    // Bumped even on the synchronous path, so a chip tap or a cleared box
+    // invalidates a query still in flight rather than letting it repaint over
+    // the newer state.
+    final seq = ++_querySeq;
+    final q = _query.trim();
+
+    // No term is a browse, not a search: it is answered from the already-loaded
+    // index. Kept SYNCHRONOUS on purpose — category chips and the sort control
+    // both land here, and routing them through a future would add a frame of
+    // latency to a filter that never leaves the device.
+    if (q.isEmpty) {
+      _publish(_allResults, q);
+      return;
+    }
+
+    _runQuery(seq, q);
+  }
+
+  /// Applies the category filter and sort, then repaints.
+  void _publish(List<SearchResult> found, String query) {
+    Iterable<SearchResult> filtered = found;
     if (_categoryFilter != null) {
       filtered = filtered.where((r) => r.categoryId == _categoryFilter);
     }
-    if (q.isNotEmpty) {
-      // Matched against the Service name AND its hierarchy, so "facial"
-      // surfaces every Service under the Facial Subcategory and "beauty"
-      // surfaces the Personal Care ones (§31, §32).
-      filtered = filtered.where((r) => r.searchHaystack.contains(q));
-    }
+
+    _state = SearchLoadState.ready;
+    _error = null;
     _filteredResults = _sortResults(filtered.toList());
-    if (q.isNotEmpty && _filteredResults.isEmpty) {
-      _track(
-          SearchZeroResultsEvent(queryLengthBucket: _lengthBucket(q.length)));
+    if (query.isNotEmpty && _filteredResults.isEmpty) {
+      _track(SearchZeroResultsEvent(
+          queryLengthBucket: _lengthBucket(query.length)));
     }
     if (!_disposed) notifyListeners();
+  }
+
+  /// Monotonic query counter. Search-as-you-type issues overlapping requests,
+  /// and the network does not promise to answer them in order — a slow answer
+  /// to `fac` can land after a fast answer to `facial` and repaint the screen
+  /// with results for a query the customer finished typing two keystrokes ago.
+  ///
+  /// Every run captures the counter it was issued under and discards itself if
+  /// a newer one has started. The compatibility transport resolves too quickly
+  /// to interleave in practice, but the guard belongs to the boundary rather
+  /// than to whichever transport happens to be selected.
+  int _querySeq = 0;
+
+  Future<void> _runQuery(int seq, String q) async {
+    final List<SearchResult> found;
+    try {
+      final results = await _repository.search(q);
+      // Category and Subcategory hits are dropped here rather than in the data
+      // layer: the transport reports everything that matched, and this screen's
+      // card renders a bookable Service. They stay available on SearchResults
+      // for a surface that wants to render them.
+      found = results.hits
+          .map(SearchResult.fromHit)
+          .whereType<SearchResult>()
+          .toList();
+    } on Exception catch (e) {
+      if (seq != _querySeq || _disposed) return;
+      // A failed query is a different fact from a query that matched nothing.
+      // Saying "no results" here would be a claim about the catalog that was
+      // never established.
+      _state = SearchLoadState.error;
+      _error = e.toString();
+      _track(const SearchFailedEvent(failureCode: 'network_error'));
+      notifyListeners();
+      return;
+    }
+
+    // A newer query started while this one was in flight, so this answer is
+    // stale before it is rendered.
+    if (seq != _querySeq || _disposed) return;
+
+    _publish(found, q);
   }
 
   List<SearchResult> _sortResults(List<SearchResult> results) {

@@ -1,4 +1,5 @@
 import 'package:client/common/presentation/widgets/service_thumbnail.dart';
+import 'package:client/modules/search/domain/search_hit.dart';
 
 /// One canonical Service surfaced in search results.
 ///
@@ -52,6 +53,41 @@ class SearchResult {
   final int minPricePesos;
   final int maxPricePesos;
   final bool bookable;
+
+  /// Builds the card view model from one canonical Service hit.
+  ///
+  /// Returns null for a Category or Subcategory hit. The search card renders a
+  /// bookable Service — it shows a price and routes to a detail page — so
+  /// coercing a Category into one would produce a card that lies about both.
+  /// Callers filter first; the null is the reminder.
+  ///
+  /// ## Splitting `context`
+  ///
+  /// The backend builds a Service's context as
+  /// `` `${category_name} › ${subcategory_name}` ``, so splitting on that
+  /// separator is the exact inverse of its construction rather than a guess at
+  /// a display string. If the shape is ever anything else, the whole context
+  /// becomes the category name and the subcategory reads empty — the hierarchy
+  /// line degrades, and nothing that routes or books is affected, because
+  /// identity comes from [serviceId] and never from these names.
+  static SearchResult? fromHit(SearchHit hit) {
+    if (hit.type != SearchEntityType.service) return null;
+
+    final parts = (hit.context ?? '').split('›').map((p) => p.trim()).toList();
+    final price = hit.basePrice?.round() ?? 0;
+
+    return SearchResult(
+      serviceId: hit.id,
+      serviceName: hit.name,
+      subcategoryId: hit.subcategoryId ?? 0,
+      subcategoryName: parts.length > 1 ? parts[1] : '',
+      categoryId: hit.categoryId ?? 0,
+      categoryName: parts.isNotEmpty ? parts.first : '',
+      minPricePesos: price,
+      maxPricePesos: price,
+      bookable: hit.bookable ?? false,
+    );
+  }
 
   /// The canonical catalog carries no imagery for any Service, so art still
   /// comes from the app's keyword map — now keyed on the Service name rather

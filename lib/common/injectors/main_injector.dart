@@ -62,6 +62,8 @@ import 'package:client/modules/homepage/data/home_composition_canonical_data_sou
 import 'package:client/modules/homepage/data/home_composition_compatibility_data_source.dart';
 import 'package:client/modules/homepage/data/home_composition_repository.dart';
 import 'package:client/modules/homepage/domain/home_composition.dart';
+import 'package:client/modules/search/data/search_canonical_data_source.dart';
+import 'package:client/modules/search/data/search_compatibility_data_source.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
@@ -434,7 +436,14 @@ void initInjector(AppConfig config) {
   );
 
   dpLocator.registerLazySingleton(
-    () => SearchRepository(catalog: dpLocator()),
+    // Both transports constructed; the router decides. With the search
+    // capability unset — every build today — the on-device index answers, and
+    // `/api/v1/search` is never called.
+    () => SearchRepository(
+      compatibility: SearchCompatibilityDataSource(catalog: dpLocator()),
+      canonical: SearchCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => SearchController(repository: dpLocator()),
