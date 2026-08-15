@@ -1,7 +1,9 @@
 /// Canonical catalog data access.
 ///
-/// One network shape (`GET /api/catalog`) plus a versioned on-disk cache. The
-/// repository owns the freshness policy so no screen has to reason about it.
+/// One domain shape plus a versioned, source-isolated on-disk cache. The
+/// repository owns the freshness policy so no screen has to reason about it,
+/// and it owns the canonical-vs-compatibility choice so no screen learns which
+/// transport answered.
 ///
 /// ## No mock fallback (§50)
 ///
@@ -13,7 +15,10 @@
 library;
 
 import 'package:client/common/data/backend/servana_api_client.dart';
-import 'package:client/common/domain/time/iso_timestamp.dart';
+import 'package:client/core/network/canonical_availability.dart';
+import 'package:client/core/network/compat/canonical_router.dart';
+import 'package:client/modules/catalog/data/catalog_compatibility_data_source.dart';
+import 'package:client/modules/catalog/data/catalog_data_source.dart';
 import 'package:client/modules/catalog/data/catalog_cache.dart';
 import 'package:client/modules/catalog/domain/catalog_models.dart';
 
@@ -27,16 +32,61 @@ class CatalogSnapshot {
 }
 
 class CatalogRepository {
+  /// [api] constructs the compatibility source when one is not supplied, so
+  /// every existing call site keeps working unchanged.
+  ///
+  /// [canonical] and [router] are optional. Omitting either pins the repository
+  /// to the compatibility source with no behaviour change — which is what every
+  /// build does today, because `/api/v1` is not deployed.
   CatalogRepository({
     required ServanaApiClient api,
     CatalogCache? cache,
-  })  : _api = api,
-        _cache = cache ?? CatalogCache();
+    CatalogDataSource? compatibility,
+    CatalogDataSource? canonical,
+    CanonicalRouter? router,
+    CatalogCache? canonicalCache,
+  })  : _compatibility =
+            compatibility ?? CatalogCompatibilityDataSource(api),
+        _canonical = canonical,
+        _router = router,
+        _cache = cache ?? CatalogCache(),
+        _canonicalCache = canonicalCache ??
+            CatalogCache(source: CatalogCacheSource.canonical);
 
-  final ServanaApiClient _api;
+  final CatalogDataSource _compatibility;
+  final CatalogDataSource? _canonical;
+  final CanonicalRouter? _router;
+
   final CatalogCache _cache;
+  final CatalogCache _canonicalCache;
 
   Catalog? _memory;
+
+  /// The transport answering right now.
+  ///
+  /// Falls back to compatibility whenever the canonical source or the router is
+  /// absent, so a half-wired injector cannot route at a transport that does not
+  /// exist.
+  CatalogDataSource get _source {
+    final canonical = _canonical;
+    final router = _router;
+    if (canonical == null || router == null) return _compatibility;
+    return router.select<CatalogDataSource>(
+      V1Capability.catalog,
+      canonical: canonical,
+      compatibility: _compatibility,
+    );
+  }
+
+  /// The cache belonging to whichever transport is active.
+  ///
+  /// Never shared. A canonical payload read back as a legacy one would not
+  /// throw — it would render a subtly wrong catalog.
+  CatalogCache get _activeCache => isCanonical ? _canonicalCache : _cache;
+
+  /// True when catalog reads are going to `/api/v1`. Diagnostics only.
+  bool get isCanonical =>
+      _canonical != null && (_router?.isCanonical(V1Capability.catalog) ?? false);
 
   /// Loads the catalog, preferring a fresh cache.
   ///
@@ -56,7 +106,7 @@ class CatalogRepository {
         return CatalogSnapshot(catalog: memory, fromCache: true);
       }
 
-      final cached = await _cache.read();
+      final cached = await _activeCache.read();
       if (cached != null && !CatalogCache.isStale(cached)) {
         if (!await _backendHasNewer(cached)) {
           _memory = cached;
@@ -66,14 +116,14 @@ class CatalogRepository {
     }
 
     try {
-      final catalog = await _fetch();
+      final catalog = await _source.fetchCatalog();
       _memory = catalog;
-      await _cache.write(catalog);
+      await _activeCache.write(catalog);
       return CatalogSnapshot(catalog: catalog, fromCache: false);
     } catch (_) {
       // Serve verified stale data rather than an error screen when we have it.
       // Never a placeholder (§50).
-      final fallback = _memory ?? await _cache.read();
+      final fallback = _memory ?? await _activeCache.read();
       if (fallback != null) {
         return CatalogSnapshot(catalog: fallback, fromCache: true);
       }
@@ -82,28 +132,24 @@ class CatalogRepository {
   }
 
   Future<bool> _backendHasNewer(Catalog cached) async {
-    try {
-      final json = await _api.getCanonicalCatalogSummary();
-      final data = json['data'];
-      if (data is! Map) return false;
-      return CatalogCache.isSupersededBy(
-        cached,
-        parseBackendTimestamp(data['lastUpdatedAt']),
-      );
-    } catch (_) {
-      return false;
-    }
+    final remote = await _source.fetchLastUpdatedAt();
+    return CatalogCache.isSupersededBy(cached, remote);
   }
 
-  Future<Catalog> _fetch() async {
-    final json = await _api.getCanonicalCatalog();
-    final data = json['data'];
-    if (data is! Map) {
-      throw const FormatException('Catalog response had no data object');
-    }
-    return Catalog.fromJson(Map<String, dynamic>.from(data))
-        .copyWith(fetchedAt: DateTime.now().toUtc());
-  }
+  /// Every visible Category. Served from the active transport — canonical uses
+  /// the purpose-built route, compatibility projects it from the tree.
+  Future<List<CatalogCategory>> categories() => _source.fetchCategories();
+
+  /// Subcategories of one Category.
+  Future<List<CatalogSubcategory>> subcategories(int categoryId) =>
+      _source.fetchSubcategories(categoryId);
+
+  /// Services of one Subcategory.
+  Future<List<CatalogService>> subcategoryServices(int subcategoryId) =>
+      _source.fetchSubcategoryServices(subcategoryId);
+
+  /// Every visible Service, flat.
+  Future<List<CatalogService>> services() => _source.fetchServices();
 
   /// One Service by canonical id.
   ///
@@ -111,14 +157,8 @@ class CatalogRepository {
   /// requires those revalidated rather than trusted from a long-lived cache.
   /// The cached hierarchy is only consulted to render breadcrumbs instantly
   /// while this is in flight — never to answer "can this be booked".
-  Future<CatalogServiceDetail> serviceDetail(int serviceId) async {
-    final json = await _api.getCanonicalService(serviceId: serviceId);
-    final data = json['data'];
-    if (data is! Map) {
-      throw const FormatException('Service response had no data object');
-    }
-    return CatalogServiceDetail.fromJson(Map<String, dynamic>.from(data));
-  }
+  Future<CatalogServiceDetail> serviceDetail(int serviceId) =>
+      _source.fetchServiceDetail(serviceId);
 
   /// The last catalog this session loaded, without touching the network.
   /// Used for breadcrumb context and search, never for booking decisions.
@@ -127,6 +167,9 @@ class CatalogRepository {
   /// Clears catalog state only. Not auth, not profile, not drafts (§46).
   Future<void> clearCache() async {
     _memory = null;
+    // BOTH boxes. A build that flips the capability must not leave the other
+    // transport's stale tree on disk to be served after the next flip back.
     await _cache.clear();
+    await _canonicalCache.clear();
   }
 }

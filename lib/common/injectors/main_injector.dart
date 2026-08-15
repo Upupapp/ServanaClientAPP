@@ -56,6 +56,7 @@ import 'package:client/modules/store_items/domain/repositories/store_options_rep
 import 'package:client/modules/categories/data/category_experience_repository.dart';
 import 'package:client/modules/catalog/application/catalog_controller.dart';
 import 'package:client/modules/catalog/application/service_detail_controller.dart';
+import 'package:client/modules/catalog/data/catalog_canonical_data_source.dart';
 import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
@@ -338,7 +339,14 @@ void initInjector(AppConfig config) {
   // Service, so sharing it would carry a previous Service's configuration onto
   // the next one.
   dpLocator.registerLazySingleton(
-    () => CatalogRepository(api: dpLocator()),
+    // Both sources constructed; the router decides. With the catalog
+    // capability unset — every build today — the compatibility source answers
+    // and the canonical box is never written.
+    () => CatalogRepository(
+      api: dpLocator(),
+      canonical: CatalogCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => CatalogController(dpLocator()),

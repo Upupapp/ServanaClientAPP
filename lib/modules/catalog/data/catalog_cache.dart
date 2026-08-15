@@ -34,17 +34,49 @@ import 'dart:convert';
 import 'package:client/common/domain/helpers/hive_repo.dart';
 import 'package:client/modules/catalog/domain/catalog_models.dart';
 
+/// Which transport produced a cached catalog.
+///
+/// The two are stored in SEPARATE boxes, and that separation is load-bearing
+/// rather than tidiness. A canonical payload and a legacy payload are both
+/// valid JSON for [Catalog.fromJson]; if they ever diverge — an added field, a
+/// renamed id, a different ordering contract — deserialising one as the other
+/// would not throw, it would produce a subtly wrong catalog that renders fine
+/// and books the wrong thing.
+///
+/// Keying the box on the source means a build that flips
+/// `CANONICAL_V1_CAPABILITIES` never reads the other transport's cache, in
+/// either direction, without any migration step.
+enum CatalogCacheSource {
+  /// The legacy public catalog. Keeps the established box name, so no
+  /// installed customer loses their cache to this change.
+  compatibility('catalog_cache_v2'),
+
+  /// `/api/v1/catalog`. A new box; empty until the capability is enabled.
+  canonical('catalog_cache_v2_canonical');
+
+  const CatalogCacheSource(this.boxName);
+
+  final String boxName;
+}
+
 class CatalogCache {
-  CatalogCache({HiveHelper? hive}) : _hive = hive ?? HiveHelper();
+  CatalogCache({
+    HiveHelper? hive,
+    this.source = CatalogCacheSource.compatibility,
+  }) : _hive = hive ?? HiveHelper();
 
   final HiveHelper _hive;
 
-  /// Bump this on any incompatible change to the cached shape.
+  /// Which transport this cache belongs to. Defaults to the compatibility
+  /// source so every existing construction site is unaffected.
+  final CatalogCacheSource source;
+
+  /// Bump the enum's box names on any incompatible change to the cached shape.
   ///
   /// v1 was never written to disk by a shipped build — the legacy catalog was
   /// held in memory for the session only — but the name is versioned from the
   /// start so the next migration is a one-line change rather than a rescue.
-  static const _boxName = 'catalog_cache_v2';
+  String get _boxName => source.boxName;
   static const _payloadKey = 'catalog';
 
   static const _ttl = Duration(hours: 6);

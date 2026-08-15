@@ -33,20 +33,38 @@ abstract final class ServiceBookingEntryResolver {
   static String routeNameForCategory(ServiceCategoryId categoryId) =>
       routeNameFor(resolve(categoryId));
 
+  /// Navigation payload for a booking entry point.
+  ///
+  /// Three keys, and the distinction between them is the point:
+  ///
+  ///  - `serviceId` — the FAMILY id the legacy booking flow is keyed on
+  ///    (aircon, beauty & wellness). It selects which flow to run, not what is
+  ///    being booked.
+  ///  - `canonicalServiceId` — the specific bookable `services.id`, present
+  ///    only when the payload carried one. This is the Catalog V2 identity.
+  ///  - `option` — the legacy option map the booking stores already parse.
+  ///    A compatibility payload, passed through untouched.
+  ///
+  /// `canonicalServiceId` is omitted rather than guessed when unknown. The
+  /// legacy options route does not carry it, and deriving it from the option
+  /// id would be correct only until the first Service created through the
+  /// catalog API — the backend resolves that mapping itself via
+  /// `services.legacy_service_option_id`, so an absent key is handled and a
+  /// wrong one would not be.
   static Map<String, dynamic>? extraFor({
     required BookingFlowType flowType,
     required ServiceOptionSummary option,
     required CategoryPresentationConfig config,
   }) {
+    final payload = <String, dynamic>{
+      'option': option.rawData,
+      'serviceId': config.serviceId,
+      if (option.canonicalServiceId != null)
+        'canonicalServiceId': option.canonicalServiceId,
+    };
     return switch (flowType) {
-      BookingFlowType.bwAddOns => {
-          'option': option.rawData,
-          'serviceId': config.serviceId,
-        },
-      BookingFlowType.airconOptions => {
-          'option': option.rawData,
-          'serviceId': config.serviceId,
-        },
+      BookingFlowType.bwAddOns => payload,
+      BookingFlowType.airconOptions => payload,
       BookingFlowType.generic => null,
     };
   }
