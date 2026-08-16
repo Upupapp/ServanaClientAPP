@@ -26,7 +26,7 @@
   "status": "RUNNING",
   "supervisorCycleCount": 11,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "PENDING",
+  "lastLocalCommit": "0035500",
   "workingTreeState": "Clean apart from app_theme.dart, pre-existing modified and deliberately never staged. All LOCAL, nothing pushed.",
   "activeBlockers": [
     "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). All canonical sources gated OFF.",
