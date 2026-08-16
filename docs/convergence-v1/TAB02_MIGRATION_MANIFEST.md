@@ -87,7 +87,7 @@ migration it cannot make.
 | Domain | Why not | Blocked on |
 | --- | --- | --- |
 | **bookings** (the domain) | `POST /api/bookings` is classified `KEEP` with **no canonical successor and none planned**. A "migrated" booking domain would still create bookings on a legacy route. Three *slices* have since been named — `bookingReads` (TAB 09), `bookingLifecycle` and `bookingTracking` (TAB 10) — and together they still do not add up to the domain. | A backend contract entry for canonical booking creation |
-| **reviews** | 4 of 9 calls have successors. `GET\|PUT\|DELETE /api/reviews/:id`, `GET /api/reviews/me` and `POST …/report` do not. | Canonical review-lifecycle endpoints |
+| **reviews** (the domain) | 4 of 9 calls have successors. `GET\|PUT\|DELETE /api/reviews/:id`, `GET /api/reviews/me` and `POST …/report` do not. **Re-measured in TAB 14 and it HOLDS exactly** — the domain still cannot be named. But the remedy was refined: the four that migrate are now the `bookingReview` and `providerReputation` slices, see §12. | Canonical review-lifecycle endpoints |
 | **support** | The v1 relative is booking-scoped only and documented as narrower, not equivalent: the general contact surface "carries no bookingId". | A canonical non-booking support surface |
 | **payments** (the domain) | ~~`paymongo/create` has a successor; `gcash-submit`, `approve`, `mark-cash-paid` do not — though none has a production caller.~~ **Partly superseded by TAB 11 — see §9.** The customer's three booking-scoped finance calls now have a capability, `bookingPayments`. Still without successors: the manual-payment family (`gcash-submit`, `approve`, `mark-cash-paid`), none of which has a production caller. | Contract decision on the manual-payment family |
 | **tracking** (the domain) | ~~`GET /api/booking/:id/provider` has no successor; provider-location maps onto `…/tracking`.~~ **Superseded by TAB 10 — see §8.** The *snapshot* now has a capability, `bookingTracking`. What still has no successor is the provider **identity** lookup, which is why the value is named for the tracking read and not for the domain. | Canonical provider identity endpoint |
@@ -555,3 +555,47 @@ Nothing. The repository's public surface is unchanged and no screen was
 touched. What changed is that a capability defined eleven tabs ago finally has
 a transport behind it, and the reason it did not is now known to have been a
 stale finding rather than an open question.
+
+---
+
+## 12. TAB 14 — reviews
+
+Full record in `docs/convergence-v1/TAB14_CERTIFICATION.md`.
+
+### 12.1 R-11 re-measured, and §3.2's entry refined
+
+TAB 13 withdrew R-10 as stale, so R-11 was measured before a tab was committed
+to it. **It holds exactly**: 4 of 9 client review calls have successors; the
+five that manage a review by its own id do not.
+
+§3.2 said "no `reviews` capability" and that remains right — but the remedy was
+too blunt. The four that migrate are a coherent slice, and slices have been
+nameable since TAB 09.
+
+| Capability | Compatibility endpoints today | Canonical successors | Blocked on |
+| --- | --- | --- | --- |
+| `bookingReview` | `GET|POST /api/bookings/:id/reviews` **plus** `GET /api/bookings/:id/review-eligibility` | `GET|POST /api/v1/bookings/:id/review` | v1 deploy |
+| `providerReputation` | `GET /api/providers/:uid/rating` | `GET /api/v1/reviews/providers/:uid/rating` | v1 deploy |
+
+### 12.2 Five more entries for §3.3
+
+| Call | Domain | Handling |
+| --- | --- | --- |
+| `GET/PUT/DELETE /api/reviews/:id`, `GET /api/reviews/me`, `POST /api/reviews/:id/report` | `reviews` | No canonical successor. Called on `ServanaApiClient` directly from `ReviewsRepository`, in every configuration — the same escape as `dismiss` (§3.3) and `reportMessage` (§11.3). |
+
+### 12.3 The fold, and the defect it exposes
+
+`bookings.review.get` returns `ReviewOrEligibility`, folding in a verdict the
+client fetches with a second call. The contract calls that second call out:
+*"asking twice means a screen that offers a form the next call refuses."*
+
+The client's version is worse than a race — the two calls are made by **two
+controllers and neither makes both**, so `ReviewFormController` could open a
+form on a booking that already had a review because it never looked.
+`reviewOrEligibility` is one method now; the compatibility source folds the two
+legacy calls with an existing review winning.
+
+### 12.4 What ships today
+
+Nothing routes canonically, but one behaviour improves on the legacy path:
+`getEligibility` now accounts for an existing review.

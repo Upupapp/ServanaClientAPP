@@ -101,6 +101,7 @@ void main() {
             'bookingPayments',
             'bookingAdditionalWork',
             'bookingDisputes',
+            'bookingReview',
           ],
           contains(name),
           reason: '"$name" is a new booking capability. A value named for the '
@@ -130,6 +131,19 @@ void main() {
       expect(actionsOnly.isAvailable(V1Capability.bookingReads), isFalse);
       expect(actionsOnly.isAvailable(V1Capability.bookingTracking), isFalse);
       expect(actionsOnly.isAvailable(V1Capability.bookingPayments), isFalse);
+    });
+
+    test('reviews is still not named, and R-11 is why', () {
+      // TAB 01 R-11: 5 of 9 review calls are KEEP with no successor. TAB 13
+      // withdrew R-10 as stale, so TAB 14 re-measured this one — and it holds
+      // exactly. Reading, editing, deleting, listing and reporting a review by
+      // its own id have no canonical surface, so the DOMAIN still cannot be
+      // named. The four calls that migrate are named as slices instead.
+      final names = V1Capability.values.map((c) => c.name).toList();
+      expect(names, isNot(contains('reviews')));
+      expect(names, isNot(contains('review')));
+      expect(names, contains('bookingReview'));
+      expect(names, contains('providerReputation'));
     });
 
     test('no capability is named for the booking-experiences domain', () {

@@ -403,3 +403,42 @@ PRIMARY SOURCES: backend contract and domain source.
 LOCAL IMPACT: asserted by test, because the habit from three tabs ago would make a header look correct.
 PRODUCTION IMPACT: none.
 DATE: 2026-08-16
+
+---
+
+DECISION: Re-measure R-11 before committing TAB 14 to reviews.
+CONTEXT: TAB 13 had just withdrawn R-10 as stale after eleven tabs of planning around it.
+OPTIONS: (a) inherit R-11 and pick a different tab; (b) measure it first.
+SELECTED: (b).
+WHY: The lesson from TAB 13 is worthless if the next tab inherits the next finding. Measuring cost two greps.
+EVIDENCE: `contract.ts` reviews and booking-review entries against the nine methods on `reviews_repository.dart`. Four have successors: eligibility and getByBooking (both to `bookings.review.get`), createReview, getProviderAggregate. Five do not: getById, editReview, deleteReview, listMyReviews, reportReview.
+PRIMARY SOURCES: backend contract; local repository.
+LOCAL IMPACT: **R-11 HOLDS exactly.** Unlike R-10. Recorded so the next reader knows both were checked and only one was stale.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Name two slices rather than declining a capability entirely.
+CONTEXT: R-11's remedy in the manifest was "do not define a `reviews` capability".
+OPTIONS: (a) keep declining, leave reviews unmigrated; (b) `bookingReview` plus `providerReputation`.
+SELECTED: (b).
+WHY: R-11's conclusion was right and its remedy predated the slice rule. "The domain cannot be named" and "nothing here can migrate" are different claims, and TAB 09 established the difference when it named `bookingReads` in a domain whose create has no successor. Two slices rather than one because they answer different questions on different screens, and the read-only one should be movable first.
+EVIDENCE: `contract.ts:1248-1387` — `reviews.provider.rating` is read from a provider profile; `bookings.review.*` is booking-scoped.
+PRIMARY SOURCES: backend contract.
+LOCAL IMPACT: the TAB 10 allow-list guard FAILED on first run because `bookingReview` was not in it — the guard working as designed.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Fold eligibility into one method, and let an existing review win.
+CONTEXT: The canonical read returns `ReviewOrEligibility`; the legacy transport has two separate routes.
+OPTIONS: (a) keep two methods and add a third folded one; (b) one method, folded on both transports.
+SELECTED: (b).
+WHY: The contract names the second call as the defect — "asking twice means a screen that offers a form the next call refuses" — and the client's version is worse than the race the backend describes. The two calls are made by TWO CONTROLLERS AND NEITHER MAKES BOTH: `ReviewFormController` asks eligibility and never looks for a review, so it could open a form on an already-reviewed booking. Folding on both transports means both controllers get the same answer. An existing review wins because that is how the backend resolves it, and because the alternative offers a form the create refuses.
+EVIDENCE: `contract.ts:1352-1387` (`ReviewOrEligibility`, and the note folding in the eligibility route); `review_form_controller.dart:61`; `review_detail_controller.dart:33`.
+PRIMARY SOURCES: backend contract; local controllers.
+LOCAL IMPACT: `getEligibility` is retained and now synthesises `ALREADY_REVIEWED`; neither controller was touched.
+PRODUCTION IMPACT: an improvement ships on legacy — the form no longer opens on an already-reviewed booking.
+DATE: 2026-08-16

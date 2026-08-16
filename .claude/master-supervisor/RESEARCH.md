@@ -163,3 +163,22 @@ behind it until now for no reason that still existed.
 The same question is now open about R-11 (reviews: *"4 of 9 calls have
 successors"*). It has NOT been re-measured, and the next tab that touches
 reviews should measure before believing it.
+
+## Sources read for TAB 14 (2026-08-16)
+
+| Question | Source | Finding |
+| --- | --- | --- |
+| Is R-11 stale like R-10? | `contract.ts` reviews entries vs `reviews_repository.dart` | **No — it holds exactly.** 4 of 9 client calls have successors; the five id-scoped ones do not. Measured rather than inherited, per TAB 13's lesson. |
+| What are the four? | `contract.ts:1248-1387` | `reviews.provider.list`, `reviews.provider.rating`, `bookings.review.create`, `bookings.review.get`. The client calls three of them; `provider.list` has no client caller. |
+| Does the canonical read fold eligibility? | `contract.ts:1352-1387`, `openapi.ts:2060-2067` | Yes. `ReviewOrEligibility` — *"Exactly one of the two is non-null."* The legacy `review-eligibility` route is listed as a second ALIAS_TEMPORARILY with the note that asking twice *"means a screen that offers a form the next call refuses."* |
+| Does the client actually ask twice? | `review_form_controller.dart:61`, `review_detail_controller.dart:33` | Worse — it asks once from each of TWO controllers and neither asks both. The form checks eligibility and never looks for an existing review. |
+| How is review idempotency expressed? | `ReviewInput` and the legacy create | `clientRequestId`, a body field, as with a message's `clientMsgId`. No header. |
+
+## Standing conclusion, updated
+
+TAB 13 found a finding stale; TAB 14 found the next one sound. Both were
+measured, and that is the point — the value of TAB 13's lesson was never "the
+old findings are wrong", it was "check before planning around one". R-11 was
+right about the facts and its *remedy* had simply aged: "do not name the
+domain" was written before TAB 09 established that a slice can be named inside
+a domain that cannot.

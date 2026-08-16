@@ -95,6 +95,8 @@ import 'package:client/modules/profile/data/profile_repository.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:client/modules/review/application/review_detail_controller.dart';
 import 'package:client/modules/review/application/review_form_controller.dart';
+import 'package:client/modules/review/data/reviews_canonical_data_source.dart';
+import 'package:client/modules/review/data/reviews_compatibility_data_source.dart';
 import 'package:client/modules/review/data/reviews_repository.dart';
 import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/application/support_create_controller.dart';
@@ -614,7 +616,14 @@ void initInjector(AppConfig config) {
 
   // ── Reviews (C19 REVIEWCORE+) ─────────────────────────────────────────────
   dpLocator.registerLazySingleton(
-    () => ReviewsRepository(api: dpLocator()),
+    // Four of nine calls route; the five that manage a review by its own id
+    // have no canonical successor and stay on the legacy client permanently.
+    () => ReviewsRepository(
+      api: dpLocator(),
+      compatibility: ReviewsCompatibilityDataSource(dpLocator()),
+      canonical: ReviewsCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => ReviewFormController(repository: dpLocator()),

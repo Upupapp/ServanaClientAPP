@@ -2,8 +2,8 @@
   "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
   "repoPath": "C:\\Users\\paulg\\OneDrive\\Desktop\\servana_client-mobile",
   "backendPath": "C:\\Users\\paulg\\OneDrive\\Desktop\\servana_api-main",
-  "currentTab": "TAB 14",
-  "currentTabIndex": 14,
+  "currentTab": "TAB 15",
+  "currentTabIndex": 15,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 01 - Sweep + backend delta matrix",
@@ -18,14 +18,15 @@
     "TAB 10 - Tracking + OTP + cancel + reschedule",
     "TAB 11 - Payments + refunds (checkout ceremony unified)",
     "TAB 12 - Change orders + disputes (booking-experiences completed)",
-    "TAB 13 - Conversations (R-10 withdrawn as stale)"
+    "TAB 13 - Conversations (R-10 withdrawn as stale)",
+    "TAB 14 - Reviews (R-11 re-measured and HOLDS; two slices named)"
   ],
-  "tabTitleProvenance": "TABs 01-10 came from the original Master Command prompt. TAB 11 was CHOSEN BY THE USER. TABs 12 and 13 were CHOSEN BY CLAUDE after the user said 'go'. The Master Command text is NOT stored in this repo. ASK THE USER for TAB 14's subject.",
-  "nextTabCandidate": "reviews (6 canonical entries; TAB 01 R-11 says 5 of 9 legacy calls are KEEP - but MEASURE that before believing it, TAB 13 found R-10 stale the same way) OR the account/settings remainder (19 + 2 entries, partly covered by TAB 03's identity and customerProfile).",
+  "tabTitleProvenance": "TABs 01-10 from the original Master Command prompt. TAB 11 CHOSEN BY THE USER. TABs 12-14 CHOSEN BY CLAUDE after the user said go/proceed. The Master Command text is NOT stored in this repo. ASK THE USER for TAB 15's subject.",
+  "nextTabCandidate": "account/settings remainder - 19 account + 2 settings canonical entries, partly covered by TAB 03's identity and customerProfile. Measure what is left before scoping. Also unmigrated: bookings.supportCases.* (2 entries; TAB 01 R-12 says support stays legacy for V1 - RE-MEASURE it, R-10 was stale), and bookings.transitions (no client caller).",
   "status": "RUNNING",
-  "supervisorCycleCount": 10,
+  "supervisorCycleCount": 11,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "0493a5f",
+  "lastLocalCommit": "PENDING",
   "workingTreeState": "Clean apart from app_theme.dart, pre-existing modified and deliberately never staged. All LOCAL, nothing pushed.",
   "activeBlockers": [
     "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). All canonical sources gated OFF.",
@@ -48,7 +49,11 @@
     "TAB 12 NOTE: a customer may NEVER raise a change order. additionalWork.create is auth:'provider', customerMobile:'n/a', and needs an IN_PROGRESS assignment row. Absent from the interface entirely - no method, no flag.",
     "TAB 13 OPEN: ConversationReadState is discarded. POST .../read returns the authoritative post-move unreadCount; the repository signature returns void because the store re-reads the list. Wiring it through is a store change.",
     "TAB 13 OPEN: canonical Conversation carries status (5 values), viewerSeat, canSend and cannotSendReason. ConversationModel carries only isClosed - sufficient today because isClosed is republished for exactly this kind of client, but cannotSendReason is strictly better UX than a bare boolean.",
-    "TAB 13 NOTE: reportMessage (and message edit/delete) have NO canonical successor. reportMessage calls compatibility DIRECTLY in every configuration, like NotificationsRepository.dismiss. Asserted with the capability ON."
+    "TAB 13 NOTE: reportMessage (and message edit/delete) have NO canonical successor. reportMessage calls compatibility DIRECTLY in every configuration, like NotificationsRepository.dismiss. Asserted with the capability ON.",
+    "TAB 14 SHIPPED a fix on legacy: getEligibility now accounts for an existing review. ReviewFormController asked the eligibility route alone and never looked for a review, so it could open a form on an already-reviewed booking.",
+    "TAB 14 OPEN: five review calls are permanently legacy (get/edit/delete by id, list-mine, report). No canonical surface at all.",
+    "TAB 14 OPEN: neither review controller was migrated to reviewOrEligibility; both still call the narrower methods, which route through the fold underneath.",
+    "TAB 14 OPEN: reviews.provider.list exists canonically and has NO client caller. Not wired."
   ],
   "capabilityVocabulary": [
     "catalog",
@@ -62,6 +67,8 @@
     "bookingPayments",
     "bookingAdditionalWork",
     "bookingDisputes",
+    "bookingReview",
+    "providerReputation",
     "search",
     "home"
   ],
@@ -70,7 +77,7 @@
   "vocabularyRule": "Where the backend SERVES its own vocabulary, consume it; where it does not, mirror and say so. Disputes return `categories` on every read (outside any branch), so DisputeCategory is an extension type over String. Reschedule reasons and refund triggers had no such endpoint and are mirrored enums.",
   "acceptanceGate": {
     "analyze": "0 errors, 0 warnings, 39 infos (unchanged baseline)",
-    "test": "1,888 passed, 6 skipped, 0 failed"
+    "test": "1,901 passed, 6 skipped, 0 failed"
   },
   "contextPressure": "CRITICAL",
   "remoteActions": {
@@ -78,5 +85,5 @@
     "deploy": "NO",
     "productionAccess": "NO"
   },
-  "staleFindingWarning": "TAB 13 WITHDREW TAB 01's R-10. V1Capability.conversations sat defined-but-disabled for ELEVEN tabs because R-10 recorded the booking-conversation GET as lazily creating (SC-038) and classified it BREAKS. Measured: chat.controller.getBookingConversation calls getExistingConversation and 404s - it creates nothing, and its comment names this client's 404-to-null mapping as the contract. The fix was upstream. A recorded finding is a snapshot of a moving system; measure one before planning around it. R-11 (reviews) has NOT been re-measured."
+  "staleFindingWarning": "TAB 13 withdrew R-10 (conversations lazy-create) as STALE after it blocked a capability for eleven tabs. TAB 14 then re-measured R-11 (reviews) and it HOLDS exactly. Both were checked; only one was wrong. STILL UNMEASURED: R-12 (support stays legacy for V1). Measure a finding before planning around it."
 }

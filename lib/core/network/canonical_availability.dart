@@ -208,6 +208,30 @@ enum V1Capability {
   /// take them in that order.
   bookingDisputes,
 
+  /// `GET|POST /api/v1/bookings/:id/review` — the review a customer leaves on
+  /// their own booking.
+  ///
+  /// **Not** `reviews`. TAB 01's R-11 found the review domain partial — 4 of 9
+  /// client calls have successors — and TAB 14 re-measured it and confirmed it
+  /// exactly. Reading, editing, deleting, listing and reporting a review **by
+  /// its own id** have no canonical surface at all and stay on the legacy
+  /// client permanently, like `NotificationsRepository.dismiss`.
+  ///
+  /// What this value buys beyond a URL: the canonical read returns
+  /// `ReviewOrEligibility`, folding in the verdict the client currently fetches
+  /// with a second call. The contract names that second call as the defect —
+  /// *"asking twice means a screen that offers a form the next call refuses."*
+  bookingReview,
+
+  /// `GET /api/v1/reviews/providers/:uid/rating` — a provider's aggregate
+  /// rating.
+  ///
+  /// Separate from [bookingReview] because it answers a different question for
+  /// a different screen: what other customers said about a provider, read from
+  /// a profile with no booking in sight. Read-only and lower-risk, so an
+  /// operator can move it first.
+  providerReputation,
+
   /// `GET /api/v1/search` — the first server-side catalog search.
   ///
   /// A unit because the compatibility source satisfies the same interface and
