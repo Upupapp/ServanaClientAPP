@@ -41,6 +41,31 @@ import 'package:client/core/network/request_id.dart';
 import 'package:client/core/recovery/retry_policy.dart';
 import 'package:http/http.dart' as http;
 
+/// The header name the canonical routes actually read.
+///
+/// `servana_api/src/api/v1/envelope.ts` declares
+/// `IDEMPOTENCY_HEADER = 'idempotency-key'` and `readIdempotencyKey` consults
+/// that name and no other. The legacy `POST /api/bookings` is the one route
+/// that reads `X-Idempotency-Key` (`controllers/bookingController.ts`), and
+/// [ServanaApiClient] keeps sending that spelling for it.
+///
+/// This client sent the legacy spelling too, which meant a canonical mutation
+/// carrying an idempotency key was indistinguishable from one carrying none:
+/// the header was simply not looked at. Nothing had noticed because TAB 10 is
+/// the first tab whose canonical calls mutate anything. The failure it would
+/// have produced is the exact one idempotency exists to prevent — a retried
+/// cancel or OTP verify replaying as a fresh attempt instead of returning the
+/// original result.
+const String idempotencyHeader = 'Idempotency-Key';
+
+/// The shape the backend accepts: `^[A-Za-z0-9_.:-]{8,128}$`.
+///
+/// Checked here rather than left to the server because a malformed key is
+/// rejected with `IDEMPOTENCY_KEY_INVALID` — a 400 the customer cannot act on
+/// and which the mapper deliberately classifies as *our* bug. Catching it at
+/// the boundary turns a wasted round trip into an assertion failure in a test.
+final RegExp idempotencyKeyPattern = RegExp(r'^[A-Za-z0-9_.:-]{8,128}$');
+
 class V1ApiClient {
   V1ApiClient({
     required this.baseUrl,
@@ -189,6 +214,15 @@ class V1ApiClient {
     String? idempotencyKey,
     RetryPolicy? retry,
   }) async {
+    // Fail loudly in debug on a key the backend would reject. Shipping it would
+    // spend a round trip to be told IDEMPOTENCY_KEY_INVALID, and the caller
+    // would have believed it was protected against a retry when it was not.
+    assert(
+      idempotencyKey == null || idempotencyKeyPattern.hasMatch(idempotencyKey),
+      'Idempotency-Key must match ${idempotencyKeyPattern.pattern} — got '
+      '"$idempotencyKey" on $method $path',
+    );
+
     final policy = retry ?? const RetryPolicy(maxAttempts: 1, baseDelay: Duration.zero);
     ApiFailure? last;
 
@@ -313,7 +347,7 @@ class V1ApiClient {
       RequestIds.requestHeader: requestId,
       if (hasBody) 'Content-Type': 'application/json',
       if (correlation != null) ...correlation.headers,
-      if (idempotencyKey != null) 'X-Idempotency-Key': idempotencyKey,
+      if (idempotencyKey != null) idempotencyHeader: idempotencyKey,
     };
 
     // Reading the token must never be able to fail a request: a public

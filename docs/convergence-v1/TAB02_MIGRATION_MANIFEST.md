@@ -86,11 +86,11 @@ migration it cannot make.
 
 | Domain | Why not | Blocked on |
 | --- | --- | --- |
-| **bookings** | `POST /api/bookings` is classified `KEEP` with **no canonical successor and none planned**. A "migrated" booking domain would still create bookings on a legacy route. | A backend contract entry for canonical booking creation |
+| **bookings** (the domain) | `POST /api/bookings` is classified `KEEP` with **no canonical successor and none planned**. A "migrated" booking domain would still create bookings on a legacy route. Three *slices* have since been named — `bookingReads` (TAB 09), `bookingLifecycle` and `bookingTracking` (TAB 10) — and together they still do not add up to the domain. | A backend contract entry for canonical booking creation |
 | **reviews** | 4 of 9 calls have successors. `GET\|PUT\|DELETE /api/reviews/:id`, `GET /api/reviews/me` and `POST …/report` do not. | Canonical review-lifecycle endpoints |
 | **support** | The v1 relative is booking-scoped only and documented as narrower, not equivalent: the general contact surface "carries no bookingId". | A canonical non-booking support surface |
 | **payments** | `paymongo/create` has a successor; `gcash-submit`, `approve`, `mark-cash-paid` do not — though none has a production caller. | Contract decision on the manual-payment family |
-| **tracking** | `GET /api/booking/:id/provider` has no successor; provider-location maps onto `…/tracking`. | Canonical provider identity endpoint |
+| **tracking** (the domain) | ~~`GET /api/booking/:id/provider` has no successor; provider-location maps onto `…/tracking`.~~ **Superseded by TAB 10 — see §8.** The *snapshot* now has a capability, `bookingTracking`. What still has no successor is the provider **identity** lookup, which is why the value is named for the tracking read and not for the domain. | Canonical provider identity endpoint |
 
 ### 3.3 Calls with no canonical successor inside an otherwise complete domain
 
@@ -338,3 +338,65 @@ fake of `FlutterSecureStorage`, not against a real Keychain or a real
 EncryptedSharedPreferences store, and not against a device that has actually
 restored from backup. Those are the conditions the failure branches exist for,
 and they can only be confirmed on hardware.
+
+---
+
+## 8. TAB 10 — booking lifecycle actions and tracking
+
+Full record in `docs/convergence-v1/TAB10_CERTIFICATION.md`. What belongs in
+this manifest is the vocabulary and the endpoint table.
+
+### 8.1 Two capabilities added
+
+| Capability | Compatibility endpoints today | Canonical successors | Blocked on |
+| --- | --- | --- | --- |
+| `bookingLifecycle` | `POST /api/bookings/:id/cancel`, `POST /api/:id/confirm-otp`, `POST /api/:id/resend-otp`, **(reschedule: none)** | `POST /api/v1/bookings/:id/cancel`, `…/otp/verify`, `…/otp/request`, `…/reschedule`, `GET …/otp/status` | v1 deploy |
+| `bookingTracking` | `GET /api/:id` + `GET /api/booking/:id/provider-location`, stitched | `GET /api/v1/bookings/:id/tracking` | v1 deploy |
+
+Both are named for their slice, not the domain — `POST /api/v1/bookings` still
+does not exist. The vocabulary guard was widened accordingly: a *new*
+`booking*` capability must now be added to an explicit allow-list in
+`canonical_availability_test.dart`, so a rename that widens the claim fails a
+test rather than sliding past three hard-coded strings.
+
+Reads, actions and tracking are **independently switchable**, and that is
+asserted. Enabling `bookingReads` must not start routing a cancellation over an
+undeployed namespace.
+
+### 8.2 A transport defect this tab had to fix first
+
+`V1ApiClient` sent `X-Idempotency-Key`; the canonical routes read
+`Idempotency-Key` (`api/v1/envelope.ts`) and nothing else. Every canonical call
+built before TAB 10 was a GET, so no key had ever been consulted and no test had
+caught it — `v1_api_client_test.dart` pinned the wrong name.
+
+Left unfixed, a retry of a cancel or an OTP verify would have been a **second
+action** while the client believed it was protected against exactly that.
+
+### 8.3 Calls with no canonical successor inside an otherwise complete slice
+
+Extends §3.3.
+
+| Call | Slice | Handling |
+| --- | --- | --- |
+| customer reschedule | `bookingLifecycle` | Has **no legacy relative at all** — the only reschedule route that has ever existed is admin-only. The compatibility source answers `supportsReschedule == false` and throws `UnsupportedLifecycleAction` if called anyway; the UI consults the flag before offering the entry point. |
+| `GET …/otp/status` | `bookingLifecycle` | No legacy relative. The compatibility source returns `BookingOtpState.local` with every budget **null** — "unknown", which is distinct from zero and must not disable a button that works. |
+
+The reschedule row is the mirror image of `DELETE /api/user/notifications/:key`
+in §3.3: there, the canonical side was missing a call the legacy side had; here,
+the legacy side is missing one the canonical side has. Both are expressed in the
+type system rather than discovered at runtime — and in this direction that
+matters more, because the runtime discovery would be a customer tapping a button
+and being refused.
+
+### 8.4 What ships today
+
+Nothing routes canonically. The user-visible changes are the three places the
+app stopped holding its own copy of a server rule, all of which apply on the
+legacy path:
+
+- a cancellation refusal now says **which** rule refused, instead of one
+  "contact support" sentence written for a gap that closed;
+- a wrong OTP raises the same typed failure whichever transport answered;
+- the tracking verdict is carried rather than flattened, and the legacy guess is
+  labelled as a guess.

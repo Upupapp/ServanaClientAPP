@@ -54,8 +54,10 @@ library;
 ///    `POST /api/bookings` is classified `KEEP` with no canonical successor and
 ///    none planned, so a migrated booking *domain* would still create bookings
 ///    on a legacy route. [bookingReads] names the three reads that DO have
-///    successors and claims nothing about the write. Cancel, reschedule and OTP
-///    are canonical but state-changing, so they are not in it either.
+///    successors and claims nothing about the write; [bookingLifecycle] names
+///    the actions on an already-existing booking and likewise claims nothing
+///    about creating one. Between them they still do not add up to `booking`,
+///    and that separation is the point rather than an accident of ordering.
 ///  - **reviews** — 4 of 9 calls have successors; read, edit, delete,
 ///    list-mine and report do not.
 ///  - **support** — the v1 relative is booking-scoped only and is explicitly
@@ -114,6 +116,47 @@ enum V1Capability {
   /// same `formatBooking` the legacy route uses, so both transports return one
   /// `CustomerBooking` and no screen can tell which answered.
   bookingReads,
+
+  /// The state-changing actions on an **already existing** booking:
+  /// `POST /api/v1/bookings/:id/cancel`, `…/reschedule`, `…/otp/request`,
+  /// `…/otp/verify`, plus the `GET …/otp/status` read that belongs to the same
+  /// ceremony and is meaningless apart from it.
+  ///
+  /// Named for the slice and not the domain, for the same reason
+  /// [bookingReads] is: creating a booking has no canonical endpoint, so a
+  /// value called `booking` or `bookingWrites` would claim a migration that
+  /// cannot be made. `lifecycle` says what these five actually are — moves of a
+  /// booking that already exists through a machine the backend owns.
+  ///
+  /// Safe as a unit because all five are `implemented`, all five are
+  /// booking-scoped, and the compatibility source satisfies the same interface
+  /// for the three that have a legacy relative. Reschedule has none — the only
+  /// reschedule that has ever existed is admin-only — so the compatibility
+  /// source reports it unsupported rather than inventing a path, and the UI
+  /// asks the repository whether it is offerable instead of assuming.
+  ///
+  /// Flipping this is a bigger decision than flipping [bookingReads], which is
+  /// why it is a separate value: a read that answers from the wrong transport
+  /// renders stale data, whereas an action that does changes a customer's
+  /// booking. The two must be independently switchable so the safe half can go
+  /// first.
+  bookingLifecycle,
+
+  /// `GET /api/v1/bookings/:id/tracking` — one call in place of two, with the
+  /// provider-position policy applied server-side.
+  ///
+  /// A read, so it is not part of [bookingLifecycle]; a different question from
+  /// the three in [bookingReads], so it is not part of those either. It gets
+  /// its own value because what it changes is a *privacy* boundary: the legacy
+  /// pair returns a position in every state, and the canonical route withholds
+  /// it unless the booking is trackable, a provider is assigned, and the
+  /// movement window is open — answering 200 with `visibility.reason` naming
+  /// which rule withheld it.
+  ///
+  /// So enabling this is the client giving up its own idea of when a location
+  /// may be shown. That is the correct direction and it is still a decision an
+  /// operator should be able to make on its own.
+  bookingTracking,
 
   /// `GET /api/v1/search` — the first server-side catalog search.
   ///

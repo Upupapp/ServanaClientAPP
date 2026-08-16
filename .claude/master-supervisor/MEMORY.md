@@ -45,8 +45,44 @@ Key files:
 | 02 | API client / DTO / compatibility | `feb05dd` (v1 boundary), `f94d5a5` (notifications pilot + manifest) |
 | 03 | Auth / identity / session | `c454325` (identity boundary), `22e3316` (secure token store) |
 | 04 | Catalog V2 | `f0da42b` (catalog transport + canonical booking identity) |
+| 05 | Home composition | `2148c15`, `TAB05_CERTIFICATION.md` |
+| 06 | Search | `5e6fed3` (server-side discovery, qualified refs) |
+| 07 | Booking-entry normalization | `8db8cf8` |
+| 08 | Booking submission — create BLOCKED | `7aa4f7c`, `TAB08_ENDPOINT_GAP.md` |
+| 09 | Booking READ transport | `861e781` (`bookingReads`) |
+| 10 | Tracking / OTP / cancel / reschedule | `TAB10_CERTIFICATION.md`, manifest §8 |
 
-## Current TAB 05 — Home composition
+## TAB 10 — the two capabilities and the defect under them
+
+`bookingLifecycle` (cancel, reschedule, otp request/verify/status) and
+`bookingTracking` (the tracking snapshot). Two, not one, and neither folded
+into `bookingReads`: a read from the wrong transport shows stale data, an
+action from the wrong one changes a customer's booking, and tracking moves a
+privacy boundary. All three must be independently switchable, and that is
+asserted.
+
+**The defect that gated the tab.** `V1ApiClient` sent `X-Idempotency-Key`. The
+canonical routes read `Idempotency-Key` and nothing else
+(`api/v1/envelope.ts`, `IDEMPOTENCY_HEADER = 'idempotency-key'`). Every
+canonical call before TAB 10 was a GET, so no key had ever been consulted —
+and `v1_api_client_test.dart` pinned the wrong name. A retry of a cancel would
+have been a second action while the client believed it was protected.
+
+**The rule TAB 10 kept applying.** Find the place the client holds a copy of a
+server rule, and delete the copy:
+
+- the OTP screen's `_resendCooldownSeconds = 60` → `GET …/otp/status`;
+- the cancel sheet's one-sentence "contact support" → the per-refusal code;
+- the legacy `{success:false}` at HTTP 200 → a typed `ValidationFailure`;
+- `BookingActionResolver` → demoted to the labelled fallback behind
+  `availableActions`, **including when the backend list is empty**.
+
+Reschedule is the one place a vocabulary was mirrored on purpose
+(`RESCHEDULE_REASONS` is closed and append-only, and a reason must be pickable
+before a request exists). No policy was mirrored: notice window, lead bound,
+reschedulable states and the calendar check are all read from the refusal.
+
+## TAB 05 — Home composition (historical)
 
 Uncommitted work found in the tree at session start (5 new files + the `home`
 enum value). Architecture is sound. Two **real contract defects** found by
@@ -83,5 +119,5 @@ Client enum names it `promotions` and accepts both wire names.
 
 ## Next action
 
-Fix both defects, wire the repository into `main_injector`, add focused tests,
-verify HomeScreen preservation, then certify TAB 05.
+TAB 11. TAB 10 is certified: analyze 0 errors / 39 infos (unchanged baseline),
+1,823 tests passing.

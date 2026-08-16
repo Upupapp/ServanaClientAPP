@@ -15,7 +15,9 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/common/presentation/widgets/booking_ux_components.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
+import 'package:client/modules/bookings/presentation/widgets/booking_reschedule_sheet.dart';
 import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
 import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
@@ -45,6 +47,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   String _bookingId = '';
   bool _isRefreshing = false;
   String? _refreshError;
+
+  /// The schedule exactly as the backend sent it, or null when it sent none.
+  ///
+  /// Distinct from `JobOrder.scheduleDate`, which falls back to `DateTime.now()`
+  /// so the detail card always has something to render. That fallback must not
+  /// travel back to the server as `expectedSchedule`.
+  DateTime? _scheduledAt;
 
   // Worker assignment surfaced from the booking JSON. The JobOrder freezed
   // model predates the BE auto-assignment feature, so these live in screen
@@ -195,6 +204,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           b['schedule']?.toString();
       final scheduleDate =
           scheduleRaw != null ? DateTime.tryParse(scheduleRaw) : null;
+      // Kept unresolved alongside JobOrder.scheduleDate, which substitutes
+      // `now` when the backend sends nothing parseable. That substitution is
+      // fine for rendering and wrong for `expectedSchedule`: sending a
+      // fabricated instant as "the schedule I last read" would refuse every
+      // reschedule with BOOKING_SCHEDULE_CHANGED. Null must stay null.
+      _scheduledAt = scheduleDate;
 
       String statusLabel;
       if (status == 'WORKER_ASSIGNED') {
@@ -430,7 +445,38 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (mounted) context.go('/bookings/$_bookingId/messages');
   }
 
+  /// Whether the active transport can move a booking at all.
+  ///
+  /// Not a state rule and deliberately not one: the state rule
+  /// (`RESCHEDULABLE_STATES`) belongs to the backend, and a copy here would be
+  /// the fourth client-side duplicate of a server policy in this file's
+  /// vicinity. This asks only whether the endpoint is reachable.
+  bool get _canReschedule =>
+      !_isCompleted &&
+      dpLocator<BookingLifecycleRepository>().canOfferReschedule;
+
+  void _showRescheduleSheet() {
+    BookingRescheduleSheet.show(
+      context,
+      bookingId: _bookingId,
+      currentSchedule: _scheduledAt,
+      onRescheduled: (_) => _refreshBooking(),
+    );
+  }
+
   void _showCancellationSheet() {
+    // `expectedState` is deliberately NOT passed.
+    //
+    // The sheet accepts it and the canonical route honours it, but the only
+    // state this screen holds is `_bookingStatus` — the LEGACY status string,
+    // whose vocabulary includes values like CONFIRMED and PAID that are not
+    // canonical states at all. Sending one would not add a concurrency guard;
+    // it would manufacture a BOOKING_STATE_CONFLICT on a booking that is
+    // perfectly cancellable.
+    //
+    // Supplying it correctly needs the canonical state on the read path, which
+    // is a booking-read concern rather than an action one. Recorded in
+    // docs/convergence-v1/TAB10_CERTIFICATION.md.
     BookingCancellationSheet.show(
       context,
       bookingId: _bookingId,
@@ -808,6 +854,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
+                ),
+              ),
+            ],
+
+            // Reschedule — offered only when the active transport HAS the
+            // endpoint, which is never in a shipped build.
+            //
+            // The gate is the transport's own answer, not a state check. The
+            // only reschedule route that has ever existed is admin-only and
+            // answers a customer token with 403, so a button drawn from a
+            // status rule would be a feature the app appears to have and does
+            // not. Whether THIS booking may be moved is then the backend's
+            // decision, and it names the rule that refused.
+            if (_canReschedule) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _showRescheduleSheet,
+                  icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                  label: const Text('Reschedule'),
                 ),
               ),
             ],

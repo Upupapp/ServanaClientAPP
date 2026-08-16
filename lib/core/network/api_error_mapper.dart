@@ -58,6 +58,18 @@ class ApiErrorMapper {
     'BOOKING_OTP_RESEND_COOLDOWN': _Kind.rateLimit,
     'BOOKING_OTP_RESEND_LIMIT': _Kind.rateLimit,
     'BOOKING_OTP_ATTEMPTS_EXHAUSTED': _Kind.rateLimit,
+
+    // 403, and the ONLY two 403s on a booking that are not an access decision.
+    //
+    // `errors.ts` gives them 403 alongside BOOKING_ACCESS_DENIED and
+    // BOOKING_OTP_ACTOR_NOT_PERMITTED, which genuinely are. These two are not:
+    // they mean the six digits the customer typed did not match. Classified by
+    // status alone they became ForbiddenFailure — "You don't have access to
+    // this." — telling somebody who fat-fingered one digit that the booking
+    // is not theirs, and offering no correction affordance. They are the
+    // customer's input being wrong, which is what validation means.
+    'BOOKING_OTP_INVALID': _Kind.validation,
+    'BOOKING_WORKER_CODE_INVALID': _Kind.validation,
   };
 
   /// Customer-safe copy per case. Deliberately non-specific: the backend's own

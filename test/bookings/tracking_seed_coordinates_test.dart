@@ -36,7 +36,13 @@ void main() {
   setUpAll(() {
     screen = _code(
         'lib/modules/bookings/presentation/screens/booking_detail_screen.dart');
-    repo = _code('lib/modules/tracking/data/tracking_repository.dart');
+    // TAB 10 put a router in front of TrackingRepository, and the two-call
+    // stitch this file is about — including the seed chain — moved into the
+    // compatibility source verbatim. Following the code rather than relaxing
+    // the assertion: the chain is still the thing being pinned, and it is
+    // still the one every shipped build runs.
+    repo = _code(
+        'lib/modules/tracking/data/tracking_compatibility_data_source.dart');
   });
 
   group('the fallback the fix depends on still exists', () {

@@ -44,6 +44,20 @@ class RequestIds {
   /// A fresh correlation id for a multi-call user intent.
   static String newCorrelationId() => 'cor_${_stamp()}_${_token(8)}';
 
+  /// A fresh idempotency key, e.g. `idm_m3k2j1_8fh2la9c4bqx`.
+  ///
+  /// The alphabet and separator are already inside the backend's accepted shape
+  /// — `^[A-Za-z0-9_.:-]{8,128}$` — so a key from here cannot produce
+  /// `IDEMPOTENCY_KEY_INVALID`. That is checked by test rather than asserted
+  /// here, because the constraint lives in the server and this file must not
+  /// grow a second copy of it.
+  ///
+  /// Minting is separate from *holding*: a key is only useful if the caller
+  /// keeps it across a retry of the same intent. Callers therefore generate one
+  /// per intent and reuse it, the way `BookingSubmissionService` does with
+  /// `() => _key ??= …`.
+  static String newIdempotencyKey() => 'idm_${_stamp()}_${_token(12)}';
+
   /// Base-36 millisecond stamp — orders ids in a log without revealing more
   /// than the wall clock a server already sees.
   static String _stamp() =>

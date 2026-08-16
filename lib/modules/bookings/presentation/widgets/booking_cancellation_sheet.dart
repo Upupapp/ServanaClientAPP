@@ -1,18 +1,20 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
-import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/core/network/api_failure.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
 import 'package:client/core/accessibility/focus_coordinator.dart';
 import 'package:flutter/material.dart';
 
 /// Modal bottom sheet that collects a cancellation reason and calls the
-/// cancel endpoint via [BookingRepository].
+/// cancel endpoint via [BookingLifecycleRepository].
 ///
 /// Usage:
 /// ```dart
 /// await BookingCancellationSheet.show(
 ///   context,
 ///   bookingId: '42',
+///   expectedState: 'ASSIGNED',
 ///   onCancelled: () => _refreshBooking(),
 /// );
 /// ```
@@ -20,9 +22,18 @@ class BookingCancellationSheet extends StatefulWidget {
   final String bookingId;
   final VoidCallback onCancelled;
 
+  /// The canonical state the caller last read, for optimistic concurrency.
+  ///
+  /// Optional because not every call site has one. Passing it turns "cancel
+  /// the booking as it was when this screen loaded" into a clean
+  /// `BOOKING_STATE_CONFLICT` if a provider accepted in the meantime, instead
+  /// of cancelling a job somebody is already driving to.
+  final String? expectedState;
+
   const BookingCancellationSheet._({
     required this.bookingId,
     required this.onCancelled,
+    this.expectedState,
   });
 
   /// Show the sheet and return when it is dismissed.
@@ -30,6 +41,7 @@ class BookingCancellationSheet extends StatefulWidget {
     BuildContext context, {
     required String bookingId,
     required VoidCallback onCancelled,
+    String? expectedState,
   }) {
     final priorFocus = FocusScope.of(context).focusedChild;
     return showModalBottomSheet<void>(
@@ -41,6 +53,7 @@ class BookingCancellationSheet extends StatefulWidget {
       builder: (_) => BookingCancellationSheet._(
         bookingId: bookingId,
         onCancelled: onCancelled,
+        expectedState: expectedState,
       ),
     ).whenComplete(() => FocusCoordinator.restoreToNode(priorFocus));
   }
@@ -64,6 +77,11 @@ class _BookingCancellationSheetState extends State<BookingCancellationSheet> {
   bool _isSubmitting = false;
   String? _error;
 
+  /// The booking cannot be cancelled at all — it has moved, ended, or is not
+  /// the caller's. Retrying with a different reason changes nothing, so the
+  /// submit button is retired rather than left inviting a second refusal.
+  bool _isRefusedOutright = false;
+
   Future<void> _submit() async {
     if (_selectedReason == null) return;
     setState(() {
@@ -71,21 +89,42 @@ class _BookingCancellationSheetState extends State<BookingCancellationSheet> {
       _error = null;
     });
     try {
-      final repo = dpLocator<BookingRepository>();
-      await repo.cancelBooking(widget.bookingId, _selectedReason!);
+      await dpLocator<BookingLifecycleRepository>().cancel(
+        bookingId: widget.bookingId,
+        reason: _selectedReason!,
+        expectedState: widget.expectedState,
+      );
       if (mounted) {
         Navigator.of(context).pop();
         widget.onCancelled();
       }
-    } catch (e) {
-      // BACKEND_GAP-C15-001: no customer-facing cancel endpoint; admin route
-      // returns HTTP 403 for non-admin tokens.  Surface a clear message
-      // rather than a cryptic error.
+    } on ApiFailure catch (failure) {
+      // Every failure used to render as one sentence: "Cancellation is not
+      // available at this time. Please contact support." That was written for
+      // GAP-C15-001, when there genuinely was no customer cancel route — and it
+      // outlived the gap. A booking already cancelled, a booking a provider has
+      // started, and a dropped connection all told the customer to contact
+      // support, two of them wrongly.
+      //
+      // The backend issues one code per distinguishable refusal precisely so a
+      // client can say which rule refused, and `safeMessage` is already that
+      // wording when the server marked it customer-safe.
       if (mounted) {
         setState(() {
           _isSubmitting = false;
-          _error = 'Cancellation is not available at this time. '
-              'Please contact support if you need to cancel.';
+          _error = failure.safeMessage;
+          // Nothing to correct on a booking that has moved or ended — the
+          // reason picker would only invite a second refusal.
+          _isRefusedOutright = failure is StateConflictFailure ||
+              failure is ForbiddenFailure ||
+              failure is NotFoundFailure;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _error = 'Something went wrong. Please try again.';
         });
       }
     }
@@ -150,7 +189,7 @@ class _BookingCancellationSheetState extends State<BookingCancellationSheet> {
             return RadioListTile<String>(
               value: reason,
               groupValue: _selectedReason,
-              onChanged: _isSubmitting
+              onChanged: (_isSubmitting || _isRefusedOutright)
                   ? null
                   : (v) => setState(() => _selectedReason = v),
               title: Text(
@@ -197,7 +236,9 @@ class _BookingCancellationSheetState extends State<BookingCancellationSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ElevatedButton(
-                  onPressed: (_selectedReason == null || _isSubmitting)
+                  onPressed: (_selectedReason == null ||
+                          _isSubmitting ||
+                          _isRefusedOutright)
                       ? null
                       : _submit,
                   style: ElevatedButton.styleFrom(
@@ -238,7 +279,7 @@ class _BookingCancellationSheetState extends State<BookingCancellationSheet> {
                     minimumSize: const Size.fromHeight(48),
                   ),
                   child: Text(
-                    'Keep Booking',
+                    _isRefusedOutright ? 'Close' : 'Keep Booking',
                     style: TextStyle(
                       fontFamily: FontPalette.primaryFontFamily,
                       fontWeight: FontWeight.w700,

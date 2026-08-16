@@ -77,6 +77,52 @@ void main() {
                 'docs/convergence-v1/TAB08_ENDPOINT_GAP.md');
       }
     });
+
+    test('TAB 10 adds two more slices, and neither widens to the domain', () {
+      // `bookingLifecycle` names actions on an already-existing booking;
+      // `bookingTracking` names one read. Creation still has no successor, so
+      // the three booking values together still must not add up to a claim
+      // that the domain migrated.
+      final names = V1Capability.values.map((c) => c.name).toList();
+      expect(names, contains('bookingLifecycle'));
+      expect(names, contains('bookingTracking'));
+
+      // The rule from TAB 09, re-asserted against the new values: the guard
+      // must catch a rename that widens the claim, not just the three strings
+      // somebody happened to think of first.
+      for (final name in names) {
+        final isBookingValue = name.startsWith('booking');
+        if (!isBookingValue) continue;
+        expect(
+          <String>['bookingReads', 'bookingLifecycle', 'bookingTracking'],
+          contains(name),
+          reason: '"$name" is a new booking capability. A value named for the '
+              'booking DOMAIN would claim creation migrated, and it has not — '
+              'see docs/convergence-v1/TAB08_ENDPOINT_GAP.md. Add it to this '
+              'list only after naming the slice it actually covers.',
+        );
+      }
+    });
+
+    test('reads, actions and tracking are independently switchable', () {
+      // The whole reason there are three values. Enabling reads must not start
+      // routing a CANCELLATION over an undeployed namespace, and enabling
+      // actions must not silently move the position-privacy boundary.
+      const readsOnly = CanonicalAvailability(
+        enabled: true,
+        capabilities: <V1Capability>{V1Capability.bookingReads},
+      );
+      expect(readsOnly.isAvailable(V1Capability.bookingReads), isTrue);
+      expect(readsOnly.isAvailable(V1Capability.bookingLifecycle), isFalse);
+      expect(readsOnly.isAvailable(V1Capability.bookingTracking), isFalse);
+
+      const actionsOnly = CanonicalAvailability(
+        enabled: true,
+        capabilities: <V1Capability>{V1Capability.bookingLifecycle},
+      );
+      expect(actionsOnly.isAvailable(V1Capability.bookingReads), isFalse);
+      expect(actionsOnly.isAvailable(V1Capability.bookingTracking), isFalse);
+    });
   });
 
   group('CanonicalRouter', () {

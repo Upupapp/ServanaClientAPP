@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/primary_button.dart';
+import 'package:client/core/network/api_failure.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
+import 'package:client/modules/bookings/domain/booking_otp_state.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pinput/pinput.dart';
@@ -68,23 +69,69 @@ class BookingOtpScreen extends StatefulWidget {
 
 class _BookingOtpScreenState extends State<BookingOtpScreen> {
   static const int _otpLength = 6;
-  static const int _resendCooldownSeconds = 60;
 
   final TextEditingController _controller = TextEditingController();
   String _code = '';
   bool _loading = false;
   String? _errorText;
 
-  // Resend cooldown
+  BookingLifecycleRepository get _bookings =>
+      dpLocator<BookingLifecycleRepository>();
+
+  /// The code's state as the BACKEND describes it, when the transport can say.
+  ///
+  /// This screen used to hold a private `_resendCooldownSeconds = 60`, count it
+  /// down locally, and know nothing else. That number was a copy of an operator
+  /// policy the server also holds, and the copy was never checked against the
+  /// original — so it was wrong the moment the policy changed, it reset when
+  /// the screen was disposed (granting a resend the server then refused), and
+  /// it could not express the two limits the client never modelled at all.
+  ///
+  /// `GET /api/v1/bookings/:id/otp/status` exists so a client renders "resend
+  /// in 42s" and "2 attempts left" from the backend. Under the legacy transport
+  /// there is no such route, so [BookingOtpState.local] supplies the same 60
+  /// seconds — now named as a client assumption rather than passing for policy,
+  /// and flagged `isBackendDerived: false` so this screen does not claim
+  /// precision it does not have.
+  BookingOtpState? _otp;
+
   Timer? _resendTimer;
   int _resendCountdown = 0;
-  bool get _canResend => _resendCountdown == 0 && !_loading;
+
+  bool get _canResend =>
+      _resendCountdown == 0 && !_loading && (_otp?.canRequest ?? true);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOtpState();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     _resendTimer?.cancel();
     super.dispose();
+  }
+
+  /// Reads the code's state without spending an attempt.
+  ///
+  /// Failure is deliberately silent. This call only enriches the resend
+  /// affordance; a customer who has the code in front of them must still be
+  /// able to type it if the status route is unreachable, so an error here
+  /// leaves the screen exactly as it was before this tab.
+  Future<void> _loadOtpState() async {
+    try {
+      final state = await _bookings.otpStatus('${widget.bookingId}');
+      if (!mounted) return;
+      setState(() => _otp = state);
+      if (state.resendAvailableInSeconds > 0) {
+        _startResendCooldown(state.resendAvailableInSeconds);
+      }
+    } catch (_) {
+      // Leave _otp null; the resend button stays enabled and the server
+      // remains the authority on whether the resend is permitted.
+    }
   }
 
   Future<void> _verify() async {
@@ -94,14 +141,11 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
       _errorText = null;
     });
     try {
-      final res = await dpLocator<ServanaApiClient>()
-          .confirmOtp(bookingId: widget.bookingId, otp: _code);
+      await _bookings.verifyOtp(
+        bookingId: '${widget.bookingId}',
+        code: _code,
+      );
       if (!mounted) return;
-      if (res['success'] == false) {
-        setState(() => _errorText =
-            (res['message'] ?? 'Invalid code. Please try again.').toString());
-        return;
-      }
       if (widget.flow == BookingOtpFlow.checkout &&
           widget.confirmationRouteName != null) {
         // Replace OTP with the confirmation screen (detail stays beneath).
@@ -110,9 +154,17 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
         // Resume flow: hand control back to the detail screen, which refreshes.
         context.pop(true);
       }
-    } on ServanaApiException catch (e) {
+    } on ApiFailure catch (failure) {
       if (!mounted) return;
-      setState(() => _errorText = _messageFrom(e));
+      // `safeMessage` is the only string either transport may render, and it is
+      // already the backend's own wording when that wording is customer-safe.
+      // The legacy `{success:false, message}` shape reaches here as a
+      // ValidationFailure carrying the same text, so the two paths produce the
+      // same screen.
+      setState(() => _errorText = failure.safeMessage);
+      // A refused attempt spends one. Re-read rather than decrementing a local
+      // counter, which would be a third copy of the budget.
+      unawaited(_loadOtpState());
     } catch (_) {
       if (!mounted) return;
       setState(() => _errorText = 'Something went wrong. Please try again.');
@@ -128,13 +180,32 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
       _errorText = null;
     });
     try {
-      await dpLocator<ServanaApiClient>()
-          .resendOtp(bookingId: widget.bookingId);
+      final issued = await _bookings.requestOtp('${widget.bookingId}');
       if (!mounted) return;
-      _startResendCooldown();
+
+      // Prefer the instant the SERVER says a resend becomes available. Falling
+      // back to the local constant only when it said nothing keeps the legacy
+      // path behaving exactly as it does today.
+      final serverSeconds = issued.resendInSeconds(DateTime.now());
+      _startResendCooldown(serverSeconds > 0
+          ? serverSeconds
+          : BookingOtpState.legacyResendCooldownSeconds);
+
+      unawaited(_loadOtpState());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Verification code resent.')),
       );
+    } on ApiFailure catch (failure) {
+      if (!mounted) return;
+      setState(() => _errorText = failure.safeMessage);
+      // BOOKING_OTP_RESEND_COOLDOWN carries Retry-After, which the mapper puts
+      // on the failure. Honouring it is what stops the button re-offering
+      // itself into a refusal the server already explained.
+      final retryAfter =
+          failure is RateLimitFailure ? failure.retryAfter?.inSeconds : null;
+      if (retryAfter != null && retryAfter > 0) {
+        _startResendCooldown(retryAfter);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _errorText = 'Could not resend code. Please try again.');
@@ -143,8 +214,9 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
     }
   }
 
-  void _startResendCooldown() {
-    setState(() => _resendCountdown = _resendCooldownSeconds);
+  void _startResendCooldown(int seconds) {
+    if (seconds <= 0) return;
+    setState(() => _resendCountdown = seconds);
     _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
@@ -161,15 +233,16 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
     });
   }
 
-  String _messageFrom(ServanaApiException e) {
-    try {
-      final decoded = jsonDecode(e.body);
-      if (decoded is Map<String, dynamic>) {
-        final msg = decoded['message'] ?? decoded['error'];
-        if (msg != null) return msg.toString();
-      }
-    } catch (_) {}
-    return 'Invalid code. Please try again.';
+  /// "2 attempts left", or nothing.
+  ///
+  /// Rendered only when the backend supplied a number. A client that guesses
+  /// this is worse than one that stays quiet: the customer would budget their
+  /// typing against a figure the server does not share.
+  String? get _attemptsLine {
+    final remaining = _otp?.attemptsRemaining;
+    if (remaining == null) return null;
+    if (remaining <= 0) return 'No attempts left on this code.';
+    return remaining == 1 ? '1 attempt left' : '$remaining attempts left';
   }
 
   @override
@@ -282,6 +355,20 @@ class _BookingOtpScreenState extends State<BookingOtpScreen> {
                     color: ColorPalette.danger,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              // Shown only when the backend supplied the number — never on the
+              // legacy transport, which does not know it.
+              if (_attemptsLine != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _attemptsLine!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontSize: 12,
+                    color: ColorPalette.accentText,
                   ),
                 ),
               ],

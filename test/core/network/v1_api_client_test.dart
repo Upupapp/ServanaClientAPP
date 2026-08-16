@@ -124,10 +124,20 @@ void main() {
       expect(c.sent.single.headers.containsKey('Authorization'), isFalse);
     });
 
-    test('forwards the idempotency key when supplied', () async {
+    test('forwards the idempotency key under the name v1 reads', () async {
+      // Was `X-Idempotency-Key`. That is the LEGACY create route's spelling
+      // (`controllers/bookingController.ts`); the canonical routes read
+      // `idempotency-key` and nothing else (`api/v1/envelope.ts`), so the key
+      // was being sent where no v1 route looks. TAB 10 is the first tab whose
+      // canonical calls mutate anything, which is why nothing had failed.
+      //
+      // The key also has to satisfy ^[A-Za-z0-9_.:-]{8,128}$, so `key_1` is
+      // now too short to send at all — see idempotency_header_test.dart.
       final c = clientThat([ok({'data': {}})]);
-      await c.client.post(V1Endpoints.conversations(), idempotencyKey: 'key_1');
-      expect(c.sent.single.headers['X-Idempotency-Key'], 'key_1');
+      await c.client
+          .post(V1Endpoints.conversations(), idempotencyKey: 'idm_key_00001');
+      expect(c.sent.single.headers['idempotency-key'], 'idm_key_00001');
+      expect(c.sent.single.headers.containsKey('x-idempotency-key'), isFalse);
     });
   });
 
@@ -220,16 +230,18 @@ void main() {
       ]);
       final envelope = await c.client.post(
         V1Endpoints.conversations(),
-        idempotencyKey: 'key_1',
+        idempotencyKey: 'idm_key_00001',
         retry: const RetryPolicy(
             maxAttempts: 2, baseDelay: Duration.zero, jitter: false),
       );
       expect(envelope.asMap['ok'], isTrue);
       expect(c.sent.length, 2);
       expect(
-        c.sent.map((r) => r.headers['X-Idempotency-Key']).toSet(),
-        <String>{'key_1'},
-        reason: 'the key must be stable across attempts',
+        c.sent.map((r) => r.headers['idempotency-key']).toSet(),
+        <String>{'idm_key_00001'},
+        reason: 'the key must be stable across attempts — and must arrive '
+            'under the name the canonical routes actually read, or the retry '
+            'this test permits becomes a second action',
       );
     });
 

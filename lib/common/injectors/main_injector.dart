@@ -15,11 +15,16 @@ import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/tracking/application/tracking_controller.dart';
+import 'package:client/modules/tracking/data/tracking_canonical_data_source.dart';
+import 'package:client/modules/tracking/data/tracking_compatibility_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_repository.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_canonical_data_source.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_compatibility_data_source.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
 import 'package:client/modules/bookings/data/booking_repository.dart';
 import 'package:client/modules/bookings/data/bookings_canonical_data_source.dart';
 import 'package:client/modules/bookings/data/bookings_compatibility_data_source.dart';
@@ -302,6 +307,19 @@ void initInjector(AppConfig config) {
       router: dpLocator(),
     ),
   );
+  // Booking ACTIONS — cancel, reschedule, the OTP ceremony. A separate object
+  // on a separate capability from the reads above, because routing a read at
+  // the wrong transport shows stale data and routing an action at the wrong
+  // one changes a customer's booking. Singleton, not a factory: it holds the
+  // live idempotency keys, and a fresh instance per call site would mint a new
+  // key for what the customer performed as one tap.
+  dpLocator.registerLazySingleton(
+    () => BookingLifecycleRepository(
+      compatibility: BookingLifecycleCompatibilityDataSource(dpLocator()),
+      canonical: BookingLifecycleCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
   dpLocator.registerLazySingleton(
     () => MessagingRepository(api: dpLocator()),
   );
@@ -511,12 +529,22 @@ void initInjector(AppConfig config) {
     ),
   );
 
-  // ── Tracking (C16 LIVETRACK+) ─────────────────────────────────────────────
+  // ── Tracking (C16 LIVETRACK+, TAB 10 transport boundary) ──────────────────
+  //
+  // Both transports constructed; the router decides. With bookingTracking
+  // unset — every build today — the two-call legacy stitch answers and the
+  // visibility verdict is inferred rather than measured.
   dpLocator.registerLazySingleton(
     () => TrackingDataSource(dpLocator()),
   );
   dpLocator.registerLazySingleton(
-    () => TrackingRepository(dpLocator()),
+    () => TrackingRepository(
+      compatibility: TrackingCompatibilityDataSource(
+        dpLocator<TrackingDataSource>(),
+      ),
+      canonical: TrackingCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   // Factory so each LiveTrackingScreen gets its own controller instance.
   dpLocator.registerFactory(
