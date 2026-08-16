@@ -99,6 +99,8 @@ void main() {
             'bookingLifecycle',
             'bookingTracking',
             'bookingPayments',
+            'bookingAdditionalWork',
+            'bookingDisputes',
           ],
           contains(name),
           reason: '"$name" is a new booking capability. A value named for the '
@@ -128,6 +130,26 @@ void main() {
       expect(actionsOnly.isAvailable(V1Capability.bookingReads), isFalse);
       expect(actionsOnly.isAvailable(V1Capability.bookingTracking), isFalse);
       expect(actionsOnly.isAvailable(V1Capability.bookingPayments), isFalse);
+    });
+
+    test('no capability is named for the booking-experiences domain', () {
+      // TAB 12. That backend domain holds ten entries which this client now
+      // reaches under FOUR different capabilities — bookingTracking,
+      // bookingLifecycle (otp + reschedule), bookingAdditionalWork and
+      // bookingDisputes. A value named for the domain would claim all ten
+      // moved together, and they demonstrably do not.
+      final names = V1Capability.values.map((c) => c.name).toList();
+      for (final forbidden in <String>[
+        'bookingExperiences',
+        'experiences',
+        'disputes',
+        'additionalWork',
+      ]) {
+        expect(names, isNot(contains(forbidden)),
+            reason: '"$forbidden" names a domain or drops the booking scope');
+      }
+      expect(names, contains('bookingAdditionalWork'));
+      expect(names, contains('bookingDisputes'));
     });
 
     test('payments is not named for the finance domain', () {

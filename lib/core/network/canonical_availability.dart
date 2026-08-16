@@ -178,6 +178,36 @@ enum V1Capability {
   /// rather than rendering a zeroed breakdown as a price.
   bookingPayments,
 
+  /// `GET /api/v1/bookings/:id/additional-work` — the change orders on a
+  /// booking.
+  ///
+  /// The READ only. `POST …/additional-work` is `auth: 'provider'` and is not
+  /// in this capability because it is not in this client at all: raising a
+  /// change order needs an IN_PROGRESS assignment row, which a customer does
+  /// not have. The name says `additionalWork` rather than `changeOrders`
+  /// because that is what the endpoint is called, and it claims the read
+  /// because that is all a customer app can do with it.
+  ///
+  /// The smallest capability in the vocabulary. Its legacy relative is already
+  /// booking-scoped and already the same service, so flipping this changes a
+  /// URL and nothing else — which is worth saying plainly rather than dressing
+  /// up.
+  bookingAdditionalWork,
+
+  /// `GET|POST /api/v1/bookings/:id/disputes` — escalations.
+  ///
+  /// The opposite of its neighbour: flipping this turns on a feature rather
+  /// than moving one. There is no customer dispute route on the legacy
+  /// transport — the only predecessor is `POST /api/admin/bookings/:id/escalate`,
+  /// admin-only, which *"does not record a category, the opening role or the
+  /// state snapshot"*.
+  ///
+  /// Kept apart from [bookingAdditionalWork] for exactly that reason. They
+  /// share a domain and a repository and nothing else: one is a URL change, the
+  /// other is new customer-facing capability, and an operator must be able to
+  /// take them in that order.
+  bookingDisputes,
+
   /// `GET /api/v1/search` — the first server-side catalog search.
   ///
   /// A unit because the compatibility source satisfies the same interface and

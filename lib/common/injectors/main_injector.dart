@@ -15,6 +15,9 @@ import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/tracking/application/tracking_controller.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_canonical_data_source.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_compatibility_data_source.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_repository.dart';
 import 'package:client/modules/payments/data/payments_canonical_data_source.dart';
 import 'package:client/modules/payments/data/payments_compatibility_data_source.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
@@ -316,6 +319,16 @@ void initInjector(AppConfig config) {
   // one changes a customer's booking. Singleton, not a factory: it holds the
   // live idempotency keys, and a fresh instance per call site would mint a new
   // key for what the customer performed as one tap.
+  // Change orders and disputes. Two capabilities over one repository: the
+  // change-order read has a live legacy relative, disputes have no customer
+  // route at all, so an operator must be able to flip the safe half first.
+  dpLocator.registerLazySingleton(
+    () => BookingExperiencesRepository(
+      compatibility: BookingExperiencesCompatibilityDataSource(dpLocator()),
+      canonical: BookingExperiencesCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
   // Payments — one ceremony for the four places that each had their own.
   // Compatibility answers today: the legacy transport can start a checkout,
   // reads payment state by re-fetching the whole booking (R-06), and cannot

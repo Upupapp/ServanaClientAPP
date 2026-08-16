@@ -454,3 +454,60 @@ already relied on session reuse for crash recovery without being able to see it.
 Nothing routes canonically. What ships is one payment ceremony in place of
 seven call sites, and the `BookingDetailScreen` envelope defect that fell out
 of it.
+
+---
+
+## 10. TAB 12 â€” change orders and disputes
+
+Full record in `docs/convergence-v1/TAB12_CERTIFICATION.md`.
+
+### 10.1 Two capabilities added, over one repository
+
+| Capability | Compatibility endpoints today | Canonical successors | Blocked on |
+| --- | --- | --- | --- |
+| `bookingAdditionalWork` | `GET /api/additional/booking/:bookingId` â€” live, and the app had never called it | `GET /api/v1/bookings/:id/additional-work` | v1 deploy |
+| `bookingDisputes` | **none** â€” the only legacy dispute route is admin-only | `GET\|POST /api/v1/bookings/:id/disputes` | v1 deploy |
+
+Separate because they are not comparable. The change-order read has a live
+legacy relative doing identical work, so flipping it changes a URL; disputes
+have no customer route, so flipping that turns on a feature. An operator must
+be able to take the safe half first.
+
+`booking-experiences` now spans **four** client capabilities â€” `bookingTracking`
+and `bookingLifecycle` from TAB 10, these two from TAB 12 â€” which is why no
+value may be named for that domain. Guarded.
+
+### 10.2 A third kind of absence
+
+Â§3.3 and Â§8.3 record two. This adds the third, and the three treatments differ
+on purpose:
+
+| Kind | Example | Treatment |
+| --- | --- | --- |
+| legacy lacks it | reschedule (Â§8.3), customer refunds (Â§9.2), disputes | a `supportsâ€¦` flag on the interface |
+| canonical lacks it | `DELETE /api/user/notifications/:key` (Â§3.3) | absent from the canonical source; the repository calls compatibility directly |
+| **this actor** may never call it | `bookings.additionalWork.create` | absent from the interface **altogether** â€” no method, no flag |
+
+The third is new. `additionalWork.create` is `implemented`, has a live legacy
+alias and works â€” for a provider. `auth: 'provider'`, `customerMobile: 'n/a'`,
+and the write requires an IN_PROGRESS assignment row a customer does not have.
+A `supportsâ€¦` flag would advertise a capability that is permanently false and
+invite the next reader to ask which deploy turns it on.
+
+### 10.3 Where the backend serves its own vocabulary, consume it
+
+TAB 10 mirrored `RESCHEDULE_REASONS` and TAB 11 mirrored the customer subset of
+`REFUND_TRIGGERS`, both because no endpoint hands the list over before the
+request is made. Disputes break that pattern in the client's favour:
+`GET â€¦/disputes` returns `categories` **outside any branch**, so the call that
+renders existing escalations also supplies the vocabulary for opening one.
+
+`DisputeCategory` is therefore an extension type over a String rather than an
+enum â€” the backend documents its list as a growing superset, and a closed
+client enum would drop a new category silently.
+
+### 10.4 What ships today
+
+Disputes remain unavailable. **Change orders become readable on the legacy
+transport**, because the route was always live and the app had simply never
+called it â€” the one thing in this tab a shipped build can use with no deploy.

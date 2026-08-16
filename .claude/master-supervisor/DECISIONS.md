@@ -286,3 +286,68 @@ PRIMARY SOURCES: TAB 01 delta matrix; backend contract.
 LOCAL IMPACT: asserted by test â€” `grossMinor` is null and `refund` is null on the legacy path.
 PRODUCTION IMPACT: none; no screen renders the breakdown yet.
 DATE: 2026-08-16
+
+---
+
+DECISION: Take the four remaining `booking-experiences` entries as TAB 12.
+CONTEXT: The user said "go" after being told TAB 12's subject needed their input. Two candidates had been offered: the leftover `booking-experiences` entries, or `conversations`.
+OPTIONS: (a) ask again; (b) take booking-experiences; (c) take conversations.
+SELECTED: (b).
+WHY: Asking twice in a row after an explicit "go" ignores the instruction. Between the two candidates only one can proceed without the user: `conversations` is blocked on the R-10 semantic decision â€” v1 replaces lazy conversation creation with an explicit POST and SC-038 records the current behaviour as a defect â€” and that is a product call, not a technical one. `booking-experiences` needs nothing from anybody and completes a domain TAB 10 half-finished.
+EVIDENCE: `contract.ts` â€” `booking-experiences` has 10 entries, TAB 10 took 6; TAB 01 R-10 on conversations.
+PRIMARY SOURCES: backend contract; TAB 01 risk matrix.
+LOCAL IMPACT: `state.json.tabTitleProvenance` now records that TAB 11's title was the user's and TAB 12's was mine.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Give `additionalWork.create` no method AND no capability flag.
+CONTEXT: Every previous absence in this work was reported through a `supportsâ€¦` flag so a UI could ask before offering.
+OPTIONS: (a) a `supportsRaisingChangeOrders` flag, false on both transports; (b) a method that throws; (c) absent from the interface entirely.
+SELECTED: (c).
+WHY: The flag pattern exists for a transport gap â€” something legacy lacks that canonical has, which will become true when v1 deploys. This is not that. `bookings.additionalWork.create` is `auth: 'provider'`, `customerMobile: 'n/a'`, and the write requires an IN_PROGRESS assignment row the customer does not have. It will never be true for this client. A flag would advertise a capability that is permanently false, and the next person to see it would reasonably wonder what deploy turns it on.
+EVIDENCE: `contract.ts:2914-2952` â€” `auth: 'provider'`, `callers.customerMobile: 'n/a'`, `PROVIDER_ROLE_REQUIRED` in the error list, and the replayGuard requiring an IN_PROGRESS assignment under FOR UPDATE.
+PRIMARY SOURCES: backend contract.
+LOCAL IMPACT: a test pins the interface at four members so a fifth is a visible decision.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Do NOT mirror the dispute categories; read them from the response.
+CONTEXT: TAB 10 mirrored `RESCHEDULE_REASONS` and TAB 11 mirrored the customer subset of `REFUND_TRIGGERS`, both because a picker must be populated before any request exists.
+OPTIONS: (a) mirror `DISPUTE_CATEGORIES` as a Dart enum for consistency with the two previous tabs; (b) consume the server's list.
+SELECTED: (b) â€” `DisputeCategory` is an extension type over a String.
+WHY: Consistency would be the wrong reason. The justification for mirroring was that no endpoint hands the list over first, and here one does: `bookings.disputes.list` returns `categories` OUTSIDE any branch, so it arrives even for a booking with zero disputes. The one call a screen makes to show escalations also supplies the vocabulary. The backend additionally describes its list as *"a superset of the provider-facing categories"* â€” a set expected to grow â€” so a closed client enum would drop a new category silently and turn each backend addition into a client release.
+EVIDENCE: `domains/bookingExperiences.ts:493-501` (`categories: DISPUTE_CATEGORIES` unconditional in the `ok()` call); `experiencePolicy.ts:656-671` (nine categories, documented as a growing superset).
+PRIMARY SOURCES: backend route and policy source.
+LOCAL IMPACT: an unrecognised category still renders, humanised from its wire name, rather than being dropped.
+PRODUCTION IMPACT: none; disputes are unreachable on legacy.
+DATE: 2026-08-16
+
+---
+
+DECISION: `BookingDispute` carries no `reason` field.
+CONTEXT: The customer writes `reason` when opening a dispute.
+OPTIONS: (a) model it so the author can see what they submitted; (b) omit it from the read model, keep it outbound-only on the draft.
+SELECTED: (b).
+WHY: `reason`, `assigned_team` and `actor_uid` are withheld from EVERY caller â€” *"free text one party typed about another, internal routing, and a person."* Including the author. A field for it would be a parser waiting for a disclosure bug, and a screen rendering it after submission would be showing its own local copy while implying the platform echoes it back. If the author needs to see what they wrote, that is a local draft concern and must be presented as one.
+EVIDENCE: `openapi.ts:648-671` (`BookingDispute`, with the withholding note); `contract.ts:3044-3047`.
+PRIMARY SOURCES: backend schema and contract.
+LOCAL IMPACT: `DisputeDraft.reason` is outbound only; `stateSnapshot` is an opaque map for the same reason â€” evidence, not a view model.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Two capabilities over one repository.
+CONTEXT: Change orders and disputes share a backend domain and a client module.
+OPTIONS: (a) one `bookingExperiences` capability; (b) `bookingAdditionalWork` + `bookingDisputes`.
+SELECTED: (b).
+WHY: (a) would also claim the six entries TAB 10 already routes under `bookingTracking` and `bookingLifecycle`, so the name would be false on arrival. Beyond naming, the two halves are not comparable: the change-order read has a live legacy relative doing identical work, so flipping it changes a URL; disputes have no customer route at all, so flipping that turns on a feature. Same argument that separated `bookingReads` from `bookingLifecycle`.
+EVIDENCE: `contract.ts` â€” 10 `booking-experiences` entries across what are now four client capabilities.
+PRIMARY SOURCES: backend contract.
+LOCAL IMPACT: `BookingExperiencesRepository._sourceFor(capability)` routes per call rather than holding one `_source` getter â€” the first repository in this work that needed it.
+PRODUCTION IMPACT: none; both off.
+DATE: 2026-08-16

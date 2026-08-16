@@ -739,6 +739,28 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// `GET /api/additional/booking/:bookingId` — the change orders raised
+  /// against this booking.
+  ///
+  /// Additive. The customer app has never called this; the route exists, is
+  /// already booking-scoped, and is served by the same `additionalService` the
+  /// canonical path uses. The contract classifies it `ALIAS_TEMPORARILY` and
+  /// notes the canonical entry *"differs only in living under the booking it
+  /// belongs to."*
+  ///
+  /// Envelope: `{ success: true, data: [ … ] }` or the rows at the root,
+  /// depending on the wrapper. Rows are raw Postgres columns — snake_case, with
+  /// Postgres' native timestamp rendering.
+  ///
+  /// There is deliberately no `createAdditionalWork` here. Raising a change
+  /// order is `auth: 'provider'` and requires an IN_PROGRESS assignment row; a
+  /// customer client must not hold the call at all.
+  Future<Map<String, dynamic>> getBookingAdditionalWork(int bookingId) async {
+    final uri = _uri('/api/additional/booking/$bookingId');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getBookingTracking(int bookingId) async {
     final uri = _uri('/api/$bookingId/tracking');
     final res = await _client.get(uri, headers: await _headers());

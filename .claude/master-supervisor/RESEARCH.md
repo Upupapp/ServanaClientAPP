@@ -97,3 +97,42 @@ first capability whose flip does not merely move traffic â€” it adds a ques
 the app could not ask and an action it could not take. `hasPaymentDetail` and
 `canOfferRefund` exist so a caller can tell which world it is in, rather than
 rendering an unknowable zero as a price.
+
+## Sources read for TAB 12 (2026-08-16)
+
+| Question | Source | Finding |
+| --- | --- | --- |
+| What is left in `booking-experiences`? | `contract.ts` â€” 10 entries at 2703â€“3048 | TAB 10 took 6 (tracking, 3Ã— otp, reschedule, reschedule.history). Four remain: `additionalWork.create`, `additionalWork.list`, `disputes.open`, `disputes.list`. |
+| May a CUSTOMER raise a change order? | `contract.ts:2914-2952` | **No.** `auth: 'provider'`, `callers.customerMobile: 'n/a'`, `PROVIDER_ROLE_REQUIRED` among its errors, and the replayGuard *"requires an IN_PROGRESS assignment row held under FOR UPDATE"*. This is an authorization fact, not a transport gap â€” hence no method and no flag on the customer interface. |
+| Does the change-order READ have a legacy relative? | `contract.ts:2966-2975` | Yes â€” `GET /api/additional/booking/:bookingId`, `ALIAS_TEMPORARILY`, *"already booking-scoped and already the same service. The canonical path differs only in living under the booking it belongs to."* The client had never called it. |
+| Does the client have any change-order surface? | grep over `lib/` | No. `AddAdditionalItemMenuScreen` matches on the name but belongs to the MerchantMenu subtree â€” it takes `merchantId`, uses `MerchantService` and the `store_items` bloc, and is unrelated to `booking_additional_requests`. Narrows the standing MerchantMenu retirement finding. |
+| Does a customer have any legacy dispute route? | `contract.ts:3001-3020` | **No.** `POST /api/admin/bookings/:id/escalate` is admin-only and *"does not record a category, the opening role or the state snapshot Â§66 requires"*; `GET /api/provider/bookings/:id/dispute-status` is provider-facing. Neither is reachable with a customer token. |
+| Where do dispute categories come from? | `domains/bookingExperiences.ts:493-501` | The route returns `categories: DISPUTE_CATEGORIES` **outside any branch** â€” so they arrive even for a booking with zero disputes. The client does not need to mirror them, unlike TAB 10's reschedule reasons and TAB 11's refund triggers. |
+| Is the category list expected to grow? | `experiencePolicy.ts:656-671` | Nine values today, documented as *"a superset of `PROVIDER_DISPUTE_CATEGORIES`, which must remain a subset"*. A closed client enum would drop a new one silently â€” hence an extension type over String. |
+| What is never projected on a dispute? | `openapi.ts:648-671`, `contract.ts:3044-3047` | `reason`, `assigned_team`, `actor_uid` â€” *"free text one party typed about another, internal routing, and a person."* Withheld from EVERY caller, including the author of the reason. `openedByYou` is the only caller-dependent field. |
+| How is a duplicate dispute prevented? | `contract.ts:2987-2990` | A partial unique index plus the policy check: *"two simultaneous reports produce one record and one BOOKING_DISPUTE_ALREADY_OPEN, not two disputes."* Stronger than a client idempotency key, and neither idempotency error code is listed. |
+| From which states may a dispute be opened? | `experiencePolicy.ts:688-697` (`DISPUTABLE_STATES`) | ACCEPTED, EN_ROUTE, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED, DISPUTED. *"A booking nobody has committed to has nothing to dispute."* Server-side; not mirrored. |
+| When does a change order carry an approved amount? | `additional.service.ts:354-370` | `CASE WHEN status IN ('WAITING_FOR_PAYMENT','WAITING_WORKER_APPROVAL','ACCEPTED','IN_PROGRESS','PROCEEDING','COMPLETED') THEN total_amount ELSE NULL`. So a `PENDING_ADMIN_APPROVAL` request has a price and no approved amount â€” mirrored to *explain* the null, pinned by test against this set. |
+| What shape are the change-order rows? | same | Raw Postgres columns, snake_case, with Postgres' native timestamp rendering. Both spellings parsed; timestamps through the shared `parseBackendTimestamp`. |
+
+## Standing conclusion, updated
+
+TAB 12 completed the `booking-experiences` domain and, in doing so, produced
+the taxonomy the earlier tabs had been building toward without naming: there
+are **three** kinds of absence, and they need three different treatments.
+Legacy-lacks-it gets a `supportsâ€¦` flag. Canonical-lacks-it gets a per-call
+escape to the compatibility source. **This-actor-may-never-call-it** gets
+nothing at all â€” no method, no flag â€” because a flag implies a deploy that
+would turn it on, and none will.
+
+It also produced the first case where the backend serves its own vocabulary.
+TABs 10 and 11 both mirrored a closed list because no endpoint offered one
+before the request; disputes hand the categories over on the same read that
+shows the escalations. Consuming that rather than mirroring it is the
+difference between a backend addition being a deploy and being a client
+release.
+
+And one thing genuinely shipped: change orders are readable on the legacy
+transport today, because the route was always live and the app had simply never
+called it. Every prior tab's user-visible work was a correction; this one added
+a capability with no deploy behind it.

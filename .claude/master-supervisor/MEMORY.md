@@ -52,6 +52,34 @@ Key files:
 | 09 | Booking READ transport | `861e781` (`bookingReads`) |
 | 10 | Tracking / OTP / cancel / reschedule | `TAB10_CERTIFICATION.md`, manifest §8 |
 | 11 | Payments / refunds | `TAB11_CERTIFICATION.md`, manifest §9 |
+| 12 | Change orders / disputes | `TAB12_CERTIFICATION.md`, manifest §10 |
+
+## The taxonomy TAB 12 named — three kinds of absence
+
+Worth carrying into every later tab, because the treatments differ:
+
+| Kind | Example | Treatment |
+| --- | --- | --- |
+| legacy lacks it | reschedule, customer refunds, disputes | a `supports…` flag on the interface |
+| canonical lacks it | `DELETE /api/user/notifications/:key` | absent from the canonical source; the repository calls compatibility directly |
+| **this actor** may never call it | `bookings.additionalWork.create` | absent from the interface **altogether** — no method, no flag |
+
+The third is the subtle one. `additionalWork.create` is `implemented`, has a
+live legacy alias, and works — for a **provider**. A `supports…` flag would
+advertise a capability that is permanently false for this client and invite the
+next reader to ask which deploy turns it on.
+
+## And the vocabulary rule, refined
+
+TABs 10 and 11 mirrored closed lists (`RESCHEDULE_REASONS`, the customer subset
+of `REFUND_TRIGGERS`) because no endpoint hands the list over before the
+request. Disputes do: `GET …/disputes` returns `categories` **outside any
+branch**, so it arrives even for a booking with zero disputes.
+
+**Where the backend serves its own vocabulary, consume it.** `DisputeCategory`
+is an extension type over a String, not an enum, because the backend documents
+its list as a growing superset — a closed enum turns each backend addition into
+a client release.
 
 ## ⚠ The Master Command text is NOT in this repo
 
@@ -159,6 +187,11 @@ Client enum names it `promotions` and accepts both wire names.
 
 ## Next action
 
-TAB 12 — **ask the user for its subject first**, per the note above. TAB 11 is
-certified: analyze 0 errors / 39 infos (unchanged baseline), 1,854 tests
-passing.
+TAB 13 — **ask the user for its subject**, per the provenance note above. The
+strongest remaining candidate is `conversations`, whose capability is already
+defined but blocked on the R-10 semantic decision (v1 replaces lazy
+conversation creation with an explicit POST; SC-038 records the current
+behaviour as a defect). That is a product call, not a technical one.
+
+TAB 12 is certified: analyze 0 errors / 39 infos (unchanged baseline), 1,874
+tests passing.
