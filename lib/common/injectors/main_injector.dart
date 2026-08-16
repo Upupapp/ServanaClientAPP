@@ -62,6 +62,7 @@ import 'package:client/modules/homepage/data/home_composition_canonical_data_sou
 import 'package:client/modules/homepage/data/home_composition_compatibility_data_source.dart';
 import 'package:client/modules/homepage/data/home_composition_repository.dart';
 import 'package:client/modules/homepage/domain/home_composition.dart';
+import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/modules/search/data/search_canonical_data_source.dart';
 import 'package:client/modules/search/data/search_compatibility_data_source.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
@@ -161,6 +162,18 @@ void initInjector(AppConfig config) {
 
   // Booking draft — lives in memory, cleared on logout / booking submit.
   dpLocator.registerLazySingleton(() => BookingDraftService());
+  // TAB 08 — one booking-create ceremony for every category flow. The
+  // customer id is resolved from the session here, never handed in by a
+  // screen; the legacy route still takes it as `?userId=`, which is the
+  // endpoint's gap and not the caller's to fix.
+  dpLocator.registerLazySingleton(
+    () => BookingSubmissionService(
+      api: dpLocator(),
+      journal: dpLocator(),
+      customerId: () async =>
+          (await SessionService.getSession())?.customerID,
+    ),
+  );
 
   // Address repository — shared by both checkout screens.
   dpLocator.registerLazySingleton(
