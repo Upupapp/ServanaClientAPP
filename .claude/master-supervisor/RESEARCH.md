@@ -65,3 +65,35 @@ of a rule the server owns: a cooldown, a cancellability set, a failure message
 written for a gap that had closed, and a whole state machine with no callers.
 Each copy was silently wrong in the same direction â€” toward offering the
 customer something the server would refuse.
+
+## Sources read for TAB 11 (2026-08-16)
+
+| Question | Source | Finding |
+| --- | --- | --- |
+| What is TAB 11? | `state.json`, `TAB01_CONVERGENCE_RISK_MATRIX.md:71-88`, repo-wide grep | **Not recoverable from the repo.** `state.json` carries the index and no title; the risk matrix says its sequencing is *"recorded as a finding of TAB 01, not as a plan."* The subject was chosen by the user from an evidence-based shortlist. Recorded in `state.json.tabTitleProvenance` so the next session asks rather than guesses. |
+| What is left to migrate? | `contract.ts` domain census | `finance` 7 entries (3 customer-facing), `booking-experiences` 4 remaining, `reviews` 6 (backend gap R-11), `conversations` 6 (capability exists, blocked on R-10), `account` 19 (partly done in TAB 03). |
+| Which finance endpoints may a customer call? | `contract.ts:3202`, `:3242`, `:3274` | Three, all booking-scoped: `payments.intent`, `payments.get`, `refunds.create`. The other four are provider earnings, payouts and admin reconciliation. This is why the capability is `bookingPayments` and not `finance`. |
+| Does a legacy payment-state route exist? | `contract.ts:3254-3264` (`bookings.payments.get` legacy array) | **No.** Its only legacy entry is `GET /api/admin/finance/ledger/booking/:id`, classified `ROLE_SPECIFIC` â€” the admin revenue-recognition view, *"a different question â€¦ carries its own permission."* Confirms TAB 01's R-06 is still true. |
+| Does a legacy customer refund route exist? | `contract.ts:3297-3307` | **No.** The one legacy entry is `POST /api/admin/finance/refunds`, and the note says this canonical entry *"adds the customer-initiated path, which had no route at all."* |
+| What does the checkout replay guard actually do? | `contract.ts:3209-3213` | An advisory transaction lock on the booking, reuse of a live session for the same return origin, and a processor `Idempotency-Key` derived from the payment row and its attempt counter. *"A replay returns the SAME checkout URL rather than creating a second payable session."* The client key would be redundant â€” the protection is inside the processor call. |
+| Should the client send `returnOrigin`? | `openapi.ts:1052-1063`, `contract.ts:3236-3239` | No. *"Matched against a SERVER-SIDE allowlist. Never used as a URL."* A stored session encodes the URLs it was built with, so handing one back to a caller resolving to another origin would return the payer to a different application. |
+| How many payment states are there? | `openapi.ts:1089-1093` | Six: PENDING, PAID, FAILED, REJECTED, REFUNDING, REFUNDED. `PaymentStatusParser` knew three. `state` is *"Settlement truth. SEPARATE from the booking lifecycle state."* |
+| Which refund triggers may a CUSTOMER cite? | `financePolicy.ts:592-638` (`REFUND_TRIGGERS[â€¦].initiators`) | Four: `CUSTOMER_CANCELLED`, `PROVIDER_CANCELLED`, `SERVICE_NOT_DELIVERED`, `DUPLICATE_PAYMENT`. Admin-only: `ADMIN_CANCELLED`, `DISPUTE_UPHELD`, `ADMIN_DISCRETION`. A trigger whose initiators exclude the actor is refused with `OUTCOME_NOT_REFUNDABLE`. |
+| What happens when a customer requests a refund? | `bookingPaymentService.ts:331-351` | A review row is opened and **no processor is called**. `outcome: 'requested'`. Money moves only on an admin decision. |
+| How is a double refund prevented? | `financePolicy.ts:684-721` (`evaluateRefundEligibility`) | `maxRefundable = max(0, captured - refunded)`, so a second full refund computes a ceiling of zero and is refused by arithmetic. Also refuses a provider outright, and refuses `REFUNDING`/`REFUNDED`/uncaptured states. All server-side; nothing mirrored. |
+| Do the finance error codes need a mapper override? | `errors.ts:158-179` | **No** â€” checked before touching the mapper, and the status-driven classification is correct for all ten. Pinned by test rather than left as a silent absence, because the TAB 10 OTP codes looked equally fine until their statuses were read. |
+| How many client copies of the payment calls exist? | grep over `lib/` | Four `createPaymongoSession` call sites and three `isPaid` implementations. `booking_detail_screen.dart:990` unwrapped the envelope but read only the root key for the URL â€” a live defect on one of four paths. |
+
+## Standing conclusion, updated
+
+TAB 10's recurring find was the client holding a copy of a server RULE. TAB 11's
+is the client holding a copy of itself: the same seven-call-site duplication
+TAB 08 removed from booking creation, still present in the payment layer, and
+already diverged badly enough to have produced a real defect on one path.
+
+The other half is what the legacy transport simply cannot do. Two of the three
+canonical operations have no predecessor at all, so `bookingPayments` is the
+first capability whose flip does not merely move traffic â€” it adds a question
+the app could not ask and an action it could not take. `hasPaymentDetail` and
+`canOfferRefund` exist so a caller can tell which world it is in, rather than
+rendering an unknowable zero as a price.

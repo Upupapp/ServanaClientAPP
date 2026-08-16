@@ -94,7 +94,12 @@ void main() {
         final isBookingValue = name.startsWith('booking');
         if (!isBookingValue) continue;
         expect(
-          <String>['bookingReads', 'bookingLifecycle', 'bookingTracking'],
+          <String>[
+            'bookingReads',
+            'bookingLifecycle',
+            'bookingTracking',
+            'bookingPayments',
+          ],
           contains(name),
           reason: '"$name" is a new booking capability. A value named for the '
               'booking DOMAIN would claim creation migrated, and it has not — '
@@ -122,6 +127,25 @@ void main() {
       );
       expect(actionsOnly.isAvailable(V1Capability.bookingReads), isFalse);
       expect(actionsOnly.isAvailable(V1Capability.bookingTracking), isFalse);
+      expect(actionsOnly.isAvailable(V1Capability.bookingPayments), isFalse);
+    });
+
+    test('payments is not named for the finance domain', () {
+      // TAB 11. `finance` also contains provider earnings, payouts and admin
+      // reconciliation — four surfaces a CUSTOMER app may never call. A value
+      // called `finance` would claim them; `bookingPayments` claims the three
+      // booking-scoped customer endpoints and nothing else.
+      final names = V1Capability.values.map((c) => c.name).toList();
+      expect(names, contains('bookingPayments'));
+      for (final forbidden in <String>[
+        'finance',
+        'payments',
+        'earnings',
+        'payouts',
+      ]) {
+        expect(names, isNot(contains(forbidden)),
+            reason: '"$forbidden" would claim surfaces this client cannot call');
+      }
     });
   });
 

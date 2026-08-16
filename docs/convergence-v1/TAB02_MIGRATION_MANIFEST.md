@@ -89,7 +89,7 @@ migration it cannot make.
 | **bookings** (the domain) | `POST /api/bookings` is classified `KEEP` with **no canonical successor and none planned**. A "migrated" booking domain would still create bookings on a legacy route. Three *slices* have since been named — `bookingReads` (TAB 09), `bookingLifecycle` and `bookingTracking` (TAB 10) — and together they still do not add up to the domain. | A backend contract entry for canonical booking creation |
 | **reviews** | 4 of 9 calls have successors. `GET\|PUT\|DELETE /api/reviews/:id`, `GET /api/reviews/me` and `POST …/report` do not. | Canonical review-lifecycle endpoints |
 | **support** | The v1 relative is booking-scoped only and documented as narrower, not equivalent: the general contact surface "carries no bookingId". | A canonical non-booking support surface |
-| **payments** | `paymongo/create` has a successor; `gcash-submit`, `approve`, `mark-cash-paid` do not — though none has a production caller. | Contract decision on the manual-payment family |
+| **payments** (the domain) | ~~`paymongo/create` has a successor; `gcash-submit`, `approve`, `mark-cash-paid` do not — though none has a production caller.~~ **Partly superseded by TAB 11 — see §9.** The customer's three booking-scoped finance calls now have a capability, `bookingPayments`. Still without successors: the manual-payment family (`gcash-submit`, `approve`, `mark-cash-paid`), none of which has a production caller. | Contract decision on the manual-payment family |
 | **tracking** (the domain) | ~~`GET /api/booking/:id/provider` has no successor; provider-location maps onto `…/tracking`.~~ **Superseded by TAB 10 — see §8.** The *snapshot* now has a capability, `bookingTracking`. What still has no successor is the provider **identity** lookup, which is why the value is named for the tracking read and not for the domain. | Canonical provider identity endpoint |
 
 ### 3.3 Calls with no canonical successor inside an otherwise complete domain
@@ -400,3 +400,57 @@ legacy path:
 - a wrong OTP raises the same typed failure whichever transport answered;
 - the tracking verdict is carried rather than flattened, and the legacy guess is
   labelled as a guess.
+
+---
+
+## 9. TAB 11 â€” customer payments and refunds
+
+Full record in `docs/convergence-v1/TAB11_CERTIFICATION.md`.
+
+### 9.1 One capability added
+
+| Capability | Compatibility endpoints today | Canonical successors | Blocked on |
+| --- | --- | --- | --- |
+| `bookingPayments` | `POST /api/:id/paymongo/create`; payment state by re-reading `GET /api/:id`; **(refund: none)** | `POST /api/v1/bookings/:id/payment-intents`, `GET â€¦/payment`, `POST â€¦/refunds` | v1 deploy |
+
+Named for the slice, and for a second reason beyond the one that governs the
+three booking values: the `finance` domain also contains provider earnings,
+payouts and admin reconciliation. A capability called `finance` would claim
+four surfaces a customer app may never call.
+
+### 9.2 Two of the three have no legacy relative
+
+Extends Â§3.3 and Â§8.3.
+
+| Call | Slice | Handling |
+| --- | --- | --- |
+| `GET â€¦/payment` | `bookingPayments` | No legacy endpoint â€” TAB 01's R-06, *"payment status is only knowable by re-reading the whole booking."* The compatibility source does exactly that and reports `isBackendDerived: false`, with the breakdown zeroed and the refund position null. Zero here means "this transport cannot tell you", not "the price is nothing". |
+| `POST â€¦/refunds` | `bookingPayments` | No customer route exists at all; the canonical entry *"adds the customer-initiated path, which had no route at all."* `supportsRefunds` is false and the call throws `UnsupportedPaymentAction`. |
+
+Both mirror the reschedule row in Â§8.3: the legacy side is missing something
+the canonical side has, expressed in the type system rather than discovered by
+a customer being refused.
+
+### 9.3 What this replaced
+
+Four independent implementations of "start a checkout" and three of "is it
+paid" â€” the shape TAB 08 removed from booking creation, still present in the
+payment layer. They disagreed: the inline block in `BookingDetailScreen`
+unwrapped the response envelope but read only the root key for the URL, so a
+wrapped response the two booking stores handled would have failed there. Fixed
+as a consequence of the consolidation.
+
+### 9.4 No idempotency keys here
+
+Deliberate, and the opposite of TAB 10's booking actions. None of the three
+operations takes one and none lists the idempotency error codes: checkout is
+guarded by an advisory lock plus a processor key derived from the payment row,
+refund by a `captured - alreadyRefunded` ceiling, and the payment read is a GET.
+`PaymentIntent.reused` is the observable half of the checkout guard â€” the app
+already relied on session reuse for crash recovery without being able to see it.
+
+### 9.5 What ships today
+
+Nothing routes canonically. What ships is one payment ceremony in place of
+seven call sites, and the `BookingDetailScreen` envelope defect that fell out
+of it.

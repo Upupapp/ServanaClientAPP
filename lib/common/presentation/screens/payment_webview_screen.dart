@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/injectors/main_injector.dart';
-import 'package:client/common/domain/booking/payment_status_parser.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/payment_events.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -224,16 +223,27 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
     }
   }
 
+  /// Asks the one question this screen exists to answer.
+  ///
+  /// Booking lifecycle and provider assignment are intentionally ignored: only
+  /// the authoritative payment record can close checkout as paid. That rule is
+  /// unchanged; what changed is where it lives.
+  ///
+  /// This was a whole-booking fetch and an envelope fallback chain written
+  /// inline in a widget — the third copy of the same code, after both booking
+  /// stores. On the legacy transport the repository still re-reads the booking,
+  /// because R-06 is a missing endpoint and no amount of client structure
+  /// creates one. On the canonical transport this becomes
+  /// `GET /api/v1/bookings/:id/payment`, and the poll below stops fetching a
+  /// booking every five seconds to read one field.
+  ///
+  /// Failure stays false rather than throwing. A transient error during a
+  /// thirty-minute poll must not close the screen on a customer who is midway
+  /// through paying.
   Future<bool> _verifyPayment() async {
     try {
-      final api = dpLocator<ServanaApiClient>();
-      final res = await api.getBooking(widget.bookingId);
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      // Booking lifecycle and provider assignment are intentionally ignored:
-      // only the authoritative payment record can close checkout as paid.
-      return PaymentStatusParser.isPaid(booking);
+      return await dpLocator<PaymentsRepository>()
+          .isPaid('${widget.bookingId}');
     } catch (_) {
       return false;
     }

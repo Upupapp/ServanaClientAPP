@@ -158,6 +158,26 @@ enum V1Capability {
   /// operator should be able to make on its own.
   bookingTracking,
 
+  /// The customer's finance surface on a booking:
+  /// `POST /api/v1/bookings/:id/payment-intents`, `GET …/payment`,
+  /// `POST …/refunds`.
+  ///
+  /// Named for the slice for the same reason as its two siblings, and with an
+  /// extra one of its own: `finance` as a domain also contains provider
+  /// earnings, payouts and admin reconciliation, none of which a customer app
+  /// may call. A capability called `finance` would claim four surfaces this
+  /// client will never have.
+  ///
+  /// Two of the three have **no legacy relative at all**. There is no legacy
+  /// payment-state endpoint — TAB 01's R-06, *"payment status is only knowable
+  /// by re-reading the whole booking"* — and no customer refund route
+  /// whatsoever. So this capability is unusual: enabling it does not merely
+  /// move traffic, it adds a question the app could not previously ask and an
+  /// action it could not previously take. `PaymentsRepository.hasPaymentDetail`
+  /// and `canOfferRefund` are how a caller finds out which world it is in,
+  /// rather than rendering a zeroed breakdown as a price.
+  bookingPayments,
+
   /// `GET /api/v1/search` — the first server-side catalog search.
   ///
   /// A unit because the compatibility source satisfies the same interface and

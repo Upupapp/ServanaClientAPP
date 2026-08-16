@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
-import 'package:client/common/domain/booking/payment_status_parser.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/common/domain/booking/booking_create_request.dart';
 import 'package:client/common/domain/booking/booking_draft.dart' show BookingFlowType;
@@ -15,6 +14,7 @@ import 'package:client/core/analytics/domain/analytics_property.dart';
 import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
 
 part 'aircon_booking_store.g.dart';
@@ -473,10 +473,13 @@ abstract class _AirconBookingStore with Store {
     try {
       final session = await SessionService.getSession();
       final uid = session?.customerID ?? '';
-      final res = await api.createPaymongoSession(bookingId: createdBookingId!);
-      final data = res['data'] ?? res;
-      paymongoCheckoutUrl =
-          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      // One ceremony. This block used to unwrap the envelope and pick between
+      // `checkoutUrl` and `checkout_url` itself — as did BwBookingStore, and as
+      // did an inline block in BookingDetailScreen, which read only the root
+      // and so would have missed a wrapped response the other two handled.
+      final intent = await dpLocator<PaymentsRepository>()
+          .startCheckout('${createdBookingId!}');
+      paymongoCheckoutUrl = intent.isUsable ? intent.checkoutUrl : null;
       // Backend can return success without a URL (e.g. on a partial session
       // failure). Surface that as an error so the confirmation screen shows
       // the Retry branch instead of an indefinite spinner.
@@ -507,11 +510,13 @@ abstract class _AirconBookingStore with Store {
     isLoading = true;
     errorMessage = null;
     try {
-      final res = await api.getBooking(createdBookingId!);
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      return PaymentStatusParser.isPaid(booking);
+      // Was a whole-booking fetch plus PaymentStatusParser, duplicated in
+      // BwBookingStore and again in PaymentWebViewScreen. The repository still
+      // re-reads the booking on the legacy transport — R-06 is a missing
+      // endpoint, not something a client can refactor away — but it does so in
+      // one place, and swaps to GET …/payment the moment the capability is on.
+      return await dpLocator<PaymentsRepository>()
+          .isPaid('${createdBookingId!}');
     } catch (e) {
       errorMessage = _errorMsg(e);
       return false;

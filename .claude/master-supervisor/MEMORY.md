@@ -51,6 +51,46 @@ Key files:
 | 08 | Booking submission — create BLOCKED | `7aa4f7c`, `TAB08_ENDPOINT_GAP.md` |
 | 09 | Booking READ transport | `861e781` (`bookingReads`) |
 | 10 | Tracking / OTP / cancel / reschedule | `TAB10_CERTIFICATION.md`, manifest §8 |
+| 11 | Payments / refunds | `TAB11_CERTIFICATION.md`, manifest §9 |
+
+## ⚠ The Master Command text is NOT in this repo
+
+TAB titles 01–10 came from the original session's prompt. A fresh session sees
+only `currentTabIndex` in `state.json`, and `TAB01_CONVERGENCE_RISK_MATRIX.md`
+§3 says outright that its sequencing is *"recorded as a finding of TAB 01, not
+as a plan."*
+
+TAB 11's subject was therefore **chosen by the user** from an evidence-based
+shortlist. **Ask for TAB 12's** rather than inferring it — guessing wrong fills
+a numbered slot with another tab's work and writes a false claim into
+`completedTabs`, which the next session reads as ground truth.
+
+## TAB 11 — the duplication, and what legacy cannot do
+
+TAB 08 collapsed four per-category booking-create ceremonies into one service.
+Payments had the identical shape and were not part of it: **four** copies of
+"start a checkout" and **three** of "is it paid". They had diverged —
+`BookingDetailScreen._continuePayment` unwrapped the response envelope but read
+only the root key for the URL, so a wrapped response the two booking stores
+handled would have failed there. Fixed by the consolidation.
+
+The other half is what legacy simply lacks. Two of the three canonical
+operations have **no predecessor at all** — no payment-state endpoint (R-06)
+and no customer refund route — so `bookingPayments` is the first capability
+whose flip adds a question the app could not ask. `hasPaymentDetail` and
+`canOfferRefund` let a caller tell which world it is in instead of rendering an
+unknowable zero as a price.
+
+Two things to carry forward:
+
+- **A customer REQUESTS; only an admin ISSUES.** A successful customer refund
+  call opens a review row and moves no money. `RefundResult.isMoneyMoving` is
+  false for it. No refund UI was built partly for this reason — the copy has to
+  make that unmistakable.
+- **Payment state has six values, not three.** `REJECTED` needs support rather
+  than a retry; `REFUNDING`/`REFUNDED` are not `PAID`. An unrecognised value
+  maps to `unknown`, never to `pending`, because `pending` is the one state
+  that invites a payment.
 
 ## TAB 10 — the two capabilities and the defect under them
 
@@ -119,5 +159,6 @@ Client enum names it `promotions` and accepts both wire names.
 
 ## Next action
 
-TAB 11. TAB 10 is certified: analyze 0 errors / 39 infos (unchanged baseline),
-1,823 tests passing.
+TAB 12 — **ask the user for its subject first**, per the note above. TAB 11 is
+certified: analyze 0 errors / 39 infos (unchanged baseline), 1,854 tests
+passing.

@@ -15,6 +15,9 @@ import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/tracking/application/tracking_controller.dart';
+import 'package:client/modules/payments/data/payments_canonical_data_source.dart';
+import 'package:client/modules/payments/data/payments_compatibility_data_source.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:client/modules/tracking/data/tracking_canonical_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_compatibility_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_data_source.dart';
@@ -313,6 +316,17 @@ void initInjector(AppConfig config) {
   // one changes a customer's booking. Singleton, not a factory: it holds the
   // live idempotency keys, and a fresh instance per call site would mint a new
   // key for what the customer performed as one tap.
+  // Payments — one ceremony for the four places that each had their own.
+  // Compatibility answers today: the legacy transport can start a checkout,
+  // reads payment state by re-fetching the whole booking (R-06), and cannot
+  // accept a refund request at all.
+  dpLocator.registerLazySingleton(
+    () => PaymentsRepository(
+      compatibility: PaymentsCompatibilityDataSource(dpLocator()),
+      canonical: PaymentsCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
   dpLocator.registerLazySingleton(
     () => BookingLifecycleRepository(
       compatibility: BookingLifecycleCompatibilityDataSource(dpLocator()),

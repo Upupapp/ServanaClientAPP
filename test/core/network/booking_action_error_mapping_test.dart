@@ -109,6 +109,60 @@ void main() {
     });
   });
 
+  group('the finance codes need no override — verified, not assumed', () {
+    // TAB 11 checked every PAYMENT_ and REFUND_ code against `errors.ts` before
+    // touching the mapper, and found the status-driven classification already
+    // correct for all of them. That is worth pinning rather than leaving as a
+    // silent absence: the TAB 10 OTP codes looked equally fine until their
+    // statuses were actually read, and two of them were wrong.
+
+    test('a payment state conflict is a state conflict', () {
+      expect(map(409, 'PAYMENT_STATE_CONFLICT'), isA<StateConflictFailure>());
+    });
+
+    test('an unavailable processor is retryable, not the customer’s problem',
+        () {
+      // 502, and already in the override table from an earlier tab. Named here
+      // because it is the one finance failure where "try again" is the right
+      // advice.
+      final failure = map(502, 'PAYMENT_PROCESSOR_UNAVAILABLE');
+      expect(failure, isA<RetryableFailure>());
+      expect(failure.isRetryable, isTrue);
+    });
+
+    test('a provider asking about a customer payment is forbidden', () {
+      expect(map(403, 'PAYMENT_ACTOR_NOT_PERMITTED'), isA<ForbiddenFailure>());
+    });
+
+    test('no payment record is a not-found', () {
+      expect(map(404, 'PAYMENT_NOT_FOUND'), isA<NotFoundFailure>());
+    });
+
+    test('the refund refusals that mean "the world moved" are state conflicts',
+        () {
+      for (final code in <String>[
+        'REFUND_PAYMENT_NOT_CAPTURED',
+        'REFUND_ALREADY_SETTLED',
+        'REFUND_IN_PROGRESS',
+        'REFUND_OUTCOME_NOT_REFUNDABLE',
+      ]) {
+        expect(map(409, code), isA<StateConflictFailure>(), reason: code);
+      }
+    });
+
+    test('the refund refusals the customer can correct are validation', () {
+      // 422. REFUND_EXCEEDS_CAPTURED means "ask for less" and
+      // REFUND_TRIGGER_INVALID means "pick another reason" — both are things
+      // the person on the screen can act on.
+      for (final code in <String>[
+        'REFUND_EXCEEDS_CAPTURED',
+        'REFUND_TRIGGER_INVALID',
+      ]) {
+        expect(map(422, code), isA<ValidationFailure>(), reason: code);
+      }
+    });
+  });
+
   group('what reaches the screen', () {
     test('the backend’s own wording is preferred when it is safe', () {
       // "A booking must be moved at least 24 hours before it starts" is more

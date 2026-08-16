@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
-import 'package:client/common/domain/booking/payment_status_parser.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/common/domain/booking/booking_create_request.dart';
 import 'package:client/common/domain/booking/booking_draft.dart' show BookingFlowType;
@@ -16,6 +15,7 @@ import 'package:client/core/analytics/domain/analytics_property.dart';
 import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
 
 part 'bw_booking_store.g.dart';
@@ -470,11 +470,11 @@ abstract class _BwBookingStore with Store {
     isLoading = true;
     errorMessage = null;
     try {
-      final res = await api.getBooking(createdBookingId!);
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      return PaymentStatusParser.isPaid(booking);
+      // The same ceremony AirconBookingStore uses. These two methods were
+      // character-for-character identical, in two files, and either could have
+      // been changed without the other.
+      return await dpLocator<PaymentsRepository>()
+          .isPaid('${createdBookingId!}');
     } catch (e) {
       errorMessage = _errorMsg(e);
       return false;
@@ -492,10 +492,9 @@ abstract class _BwBookingStore with Store {
     try {
       final session = await SessionService.getSession();
       final uid = session?.customerID ?? '';
-      final res = await api.createPaymongoSession(bookingId: createdBookingId!);
-      final data = res['data'] ?? res;
-      paymongoCheckoutUrl =
-          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      final intent = await dpLocator<PaymentsRepository>()
+          .startCheckout('${createdBookingId!}');
+      paymongoCheckoutUrl = intent.isUsable ? intent.checkoutUrl : null;
       // Backend can return success without a URL (e.g. on a partial session
       // failure). Surface that as an error so the confirmation screen shows
       // the Retry branch instead of an indefinite spinner.

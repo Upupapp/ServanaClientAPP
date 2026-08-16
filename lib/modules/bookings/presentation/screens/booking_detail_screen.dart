@@ -16,6 +16,7 @@ import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_reschedule_sheet.dart';
 import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
@@ -986,11 +987,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     String? checkoutUrl;
     String? errorMsg;
     try {
-      final api = dpLocator<ServanaApiClient>();
-      final res = await api.createPaymongoSession(bookingId: bookingId);
-      final data = res['data'] ?? res;
-      checkoutUrl =
-          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      // The fourth copy of this call, and the one that was subtly wrong: it
+      // read `data ?? res` for the envelope but only ever looked at the root
+      // for the URL, so a response shape both booking stores handled would have
+      // produced "Payment session could not be started" here. One ceremony now.
+      final intent =
+          await dpLocator<PaymentsRepository>().startCheckout('$bookingId');
+      checkoutUrl = intent.isUsable ? intent.checkoutUrl : null;
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
         errorMsg = 'Payment session could not be started. Please retry.';
       }

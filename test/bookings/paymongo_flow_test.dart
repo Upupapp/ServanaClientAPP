@@ -90,7 +90,13 @@ void main() {
         reason: path,
       );
       expect(source, contains('paymongoCheckoutUrl = null;'), reason: path);
-      expect(source, contains('PaymentStatusParser.isPaid(booking)'),
+      // Was `PaymentStatusParser.isPaid(booking)` — the same eight lines in
+      // both files, either of which could have been changed without the other.
+      // TAB 11 collapsed them into the payments repository; what these two
+      // stores must still do is ask it rather than parse a booking themselves.
+      expect(source, contains('PaymentsRepository'), reason: path);
+      expect(source, contains('.isPaid('), reason: path);
+      expect(source, isNot(contains('PaymentStatusParser.isPaid')),
           reason: path);
     }
   });

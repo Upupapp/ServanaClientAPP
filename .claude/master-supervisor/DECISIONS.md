@@ -182,3 +182,107 @@ PRIMARY SOURCES: backend source and local code.
 LOCAL IMPACT: recorded in `TAB10_CERTIFICATION.md` Â§10 and in `state.json` openFindings.
 PRODUCTION IMPACT: none.
 DATE: 2026-08-16
+
+---
+
+DECISION: Treat TAB 11 as payments/checkout, chosen by the user rather than derived.
+CONTEXT: A fresh session picked up from state.json, which carries `currentTabIndex: 11` but no title. The Master Command text lived in the previous session's prompt and is not stored in the repo; `TAB01_CONVERGENCE_RISK_MATRIX.md` Â§3 says outright that its sequencing is *"recorded as a finding of TAB 01, not as a plan."*
+OPTIONS: (a) infer the subject from the remaining domains and proceed; (b) ask, with an evidence-based recommendation; (c) stop and do nothing.
+SELECTED: (b).
+WHY: Guessing wrong does not produce merely imperfect work â€” it fills TAB 11's slot with another tab's content and records a false claim in `completedTabs`, which the next session reads as ground truth. That is the narrow case where proceeding under an assumption makes the work useless if the assumption is wrong. The recommendation was payments: it is the next step in the booking journey after TAB 10's actions, it is the only untouched customer money surface, and R-06 was already recorded against it.
+EVIDENCE: `contract.ts` domain census â€” `finance` has 3 customer-facing entries and no capability; `reviews` is a recorded backend gap (R-11, 5 of 9 legacy calls `KEEP`); `conversations` already has a capability blocked on a semantic decision (R-10).
+PRIMARY SOURCES: backend contract; TAB 01 risk matrix.
+LOCAL IMPACT: `state.json` now carries a `tabTitleProvenance` field so a future session knows TAB 11's title was user-supplied and that TAB 12's must be asked for too.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Name the capability `bookingPayments`, not `finance` or `payments`.
+CONTEXT: The three customer endpoints live in the backend's `finance` domain.
+OPTIONS: (a) `finance`; (b) `payments`; (c) `bookingPayments`.
+SELECTED: (c).
+WHY: The existing rule â€” a value named for a domain claims the domain migrated â€” already rules out (a) and (b), but `finance` fails a second test that is worth writing down separately: the domain contains provider earnings, payouts and admin reconciliation, which a CUSTOMER app may never call at all. A capability can be dishonest not only by claiming an unfinished migration but by claiming a surface this client will never have. All three canonical calls are booking-scoped, so the name says so.
+EVIDENCE: `contract.ts` `domain: 'finance'` â€” 7 entries, of which 3 are `/bookings/:bookingId/*` and 4 are `/provider/earnings/*` and `/admin/finance/*`.
+PRIMARY SOURCES: backend contract.
+LOCAL IMPACT: `canonical_availability_test.dart` gained a guard rejecting `finance`, `payments`, `earnings` and `payouts` as capability names.
+PRODUCTION IMPACT: none; the capability is off.
+DATE: 2026-08-16
+
+---
+
+DECISION: Send an EMPTY body on the canonical payment intent.
+CONTEXT: `PaymentIntentRequest` has one optional property, `returnOrigin`.
+OPTIONS: (a) send the app's deep-link origin; (b) send a configured origin from AppConfig; (c) send nothing.
+SELECTED: (c).
+WHY: The field is *"matched against a SERVER-SIDE allowlist. Never used as a URL â€” a caller-supplied return target would let a payer be returned to another application."* A mobile client has no origin worth nominating, and (a) or (b) would be the client expressing a preference about where a payer is returned to, which is precisely the decision the allowlist exists to take out of a caller's hands. An empty request is the shape that cannot be wrong.
+EVIDENCE: `openapi.ts:1052-1063` (`PaymentIntentRequest`); `contract.ts:3236-3239` (the return-origin note).
+PRIMARY SOURCES: backend schema and contract.
+LOCAL IMPACT: asserted by test â€” the POST body is empty and the query string carries nothing.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Do not model `earning`, `payout`, `provider` or `servana` on BookingPayment.
+CONTEXT: `GET â€¦/payment` is field-scoped by the caller's seat and can carry all four.
+OPTIONS: (a) model everything the schema declares; (b) model only the customer's fields.
+SELECTED: (b).
+WHY: A field a customer app cannot receive is a field it must not have a parser for. The parser would be the thing that made a disclosure bug invisible: if the backend ever leaked the provider share to a customer token, a client with no field for it produces nothing, and a client with a field for it produces a number on a screen. The backend's own design intent is that *"the provider is shown the gross their share is a percentage of and never the customer refund position"* â€” this is the client half of the same rule.
+EVIDENCE: `openapi.ts:1080-1144` (`BookingPayment`, with `ADMIN only` and `PROVIDER only` annotations per field); `contract.ts:3267-3271`.
+PRIMARY SOURCES: backend schema.
+LOCAL IMPACT: `BookingPayment` carries state, captured, method, paidAt, breakdown and refund. Nothing else.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: No idempotency keys on any payment operation.
+CONTEXT: TAB 10 established key-per-intent bookkeeping for booking actions one tab earlier.
+OPTIONS: (a) reuse the TAB 10 pattern for consistency; (b) send keys only on checkout; (c) send none.
+SELECTED: (c).
+WHY: Consistency would be the wrong reason. None of the three lists `IDEMPOTENCY_KEY_INVALID` or `IDEMPOTENCY_KEY_REUSED` among its errors, which is the backend saying it does not read one â€” and each has a stronger guard already. Checkout is protected by an advisory transaction lock plus a processor `Idempotency-Key` derived from the payment row and its attempt counter, which lives INSIDE the processor call where a client key could not reach. Refund is bounded by `captured - alreadyRefunded` and a customer repeat returns the same open review row. Adding key plumbing would advertise a protection that is not the one operating.
+EVIDENCE: `contract.ts:3209-3213` (checkout replayGuard), `:3281-3285` (refund replayGuard), and the `errors` arrays of all three entries.
+PRIMARY SOURCES: backend contract.
+LOCAL IMPACT: `PaymentsRepository` has no `_intentKeys` map, unlike `BookingLifecycleRepository`. `PaymentIntent.reused` is the observable half instead.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: A customer refund result must never read as money having moved.
+CONTEXT: `RefundResult.outcome` is `requested`, `issued` or `pending_processor`.
+OPTIONS: (a) treat any 2xx as a refund; (b) expose the raw outcome string and let callers compare; (c) model the distinction on the type.
+SELECTED: (c) â€” `isRequestOnly` and `isMoneyMoving`.
+WHY: (a) is the damaging error: a customer told "Refunded" waits for money that is not coming until an admin approves the review row. (b) leaves every future call site to remember a string comparison. The customer path *"writes exactly one record and calls no processor"*, and the type should make that hard to misread rather than merely documented.
+EVIDENCE: `bookingPaymentService.ts:331-351` (the customer branch opening a review and returning `outcome: 'requested'`); `openapi.ts:1164-1187` (`RefundResult`); `contract.ts:3309-3312`.
+PRIMARY SOURCES: backend service source.
+LOCAL IMPACT: no refund UI was built, partly for this reason â€” the copy needs a decision this tab did not have.
+PRODUCTION IMPACT: none; refunds are unreachable on the legacy transport.
+DATE: 2026-08-16
+
+---
+
+DECISION: Model an unrecognised payment state as `unknown`, not as `pending`.
+CONTEXT: `PaymentStatusParser` knew three states and treated everything else as neither paid nor payable.
+OPTIONS: (a) default an unknown wire value to PENDING; (b) default to a distinct `unknown`.
+SELECTED: (b).
+WHY: PENDING is the one state that INVITES a payment. Defaulting an unrecognised value to it means a build that has not learned a new backend state offers "Pay now" for a booking the server may consider settled â€” a double charge produced by a client being out of date. `unknown.invitesPayment` is false, so the safe direction is the default. The same reasoning excluded `REJECTED`: a declined GCash proof needs support, not another attempt, and the intent would be refused with `PAYMENT_STATE_CONFLICT`.
+EVIDENCE: `openapi.ts:1089-1093` (the six-value enum); `errors.ts:163` (`PAYMENT_STATE_CONFLICT: 409`).
+PRIMARY SOURCES: backend schema and errors.
+LOCAL IMPACT: `PaymentState` has seven values, six from the wire plus `unknown`.
+PRODUCTION IMPACT: none today â€” the legacy vocabulary maps onto the same enum, including the `PAYMENT_` prefixed forms.
+DATE: 2026-08-16
+
+---
+
+DECISION: Report the legacy breakdown as UNKNOWN rather than as zero.
+CONTEXT: The compatibility source has no payment endpoint and so no price breakdown.
+OPTIONS: (a) return a zeroed breakdown; (b) make `breakdown` nullable; (c) return a zeroed breakdown plus an `isBackendDerived` flag.
+SELECTED: (c).
+WHY: (b) would force every caller to null-check a field that is non-null on the transport anyone actually wants. (a) alone is the trap â€” a screen rendering `gross` would show a customer â‚±0.00 for a booking they are about to pay for. The flag separates "this transport cannot tell you" from "the amount is nothing", and `PaymentsRepository.hasPaymentDetail` surfaces the same fact before a caller has fetched anything.
+EVIDENCE: TAB 01 R-06; the absence of any legacy payment route in `contract.ts`'s `finance` legacy arrays.
+PRIMARY SOURCES: TAB 01 delta matrix; backend contract.
+LOCAL IMPACT: asserted by test â€” `grossMinor` is null and `refund` is null on the legacy path.
+PRODUCTION IMPACT: none; no screen renders the breakdown yet.
+DATE: 2026-08-16

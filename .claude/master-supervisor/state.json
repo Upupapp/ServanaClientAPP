@@ -2,8 +2,8 @@
   "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
   "repoPath": "C:\\Users\\paulg\\OneDrive\\Desktop\\servana_client-mobile",
   "backendPath": "C:\\Users\\paulg\\OneDrive\\Desktop\\servana_api-main",
-  "currentTab": "TAB 11",
-  "currentTabIndex": 11,
+  "currentTab": "TAB 12",
+  "currentTabIndex": 12,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 01 - Sweep + backend delta matrix",
@@ -15,32 +15,38 @@
     "TAB 07 - Service selection + booking-entry normalization",
     "TAB 08 - Unified booking submission (create endpoint BLOCKED upstream)",
     "TAB 09 - Booking canonical READ transport",
-    "TAB 10 - Tracking + OTP + cancel + reschedule"
+    "TAB 10 - Tracking + OTP + cancel + reschedule",
+    "TAB 11 - Payments + refunds (checkout ceremony unified)"
   ],
+  "tabTitleProvenance": "TABs 01-10 came from the original Master Command prompt. TAB 11 was CHOSEN BY THE USER on 2026-08-16 from an evidence-based shortlist, because the Master Command text is not stored in this repo and state.json carries only the index. ASK THE USER for TAB 12's subject rather than guessing.",
   "status": "RUNNING",
-  "supervisorCycleCount": 7,
+  "supervisorCycleCount": 8,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "425b3a4",
-  "workingTreeState": "Clean apart from app_theme.dart, which is pre-existing modified and was deliberately never staged. 20 commits ahead of origin/main, all LOCAL.",
+  "lastLocalCommit": "PENDING - TAB 11 uncommitted at checkpoint write",
+  "workingTreeState": "app_theme.dart pre-existing modified and untouched. TAB 11 changes staged for commit.",
   "activeBlockers": [
     "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). All canonical sources gated OFF.",
     "UPSTREAM: no POST /api/v1/bookings. See docs/convergence-v1/TAB08_ENDPOINT_GAP.md."
   ],
   "openFindings": [
     "MerchantMenu subtree has no entry point. Retirement needs TAB 18 evidence.",
-    "TAB 10 FIXED a latent transport defect: V1ApiClient sent X-Idempotency-Key; canonical routes read Idempotency-Key only (api/v1/envelope.ts IDEMPOTENCY_HEADER). Every canonical call before TAB 10 was a GET, so nothing had exercised it and v1_api_client_test.dart pinned the WRONG name. Guarded by test/core/network/idempotency_header_test.dart.",
-    "TAB 10 FIXED: BOOKING_OTP_INVALID and BOOKING_WORKER_CODE_INVALID are 403 but mean 'wrong code', not 'no access'. Status-driven mapping rendered them as ForbiddenFailure. Now validation.",
-    "TAB 10 OPEN: expectedState is NOT passed on cancel from booking_detail_screen. The screen holds only the LEGACY status string (CONFIRMED, PAID) which is not canonical-state vocabulary; sending one would manufacture BOOKING_STATE_CONFLICT. Needs canonical state on the READ path - a booking-read concern.",
-    "TAB 10 OPEN: three client-side copies of the cancellability rule remain (_isCancellable on booking_detail_screen, _cancellable in BookingActionResolver, backend). The two client copies already DISAGREE about paymentProcessing. resolveActions() is the mechanism to retire them; the detail screen was not rewired.",
-    "TAB 10 OPEN: canonical tracking payload carries no ETA, so TrackingCanonicalDataSource returns eta:null. A canonical build loses the ETA card until the payload carries it or the screen fetches separately.",
-    "TAB 10 OPEN: bookings.transitions (the append-only event log with availableActions) is still not consumed by any client call. resolveActions() accepts the list; nothing fetches it.",
-    "TAB 10 NOTE: reschedule is offered ONLY when the transport has the endpoint (canOfferReschedule), which is false on every shipped build - the only reschedule route that ever existed is admin-only. The sheet exists and is unreachable by design."
+    "TAB 10 FIXED a latent transport defect: V1ApiClient sent X-Idempotency-Key; canonical routes read Idempotency-Key only (api/v1/envelope.ts IDEMPOTENCY_HEADER). Guarded by test/core/network/idempotency_header_test.dart.",
+    "TAB 10 FIXED: BOOKING_OTP_INVALID and BOOKING_WORKER_CODE_INVALID are 403 but mean 'wrong code', not 'no access'. Now validation.",
+    "TAB 10 OPEN: expectedState is NOT passed on cancel from booking_detail_screen. The screen holds only the LEGACY status string (CONFIRMED, PAID) which is not canonical-state vocabulary. Needs canonical state on the READ path.",
+    "TAB 10 OPEN: three client-side copies of the cancellability rule remain and two already DISAGREE about paymentProcessing. resolveActions() is the mechanism to retire them; the detail screen was not rewired.",
+    "TAB 10 OPEN: canonical tracking payload carries no ETA, so TrackingCanonicalDataSource returns eta:null. A canonical build loses the ETA card.",
+    "TAB 10 OPEN: bookings.transitions (availableActions) is still not consumed by any client call.",
+    "TAB 11 FIXED a live defect: booking_detail_screen._continuePayment unwrapped the response envelope but read ONLY the root key for the checkout URL, so a wrapped response both booking stores handled would have shown 'Payment session could not be started'. Gone with the consolidation.",
+    "TAB 11 OPEN: no refund UI. Transport + models + customer trigger vocabulary are built and tested; canOfferRefund is false on every build so a sheet would be unreachable. Copy needs a decision - 'requested' vs 'refunded' must be unmistakable, because a customer REQUEST moves no money.",
+    "TAB 11 OPEN: the checkout poll is unchanged - 5s interval, 30min timeout, a whole booking per tick on legacy. Client constants, no backend policy governs them.",
+    "TAB 11 OPEN: PaymentStatusParser still has 3 callers (http_backend, CustomerBooking, BookingDetailScreen) all reading a BOOKING payload rather than a payment. Booking-read concerns, not payment ones.",
+    "TAB 11 NOTE: payment state has SIX backend values. PaymentStatusParser knew three. REJECTED needs support not a retry; REFUNDING/REFUNDED are not PAID. PaymentState.unknown is deliberately distinct from pending."
   ],
-  "capabilityVocabulary": ["catalog", "notifications", "customerProfile", "identity", "conversations", "bookingReads", "bookingLifecycle", "bookingTracking", "search", "home"],
-  "capabilityNamingRule": "A value named for a domain claims the domain migrated; a value named for a slice claims only the slice. Nothing may be named for a booking WRITE while POST /api/v1/bookings does not exist. TAB 10 widened the guard: any NEW booking* capability must be added to an explicit allow-list in test/core/network/canonical_availability_test.dart, so a widening rename fails a test rather than sliding past three hard-coded strings.",
+  "capabilityVocabulary": ["catalog", "notifications", "customerProfile", "identity", "conversations", "bookingReads", "bookingLifecycle", "bookingTracking", "bookingPayments", "search", "home"],
+  "capabilityNamingRule": "A value named for a domain claims the domain migrated; a value named for a slice claims only the slice. Nothing may be named for a booking WRITE while POST /api/v1/bookings does not exist. Any NEW booking* capability must be added to an explicit allow-list in test/core/network/canonical_availability_test.dart. TAB 11 added a second rule: nothing may be named for a domain containing surfaces this CLIENT cannot call - 'finance' would claim provider earnings, payouts and admin reconciliation, so the value is bookingPayments.",
   "acceptanceGate": {
     "analyze": "0 errors, 0 warnings, 39 infos (unchanged baseline)",
-    "test": "1,823 passed, 6 skipped, 0 failed"
+    "test": "1,854 passed, 6 skipped, 0 failed"
   },
   "contextPressure": "HIGH",
   "remoteActions": { "push": "NO", "deploy": "NO", "productionAccess": "NO" }
