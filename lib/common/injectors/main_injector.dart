@@ -21,6 +21,8 @@ import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
 import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/modules/bookings/data/bookings_canonical_data_source.dart';
+import 'package:client/modules/bookings/data/bookings_compatibility_data_source.dart';
 import 'package:client/modules/messaging/domain/repositories/messaging_repository.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:client/modules/registration/domain/use_cases/load_registration_from_local.dart';
@@ -289,7 +291,16 @@ void initInjector(AppConfig config) {
   dpLocator
       .registerLazySingleton(() => JonOrderRepository(backend: dpLocator()));
   dpLocator.registerLazySingleton(
-    () => BookingRepository(dpLocator()),
+    // Both transports constructed; the router decides. With the bookings
+    // capability unset — every build today — the legacy source answers.
+    // READS only: there is no canonical booking create, and cancel is a
+    // state-changing action that belongs to TAB 10.
+    () => BookingRepository(
+      dpLocator(),
+      compatibility: BookingsCompatibilityDataSource(dpLocator()),
+      canonical: BookingsCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => MessagingRepository(api: dpLocator()),

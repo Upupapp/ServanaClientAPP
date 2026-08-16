@@ -54,8 +54,28 @@ void main() {
       // Naming them here would let a build claim a migration it cannot make.
       final names = V1Capability.values.map((c) => c.name).toList();
       expect(names, isNot(contains('bookings')));
+      expect(names, isNot(contains('booking')));
       expect(names, isNot(contains('reviews')));
       expect(names, isNot(contains('support')));
+    });
+
+    test('a narrowed slice may be named, and must say so', () {
+      // TAB 09 migrated the three booking READS, which do have successors,
+      // while create still does not. The rule that keeps this honest is about
+      // the NAME: `bookings` would claim the domain, `bookingReads` claims the
+      // reads. If someone later widens this value to cover cancel or create,
+      // the name stops matching what it does — and this test is where that
+      // shows up.
+      final names = V1Capability.values.map((c) => c.name).toList();
+      expect(names, contains('bookingReads'));
+
+      // Nothing in the vocabulary may be named for a booking WRITE while
+      // `POST /api/v1/bookings` does not exist.
+      for (final forbidden in ['bookingCreate', 'bookingWrites', 'bookingAll']) {
+        expect(names, isNot(contains(forbidden)),
+            reason: 'no canonical booking write exists — see '
+                'docs/convergence-v1/TAB08_ENDPOINT_GAP.md');
+      }
     });
   });
 

@@ -39,21 +39,30 @@
 /// enough to be switched as a unit.
 library;
 
-/// Domains that can be switched from legacy to canonical independently.
+/// Slices of the API that can be switched from legacy to canonical
+/// independently.
 ///
-/// A domain appears here only if EVERY call the app makes for it has a
-/// canonical successor. That is why booking, review and support are absent:
+/// A value appears here only if EVERY call it names has a canonical successor.
+/// **The unit is the value's own scope, not the domain it lives in** — and the
+/// name must say which. A value named for a domain claims the whole domain
+/// migrated; a value named for a slice claims only the slice.
 ///
-///  - **bookings** — `POST /api/bookings` is classified `KEEP` with no
-///    canonical successor and none planned, so a "migrated" booking domain
-///    would still create bookings on a legacy route.
+/// That distinction is why these are absent, and why one of them is present in
+/// narrowed form:
+///
+///  - **`booking`** (the domain) — absent, permanently for now.
+///    `POST /api/bookings` is classified `KEEP` with no canonical successor and
+///    none planned, so a migrated booking *domain* would still create bookings
+///    on a legacy route. [bookingReads] names the three reads that DO have
+///    successors and claims nothing about the write. Cancel, reschedule and OTP
+///    are canonical but state-changing, so they are not in it either.
 ///  - **reviews** — 4 of 9 calls have successors; read, edit, delete,
 ///    list-mine and report do not.
 ///  - **support** — the v1 relative is booking-scoped only and is explicitly
 ///    documented as narrower, not equivalent.
 ///
-/// Adding a value here is a claim that the domain is complete. It should be
-/// accompanied by evidence in the migration manifest.
+/// Adding a value here is a claim that everything it names is complete. It
+/// should be accompanied by evidence in the migration manifest.
 enum V1Capability {
   /// `GET /api/v1/catalog*` — the full canonical catalog tree.
   catalog,
@@ -90,6 +99,21 @@ enum V1Capability {
 
   /// `GET|POST /api/v1/conversations*`.
   conversations,
+
+  /// `GET /api/v1/bookings`, `…/:bookingId`, `…/:bookingId/timeline` — the
+  /// booking READS.
+  ///
+  /// Reads only, and the name is not `booking` for that reason. There is no
+  /// canonical booking create, so a capability called `booking` would imply the
+  /// domain had migrated when its most important write had not. Cancellation,
+  /// reschedule and OTP are canonical but are state-changing, and moving those
+  /// needs TAB 10's idempotency and state-conflict handling rather than a read
+  /// switch.
+  ///
+  /// Safe as a unit because the canonical `Booking` schema is the output of the
+  /// same `formatBooking` the legacy route uses, so both transports return one
+  /// `CustomerBooking` and no screen can tell which answered.
+  bookingReads,
 
   /// `GET /api/v1/search` — the first server-side catalog search.
   ///
