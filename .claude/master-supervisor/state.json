@@ -2,34 +2,36 @@
   "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
   "repoPath": "C:\Users\paulg\OneDrive\Desktop\servana_client-mobile",
   "backendPath": "C:\Users\paulg\OneDrive\Desktop\servana_api-main",
-  "currentTab": "TAB 09 - My bookings + calendar + detail + canonical timeline",
-  "currentTabIndex": 9,
+  "currentTab": "TAB 10 - Tracking + OTP + cancel + reschedule",
+  "currentTabIndex": 10,
   "totalTabs": 20,
   "completedTabs": [
-    "TAB 01 - Exact local repo sweep + backend delta matrix",
+    "TAB 01 - Sweep + backend delta matrix",
     "TAB 02 - API client, DTO and compatibility architecture",
     "TAB 03 - Authentication, registration, verification and /me",
-    "TAB 04 - Catalog V2: categories, subcategories, services",
-    "TAB 05 - Home composition + banners/campaigns preservation",
+    "TAB 04 - Catalog V2",
+    "TAB 05 - Home composition + banners preservation",
     "TAB 06 - Search + canonical service discovery",
     "TAB 07 - Service selection + booking-entry normalization",
-    "TAB 08 - Unified booking submission (create endpoint BLOCKED upstream)"
+    "TAB 08 - Unified booking submission (create endpoint BLOCKED upstream)",
+    "TAB 09 - Booking canonical READ transport"
   ],
   "status": "RUNNING",
-  "supervisorCycleCount": 5,
+  "supervisorCycleCount": 6,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "7aa4f7c",
+  "lastLocalCommit": "861e781",
   "workingTreeState": "app_theme.dart pre-existing modified and untouched. Clean otherwise.",
   "activeBlockers": [
-    "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). Canonical sources built, tested, gated OFF.",
-    "UPSTREAM CONFIRMED TAB 08: no POST /api/v1/bookings. Create stays legacy. See docs/convergence-v1/TAB08_ENDPOINT_GAP.md.",
-    "UPSTREAM: legacy create takes ?userId= from the client. Resolved from session, not screen state. Closing it needs the endpoint to read the token."
+    "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). All canonical sources gated OFF.",
+    "UPSTREAM: no POST /api/v1/bookings. See docs/convergence-v1/TAB08_ENDPOINT_GAP.md."
   ],
   "openFindings": [
-    "MerchantMenu subtree has no entry point. Not removed; retirement needs TAB 18 evidence.",
-    "TAB 09 note: bookings.get / listMine / timeline / transitions DO exist canonically - unlike create. TAB 09 can migrate reads for real."
+    "MerchantMenu subtree has no entry point. Retirement needs TAB 18 evidence.",
+    "TAB 10 READY: bookings.cancel / reschedule / otp.request / otp.verify / otp.status / tracking ALL exist canonically and are state-changing. They carry Idempotency-Key with IDEMPOTENCY_KEY_INVALID and IDEMPOTENCY_KEY_REUSED. TAB 09 deliberately left cancel on legacy for TAB 10 to migrate WITH those semantics.",
+    "TAB 10 note: BookingTracking DTO has a `visibility` object whose `reason` names which rule withheld provider location. Master Command requires tracking privacy follow backend authorization - that field is the mechanism."
   ],
-  "capabilitiesDefined": ["catalog", "notifications", "customerProfile", "identity", "conversations", "search", "home"],
-  "contextPressure": "HIGH",
+  "capabilityVocabulary": ["catalog", "notifications", "customerProfile", "identity", "conversations", "bookingReads", "search", "home"],
+  "capabilityNamingRule": "A value named for a domain claims the domain migrated; a value named for a slice claims only the slice. Nothing may be named for a booking WRITE while POST /api/v1/bookings does not exist. Guarded by test/core/network/canonical_availability_test.dart.",
+  "contextPressure": "CRITICAL",
   "remoteActions": { "push": "NO", "deploy": "NO", "productionAccess": "NO" }
 }
