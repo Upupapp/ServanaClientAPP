@@ -2,8 +2,8 @@
   "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
   "repoPath": "C:\Users\paulg\OneDrive\Desktop\servana_client-mobile",
   "backendPath": "C:\Users\paulg\OneDrive\Desktop\servana_api-main",
-  "currentTab": "TAB 07 - Service selection + merchant menu / booking entry normalization",
-  "currentTabIndex": 7,
+  "currentTab": "TAB 08 - Unify Aircon / Beauty-Wellness / JobOrder booking submissions",
+  "currentTabIndex": 8,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 01 - Exact local repo sweep + backend delta matrix",
@@ -11,17 +11,22 @@
     "TAB 03 - Authentication, registration, verification and /me",
     "TAB 04 - Catalog V2: categories, subcategories, services",
     "TAB 05 - Home composition + banners/campaigns preservation",
-    "TAB 06 - Search + canonical service discovery"
+    "TAB 06 - Search + canonical service discovery",
+    "TAB 07 - Service selection + booking-entry normalization"
   ],
   "status": "RUNNING",
-  "supervisorCycleCount": 3,
+  "supervisorCycleCount": 4,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "5e6fed3",
-  "workingTreeState": "app_theme.dart pre-existing modified and untouched; .gitignore + docs + supervisor pending commit",
+  "lastLocalCommit": "8db8cf8",
+  "workingTreeState": "app_theme.dart pre-existing modified and untouched. Clean otherwise.",
   "activeBlockers": [
-    "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). Canonical sources built, tested, gated OFF. Not a client defect, not a TAB blocker."
+    "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). Canonical sources built, tested, gated OFF.",
+    "TAB 08 PRE-KNOWN: POST /api/v1/bookings does NOT exist. TAB 01 recorded booking creation as KEEP with no canonical successor and none planned. TAB 08 cannot migrate booking create; it can still unify the client-side submission path."
+  ],
+  "openFindings": [
+    "MerchantMenu subtree has no entry point - nothing outside main_router navigates to MerchantMenuScreen. Not removed (TAB 07 protects it); retirement needs TAB 18 evidence."
   ],
   "capabilitiesDefined": ["catalog", "notifications", "customerProfile", "identity", "conversations", "search", "home"],
-  "contextPressure": "MODERATE",
+  "contextPressure": "ELEVATED",
   "remoteActions": { "push": "NO", "deploy": "NO", "productionAccess": "NO" }
 }
