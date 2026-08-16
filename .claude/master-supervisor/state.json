@@ -2,8 +2,8 @@
   "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
   "repoPath": "C:\Users\paulg\OneDrive\Desktop\servana_client-mobile",
   "backendPath": "C:\Users\paulg\OneDrive\Desktop\servana_api-main",
-  "currentTab": "TAB 08 - Unify Aircon / Beauty-Wellness / JobOrder booking submissions",
-  "currentTabIndex": 8,
+  "currentTab": "TAB 09 - My bookings + calendar + detail + canonical timeline",
+  "currentTabIndex": 9,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 01 - Exact local repo sweep + backend delta matrix",
@@ -12,21 +12,24 @@
     "TAB 04 - Catalog V2: categories, subcategories, services",
     "TAB 05 - Home composition + banners/campaigns preservation",
     "TAB 06 - Search + canonical service discovery",
-    "TAB 07 - Service selection + booking-entry normalization"
+    "TAB 07 - Service selection + booking-entry normalization",
+    "TAB 08 - Unified booking submission (create endpoint BLOCKED upstream)"
   ],
   "status": "RUNNING",
-  "supervisorCycleCount": 4,
+  "supervisorCycleCount": 5,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "8db8cf8",
+  "lastLocalCommit": "7aa4f7c",
   "workingTreeState": "app_theme.dart pre-existing modified and untouched. Clean otherwise.",
   "activeBlockers": [
     "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). Canonical sources built, tested, gated OFF.",
-    "TAB 08 PRE-KNOWN: POST /api/v1/bookings does NOT exist. TAB 01 recorded booking creation as KEEP with no canonical successor and none planned. TAB 08 cannot migrate booking create; it can still unify the client-side submission path."
+    "UPSTREAM CONFIRMED TAB 08: no POST /api/v1/bookings. Create stays legacy. See docs/convergence-v1/TAB08_ENDPOINT_GAP.md.",
+    "UPSTREAM: legacy create takes ?userId= from the client. Resolved from session, not screen state. Closing it needs the endpoint to read the token."
   ],
   "openFindings": [
-    "MerchantMenu subtree has no entry point - nothing outside main_router navigates to MerchantMenuScreen. Not removed (TAB 07 protects it); retirement needs TAB 18 evidence."
+    "MerchantMenu subtree has no entry point. Not removed; retirement needs TAB 18 evidence.",
+    "TAB 09 note: bookings.get / listMine / timeline / transitions DO exist canonically - unlike create. TAB 09 can migrate reads for real."
   ],
   "capabilitiesDefined": ["catalog", "notifications", "customerProfile", "identity", "conversations", "search", "home"],
-  "contextPressure": "ELEVATED",
+  "contextPressure": "HIGH",
   "remoteActions": { "push": "NO", "deploy": "NO", "productionAccess": "NO" }
 }
