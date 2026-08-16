@@ -27,6 +27,8 @@ import 'package:client/modules/tracking/data/tracking_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_repository.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
+import 'package:client/modules/messaging/data/messaging_canonical_data_source.dart';
+import 'package:client/modules/messaging/data/messaging_compatibility_data_source.dart';
 import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
 import 'package:client/modules/bookings/data/booking_lifecycle_canonical_data_source.dart';
 import 'package:client/modules/bookings/data/booking_lifecycle_compatibility_data_source.dart';
@@ -347,8 +349,16 @@ void initInjector(AppConfig config) {
       router: dpLocator(),
     ),
   );
+  // Conversations. The capability has existed since TAB 02 and had no
+  // transport behind it until TAB 13; reportMessage stays legacy in every
+  // configuration because it has no canonical successor.
   dpLocator.registerLazySingleton(
-    () => MessagingRepository(api: dpLocator()),
+    () => MessagingRepository(
+      api: dpLocator(),
+      compatibility: MessagingCompatibilityDataSource(dpLocator()),
+      canonical: MessagingCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => ChatSocketService(baseUrl: config.baseUrl),

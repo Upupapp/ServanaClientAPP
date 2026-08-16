@@ -2,8 +2,8 @@
   "masterCommand": "SERVANA_CLIENT_MOBILE_BACKEND_CONVERGENCE_MASTER_COMMAND_V1",
   "repoPath": "C:\\Users\\paulg\\OneDrive\\Desktop\\servana_client-mobile",
   "backendPath": "C:\\Users\\paulg\\OneDrive\\Desktop\\servana_api-main",
-  "currentTab": "TAB 13",
-  "currentTabIndex": 13,
+  "currentTab": "TAB 14",
+  "currentTabIndex": 14,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 01 - Sweep + backend delta matrix",
@@ -17,15 +17,16 @@
     "TAB 09 - Booking canonical READ transport",
     "TAB 10 - Tracking + OTP + cancel + reschedule",
     "TAB 11 - Payments + refunds (checkout ceremony unified)",
-    "TAB 12 - Change orders + disputes (booking-experiences completed)"
+    "TAB 12 - Change orders + disputes (booking-experiences completed)",
+    "TAB 13 - Conversations (R-10 withdrawn as stale)"
   ],
-  "tabTitleProvenance": "TABs 01-10 came from the original Master Command prompt. TAB 11 was CHOSEN BY THE USER on 2026-08-16 from an evidence-based shortlist. TAB 12 was CHOSEN BY CLAUDE - the four remaining booking-experiences entries, the only candidate needing no user decision. The Master Command text is NOT stored in this repo. ASK THE USER for TAB 13's subject.",
-  "nextTabCandidate": "conversations - capability already defined in TAB 02 but deliberately not enabled. Blocked on R-10: v1 replaces lazy conversation creation (GET /api/bookings/:id/conversation, which CREATES) with an explicit POST /api/v1/conversations, and SC-038 records the current lazy-create as a defect. That is a product decision, not a technical one. Other candidates: reviews (backend gap R-11, 5 of 9 legacy calls KEEP), account/settings remainder.",
+  "tabTitleProvenance": "TABs 01-10 came from the original Master Command prompt. TAB 11 was CHOSEN BY THE USER. TABs 12 and 13 were CHOSEN BY CLAUDE after the user said 'go'. The Master Command text is NOT stored in this repo. ASK THE USER for TAB 14's subject.",
+  "nextTabCandidate": "reviews (6 canonical entries; TAB 01 R-11 says 5 of 9 legacy calls are KEEP - but MEASURE that before believing it, TAB 13 found R-10 stale the same way) OR the account/settings remainder (19 + 2 entries, partly covered by TAB 03's identity and customerProfile).",
   "status": "RUNNING",
-  "supervisorCycleCount": 9,
+  "supervisorCycleCount": 10,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "28381ba",
-  "workingTreeState": "Clean apart from app_theme.dart, pre-existing modified and deliberately never staged. All LOCAL, nothing pushed.",
+  "lastLocalCommit": "PENDING - TAB 13 uncommitted at checkpoint write",
+  "workingTreeState": "app_theme.dart pre-existing modified and untouched. TAB 13 changes staged for commit.",
   "activeBlockers": [
     "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). All canonical sources gated OFF.",
     "UPSTREAM: no POST /api/v1/bookings. See docs/convergence-v1/TAB08_ENDPOINT_GAP.md."
@@ -44,16 +45,38 @@
     "TAB 11 OPEN: PaymentStatusParser still has 3 callers reading BOOKING payloads (http_backend, CustomerBooking, BookingDetailScreen).",
     "TAB 12 SHIPPED something: change orders are readable on the LEGACY transport today. GET /api/additional/booking/:id was always live and the app had simply never called it. No deploy needed.",
     "TAB 12 OPEN: no UI for either half. Change orders are readable and nothing renders them; disputes are unreachable so a sheet would be dead. A change-order UI must keep totalAmount (asked) distinct from approvedAmount (agreed) - the backend NULLs the latter outside the approved status set.",
-    "TAB 12 NOTE: a customer may NEVER raise a change order. additionalWork.create is auth:'provider', customerMobile:'n/a', and needs an IN_PROGRESS assignment row. Absent from the interface entirely - no method, no flag."
+    "TAB 12 NOTE: a customer may NEVER raise a change order. additionalWork.create is auth:'provider', customerMobile:'n/a', and needs an IN_PROGRESS assignment row. Absent from the interface entirely - no method, no flag.",
+    "TAB 13 OPEN: ConversationReadState is discarded. POST .../read returns the authoritative post-move unreadCount; the repository signature returns void because the store re-reads the list. Wiring it through is a store change.",
+    "TAB 13 OPEN: canonical Conversation carries status (5 values), viewerSeat, canSend and cannotSendReason. ConversationModel carries only isClosed - sufficient today because isClosed is republished for exactly this kind of client, but cannotSendReason is strictly better UX than a bare boolean.",
+    "TAB 13 NOTE: reportMessage (and message edit/delete) have NO canonical successor. reportMessage calls compatibility DIRECTLY in every configuration, like NotificationsRepository.dismiss. Asserted with the capability ON."
   ],
-  "capabilityVocabulary": ["catalog", "notifications", "customerProfile", "identity", "conversations", "bookingReads", "bookingLifecycle", "bookingTracking", "bookingPayments", "bookingAdditionalWork", "bookingDisputes", "search", "home"],
+  "capabilityVocabulary": [
+    "catalog",
+    "notifications",
+    "customerProfile",
+    "identity",
+    "conversations",
+    "bookingReads",
+    "bookingLifecycle",
+    "bookingTracking",
+    "bookingPayments",
+    "bookingAdditionalWork",
+    "bookingDisputes",
+    "search",
+    "home"
+  ],
   "capabilityNamingRule": "A value named for a domain claims the domain migrated; a value named for a slice claims only the slice. Nothing may be named for a booking WRITE while POST /api/v1/bookings does not exist. Any NEW booking* capability must be added to an explicit allow-list in test/core/network/canonical_availability_test.dart. TAB 11: nothing may be named for a domain containing surfaces this CLIENT cannot call ('finance' would claim provider earnings and admin reconciliation). TAB 12: booking-experiences now spans FOUR capabilities, so no value may be named for that domain either.",
   "absenceTaxonomy": "THREE kinds, three treatments. (1) LEGACY lacks it - reschedule, refunds, disputes - report via a supports... flag. (2) CANONICAL lacks it - DELETE /api/user/notifications/:key - absent from the canonical source, repository calls compatibility directly. (3) THIS ACTOR may never call it - additionalWork.create - absent from the interface altogether, no method and no flag, because a flag implies a deploy that would turn it on and none will.",
   "vocabularyRule": "Where the backend SERVES its own vocabulary, consume it; where it does not, mirror and say so. Disputes return `categories` on every read (outside any branch), so DisputeCategory is an extension type over String. Reschedule reasons and refund triggers had no such endpoint and are mirrored enums.",
   "acceptanceGate": {
     "analyze": "0 errors, 0 warnings, 39 infos (unchanged baseline)",
-    "test": "1,874 passed, 6 skipped, 0 failed"
+    "test": "1,888 passed, 6 skipped, 0 failed"
   },
   "contextPressure": "CRITICAL",
-  "remoteActions": { "push": "NO", "deploy": "NO", "productionAccess": "NO" }
+  "remoteActions": {
+    "push": "NO",
+    "deploy": "NO",
+    "productionAccess": "NO"
+  },
+  "staleFindingWarning": "TAB 13 WITHDREW TAB 01's R-10. V1Capability.conversations sat defined-but-disabled for ELEVEN tabs because R-10 recorded the booking-conversation GET as lazily creating (SC-038) and classified it BREAKS. Measured: chat.controller.getBookingConversation calls getExistingConversation and 404s - it creates nothing, and its comment names this client's 404-to-null mapping as the contract. The fix was upstream. A recorded finding is a snapshot of a moving system; measure one before planning around it. R-11 (reviews) has NOT been re-measured."
 }

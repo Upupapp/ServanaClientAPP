@@ -351,3 +351,55 @@ PRIMARY SOURCES: backend contract.
 LOCAL IMPACT: `BookingExperiencesRepository._sourceFor(capability)` routes per call rather than holding one `_source` getter â€” the first repository in this work that needed it.
 PRODUCTION IMPACT: none; both off.
 DATE: 2026-08-16
+
+---
+
+DECISION: Build TAB 13 without waiting for the R-10 product decision — then discover there was none to make.
+CONTEXT: I told the user conversations was "genuinely blocked" on whether the app should stop creating conversations on read. They said "go".
+OPTIONS: (a) ask a third time; (b) build both transports and record the decision as required-before-flip; (c) pick a different tab.
+SELECTED: (b), and the premise then collapsed.
+WHY: Even before measuring, the decision governed the FLIP and not the build — the capability is gated off, and preserving legacy behaviour on the legacy path is the standing rule regardless. So the tab was buildable either way. Measuring the backend then showed the decision does not exist at all: the legacy GET creates nothing. I overstated the blocker to the user and corrected it in the same turn.
+EVIDENCE: `src/chat/chat.controller.ts:52-83` — `getBookingConversation` calls `getExistingConversation` and 404s, with a comment naming this client's 404-to-null mapping as the contract it was written against.
+PRIMARY SOURCES: backend controller source, read directly.
+LOCAL IMPACT: the §3.1 blocker "and a semantic decision" is withdrawn in the manifest; `conversations` is now blocked on the v1 deploy alone.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Map `CONVERSATION_NOT_AVAILABLE` to null; do NOT map `CONVERSATION_ACCESS_DENIED`.
+CONTEXT: The canonical resolve is a POST that can be refused for two different reasons; the legacy resolve 404s for one of them.
+OPTIONS: (a) map every failure to null so the screen never errors; (b) map neither and let the screen handle both; (c) map only the "not yet" refusal.
+SELECTED: (c).
+WHY: (a) would tell somebody probing another customer's booking that it merely has no chat yet — an authorization refusal flattened into an empty state. (b) would turn a working quiet empty state into an error banner the moment the capability flips, for the ordinary case of a booking whose provider is not yet confirmed. The two codes exist separately precisely so a client can tell them apart, and `mayOpenConversation` is what produces the first: support may open a thread on an unassigned booking, the parties may not.
+EVIDENCE: `contract.ts:2101-2104` (both codes on `conversations.create`); `errors.ts:198,204` (403 and 409); `messagingPolicy.ts:767` (`mayOpenConversation`); `chat.controller.ts:52-83` (the legacy 404).
+PRIMARY SOURCES: backend contract, errors and policy source.
+LOCAL IMPACT: both directions asserted by test.
+PRODUCTION IMPACT: none; the canonical path is unreachable.
+DATE: 2026-08-16
+
+---
+
+DECISION: Keep `reportMessage` on the compatibility source in every configuration.
+CONTEXT: The `conversations` domain has six canonical entries and the client calls a seventh thing.
+OPTIONS: (a) put report on the interface and throw from the canonical source; (b) call compatibility directly from the repository.
+SELECTED: (b).
+WHY: The precedent is `NotificationsRepository.dismiss` for `DELETE /api/user/notifications/:key`, and the reasoning transfers exactly: the canonical implementation must not invent an endpoint that does not exist, and must not throw at runtime on a button the customer can see. This is the second kind of absence in the taxonomy TAB 12 named — canonical lacks what legacy has — and it already had a treatment.
+EVIDENCE: `contract.ts` conversations domain — create, list, get, messages.list, messages.create, read. No report, edit or delete.
+PRIMARY SOURCES: backend contract.
+LOCAL IMPACT: `MessagingRepository` retains a `ServanaApiClient` field for this one call; a test asserts reporting reaches legacy with the capability ON.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16
+
+---
+
+DECISION: Send no `Idempotency-Key` header on `sendMessage`.
+CONTEXT: TAB 10 established header-based idempotency for booking actions.
+OPTIONS: (a) send a header as well as `clientMsgId`; (b) send `clientMsgId` only.
+SELECTED: (b).
+WHY: `clientMsgId` IS the idempotency mechanism for a message, and it is a message field rather than a transport concern — the contract names a malformed one `MESSAGE_IDEMPOTENCY_KEY_INVALID` rather than the generic `IDEMPOTENCY_KEY_INVALID`, which is the backend saying the two are different mechanisms. A header would be a second, unread key.
+EVIDENCE: `contract.ts:2268` (`MESSAGE_IDEMPOTENCY_KEY_INVALID` on `conversations.messages.create`); `domains/conversations.ts:96` (`CLIENT_MSG_ID_INVALID` mapped to it).
+PRIMARY SOURCES: backend contract and domain source.
+LOCAL IMPACT: asserted by test, because the habit from three tabs ago would make a header look correct.
+PRODUCTION IMPACT: none.
+DATE: 2026-08-16

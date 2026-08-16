@@ -53,6 +53,21 @@ Key files:
 | 10 | Tracking / OTP / cancel / reschedule | `TAB10_CERTIFICATION.md`, manifest §8 |
 | 11 | Payments / refunds | `TAB11_CERTIFICATION.md`, manifest §9 |
 | 12 | Change orders / disputes | `TAB12_CERTIFICATION.md`, manifest §10 |
+| 13 | Conversations | `TAB13_CERTIFICATION.md`, manifest §11 |
+
+## ⚠ TAB 13 withdrew a TAB 01 finding — go measure, always
+
+`V1Capability.conversations` sat defined-but-disabled for **eleven tabs**
+because R-10 recorded *"opening a booking chat may create the conversation …
+SC-038 records the current lazy-create as a defect"* and classified it BREAKS.
+
+Measured in TAB 13: `chat.controller.getBookingConversation` calls
+`getExistingConversation` and 404s. It creates nothing, and the comment names
+this client's 404-to-null mapping as the contract it was written against. The
+fix had happened upstream and nobody re-checked.
+
+A recorded finding is a snapshot of a moving system. When one blocks work,
+measure it before planning around it.
 
 ## The taxonomy TAB 12 named — three kinds of absence
 
@@ -187,11 +202,11 @@ Client enum names it `promotions` and accepts both wire names.
 
 ## Next action
 
-TAB 13 — **ask the user for its subject**, per the provenance note above. The
-strongest remaining candidate is `conversations`, whose capability is already
-defined but blocked on the R-10 semantic decision (v1 replaces lazy
-conversation creation with an explicit POST; SC-038 records the current
-behaviour as a defect). That is a product call, not a technical one.
+TAB 14 — **ask the user for its subject**, per the provenance note above.
+Remaining candidates: `reviews` (backend gap R-11 — 5 of 9 legacy calls are
+KEEP, so it may still be genuinely blocked; **measure before believing that**,
+given TAB 13), and the `account`/`settings` remainder (19 + 2 entries, partly
+covered by TAB 03's `identity` and `customerProfile`).
 
-TAB 12 is certified: analyze 0 errors / 39 infos (unchanged baseline), 1,874
+TAB 13 is certified: analyze 0 errors / 39 infos (unchanged baseline), 1,888
 tests passing.

@@ -136,3 +136,30 @@ And one thing genuinely shipped: change orders are readable on the legacy
 transport today, because the route was always live and the app had simply never
 called it. Every prior tab's user-visible work was a correction; this one added
 a capability with no deploy behind it.
+
+## Sources read for TAB 13 (2026-08-16)
+
+| Question | Source | Finding |
+| --- | --- | --- |
+| Does the legacy booking-conversation GET create a conversation? | `src/chat/chat.controller.ts:52-83` | **NO.** It calls `getExistingConversation` and 404s. The comment: *"It does NOT create one: a booking conversation is a consequence of a provider being confirmed, created transactionally by `technicianService.acceptJob` and by admin assignment - not of a client opening a screen."* **This withdraws TAB 01's R-10**, which had blocked the `conversations` capability for eleven tabs. |
+| Does the client match? | `messaging_repository.dart` (pre-TAB-13) | Yes - `resolveForBooking` maps 404 to null, and the backend comment cites that mapping by name as the contract it was written against. |
+| What does the canonical resolve look like? | `contract.ts:2088-2125` | `POST /api/v1/conversations`, *"opens, OR resolves"*. One per booking under a unique constraint and an ON CONFLICT insert, so a repeat returns the same thread. |
+| Can a customer conjure a thread on an unassigned booking? | `contract.ts:2121-2124`, `messagingPolicy.ts:767` | No. `mayOpenConversation`: *"Support may open a conversation on a booking with no provider; the parties may not."* Refused with `CONVERSATION_NOT_AVAILABLE`. |
+| What statuses do the two refusals carry? | `errors.ts:198,204` | `CONVERSATION_ACCESS_DENIED` 403, `CONVERSATION_NOT_AVAILABLE` 409. Only the second means "not yet" and only it maps to null. |
+| Do the DTOs have to change? | `openapi.ts:1510-1559` vs `conversation_mapper.dart` | No. The canonical `Conversation` names `id`, `bookingId`, `unreadCount`, `isClosed`, `lastMessageAt`, `lastMessage` - the keys the mapper already reads. `isClosed` is kept as *"the pre-status compatibility boolean, republished ... for clients that know nothing about `status`"*. |
+| Do the envelopes differ? | `contract.ts:2143-2146` | Yes. The chat routes carry NO envelope and nest under a top-level `conversations` key, a shape the backend keeps exactly; v1 returns a bare array in `data`. Both read. |
+| Is there a canonical successor for reporting a message? | `contract.ts` conversations domain | **No.** Six entries: create, list, get, messages.list, messages.create, read. No report, edit or delete. Same treatment as `DELETE /api/user/notifications/:key`. |
+| How is message idempotency expressed? | `contract.ts:2268`, `domains/conversations.ts:96` | `clientMsgId` in the BODY, not a header. A malformed one is `MESSAGE_IDEMPOTENCY_KEY_INVALID`, deliberately distinct from the transport-level `IDEMPOTENCY_KEY_INVALID`. |
+
+## Standing conclusion, updated
+
+TAB 13's finding is about the documents rather than the code: **a recorded
+finding is a snapshot of a moving system.** R-10 was true when TAB 01 wrote it
+and false by the time anything depended on it, and because it was written as a
+blocker rather than as a measurement, eleven tabs planned around it instead of
+re-checking. The capability it gated was defined in TAB 02 and had no transport
+behind it until now for no reason that still existed.
+
+The same question is now open about R-11 (reviews: *"4 of 9 calls have
+successors"*). It has NOT been re-measured, and the next tab that touches
+reviews should measure before believing it.

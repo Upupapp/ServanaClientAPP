@@ -77,7 +77,7 @@ Complete canonical surfaces. Enabling them is a define and a test run.
 | `notifications` | `GET /api/user/notifications`, `…/unread-count`, `PATCH …/:key/read`, `POST …/mark-all-read`, `POST\|DELETE /api/user/fcm-token` | `GET /api/v1/notifications`, `…/unread-count`, `PATCH …/:key/read`, `POST …/read-all`, `POST\|DELETE /api/v1/me/devices` | v1 deploy |
 | `catalog` | `GET /api/catalog`, `…/summary`, `…/services/:id` | `GET /api/v1/catalog`, `…/summary`, `…/services/:serviceId` | v1 deploy. **Also unpushed on legacy** — see §5 |
 | `customerProfile` | `GET /api/user/profile`, `PUT /api/user/updateprofile`, `GET /api/user/alluseraddresses`, `POST /api/user/adduseraddress`, `PUT /api/user/makeaddressprimary`, `DELETE /api/user/deleteaddress` | `GET\|PATCH /api/v1/customer/profile`, `/api/v1/customer/addresses*` | v1 deploy |
-| `conversations` | `GET /api/bookings/:id/conversation`, `GET /api/chat/conversations`, `GET\|POST …/:id/messages`, `POST …/:id/read` | `POST\|GET /api/v1/conversations`, `…/:id/messages`, `…/:id/read` | v1 deploy **and** a semantic decision — see §4 |
+| `conversations` | `GET /api/bookings/:id/conversation`, `GET /api/chat/conversations`, `GET\|POST …/:id/messages`, `POST …/:id/read` | `POST\|GET /api/v1/conversations`, `…/:id/messages`, `…/:id/read` | ~~v1 deploy **and** a semantic decision~~ **v1 deploy alone — the semantic decision was withdrawn in TAB 13, see §11.** R-10's lazy-create was fixed upstream; the legacy GET creates nothing. Transport built in TAB 13. |
 
 ### 3.2 Capabilities deliberately NOT defined
 
@@ -511,3 +511,47 @@ client enum would drop a new category silently.
 Disputes remain unavailable. **Change orders become readable on the legacy
 transport**, because the route was always live and the app had simply never
 called it â€” the one thing in this tab a shipped build can use with no deploy.
+
+---
+
+## 11. TAB 13 — conversations
+
+Full record in `docs/convergence-v1/TAB13_CERTIFICATION.md`.
+
+### 11.1 The blocker in §3.1 and §4 is withdrawn
+
+`conversations` was listed in §3.1 as *"blocked on v1 deploy **and** a semantic
+decision"*. The semantic decision was R-10: opening a booking chat lazily
+creates the conversation, recorded **BREAKS**.
+
+**Measured in TAB 13 and found stale.** `src/chat/chat.controller.ts`
+`getBookingConversation` calls `getExistingConversation` and returns 404 when
+absent, commenting *"It does NOT create one: a booking conversation is a
+consequence of a provider being confirmed … not of a client opening a screen."*
+The fix was upstream. The capability is now blocked on the v1 deploy alone,
+like every other value in §3.1.
+
+### 11.2 The real difference is a verb, not a semantic
+
+| | legacy | canonical |
+| --- | --- | --- |
+| resolve by booking | `GET /api/bookings/:id/conversation` | `POST /api/v1/conversations` |
+| absent | 404 | `CONVERSATION_NOT_AVAILABLE` (409) |
+
+The canonical entry opens-or-resolves under a unique constraint, gated by
+`mayOpenConversation` — support may open a thread on an unassigned booking, the
+parties may not. Both signals mean "not yet" and both map to `null`;
+`CONVERSATION_ACCESS_DENIED` deliberately does not.
+
+### 11.3 A third entry for §3.3
+
+| Call | Domain | Handling |
+| --- | --- | --- |
+| `POST /api/chat/conversations/:id/messages/:msgId/report` | `conversations` | No canonical successor — the domain has six entries and none is report, edit or delete. `MessagingRepository.reportMessage` calls the compatibility source directly in every configuration, exactly as `dismiss` does. Asserted with the capability ON. |
+
+### 11.4 What ships today
+
+Nothing. The repository's public surface is unchanged and no screen was
+touched. What changed is that a capability defined eleven tabs ago finally has
+a transport behind it, and the reason it did not is now known to have been a
+stale finding rather than an open question.
