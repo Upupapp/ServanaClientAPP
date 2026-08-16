@@ -24,8 +24,8 @@
   "status": "RUNNING",
   "supervisorCycleCount": 9,
   "lastCheckpointAt": "2026-08-16",
-  "lastLocalCommit": "PENDING - TAB 12 uncommitted at checkpoint write",
-  "workingTreeState": "app_theme.dart pre-existing modified and untouched. TAB 12 changes staged for commit.",
+  "lastLocalCommit": "28381ba",
+  "workingTreeState": "Clean apart from app_theme.dart, pre-existing modified and deliberately never staged. All LOCAL, nothing pushed.",
   "activeBlockers": [
     "UPSTREAM: /api/v1 absent from servana_api origin/main (51 unpushed backend commits). All canonical sources gated OFF.",
     "UPSTREAM: no POST /api/v1/bookings. See docs/convergence-v1/TAB08_ENDPOINT_GAP.md."
