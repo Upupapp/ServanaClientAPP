@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Export options for the CI TestFlight build (TAB 16).
+
+	     `app-store-connect` is the method for TestFlight AND for the App Store;
+	     promotion from one to the other happens in App Store Connect and does
+	     not need a different build. -->
+	<key>method</key>
+	<string>app-store-connect</string>
+
+	<!-- The team that owns the com.servana.client App ID.
+
+	     NOTE: DEVELOPMENT_TEAM in project.pbxproj is 2K2SF7NRQP for the Runner
+	     target but CAB884NRSN for RunnerTests. Only the app target matters for
+	     export, but the mismatch is worth reconciling — it is exactly the kind
+	     of thing that consumes a day at signing time. -->
+	<key>teamID</key>
+	<string>2K2SF7NRQP</string>
+
+	<!-- Let Xcode fetch and manage the provisioning profile from the App Store
+	     Connect API key. The alternative is checking profiles into the
+	     repository or a match-style certificate repo, and mixing the two
+	     approaches is what produces profile mismatches. One approach,
+	     committed to. -->
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<!-- Symbols go up with the build so TestFlight crashes are readable.
+	     An obfuscated or stripped build with no symbols trades crash reports
+	     for nothing. -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!-- Bitcode has been removed from the toolchain; declaring it true is
+	     rejected by current Xcode. -->
+	<key>uploadBitcode</key>
+	<false/>
+
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>
