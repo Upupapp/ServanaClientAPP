@@ -70,7 +70,6 @@ class HomeCompositionCanonicalDataSource implements HomeCompositionDataSource {
     }
   }
 
-  ApiFailure _asFailure(Object error) => error is ApiFailure
-      ? error
-      : _mapper.fromTransport(error);
+  ApiFailure _asFailure(Object error) =>
+      error is ApiFailure ? error : _mapper.fromTransport(error);
 }

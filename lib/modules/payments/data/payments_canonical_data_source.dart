@@ -64,7 +64,8 @@ class PaymentsCanonicalDataSource implements PaymentsDataSource {
     // URL."* A mobile app has no origin worth nominating, and sending one would
     // be the client expressing a preference about where a payer is returned to
     // — the precise thing the allowlist exists to take out of a caller's hands.
-    final envelope = await _api.post(V1Endpoints.bookingPaymentIntents(bookingId));
+    final envelope =
+        await _api.post(V1Endpoints.bookingPaymentIntents(bookingId));
     return PaymentIntent.fromApiMap(envelope.asMap, bookingId: bookingId);
   }
 

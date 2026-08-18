@@ -260,7 +260,13 @@ void main() {
       // precisely as "the pre-status compatibility boolean … kept correct for
       // clients that know nothing about status". This client is one of them.
       expect(
-        <String>['ACTIVE', 'SUPPORT_ESCALATED', 'READ_ONLY', 'CLOSED', 'ARCHIVED'],
+        <String>[
+          'ACTIVE',
+          'SUPPORT_ESCALATED',
+          'READ_ONLY',
+          'CLOSED',
+          'ARCHIVED'
+        ],
         hasLength(5),
         reason: 'the status vocabulary this client deliberately does not read',
       );
@@ -312,8 +318,8 @@ void main() {
 
       await c.source.markRead(conversationId: 7, lastReadMessageId: 42);
 
-      expect(c.recorder.requests.single.url.path,
-          '/api/v1/conversations/7/read');
+      expect(
+          c.recorder.requests.single.url.path, '/api/v1/conversations/7/read');
       final body = jsonDecode(c.recorder.bodies.single) as Map<String, dynamic>;
       expect(body['lastReadMessageId'], 42);
     });

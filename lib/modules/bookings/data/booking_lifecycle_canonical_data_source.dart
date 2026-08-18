@@ -40,7 +40,8 @@ import 'package:client/modules/bookings/domain/booking_otp_state.dart';
 import 'package:client/modules/bookings/domain/booking_reschedule.dart';
 import 'package:client/modules/bookings/domain/booking_transition_result.dart';
 
-class BookingLifecycleCanonicalDataSource implements BookingLifecycleDataSource {
+class BookingLifecycleCanonicalDataSource
+    implements BookingLifecycleDataSource {
   const BookingLifecycleCanonicalDataSource(this._api);
 
   final V1ApiClient _api;

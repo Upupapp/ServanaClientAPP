@@ -98,7 +98,8 @@ void main() {
       expect(
         offenders,
         isEmpty,
-        reason: 'A route that cannot resolve its identity must recover to Home, '
+        reason:
+            'A route that cannot resolve its identity must recover to Home, '
             'not substitute a literal. Use MainRouter.asServiceId and bounce '
             'when it returns null.\n${offenders.join('\n')}',
       );
@@ -126,8 +127,8 @@ void main() {
 
         // The builder for this route, up to the start of the next GoRoute.
         final nextRoute = source.indexOf('GoRoute(', start);
-        final body =
-            source.substring(start, nextRoute == -1 ? source.length : nextRoute);
+        final body = source.substring(
+            start, nextRoute == -1 ? source.length : nextRoute);
 
         expect(
           body.contains('HomeScreen.routeName'),

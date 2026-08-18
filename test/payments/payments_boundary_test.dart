@@ -176,7 +176,9 @@ void main() {
       // there with "Payment session could not be started".
       final wrapped = _FakeLegacyApi()
         ..checkoutResponse = <String, dynamic>{
-          'data': <String, dynamic>{'checkout_url': 'https://checkout.paymongo.com/x'},
+          'data': <String, dynamic>{
+            'checkout_url': 'https://checkout.paymongo.com/x'
+          },
         };
       final rooted = _FakeLegacyApi()
         ..checkoutResponse = <String, dynamic>{
@@ -208,7 +210,8 @@ void main() {
       expect(intent.isUsable, isFalse);
     });
 
-    test('reused is false on legacy because it is unknowable, not because it '
+    test(
+        'reused is false on legacy because it is unknowable, not because it '
         'is known false', () async {
       final api = _FakeLegacyApi()
         ..checkoutResponse = <String, dynamic>{
@@ -253,7 +256,8 @@ void main() {
       final payment = await c.source.payment('42');
 
       expect(c.recorder.requests.single.method, 'GET');
-      expect(c.recorder.requests.single.url.path, '/api/v1/bookings/42/payment');
+      expect(
+          c.recorder.requests.single.url.path, '/api/v1/bookings/42/payment');
       expect(payment.state, PaymentState.paid);
       expect(payment.isPaid, isTrue);
       expect(payment.captured, isTrue);
@@ -273,8 +277,7 @@ void main() {
           'booking': <String, dynamic>{'paymentStatus': 'PAID'},
         };
 
-      final payment =
-          await PaymentsCompatibilityDataSource(api).payment('42');
+      final payment = await PaymentsCompatibilityDataSource(api).payment('42');
 
       expect(api.bookingCalls, 1);
       expect(payment.isPaid, isTrue);
@@ -371,7 +374,8 @@ void main() {
       await expectLater(
         repo.requestRefund(
           bookingId: '42',
-          request: const RefundRequest(trigger: RefundTrigger.customerCancelled),
+          request:
+              const RefundRequest(trigger: RefundTrigger.customerCancelled),
         ),
         throwsA(isA<UnsupportedPaymentAction>()),
       );
@@ -423,8 +427,7 @@ void main() {
       expect(pending.isPendingProcessor, isTrue);
     });
 
-    test('omitting the amount asks for the whole refundable balance',
-        () async {
+    test('omitting the amount asks for the whole refundable balance', () async {
       // The ceiling is captured-minus-refunded, computed server-side. A client
       // that names a figure can only ever name a stale one, so the default is
       // to name none.
@@ -475,8 +478,12 @@ void main() {
 
     test('every modelled trigger is one the backend knows', () {
       const backend = <String>{
-        'CUSTOMER_CANCELLED', 'PROVIDER_CANCELLED', 'ADMIN_CANCELLED',
-        'DISPUTE_UPHELD', 'SERVICE_NOT_DELIVERED', 'DUPLICATE_PAYMENT',
+        'CUSTOMER_CANCELLED',
+        'PROVIDER_CANCELLED',
+        'ADMIN_CANCELLED',
+        'DISPUTE_UPHELD',
+        'SERVICE_NOT_DELIVERED',
+        'DUPLICATE_PAYMENT',
         'ADMIN_DISCRETION',
       };
       for (final t in RefundTrigger.values) {

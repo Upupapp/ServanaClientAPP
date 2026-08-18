@@ -187,8 +187,7 @@ void initInjector(AppConfig config) {
     () => BookingSubmissionService(
       api: dpLocator(),
       journal: dpLocator(),
-      customerId: () async =>
-          (await SessionService.getSession())?.customerID,
+      customerId: () async => (await SessionService.getSession())?.customerID,
     ),
   );
 
@@ -465,7 +464,8 @@ void initInjector(AppConfig config) {
       compatibility: HomeCompositionCompatibilityDataSource(
         loaders: <HomeSectionType, HomeSectionLoader>{
           HomeSectionType.categories: () async {
-            final categories = await dpLocator<CatalogRepository>().categories();
+            final categories =
+                await dpLocator<CatalogRepository>().categories();
             return categories
                 .map((c) => <String, dynamic>{
                       'id': c.id,

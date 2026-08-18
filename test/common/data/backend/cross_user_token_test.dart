@@ -67,8 +67,8 @@ void main() {
       // device caught mid-migration holding one copy in each.
       expect(bloc, contains("CleanupStep('sessionTokens'"),
           reason: 'logout must clear the token store');
-      final store = File('lib/core/session/session_token_store.dart')
-          .readAsStringSync();
+      final store =
+          File('lib/core/session/session_token_store.dart').readAsStringSync();
       final clear = store.substring(store.indexOf('Future<void> clear()'));
       expect(clear, contains('_secure.clear()'));
       expect(clear, contains('stripLegacyTokens()'));
@@ -79,8 +79,8 @@ void main() {
       // same leak as a missed logout, and it does not go through _onLogout.
       expect(bloc, contains('isDifferentSubjectFrom('));
       final i = bloc.indexOf('isDifferentSubjectFrom(');
-      expect(bloc.substring(i, i + 400),
-          contains('customerScopedCleanupSteps('),
+      expect(
+          bloc.substring(i, i + 400), contains('customerScopedCleanupSteps('),
           reason: 'a detected switch must run the same teardown as a logout');
     });
   });

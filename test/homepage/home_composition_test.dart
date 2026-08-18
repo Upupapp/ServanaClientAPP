@@ -148,7 +148,8 @@ void main() {
       expect((popular as HomeSectionFailed).isRetryable, isTrue);
     });
 
-    test('`banners` reads as promotions, and promotions asks for `banners`', () {
+    test('`banners` reads as promotions, and promotions asks for `banners`',
+        () {
       // The registry calls it banners; this enum calls it promotions. Reading
       // accepts both. Asking must emit the backend's spelling, because
       // composeHome drops an unknown name and then falls back to EVERY section
@@ -385,8 +386,8 @@ void main() {
           ),
         },
       );
-      final repo =
-          HomeCompositionRepository(compatibility: _StubSource(composition: blank));
+      final repo = HomeCompositionRepository(
+          compatibility: _StubSource(composition: blank));
       await repo.load();
 
       // Caching a blank composition would turn one bad launch into a permanent

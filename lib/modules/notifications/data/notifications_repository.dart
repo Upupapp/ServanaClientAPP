@@ -57,7 +57,8 @@ class NotificationsRepository {
 
   /// True when reads and writes are going to `/api/v1`. Diagnostics only.
   bool get isCanonical =>
-      _canonical != null && (_router?.isCanonical(V1Capability.notifications) ?? false);
+      _canonical != null &&
+      (_router?.isCanonical(V1Capability.notifications) ?? false);
 
   Future<List<ServanaNotification>> fetchNotifications({
     required String uid,

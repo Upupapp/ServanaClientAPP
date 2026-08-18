@@ -71,7 +71,11 @@ void main() {
 
       // Nothing in the vocabulary may be named for a booking WRITE while
       // `POST /api/v1/bookings` does not exist.
-      for (final forbidden in ['bookingCreate', 'bookingWrites', 'bookingAll']) {
+      for (final forbidden in [
+        'bookingCreate',
+        'bookingWrites',
+        'bookingAll'
+      ]) {
         expect(names, isNot(contains(forbidden)),
             reason: 'no canonical booking write exists — see '
                 'docs/convergence-v1/TAB08_ENDPOINT_GAP.md');
@@ -180,15 +184,15 @@ void main() {
         'payouts',
       ]) {
         expect(names, isNot(contains(forbidden)),
-            reason: '"$forbidden" would claim surfaces this client cannot call');
+            reason:
+                '"$forbidden" would claim surfaces this client cannot call');
       }
     });
   });
 
   group('CanonicalRouter', () {
     test('selects the compatibility source when unavailable', () {
-      const router =
-          CanonicalRouter(availability: CanonicalAvailability());
+      const router = CanonicalRouter(availability: CanonicalAvailability());
       expect(
         router.select<String>(V1Capability.notifications,
             canonical: 'v1', compatibility: 'legacy'),

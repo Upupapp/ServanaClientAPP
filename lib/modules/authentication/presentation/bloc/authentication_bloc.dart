@@ -562,7 +562,8 @@ class AuthenticationBloc
 
         // Reset all private-data singletons so no previous account's data
         // leaks to the next user of the device (LEAKSHIELD §5).
-        CleanupStep('homeStore', () async => dpLocator<HomeStore>().resetPrivateData()),
+        CleanupStep(
+            'homeStore', () async => dpLocator<HomeStore>().resetPrivateData()),
         // The composition cache holds personalized sections — activeBooking and
         // recentServices among them — so it is customer-scoped and must go with
         // the rest of the account's state.
@@ -573,8 +574,8 @@ class AuthenticationBloc
         CleanupStep(
             'airconStore', () async => dpLocator<AirconBookingStore>().reset()),
         CleanupStep('bwStore', () async => dpLocator<BwBookingStore>().reset()),
-        CleanupStep(
-            'bookingDraft', () async => dpLocator<BookingDraftService>().clear()),
+        CleanupStep('bookingDraft',
+            () async => dpLocator<BookingDraftService>().clear()),
         const CleanupStep(
             'searchHistory', SearchController.clearHistoryOnLogout),
         CleanupStep('profileController',
@@ -586,10 +587,14 @@ class AuthenticationBloc
         CleanupStep('liveRegions', () async => LiveRegionManager.clearCache()),
         CleanupStep('supportController',
             () async => dpLocator<SupportController>().resetPrivateData()),
-        CleanupStep('supportCreateController',
-            () async => dpLocator<SupportCreateController>().resetPrivateData()),
-        CleanupStep('supportTicketController',
-            () async => dpLocator<SupportTicketController>().resetPrivateData()),
+        CleanupStep(
+            'supportCreateController',
+            () async =>
+                dpLocator<SupportCreateController>().resetPrivateData()),
+        CleanupStep(
+            'supportTicketController',
+            () async =>
+                dpLocator<SupportTicketController>().resetPrivateData()),
         CleanupStep('supportDrafts',
             () => dpLocator<SupportDraftRepository>().clearAllDrafts()),
         // A threat detected during one customer's session must not be
@@ -600,8 +605,10 @@ class AuthenticationBloc
         // the session flag. Persisted frequency history is account-scoped and
         // deliberately survives, so a permanent dismissal cannot be reset by
         // signing out and back in.
-        CleanupStep('homeCampaign',
-            () async => dpLocator<HomeCampaignController>().resetSessionState()),
+        CleanupStep(
+            'homeCampaign',
+            () async =>
+                dpLocator<HomeCampaignController>().resetSessionState()),
         CleanupStep('reviewForm',
             () async => dpLocator<ReviewFormController>().resetPrivateData()),
         CleanupStep('reviewDetail',
@@ -636,8 +643,8 @@ class AuthenticationBloc
             'fcm', () => dpLocator<FcmCoordinator>().deactivateOnLogout()),
 
         // C21: clear analytics identity and experiment context on logout.
-        CleanupStep(
-            'analytics', () => dpLocator<AnalyticsCoordinator>().clearUserContext()),
+        CleanupStep('analytics',
+            () => dpLocator<AnalyticsCoordinator>().clearUserContext()),
         CleanupStep('experiments',
             () async => dpLocator<ExperimentCoordinator>().clearOnLogout()),
         CleanupStep('crashlytics',

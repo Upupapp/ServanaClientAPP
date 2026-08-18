@@ -91,8 +91,7 @@ void main() {
       final extra = ServiceBookingEntryResolver.extraFor(
         flowType: BookingFlowType.airconOptions,
         option: option,
-        config:
-            CategoryPresentationRegistry.forId(ServiceCategoryId.aircon),
+        config: CategoryPresentationRegistry.forId(ServiceCategoryId.aircon),
       )!;
       expect(extra['serviceId'], isA<int>());
       expect(extra.containsKey('option'), isTrue);

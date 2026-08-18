@@ -58,7 +58,9 @@ class MessagingCanonicalDataSource implements MessagingDataSource {
     try {
       final envelope = await _api.post(
         V1Endpoints.conversations(),
-        body: <String, dynamic>{'bookingId': int.tryParse(bookingId) ?? bookingId},
+        body: <String, dynamic>{
+          'bookingId': int.tryParse(bookingId) ?? bookingId
+        },
       );
       return ConversationMapper.fromJson(envelope.asMap);
     } on ApiFailure catch (failure) {

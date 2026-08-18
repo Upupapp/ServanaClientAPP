@@ -64,8 +64,8 @@ void main() {
       // The ordering IS the safety property: strip-then-discover-the-write-
       // failed loses a refresh token that cannot be regenerated on-device for
       // email/password sessions.
-      final store = File('lib/core/session/session_token_store.dart')
-          .readAsStringSync();
+      final store =
+          File('lib/core/session/session_token_store.dart').readAsStringSync();
       final readBack = store.indexOf('readBack');
       final strip = store.indexOf('stripLegacyTokens()', readBack);
       expect(readBack, greaterThan(-1),
@@ -105,7 +105,8 @@ Iterable<String> _saveSessionCalls(String source) sync* {
         if (depth == 0) break;
       }
     }
-    yield source.substring(index, end < source.length ? end + 1 : source.length);
+    yield source.substring(
+        index, end < source.length ? end + 1 : source.length);
     index = source.indexOf(needle, index + needle.length);
   }
 }

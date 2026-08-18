@@ -106,7 +106,8 @@ class RefundRequest {
   Map<String, dynamic> toJson() => <String, dynamic>{
         'trigger': trigger.wireName,
         if (amount != null) 'amount': amount,
-        if (reason != null && reason!.trim().isNotEmpty) 'reason': reason!.trim(),
+        if (reason != null && reason!.trim().isNotEmpty)
+          'reason': reason!.trim(),
       };
 }
 

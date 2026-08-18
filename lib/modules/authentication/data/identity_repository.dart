@@ -67,8 +67,8 @@ class IdentityRepository {
   Future<Identity> fetchIdentity() =>
       _guard(() => _source.fetchIdentity(), 'fetchIdentity');
 
-  Future<void> resendEmailVerification(String email) =>
-      _guard(() => _source.resendEmailVerification(email), 'resendEmailVerification');
+  Future<void> resendEmailVerification(String email) => _guard(
+      () => _source.resendEmailVerification(email), 'resendEmailVerification');
 
   Future<void> verifyEmail({required String email, required String otp}) =>
       _guard(() => _source.verifyEmail(email: email, otp: otp), 'verifyEmail');

@@ -94,8 +94,8 @@ class Identity {
     }
 
     final email = str(['email', 'emailAddress', 'email_address']);
-    final mobile =
-        str(['mobileNumber', 'phoneNumber', 'mobile', 'phone', 'contactNumber']);
+    final mobile = str(
+        ['mobileNumber', 'phoneNumber', 'mobile', 'phone', 'contactNumber']);
 
     return Identity(
       uid: str(['uid', 'id', 'customerID', 'customerId']) ?? '',
@@ -104,7 +104,8 @@ class Identity {
       displayName: str(['displayName', 'fullname', 'fullName', 'name']),
       emailVerification: _channel(
         present: email != null,
-        verified: _bool(json, ['emailVerified', 'email_verified', 'isEmailVerified']),
+        verified:
+            _bool(json, ['emailVerified', 'email_verified', 'isEmailVerified']),
       ),
       mobileVerification: _channel(
         present: mobile != null,

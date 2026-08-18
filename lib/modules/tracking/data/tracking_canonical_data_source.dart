@@ -60,16 +60,17 @@ class TrackingCanonicalDataSource implements TrackingSnapshotSource {
     final locationRaw = visibility.isVisible
         ? _map(provider['location'])
         : const <String, dynamic>{};
-    final location =
-        locationRaw.isEmpty ? null : GeoPositionSnapshot.fromApiMap(locationRaw);
+    final location = locationRaw.isEmpty
+        ? null
+        : GeoPositionSnapshot.fromApiMap(locationRaw);
 
     return BookingTrackingState(
       bookingId: bookingId,
       // `state` is the canonical state from the shared derivation — the same
       // vocabulary every surface agrees on — rather than the raw column the
       // legacy detail route returns.
-      bookingStatus:
-          BookingStatusMapper.fromString('${data['state'] ?? ''}'.toUpperCase()),
+      bookingStatus: BookingStatusMapper.fromString(
+          '${data['state'] ?? ''}'.toUpperCase()),
       providerLocation: location,
       // No ETA on this payload. Null is the honest value; the legacy stitcher
       // derives one from booking columns and this route does not carry them.

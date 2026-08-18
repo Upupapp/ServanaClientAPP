@@ -176,8 +176,9 @@ class ApiErrorMapper {
   /// Maps a thrown transport error — the request never produced a response.
   ApiFailure fromTransport(Object error, {String? requestId}) {
     if (error is ApiFailure) return error;
-    final isKnownTransport =
-        error is SocketException || error is TimeoutException || error is HttpException;
+    final isKnownTransport = error is SocketException ||
+        error is TimeoutException ||
+        error is HttpException;
     return RetryableFailure(
       safeMessage: isKnownTransport
           ? 'No connection. Check your network and try again.'

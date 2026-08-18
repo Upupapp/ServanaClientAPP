@@ -187,7 +187,8 @@ void main() {
       expect(tokens.toString(), isNot(contains('legacy-refresh')));
     });
 
-    test('a strip failure still leaves the secure copy authoritative', () async {
+    test('a strip failure still leaves the secure copy authoritative',
+        () async {
       final legacy = _FakeLegacy(legacyTokens)..failStrip = true;
       final store = SessionTokenStore(secure: secure, legacy: legacy);
 
@@ -195,7 +196,8 @@ void main() {
 
       expect(tokens.accessToken, 'legacy-access');
       expect(await secure.readAccessToken(), 'legacy-access',
-          reason: 'the secure copy was verified before the strip was attempted');
+          reason:
+              'the secure copy was verified before the strip was attempted');
     });
   });
 
@@ -217,20 +219,20 @@ void main() {
           reason: 'a sign-in must not resurrect a Hive token');
     });
 
-    test('write reports failure rather than pretending to have saved', () async {
+    test('write reports failure rather than pretending to have saved',
+        () async {
       storage.failWrites = true;
       final store =
           SessionTokenStore(secure: secure, legacy: _FakeLegacy(null));
-      final ok = await store.write(
-          accessToken: 'a', refreshToken: 'b', subject: 'c');
+      final ok =
+          await store.write(accessToken: 'a', refreshToken: 'b', subject: 'c');
       expect(ok, isFalse);
     });
 
     test('a null refresh token clears any previous one', () async {
       final store =
           SessionTokenStore(secure: secure, legacy: _FakeLegacy(null));
-      await store.write(
-          accessToken: 'a', refreshToken: 'old', subject: 'c');
+      await store.write(accessToken: 'a', refreshToken: 'old', subject: 'c');
       await store.write(accessToken: 'a2', refreshToken: null, subject: 'c');
       store.invalidateCache();
       expect(await secure.readRefreshToken(), isNull,
@@ -291,7 +293,8 @@ void main() {
 
   group('account switch detection', () {
     test('a different subject is a switch', () async {
-      await secure.save(accessToken: 'a', refreshToken: null, subject: 'cust_1');
+      await secure.save(
+          accessToken: 'a', refreshToken: null, subject: 'cust_1');
       final store =
           SessionTokenStore(secure: secure, legacy: _FakeLegacy(null));
       expect(await store.isDifferentSubjectFrom('cust_2'), isTrue);

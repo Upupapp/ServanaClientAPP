@@ -120,7 +120,8 @@ class ReviewsRepository {
       _sourceFor(V1Capability.bookingReview).createReview(draft);
 
   Future<ReviewAggregate> getProviderAggregate(String providerUid) =>
-      _sourceFor(V1Capability.providerReputation).providerAggregate(providerUid);
+      _sourceFor(V1Capability.providerReputation)
+          .providerAggregate(providerUid);
 
   // ── Always legacy: no canonical successor ─────────────────────────────────
 

@@ -93,7 +93,8 @@ class BookingRescheduleRequest {
   Map<String, dynamic> toJson() => <String, dynamic>{
         'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         if (reasonCode != null) 'reasonCode': reasonCode!.wireName,
-        if (reason != null && reason!.trim().isNotEmpty) 'reason': reason!.trim(),
+        if (reason != null && reason!.trim().isNotEmpty)
+          'reason': reason!.trim(),
         if (expectedSchedule != null)
           'expectedSchedule': expectedSchedule!.toUtc().toIso8601String(),
       };

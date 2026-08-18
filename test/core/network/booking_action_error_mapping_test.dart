@@ -88,7 +88,8 @@ void main() {
       }
     });
 
-    test('Retry-After is carried, so the screen need not invent a cooldown', () {
+    test('Retry-After is carried, so the screen need not invent a cooldown',
+        () {
       // This is what lets the OTP screen honour the server's window instead of
       // restarting its own 60-second timer on top of a refusal.
       final failure = _mapper.fromResponse(

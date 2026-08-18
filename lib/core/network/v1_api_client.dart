@@ -223,7 +223,8 @@ class V1ApiClient {
       '"$idempotencyKey" on $method $path',
     );
 
-    final policy = retry ?? const RetryPolicy(maxAttempts: 1, baseDelay: Duration.zero);
+    final policy =
+        retry ?? const RetryPolicy(maxAttempts: 1, baseDelay: Duration.zero);
     ApiFailure? last;
 
     for (var attempt = 1; attempt <= policy.maxAttempts; attempt++) {
@@ -262,7 +263,8 @@ class V1ApiClient {
     }
     // Unreachable while maxAttempts >= 1; kept so the function is total.
     throw last ??
-        const UnknownFailure(safeMessage: 'Something went wrong. Please try again.');
+        const UnknownFailure(
+            safeMessage: 'Something went wrong. Please try again.');
   }
 
   Future<ApiEnvelope> _attempt(
@@ -319,8 +321,9 @@ class V1ApiClient {
   }
 
   Uri _uri(String path, Map<String, dynamic>? query) {
-    final normalisedBase =
-        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final normalisedBase = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
     final uri = Uri.parse('$normalisedBase$path');
     if (query == null || query.isEmpty) return uri;
     // Null-valued params are dropped rather than sent as "null", which the

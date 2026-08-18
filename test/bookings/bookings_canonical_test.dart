@@ -97,7 +97,9 @@ void main() {
       // The acceptance gate: one enum must not carry both. A booking can be
       // CONFIRMED and unpaid, or COMPLETED and refunded.
       final source = BookingsCanonicalDataSource(client(<Uri>[], {
-        'bookings': [bookingJson(status: 'CONFIRMED', paymentStatus: 'PENDING')],
+        'bookings': [
+          bookingJson(status: 'CONFIRMED', paymentStatus: 'PENDING')
+        ],
       }));
 
       final booking = (await source.list('anything')).single;
@@ -133,13 +135,14 @@ void main() {
       // parsing; how it is DISPLAYED is the screen's business.
       expect(booking.scheduledAt.toUtc().hour, 2);
       expect(booking.scheduledAt.toUtc().minute, 30);
-      expect(booking.scheduledAt.isUtc || booking.scheduledAt.toUtc().year == 2026,
+      expect(
+          booking.scheduledAt.isUtc || booking.scheduledAt.toUtc().year == 2026,
           isTrue);
     });
 
     test('an empty list is empty, not an error', () async {
-      final source =
-          BookingsCanonicalDataSource(client(<Uri>[], {'bookings': <dynamic>[]}));
+      final source = BookingsCanonicalDataSource(
+          client(<Uri>[], {'bookings': <dynamic>[]}));
       expect(await source.list('anything'), isEmpty);
     });
   });

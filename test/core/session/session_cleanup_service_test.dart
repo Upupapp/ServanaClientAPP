@@ -66,7 +66,8 @@ void main() {
       expect(report.toString(), contains('clean'));
     });
 
-    test('a partial run names the failed steps and not their payloads', () async {
+    test('a partial run names the failed steps and not their payloads',
+        () async {
       // Step names are safe to log; error payloads can carry account detail.
       final report = await service.run(<CleanupStep>[
         CleanupStep('ok', () async {}),

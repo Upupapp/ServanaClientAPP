@@ -124,8 +124,7 @@ class AuthFailureCopy {
         return AuthFailureCopy(
           message: 'Too many attempts. Please wait a moment and try again.',
           recovery: AuthRecovery.wait,
-          retryAfter:
-              failure is RateLimitFailure ? failure.retryAfter : null,
+          retryAfter: failure is RateLimitFailure ? failure.retryAfter : null,
         );
     }
 

@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const mapper = ApiErrorMapper();
 
-  ApiFailure map(int status, {String body = '', Map<String, String>? headers}) =>
+  ApiFailure map(int status,
+          {String body = '', Map<String, String>? headers}) =>
       mapper.fromResponse(
         status: status,
         body: body,
@@ -41,11 +42,13 @@ void main() {
       expect(map(400, body: v1('VALIDATION_FAILED')), isA<ValidationFailure>());
       expect(map(415, body: v1('UNSUPPORTED_MEDIA_TYPE')),
           isA<ValidationFailure>());
-      expect(map(422, body: v1('REVIEW_NOT_ELIGIBLE')), isA<ValidationFailure>());
+      expect(
+          map(422, body: v1('REVIEW_NOT_ELIGIBLE')), isA<ValidationFailure>());
     });
 
     test('409 is a state conflict', () {
-      expect(map(409, body: v1('BOOKING_TERMINAL')), isA<StateConflictFailure>());
+      expect(
+          map(409, body: v1('BOOKING_TERMINAL')), isA<StateConflictFailure>());
     });
 
     test('410 Gone is a state conflict, not a not-found', () {
@@ -87,7 +90,8 @@ void main() {
     test('IDEMPOTENCY_KEY_INVALID is our bug, not the customer\'s input', () {
       // 400 would otherwise make this a validation failure and send the
       // customer to edit a field they never filled in.
-      expect(map(400, body: v1('IDEMPOTENCY_KEY_INVALID')), isA<UnknownFailure>());
+      expect(
+          map(400, body: v1('IDEMPOTENCY_KEY_INVALID')), isA<UnknownFailure>());
     });
 
     test('OTP cooldowns are rate limits', () {
@@ -107,14 +111,16 @@ void main() {
     test('reads code, message and requestId from the v1 envelope', () {
       final f = map(409,
           body: v1('BOOKING_TERMINAL',
-              message: 'This booking is already complete.', requestId: 'req_1'));
+              message: 'This booking is already complete.',
+              requestId: 'req_1'));
       expect(f.code, 'BOOKING_TERMINAL');
       expect(f.safeMessage, 'This booking is already complete.');
       expect(f.requestId, 'req_1');
     });
 
     test('reads the legacy {status:error, error:<string>} envelope', () {
-      final f = map(400, body: '{"status":"error","error":"Email is required"}');
+      final f =
+          map(400, body: '{"status":"error","error":"Email is required"}');
       expect(f.safeMessage, 'Email is required');
     });
 
@@ -151,7 +157,8 @@ void main() {
           body: '{"error":{"code":"INTERNAL",'
               '"message":"Error: connect ECONNREFUSED 127.0.0.1:5432"}}');
       expect(f.safeMessage, isNot(contains('ECONNREFUSED')));
-      expect(f.safeMessage, "Something went wrong on our end. Please try again.");
+      expect(
+          f.safeMessage, "Something went wrong on our end. Please try again.");
     });
 
     test('a SQL fragment is replaced', () {
@@ -175,13 +182,14 @@ void main() {
 
   group('retry-after', () {
     test('is read from the header', () {
-      final f = map(429,
-          body: v1('RATE_LIMITED'), headers: {'retry-after': '30'});
+      final f =
+          map(429, body: v1('RATE_LIMITED'), headers: {'retry-after': '30'});
       expect((f as RateLimitFailure).retryAfter, const Duration(seconds: 30));
     });
 
     test('is null when absent or unparseable', () {
-      expect((map(429, body: v1('RATE_LIMITED')) as RateLimitFailure).retryAfter,
+      expect(
+          (map(429, body: v1('RATE_LIMITED')) as RateLimitFailure).retryAfter,
           isNull);
       expect(
           (map(429, body: v1('RATE_LIMITED'), headers: {'retry-after': 'soon'})

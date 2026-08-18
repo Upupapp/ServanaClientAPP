@@ -41,8 +41,7 @@ class BookingExperiencesCompatibilityDataSource
 
   @override
   Future<List<AdditionalWorkRequest>> additionalWork(String bookingId) async {
-    final result =
-        await _api.getBookingAdditionalWork(int.parse(bookingId));
+    final result = await _api.getBookingAdditionalWork(int.parse(bookingId));
 
     // `data` or `requests` or the root. The same tolerance every other
     // compatibility source in this repo carries, and for the same reason: a

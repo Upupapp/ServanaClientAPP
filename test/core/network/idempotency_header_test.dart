@@ -43,7 +43,8 @@ void main() {
 
   group('the canonical idempotency header', () {
     test('is sent as Idempotency-Key', () async {
-      final api = clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
+      final api =
+          clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
 
       await api.post('/api/v1/bookings/42/cancel',
           body: <String, dynamic>{'reason': 'x'},
@@ -59,7 +60,8 @@ void main() {
       // sent under this name is indistinguishable from no key at all — the
       // exact defect this tab found and the reason to pin it rather than
       // assume the fix stays.
-      final api = clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
+      final api =
+          clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
 
       await api.post('/api/v1/bookings/42/cancel',
           idempotencyKey: 'idm_abc12345');
@@ -71,7 +73,8 @@ void main() {
       // Absent and malformed are different to the backend: absent is allowed on
       // these routes, malformed is IDEMPOTENCY_KEY_INVALID. An empty header
       // would turn one into the other.
-      final api = clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
+      final api =
+          clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
 
       await api.post('/api/v1/bookings/42/otp/request');
 
@@ -101,7 +104,8 @@ void main() {
     });
 
     test('a malformed key trips an assertion rather than being sent', () async {
-      final api = clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
+      final api =
+          clientReturning(<String, dynamic>{'data': <String, dynamic>{}});
 
       // Too short for the 8-character floor, and `@` is outside the alphabet.
       expect(

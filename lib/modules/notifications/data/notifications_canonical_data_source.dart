@@ -51,7 +51,9 @@ class NotificationsCanonicalDataSource implements NotificationsDataSource {
       mapItem: mapNotification,
       itemsKey: 'notifications',
       limit: _pageLimit,
-      query: <String, dynamic>{if (filter != null && filter.isNotEmpty) 'filter': filter},
+      query: <String, dynamic>{
+        if (filter != null && filter.isNotEmpty) 'filter': filter
+      },
     );
     return page.items;
   }

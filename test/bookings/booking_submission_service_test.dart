@@ -135,8 +135,10 @@ void main() {
       // Normalising that difference would change a live money payload for
       // tidiness, which is not this tab's mandate.
       expect((aircon().toPayload()['pricing'] as Map)['optionId'], 180);
-      expect((beautyWellness().toPayload()['pricing'] as Map)
-          .containsKey('optionId'), isFalse);
+      expect(
+          (beautyWellness().toPayload()['pricing'] as Map)
+              .containsKey('optionId'),
+          isFalse);
     });
 
     test('branchId appears only when the flow has one', () {
@@ -196,7 +198,8 @@ void main() {
       final journal = FakeJournal();
       final api = FakeBookingApi(
         onCall: () => expect(
-          journal.recorded, hasLength(1),
+          journal.recorded,
+          hasLength(1),
           reason: 'a record written after the response does not exist for '
               'exactly the failure it is meant to survive',
         ),
@@ -221,7 +224,8 @@ void main() {
         customerId: () async => 'cust-1',
       );
 
-      await service.submit(request: aircon(), idempotencyKey: () => 'stable-key');
+      await service.submit(
+          request: aircon(), idempotencyKey: () => 'stable-key');
 
       expect(api.calls.single.idempotencyKey, 'stable-key');
     });
@@ -288,7 +292,8 @@ void main() {
       );
 
       await service.submit(request: aircon(), idempotencyKey: () => 'k1');
-      await service.submit(request: beautyWellness(), idempotencyKey: () => 'k2');
+      await service.submit(
+          request: beautyWellness(), idempotencyKey: () => 'k2');
 
       // The acceptance gate: one contract, no per-category state machine.
       expect(api.calls, hasLength(2));

@@ -56,7 +56,8 @@ Map<String, dynamic> hitJson({
     };
 
 Map<String, dynamic> resultsJson(List<Map<String, dynamic>> hits,
-        {int? total, List<String> expanded = const ['aircon', 'air conditioning']}) =>
+        {int? total,
+        List<String> expanded = const ['aircon', 'air conditioning']}) =>
     <String, dynamic>{
       'query': 'aircon',
       'expandedTerms': expanded,
@@ -143,8 +144,8 @@ void main() {
 
     test('queries /api/v1/search with q, types and limit', () async {
       final urls = <Uri>[];
-      final source =
-          SearchCanonicalDataSource(clientRecording(urls, resultsJson([hitJson()])));
+      final source = SearchCanonicalDataSource(
+          clientRecording(urls, resultsJson([hitJson()])));
 
       await source.query('aircon', limit: 20);
 
@@ -152,8 +153,8 @@ void main() {
       expect(urls.single.queryParameters['q'], 'aircon');
       // Explicit, so a server-side change to the default cannot silently alter
       // what this screen shows.
-      expect(urls.single.queryParameters['types'],
-          'category,subcategory,service');
+      expect(
+          urls.single.queryParameters['types'], 'category,subcategory,service');
       expect(urls.single.queryParameters['limit'], '20');
     });
 

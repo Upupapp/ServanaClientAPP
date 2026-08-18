@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   AuthFailureCopy copyFor(String code, {ApiFailure? failure}) =>
-      AuthFailureCopy.of(failure ?? StateConflictFailure(safeMessage: 'x', code: code));
+      AuthFailureCopy.of(
+          failure ?? StateConflictFailure(safeMessage: 'x', code: code));
 
   group('the six codes the Master Command names', () {
     test('INVALID_CREDENTIALS asks them to retype', () {
@@ -79,7 +80,8 @@ void main() {
     });
 
     test('validation asks them to check the details', () {
-      final copy = AuthFailureCopy.of(const ValidationFailure(safeMessage: 'x'));
+      final copy =
+          AuthFailureCopy.of(const ValidationFailure(safeMessage: 'x'));
       expect(copy.recovery, AuthRecovery.retryInput);
     });
 

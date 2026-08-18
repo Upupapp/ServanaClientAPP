@@ -52,13 +52,15 @@ abstract interface class IdentityDataSource {
   /// has no route for this at all and says so by throwing an
   /// [UnsupportedTransportOperation], which the repository turns into a
   /// deterministic failure rather than a silent no-op.
-  Future<void> verifyMobile({required String mobileNumber, required String otp});
+  Future<void> verifyMobile(
+      {required String mobileNumber, required String otp});
 
   /// Starts a password reset for [email].
   Future<void> forgotPassword(String email);
 
   /// Completes a password reset.
-  Future<void> resetPassword({required String token, required String newPassword});
+  Future<void> resetPassword(
+      {required String token, required String newPassword});
 
   /// Revokes the session server-side. Best-effort by contract: the caller
   /// clears local state regardless of the outcome.

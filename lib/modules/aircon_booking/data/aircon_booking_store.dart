@@ -7,7 +7,8 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/common/domain/booking/booking_create_request.dart';
-import 'package:client/common/domain/booking/booking_draft.dart' show BookingFlowType;
+import 'package:client/common/domain/booking/booking_draft.dart'
+    show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';

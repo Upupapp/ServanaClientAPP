@@ -104,8 +104,7 @@ class BookingCreateRequest {
     if (userAddressId.trim().isEmpty) {
       problems.add(BookingRequestInvalidity.noAddress);
     }
-    if (requiresBranch &&
-        (branchId == null || '$branchId'.trim().isEmpty)) {
+    if (requiresBranch && (branchId == null || '$branchId'.trim().isEmpty)) {
       problems.add(BookingRequestInvalidity.noBranch);
     }
     if (schedule == null) {

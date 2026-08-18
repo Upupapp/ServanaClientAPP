@@ -45,8 +45,7 @@ class CatalogRepository {
     CatalogDataSource? canonical,
     CanonicalRouter? router,
     CatalogCache? canonicalCache,
-  })  : _compatibility =
-            compatibility ?? CatalogCompatibilityDataSource(api),
+  })  : _compatibility = compatibility ?? CatalogCompatibilityDataSource(api),
         _canonical = canonical,
         _router = router,
         _cache = cache ?? CatalogCache(),
@@ -86,7 +85,8 @@ class CatalogRepository {
 
   /// True when catalog reads are going to `/api/v1`. Diagnostics only.
   bool get isCanonical =>
-      _canonical != null && (_router?.isCanonical(V1Capability.catalog) ?? false);
+      _canonical != null &&
+      (_router?.isCanonical(V1Capability.catalog) ?? false);
 
   /// Loads the catalog, preferring a fresh cache.
   ///

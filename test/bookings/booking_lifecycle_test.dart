@@ -43,7 +43,8 @@ class _Recorder {
     httpClient: MockClient((request) async {
       recorder.requests.add(request);
       recorder.bodies.add(request.body);
-      final r = responses[index < responses.length ? index++ : responses.length - 1];
+      final r =
+          responses[index < responses.length ? index++ : responses.length - 1];
       return http.Response(jsonEncode(r.body), r.status,
           headers: <String, String>{'content-type': 'application/json'});
     }),
@@ -201,7 +202,8 @@ void main() {
         ),
       );
       final repo = BookingLifecycleRepository(
-        compatibility: BookingLifecycleCompatibilityDataSource(_FakeLegacyApi()),
+        compatibility:
+            BookingLifecycleCompatibilityDataSource(_FakeLegacyApi()),
         canonical: canonical(const []).source,
         router: readsOnly,
       );
@@ -211,7 +213,8 @@ void main() {
 
     test('a half-wired injector falls back rather than routing at nothing', () {
       final repo = BookingLifecycleRepository(
-        compatibility: BookingLifecycleCompatibilityDataSource(_FakeLegacyApi()),
+        compatibility:
+            BookingLifecycleCompatibilityDataSource(_FakeLegacyApi()),
         router: _onCanonical, // capability on, but no canonical source given
       );
       expect(repo.isCanonical, isFalse);
@@ -460,8 +463,9 @@ void main() {
         () async {
       // Zero means "no attempts left" and would disable a button that works.
       // Null means "we cannot say", which is the truth on this transport.
-      final state = await BookingLifecycleCompatibilityDataSource(_FakeLegacyApi())
-          .otpStatus(bookingId: '42');
+      final state =
+          await BookingLifecycleCompatibilityDataSource(_FakeLegacyApi())
+              .otpStatus(bookingId: '42');
 
       expect(state.attemptsRemaining, isNull);
       expect(state.issuesRemaining, isNull);
@@ -615,7 +619,8 @@ void main() {
       // customer discovering that by being refused is the outcome the flag
       // exists to prevent.
       final repo = BookingLifecycleRepository(
-        compatibility: BookingLifecycleCompatibilityDataSource(_FakeLegacyApi()),
+        compatibility:
+            BookingLifecycleCompatibilityDataSource(_FakeLegacyApi()),
       );
 
       expect(repo.canOfferReschedule, isFalse);

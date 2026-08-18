@@ -46,7 +46,8 @@ class BookingExperiencesCanonicalDataSource
 
   @override
   Future<List<AdditionalWorkRequest>> additionalWork(String bookingId) async {
-    final envelope = await _api.get(V1Endpoints.bookingAdditionalWork(bookingId));
+    final envelope =
+        await _api.get(V1Endpoints.bookingAdditionalWork(bookingId));
     return envelope
         .listAt('requests')
         .map((row) =>
@@ -84,8 +85,8 @@ class BookingExperiencesCanonicalDataSource
                   bookingId: bookingId)
             ]
           : const <BookingDispute>[],
-      categories: BookingDisputes.fromApiMap(data, bookingId: bookingId)
-          .categories,
+      categories:
+          BookingDisputes.fromApiMap(data, bookingId: bookingId).categories,
     );
   }
 }

@@ -71,7 +71,8 @@ class SearchRepository {
 
   /// True when queries are answered by `/api/v1/search`. Diagnostics only.
   bool get isCanonical =>
-      _canonical != null && (_router?.isCanonical(V1Capability.search) ?? false);
+      _canonical != null &&
+      (_router?.isCanonical(V1Capability.search) ?? false);
 
   /// Prepares the active transport and refreshes the chips.
   ///

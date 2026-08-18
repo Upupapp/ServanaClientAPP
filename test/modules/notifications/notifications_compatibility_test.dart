@@ -156,7 +156,8 @@ void main() {
           router: router,
         );
 
-    test('defaults to the compatibility source when nothing is wired', () async {
+    test('defaults to the compatibility source when nothing is wired',
+        () async {
       final legacy = _FakeLegacySource();
       final repo = repositoryWith(legacy: legacy);
       await repo.fetchNotifications(uid: 'u1');
@@ -164,7 +165,8 @@ void main() {
       expect(repo.isCanonical, isFalse);
     });
 
-    test('stays on the compatibility source while the gate is closed', () async {
+    test('stays on the compatibility source while the gate is closed',
+        () async {
       // This is the state of every shipped build: /api/v1 is not deployed.
       final legacy = _FakeLegacySource();
       final repo = repositoryWith(

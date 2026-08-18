@@ -37,7 +37,8 @@ class _FakeSource implements IdentityDataSource {
       _maybeThrow('resendEmailVerification', null);
 
   @override
-  Future<void> verifyEmail({required String email, required String otp}) async =>
+  Future<void> verifyEmail(
+          {required String email, required String otp}) async =>
       _maybeThrow('verifyEmail', null);
 
   @override
@@ -63,7 +64,8 @@ class _FakeSource implements IdentityDataSource {
 }
 
 void main() {
-  V1ApiClient canonicalReturning(Object body, {int status = 200}) => V1ApiClient(
+  V1ApiClient canonicalReturning(Object body, {int status = 200}) =>
+      V1ApiClient(
         baseUrl: 'https://api.example.test',
         httpClient: MockClient((_) async => http.Response(
               jsonEncode(body),
@@ -150,8 +152,7 @@ void main() {
           throwOnCall: const ForbiddenFailure(safeMessage: 'no'),
         ),
       );
-      await expectLater(
-          repo.fetchIdentity(), throwsA(isA<ForbiddenFailure>()));
+      await expectLater(repo.fetchIdentity(), throwsA(isA<ForbiddenFailure>()));
     });
 
     test('an unsupported operation is deterministic and NOT retryable',
@@ -176,8 +177,7 @@ void main() {
       final repo = IdentityRepository(
         compatibility: _FakeSource(throwOnCall: Exception('socket')),
       );
-      await expectLater(
-          repo.fetchIdentity(), throwsA(isA<RetryableFailure>()));
+      await expectLater(repo.fetchIdentity(), throwsA(isA<RetryableFailure>()));
     });
   });
 
@@ -208,7 +208,11 @@ void main() {
         baseUrl: 'https://api.example.test',
         httpClient: MockClient((request) async {
           urls.add(request.url);
-          return http.Response(jsonEncode({'data': {'uid': 'u1'}}), 200);
+          return http.Response(
+              jsonEncode({
+                'data': {'uid': 'u1'}
+              }),
+              200);
         }),
       );
       await IdentityCanonicalDataSource(client).fetchIdentity();

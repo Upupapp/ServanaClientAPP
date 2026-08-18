@@ -158,7 +158,13 @@ void main() {
       final keyed = CatalogCanonicalDataSource(v1Returning({
         'data': {
           'categories': [
-            {'id': 1, 'name': 'A', 'slug': 'a', 'displayOrder': 1, 'subcategories': []}
+            {
+              'id': 1,
+              'name': 'A',
+              'slug': 'a',
+              'displayOrder': 1,
+              'subcategories': []
+            }
           ]
         }
       }));
@@ -166,7 +172,13 @@ void main() {
 
       final bare = CatalogCanonicalDataSource(v1Returning({
         'data': [
-          {'id': 2, 'name': 'B', 'slug': 'b', 'displayOrder': 1, 'subcategories': []}
+          {
+            'id': 2,
+            'name': 'B',
+            'slug': 'b',
+            'displayOrder': 1,
+            'subcategories': []
+          }
         ]
       }));
       expect((await bare.fetchCategories()).single.id, 2);

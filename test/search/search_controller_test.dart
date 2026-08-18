@@ -209,7 +209,10 @@ void main() {
       // promise to answer them in order. Without the sequence guard, the slow
       // answer to "aircon" lands last and the screen shows aircon results for a
       // box that reads "massage".
-      final repo = _SlowSearchRepository([_kAircon, _kMassage], {
+      final repo = _SlowSearchRepository([
+        _kAircon,
+        _kMassage
+      ], {
         'aircon': const Duration(milliseconds: 120),
         'massage': const Duration(milliseconds: 10),
       });

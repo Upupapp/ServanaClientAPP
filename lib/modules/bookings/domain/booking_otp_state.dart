@@ -192,7 +192,8 @@ class BookingOtpState {
         isBackendDerived: isBackendDerived,
       );
 
-  static int? _int(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}');
+  static int? _int(Object? v) =>
+      v is num ? v.toInt() : int.tryParse('${v ?? ''}');
 }
 
 /// The receipt from requesting a code.

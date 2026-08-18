@@ -22,7 +22,8 @@ void main() {
     var i = 0;
     final mock = MockClient((request) async {
       sent.add(request);
-      final response = responses[i < responses.length ? i : responses.length - 1];
+      final response =
+          responses[i < responses.length ? i : responses.length - 1];
       i++;
       return response;
     });
@@ -37,13 +38,15 @@ void main() {
     );
   }
 
-  http.Response ok(Object body) =>
-      http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
+  http.Response ok(Object body) => http.Response(jsonEncode(body), 200,
+      headers: {'content-type': 'application/json'});
 
   group('URL construction', () {
     test('joins the base URL with a canonical path and never hard-codes a host',
         () async {
-      final c = clientThat([ok({'data': {}})]);
+      final c = clientThat([
+        ok({'data': {}})
+      ]);
       await c.client.get(V1Endpoints.notifications());
       expect(c.sent.single.url.toString(),
           'https://api.example.test/api/v1/notifications');
@@ -63,9 +66,11 @@ void main() {
     });
 
     test('drops null query parameters instead of sending "null"', () async {
-      final c = clientThat([ok({'data': {}})]);
-      await c.client
-          .get(V1Endpoints.notifications(), query: {'filter': null, 'limit': 10});
+      final c = clientThat([
+        ok({'data': {}})
+      ]);
+      await c.client.get(V1Endpoints.notifications(),
+          query: {'filter': null, 'limit': 10});
       final q = c.sent.single.url.queryParameters;
       expect(q.containsKey('filter'), isFalse);
       expect(q['limit'], '10');
@@ -73,14 +78,17 @@ void main() {
 
     test('percent-encodes path segments', () {
       // An id from a deep link containing a slash must not retarget the route.
-      expect(V1Endpoints.booking('7/../admin'),
-          '/api/v1/bookings/7%2F..%2Fadmin');
+      expect(
+          V1Endpoints.booking('7/../admin'), '/api/v1/bookings/7%2F..%2Fadmin');
     });
   });
 
   group('headers', () {
     test('sends a unique request id on every request', () async {
-      final c = clientThat([ok({'data': {}}), ok({'data': {}})]);
+      final c = clientThat([
+        ok({'data': {}}),
+        ok({'data': {}})
+      ]);
       await c.client.get(V1Endpoints.me());
       await c.client.get(V1Endpoints.me());
       final ids = c.sent
@@ -92,25 +100,30 @@ void main() {
     });
 
     test('sends the correlation id across the calls of one intent', () async {
-      final c = clientThat([ok({'data': {}}), ok({'data': {}})]);
+      final c = clientThat([
+        ok({'data': {}}),
+        ok({'data': {}})
+      ]);
       final intent = CorrelationContext.start();
       await c.client.get(V1Endpoints.me(), correlation: intent);
       await c.client.post(V1Endpoints.conversations(), correlation: intent);
-      final correlations = c.sent
-          .map((r) => r.headers[RequestIds.correlationHeader])
-          .toSet();
+      final correlations =
+          c.sent.map((r) => r.headers[RequestIds.correlationHeader]).toSet();
       expect(correlations, <String>{intent.correlationId});
     });
 
     test('attaches the bearer token when one resolves', () async {
-      final c = clientThat([ok({'data': {}})],
-          tokenProvider: () async => 'tok_123');
+      final c = clientThat([
+        ok({'data': {}})
+      ], tokenProvider: () async => 'tok_123');
       await c.client.get(V1Endpoints.me());
       expect(c.sent.single.headers['Authorization'], 'Bearer tok_123');
     });
 
     test('sends no Authorization header for an anonymous call', () async {
-      final c = clientThat([ok({'data': {}})], tokenProvider: () async => null);
+      final c = clientThat([
+        ok({'data': {}})
+      ], tokenProvider: () async => null);
       await c.client.get(V1Endpoints.catalog());
       expect(c.sent.single.headers.containsKey('Authorization'), isFalse);
     });
@@ -118,8 +131,9 @@ void main() {
     test('a throwing token provider does not fail the request', () async {
       // Secure storage can throw for reasons unrelated to this call, and a
       // public endpoint needs no token at all.
-      final c = clientThat([ok({'data': {}})],
-          tokenProvider: () async => throw StateError('keychain locked'));
+      final c = clientThat([
+        ok({'data': {}})
+      ], tokenProvider: () async => throw StateError('keychain locked'));
       await c.client.get(V1Endpoints.catalog());
       expect(c.sent.single.headers.containsKey('Authorization'), isFalse);
     });
@@ -133,7 +147,9 @@ void main() {
       //
       // The key also has to satisfy ^[A-Za-z0-9_.:-]{8,128}$, so `key_1` is
       // now too short to send at all — see idempotency_header_test.dart.
-      final c = clientThat([ok({'data': {}})]);
+      final c = clientThat([
+        ok({'data': {}})
+      ]);
       await c.client
           .post(V1Endpoints.conversations(), idempotencyKey: 'idm_key_00001');
       expect(c.sent.single.headers['idempotency-key'], 'idm_key_00001');
@@ -144,7 +160,8 @@ void main() {
   group('failure mapping', () {
     test('throws a typed failure rather than a status code', () async {
       final c = clientThat([
-        http.Response('{"error":{"code":"BOOKING_TERMINAL","message":"Done"}}', 409)
+        http.Response(
+            '{"error":{"code":"BOOKING_TERMINAL","message":"Done"}}', 409)
       ]);
       await expectLater(
         c.client.get(V1Endpoints.booking('1')),
@@ -156,7 +173,9 @@ void main() {
     test('a 401 notifies the session layer exactly once', () async {
       var calls = 0;
       final c = clientThat(
-        [http.Response('{"error":{"code":"TOKEN_EXPIRED","message":"x"}}', 401)],
+        [
+          http.Response('{"error":{"code":"TOKEN_EXPIRED","message":"x"}}', 401)
+        ],
         onUnauthorized: () => calls++,
       );
       await expectLater(
@@ -183,7 +202,9 @@ void main() {
     test('retries a GET on a retryable failure and then succeeds', () async {
       final c = clientThat([
         http.Response('{"error":{"code":"INTERNAL","message":"x"}}', 500),
-        ok({'data': {'id': 1}}),
+        ok({
+          'data': {'id': 1}
+        }),
       ]);
       final envelope = await c.client.get(
         V1Endpoints.me(),
@@ -226,7 +247,9 @@ void main() {
     test('retries a mutation that carries an idempotency key', () async {
       final c = clientThat([
         http.Response('{"error":{"code":"INTERNAL","message":"x"}}', 500),
-        ok({'data': {'ok': true}}),
+        ok({
+          'data': {'ok': true}
+        }),
       ]);
       final envelope = await c.client.post(
         V1Endpoints.conversations(),

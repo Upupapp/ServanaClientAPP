@@ -39,7 +39,8 @@ void main() {
     ]) {
       final source = read(path);
       // None of them re-derives the answer from a booking payload any more.
-      expect(source, isNot(contains('PaymentStatusParser.isPaid')), reason: path);
+      expect(source, isNot(contains('PaymentStatusParser.isPaid')),
+          reason: path);
       expect(source, contains('PaymentsRepository'), reason: path);
     }
   });

@@ -243,8 +243,7 @@ void main() {
       expect(result.canLeaveReview, isFalse);
     });
 
-    test('getEligibility synthesises a refusal when a review exists',
-        () async {
+    test('getEligibility synthesises a refusal when a review exists', () async {
       // The existing ReviewFormController asks this and nothing else. Before
       // TAB 14 it consulted the eligibility route alone and never looked for a
       // review, so it could open a form on an already-reviewed booking.

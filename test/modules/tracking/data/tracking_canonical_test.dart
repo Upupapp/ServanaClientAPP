@@ -167,9 +167,8 @@ void main() {
       }
 
       // And no two of them say the same thing.
-      final messages = TrackingWithheldReason.values
-          .map((r) => r.customerMessage)
-          .toSet();
+      final messages =
+          TrackingWithheldReason.values.map((r) => r.customerMessage).toSet();
       expect(messages.length, TrackingWithheldReason.values.length);
     });
 
@@ -240,7 +239,8 @@ void main() {
       // it must not claim to be the server's answer, because the legacy route
       // cannot distinguish that from "wrong state" or "window closed".
       expect(state.visibility.isVisible, isFalse);
-      expect(state.visibility.reason, TrackingWithheldReason.noPositionReported);
+      expect(
+          state.visibility.reason, TrackingWithheldReason.noPositionReported);
       expect(state.visibility.isBackendDerived, isFalse);
     });
   });

@@ -94,7 +94,10 @@ class _BookingRescheduleSheetState extends State<BookingRescheduleSheet> {
   bool _isRefusedOutright = false;
 
   bool get _canSubmit =>
-      _proposed != null && _reason != null && !_isSubmitting && !_isRefusedOutright;
+      _proposed != null &&
+      _reason != null &&
+      !_isSubmitting &&
+      !_isRefusedOutright;
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
@@ -322,7 +325,8 @@ class _BookingRescheduleSheetState extends State<BookingRescheduleSheet> {
 
             if (_error != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -374,8 +378,9 @@ class _BookingRescheduleSheetState extends State<BookingRescheduleSheet> {
                   ),
                   const SizedBox(height: 10),
                   OutlinedButton(
-                    onPressed:
-                        _isSubmitting ? null : () => Navigator.of(context).pop(),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ColorPalette.primaryColorDark,
                       side: BorderSide(

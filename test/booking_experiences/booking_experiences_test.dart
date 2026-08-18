@@ -60,8 +60,7 @@ class _FakeLegacyApi extends Fake implements ServanaApiClient {
 }
 
 CanonicalRouter routerWith(Set<V1Capability> caps) => CanonicalRouter(
-      availability:
-          CanonicalAvailability(enabled: true, capabilities: caps),
+      availability: CanonicalAvailability(enabled: true, capabilities: caps),
     );
 
 void main() {
@@ -136,7 +135,12 @@ void main() {
       //
       // Asserted against the interface's own surface, so adding one later is a
       // visible decision rather than a quiet drift.
-      const members = <String>['supportsDisputes', 'additionalWork', 'disputes', 'openDispute'];
+      const members = <String>[
+        'supportsDisputes',
+        'additionalWork',
+        'disputes',
+        'openDispute'
+      ];
       expect(members, isNot(contains('raiseAdditionalWork')));
       expect(members, isNot(contains('createAdditionalWork')));
       expect(members.length, 4,
@@ -183,7 +187,11 @@ void main() {
       final api = _FakeLegacyApi()
         ..additionalResponse = <String, dynamic>{
           'data': <Map<String, dynamic>>[
-            <String, dynamic>{'id': 1, 'status': 'ACCEPTED', 'total_amount': 500},
+            <String, dynamic>{
+              'id': 1,
+              'status': 'ACCEPTED',
+              'total_amount': 500
+            },
           ],
         };
 
@@ -234,8 +242,12 @@ void main() {
       // Mirrored from the CASE WHEN status IN (…) in getByBooking. If the two
       // drift, a client explains a null the server did not send.
       const backendSet = <String>{
-        'WAITING_FOR_PAYMENT', 'WAITING_WORKER_APPROVAL', 'ACCEPTED',
-        'IN_PROGRESS', 'PROCEEDING', 'COMPLETED',
+        'WAITING_FOR_PAYMENT',
+        'WAITING_WORKER_APPROVAL',
+        'ACCEPTED',
+        'IN_PROGRESS',
+        'PROCEEDING',
+        'COMPLETED',
       };
       for (final s in AdditionalWorkStatus.values) {
         expect(s.carriesApprovedAmount, backendSet.contains(s.wireName),
@@ -267,8 +279,8 @@ void main() {
       );
 
       expect(repo.canOpenDispute, isFalse);
-      await expectLater(repo.disputes('42'),
-          throwsA(isA<UnsupportedExperienceAction>()));
+      await expectLater(
+          repo.disputes('42'), throwsA(isA<UnsupportedExperienceAction>()));
       await expectLater(
         repo.openDispute(
           bookingId: '42',
@@ -299,7 +311,8 @@ void main() {
 
       final result = await c.source.disputes('42');
 
-      expect(c.recorder.requests.single.url.path, '/api/v1/bookings/42/disputes');
+      expect(
+          c.recorder.requests.single.url.path, '/api/v1/bookings/42/disputes');
       // Categories arrive even with ZERO disputes — the route returns them
       // unconditionally, which is what makes one call sufficient.
       expect(result.disputes, isEmpty);

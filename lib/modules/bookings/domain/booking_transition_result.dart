@@ -63,8 +63,9 @@ class BookingTransitionResult {
 
   static BookingTransitionResult fromApiMap(Map<String, dynamic> json) {
     final state = json['state'];
-    final projection =
-        state is Map ? Map<String, dynamic>.from(state) : const <String, dynamic>{};
+    final projection = state is Map
+        ? Map<String, dynamic>.from(state)
+        : const <String, dynamic>{};
 
     return BookingTransitionResult(
       bookingId: '${json['bookingId'] ?? ''}',
