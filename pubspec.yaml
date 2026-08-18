@@ -101,6 +101,10 @@ dependencies:
   easy_stepper: 0.8.5+1
   http: ^1.6.0
   webview_flutter: ^4.13.1
+  # Receives App Link / Universal Link arrivals (TAB 14). Without a listener
+  # the resolver is a foundation with no callers and every claimed URL opens
+  # the app to nothing. >=1.0, so a caret is a real constraint here.
+  app_links: ^7.2.1
   url_launcher: ^6.2.5
   qr_flutter: ^4.1.0
   crypto: ^3.0.5

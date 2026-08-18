@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
+import 'package:client/common/domain/deep_links/deep_link_coordinator.dart';
+import 'package:client/common/services/auth_state_service.dart';
+import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
 import 'package:client/common/presentation/version_gate/version_gate_barrier.dart';
 import 'package:client/common/constants/color_palette.dart';
 
@@ -146,6 +150,7 @@ class _MyAppState extends State<MyApp> {
   late final AppLifecycleCoordinator _lifecycleCoord;
   late final ConnectivityMonitor _connectivity;
   late final ScreenAnalyticsObserver _screenObserver;
+  DeepLinkCoordinator? _deepLinks;
 
   @override
   void initState() {
@@ -167,6 +172,28 @@ class _MyAppState extends State<MyApp> {
     // then attach it to the WidgetsBinding.
     _lifecycleCoord = dpLocator<AppLifecycleCoordinator>();
     _lifecycleCoord.attach();
+
+    // TAB 14: receive App Links and Universal Links.
+    //
+    // Without this the resolver has no callers and every URL the manifest and
+    // the entitlements now CLAIM would open the app to nothing. It fails safely
+    // today only because App Link verification fails while assetlinks.json is
+    // unhosted — so the trap would have sprung on whoever hosted the files.
+    //
+    // Cold start and warm start are separate events: a link that launches a
+    // terminated app arrives once at startup, and handling only the stream
+    // loses the majority of real links.
+    final appLinks = AppLinks();
+    _deepLinks = DeepLinkCoordinator(
+      initialLink: appLinks.getInitialLink,
+      linkStream: appLinks.uriLinkStream,
+      navigate: (location) => _router.go(location),
+      navigateToAuthGate: (gateRoute, intent) =>
+          _router.go(gateRoute, extra: intent),
+      isAuthenticated: () => dpLocator<AuthStateService>().isAuthenticated,
+      authGateRoute: AuthenticationGateScreen.route,
+    );
+    unawaited(_deepLinks!.start());
 
     // STITCH FAIL-01: handle notification taps when app was terminated (cold start).
     FirebaseMessaging.instance.getInitialMessage().then((message) {
@@ -205,6 +232,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    unawaited(_deepLinks?.dispose() ?? Future<void>.value());
     _screenObserver.detach();
     _lifecycleCoord.detach();
     _connectivity.dispose(); // STITCH WARN-03
