@@ -71,10 +71,12 @@ Fixes can be written and committed locally; **deploy and re-probe are manual.**
 
 **Owner:** backend owner · **Raised:** TAB 01
 
-`/Users/user/servana_api` is **2 commits ahead of `origin/main`** with an
-untracked `cc.tmp.ts`. The contract snapshot committed here is therefore
-stamped `0aaf89f-dirty`. `contract.ts` itself is unmodified, so the snapshot is
-sound — but the stamp should read clean before it is cited as launch evidence.
+`/Users/user/servana_api` is **2 commits ahead of `origin/main`** (`fca1ed1`,
+`0aaf89f`) with an untracked `cc.tmp.ts`. Those two commits are the Servana
+**Provider Web** programme's TAB 01 work on the shared backend — accounted for,
+not unexplained drift. `contract.ts` itself is unmodified, so the snapshot
+committed here is sound, but it is stamped `0aaf89f-dirty` and that stamp
+should read clean before it is cited as launch evidence.
 
 ---
 
