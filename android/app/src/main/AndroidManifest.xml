@@ -47,6 +47,39 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Android App Links (TAB 14).
+
+                 The app had no deep links of its own: one launcher filter, and
+                 one browsable filter belonging to the Facebook login redirect.
+                 Email and push links could not open the app at all, which caps
+                 the value of every notification and blocks password reset from
+                 completing in-app.
+
+                 `autoVerify="true"` makes Android fetch
+                 https://<host>/.well-known/assetlinks.json and check this app's
+                 release signing certificate against it. Until that file is
+                 hosted with the RELEASE fingerprint, verification FAILS and
+                 these links open in the browser — which is the safe direction,
+                 and why shipping this before the file exists costs nothing.
+
+                 Paths are enumerated rather than wildcarded so the app claims
+                 exactly what DeepLinkResolver.claimedPrefixes resolves. A
+                 claimed path the resolver returns null for opens the app to
+                 nothing. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="servana.com.ph" />
+                <data android:scheme="https" android:host="www.servana.com.ph" />
+                <data android:scheme="https" android:host="app.servana.com.ph" />
+                <data android:pathPrefix="/bookings" />
+                <data android:pathPrefix="/conversations" />
+                <data android:pathPrefix="/notifications" />
+                <data android:pathPrefix="/services" />
+                <data android:pathPrefix="/reset-password" />
+            </intent-filter>
         </activity>
 
           <activity

@@ -28,6 +28,20 @@ abstract final class ServanaUrls {
   /// Refund terms share section 8 with cancellations.
   static const String refundPolicy = termsAndConditions;
 
+  /// Hosts this app accepts deep links from (TAB 14).
+  ///
+  /// Centralised here for the same reason the marketing URLs are: the Android
+  /// intent filters, the Apple association file and `DeepLinkResolver` must all
+  /// name the same set, and three copies of a host list is three chances to
+  /// disagree. Unlike the URLs above this is a SECURITY control — it is the
+  /// allow-list standing between a Universal Link handler and an
+  /// attacker-chosen host, so it is an exact set and never a suffix match.
+  static const Set<String> deepLinkHosts = <String>{
+    'servana.com.ph',
+    'www.servana.com.ph',
+    'app.servana.com.ph',
+  };
+
   /// Every externally-linked URL, for the reachability test.
   static const List<String> all = <String>[
     home,

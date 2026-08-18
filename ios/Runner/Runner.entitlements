@@ -16,6 +16,27 @@
 	     portal, and an APNs key uploaded to Firebase Console > Project settings
 	     > Cloud Messaging for the servana-59bee project. Neither can be done
 	     from this repository. -->
+	<!-- Universal Links (TAB 14).
+
+	     The entitlements file carried push and Sign in with Apple but no
+	     associated-domains key at all, so no https link could open the app on
+	     iOS. A password-reset link arriving by email had no way back into the
+	     app, which is what blocks TAB 07 from finishing.
+
+	     Requires the "Associated Domains" capability on App ID
+	     com.servana.client in the Apple Developer portal, and
+	     /.well-known/apple-app-site-association served over HTTPS as
+	     application/json, with NO extension and NO redirect. That single detail
+	     is the most common cause of a silent Universal Link failure.
+
+	     Until the file is served, iOS simply does not open these links — it
+	     fails toward the browser, never toward the wrong screen. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:servana.com.ph</string>
+		<string>applinks:www.servana.com.ph</string>
+		<string>applinks:app.servana.com.ph</string>
+	</array>
 	<key>aps-environment</key>
 	<string>development</string>
 	<!-- Sign in with Apple.

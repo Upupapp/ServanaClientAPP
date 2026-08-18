@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["2K2SF7NRQP.com.servana.client"],
+        "components": [
+          { "/": "/bookings/*", "comment": "booking detail and list" },
+          { "/": "/conversations/*", "comment": "conversation" },
+          { "/": "/notifications*", "comment": "notification centre" },
+          { "/": "/services/*", "comment": "service detail — public" },
+          { "/": "/reset-password*", "comment": "password reset" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["2K2SF7NRQP.com.servana.client"]
+  }
+}
