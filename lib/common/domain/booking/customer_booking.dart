@@ -31,6 +31,12 @@ class CustomerBooking {
     this.assignedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.effectiveWireStatus = '',
+    this.latitude,
+    this.longitude,
+    this.downPayment = 0,
+    this.numberOfPersonnel = 0,
+    this.hasResolvedSchedule = true,
   });
 
   // ── Identity ────────────────────────────────────────────────────────────────
@@ -89,6 +95,40 @@ class CustomerBooking {
   // ── Timestamps ──────────────────────────────────────────────────────────────
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// The status the customer should be shown, after the booking row, the
+  /// backend's projection and the worker's own status have been reconciled.
+  ///
+  /// [status] and [rawStatus] describe the BOOKING row alone.
+  /// `BookingStatusMapper.effectiveWireStatus` is the rule that decides which
+  /// of three sources wins, and the booking detail screen has always applied
+  /// it. Carrying only `rawStatus` would mean a screen reading this model saw
+  /// `CONFIRMED` for a booking whose provider is already `IN_PROGRESS`.
+  final String effectiveWireStatus;
+
+  /// Service destination coordinates, **null when unknown**.
+  ///
+  /// Never 0. `getBookingById` selects no coordinate columns — they live in
+  /// MongoDB keyed by `location_id` — so absence is the normal case, and a
+  /// zero here would beat the tracking screen's `?? 14.5995` Manila fallback
+  /// and plot the destination at 0°N 0°E in the Gulf of Guinea. Exactly (0, 0)
+  /// cannot be a Philippine service address, so it is read as unknown too.
+  final double? latitude;
+  final double? longitude;
+
+  /// Amount already paid up front, and how many people the job was booked for.
+  final double downPayment;
+  final int numberOfPersonnel;
+
+  /// False when [scheduledAt] is a substitute rather than the real schedule.
+  ///
+  /// [scheduledAt] is non-nullable and falls back to `now` so every screen has
+  /// something to render. That is right for display and dangerous for
+  /// anything that treats the value as fact: a reschedule sends the schedule
+  /// it last read as `expectedSchedule`, and a fabricated instant is refused
+  /// with BOOKING_SCHEDULE_CHANGED every time. A caller that needs the truth
+  /// checks this first.
+  final bool hasResolvedSchedule;
 
   // ── Derived convenience getters ─────────────────────────────────────────────
 
@@ -172,9 +212,9 @@ class CustomerBooking {
     final scheduleRaw =
         (json['scheduledAt'] ?? json['scheduleAt'] ?? json['schedule'])
             ?.toString();
-    final scheduledAt = scheduleRaw != null
-        ? (DateTime.tryParse(scheduleRaw) ?? DateTime.now())
-        : DateTime.now();
+    final parsedSchedule =
+        scheduleRaw != null ? DateTime.tryParse(scheduleRaw) : null;
+    final scheduledAt = parsedSchedule ?? DateTime.now();
 
     final createdRaw = json['createdAt']?.toString();
     final createdAt = createdRaw != null
@@ -202,22 +242,53 @@ class CustomerBooking {
               .toString(),
       status: BookingStatusMapper.fromString(rawStatus),
       rawStatus: rawStatus,
-      serviceName: (json['serviceName'] ??
+      // `serviceOptionName` FIRST. It is service_options.level_3 — the specific
+      // thing the customer chose and what checkout showed them — while
+      // `serviceName` is its level_2 parent. Reading the parent first renames
+      // the customer's booking to the family it belongs to.
+      serviceName: (json['serviceOptionName'] ??
+              json['serviceName'] ??
               json['merchantServiceName'] ??
               json['service_name'] ??
+              (json['service'] is Map
+                  ? (json['service'] as Map)['name']
+                  : null) ??
               '')
           .toString(),
-      serviceCategory: (json['serviceCategory'] ??
+      // `branchName` is in this chain because the branch IS the place the
+      // service belongs to, it was already joined and returned, and it was
+      // simply never read. The family is the last resort, not the first.
+      serviceCategory: (json['merchantName'] ??
+              json['branchName'] ??
+              json['providerName'] ??
+              json['serviceCategory'] ??
               json['categoryName'] ??
-              json['merchantName'] ??
               '')
           .toString(),
       servicePhotoUrl:
           (photoRaw != null && photoRaw.isNotEmpty) ? photoRaw : null,
       scheduledAt: scheduledAt,
-      addressLine: (json['address'] ?? json['addressLine'] ?? '').toString(),
+      addressLine: (json['addressLine'] ?? json['address'] ?? '').toString(),
       fullAddress: json['fullAddress']?.toString(),
-      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      // `totalAmount` is not a column on the bookings table and never was — it
+      // stores quoted_price and final_price. The backend now aliases
+      // COALESCE(final_price, quoted_price) AS total_amount, but the fallbacks
+      // stay: they keep this correct against a backend that has not been
+      // deployed yet, and finalPrice/quotedPrice are the names the admin
+      // portal and the provider app already use. Reading `totalAmount` alone
+      // is how every booking rendered as ₱0.00.
+      //
+      // Read through [_money], which tolerates int, double AND string. The
+      // chain this replaced was written as `(x as num?)?.toDouble() ?? … ??
+      // double.tryParse(x.toString())`, and those tryParse arms could never
+      // run: `as num?` on a String THROWS rather than yielding null, so a
+      // string-valued price crashed the parse before reaching its own
+      // fallback. Postgres numeric reaches JSON as any of the three depending
+      // on value and driver.
+      totalAmount: _money(json['totalAmount']) ??
+          _money(json['finalPrice']) ??
+          _money(json['quotedPrice']) ??
+          0.0,
       currency: (json['currency'] as String?) ?? 'PHP',
       paymentStatus: PaymentStatusParser.fromBooking(json).isEmpty
           ? 'PENDING'
@@ -241,7 +312,43 @@ class CustomerBooking {
       assignedAt: assignedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      effectiveWireStatus: BookingStatusMapper.effectiveWireStatus(
+        bookingStatus: rawStatus,
+        effectiveStatus: json['effectiveStatus']?.toString(),
+        workerStatus: (json['workerStatus'] ??
+                json['worker_status'] ??
+                json['assignmentStatus'])
+            ?.toString(),
+      ),
+      latitude: _coordinate(json['latitude']),
+      longitude: _coordinate(json['longitude']),
+      downPayment: _money(json['downPayment']) ?? 0.0,
+      numberOfPersonnel: _money(json['numberOfPersonnel'])?.toInt() ?? 0,
+      hasResolvedSchedule: parsedSchedule != null,
     );
+  }
+
+  /// A monetary or numeric value, whatever JSON type it arrived as.
+  ///
+  /// Returns null for absent and for unparseable, so a caller's `??` chain
+  /// decides the default rather than a cast deciding it by throwing. Never
+  /// use `as num?` on one of these fields: Postgres numeric can arrive as a
+  /// string, and that cast is an exception rather than a null.
+  static double? _money(Object? raw) {
+    if (raw == null) return null;
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw.toString());
+  }
+
+  /// A coordinate, or null when it is absent or exactly zero.
+  ///
+  /// Named rather than inlined so both axes read the same and neither can
+  /// drift back to `?? 0` — a zero survives every downstream `??` and is what
+  /// put the tracking destination in the Gulf of Guinea.
+  static double? _coordinate(Object? raw) {
+    final value = _money(raw);
+    if (value == null || value == 0) return null;
+    return value;
   }
 
   // ── Copy-with ────────────────────────────────────────────────────────────────

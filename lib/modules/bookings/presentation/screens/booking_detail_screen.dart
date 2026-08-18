@@ -16,6 +16,7 @@ import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
+import 'package:client/modules/bookings/data/booking_repository.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_reschedule_sheet.dart';
@@ -166,51 +167,41 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       });
     }
     try {
-      final api = dpLocator<ServanaApiClient>();
-      final res = await api.getBooking(bookingId);
-      final b = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
+      // Through the repository, not ServanaApiClient.
+      //
+      // The repository is the seam that chooses between the canonical
+      // `/api/v1/bookings/:id` transport and the legacy one, and returns the
+      // same `CustomerBooking` either way. It was built, registered and never
+      // resolved — this screen kept calling `getBooking` and re-deriving every
+      // field from the raw map, so `V1Capability.bookingReads` was inert no
+      // matter how it was configured: the object that reads the flag had no
+      // callers.
+      //
+      // Every fallback chain this used to run inline now lives in
+      // `CustomerBooking.fromApiMap`, which is where both transports share it.
+      // They were moved rather than dropped, and
+      // `test/bookings/customer_booking_fidelity_test.dart` pins each one —
+      // the amount that falls back to finalPrice/quotedPrice, the service
+      // OPTION name winning over its parent, branchName as the place, and the
+      // three-source status reconciliation.
+      final booking =
+          await dpLocator<BookingRepository>().getBookingById(_bookingId);
 
-      final paymentStatus = PaymentStatusParser.fromBooking(b);
-      final bookingStatus = (b['status'] ?? '').toString().toUpperCase();
-      final workerStatus = (b['workerStatus'] ??
-              b['worker_status'] ??
-              b['assignmentStatus'] ??
-              '')
-          .toString()
-          .toUpperCase();
-      final status = BookingStatusMapper.effectiveWireStatus(
-        bookingStatus: bookingStatus,
-        effectiveStatus: b['effectiveStatus']?.toString(),
-        workerStatus: workerStatus,
-      );
-      final workerUid = b['workerUid']?.toString() ??
-          b['worker_uid']?.toString() ??
-          b['providerUid']?.toString();
-      final eta = b['etaMinutes'];
-      final assignedAtRaw = b['assignedAt']?.toString();
-      final workerCode = b['workerCode']?.toString();
-      final paymentMethod = (b['paymentMethod'] ??
-              b['paymentMethodUsed'] ??
-              b['payment_method'] ??
-              (b['payment'] is Map ? (b['payment'] as Map)['method'] : null) ??
-              '')
-          .toString()
-          .toUpperCase();
+      final paymentStatus = booking.paymentStatus;
+      final status = booking.effectiveWireStatus;
+      final workerUid = booking.workerUid;
+      final eta = booking.etaMinutes;
+      final assignedAt = booking.assignedAt;
+      final workerCode = booking.workerCode;
+      final paymentMethod = (booking.paymentMethod ?? '').toUpperCase();
 
-      // Parse scheduled datetime from any of the backend's canonical aliases.
-      final scheduleRaw = b['scheduledAt']?.toString() ??
-          b['scheduleAt']?.toString() ??
-          b['schedule']?.toString();
-      final scheduleDate =
-          scheduleRaw != null ? DateTime.tryParse(scheduleRaw) : null;
-      // Kept unresolved alongside JobOrder.scheduleDate, which substitutes
-      // `now` when the backend sends nothing parseable. That substitution is
-      // fine for rendering and wrong for `expectedSchedule`: sending a
-      // fabricated instant as "the schedule I last read" would refuse every
-      // reschedule with BOOKING_SCHEDULE_CHANGED. Null must stay null.
-      _scheduledAt = scheduleDate;
+      // `scheduledAt` on the model substitutes `now` when the backend sends
+      // nothing parseable. That substitution is fine for RENDERING and wrong
+      // for `expectedSchedule`: sending a fabricated instant as "the schedule
+      // I last read" would refuse every reschedule with
+      // BOOKING_SCHEDULE_CHANGED. So the unresolved value is kept separately
+      // and null must stay null.
+      _scheduledAt = booking.hasResolvedSchedule ? booking.scheduledAt : null;
 
       String statusLabel;
       if (status == 'WORKER_ASSIGNED') {
@@ -221,76 +212,34 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             ? 'PENDING_PAYMENT'
             : 'AWAITING_ASSIGNMENT';
       } else {
-        statusLabel = b['statusLower']?.toString() ?? status;
+        statusLabel = status;
       }
 
       setState(() {
         if (_booking == null) {
-          // First load — construct JobOrder from API map.
-          final now = DateTime.now();
-          final createdAtRaw = b['createdAt']?.toString();
+          // First load — project the domain model onto the render model.
+          //
+          // Every alias chain that used to be written out here now lives in
+          // `CustomerBooking.fromApiMap`, so both transports share one reading
+          // of the payload and this screen cannot drift from the bookings
+          // list. `latitude`/`longitude` arrive NULL rather than 0 when
+          // unknown, which is what `_nullIfZero` below already wanted.
           _booking = JobOrder(
             jobOrderID: _bookingId,
-            jobOrderNumber: b['bookingCode']?.toString() ??
-                b['bookingNumber']?.toString() ??
-                _bookingId,
-            scheduleDate: scheduleDate ?? now,
-            // `serviceOptionName` is the specific thing booked (service_options
-            // .level_3, e.g. "Emperor's Drip"); `serviceName` is its parent
-            // (level_2). Prefer the specific one — it is what the customer
-            // chose and what the checkout screen showed them.
-            //
-            // Until the backend joined service_options none of these keys were
-            // in the response at all, so this whole chain resolved to '' and the
-            // row rendered as a lone "Service" label.
-            merchantServiceName: b['serviceOptionName']?.toString() ??
-                b['serviceName']?.toString() ??
-                (b['service'] is Map
-                    ? (b['service'] as Map)['name']?.toString()
-                    : null) ??
-                '',
-            // "Brand" on this screen is the place the service belongs to. The
-            // branch was already joined and returned as branchName; it simply
-            // was not read. serviceCategory is the family fallback.
-            merchantName: b['merchantName']?.toString() ??
-                b['branchName']?.toString() ??
-                b['providerName']?.toString() ??
-                b['serviceCategory']?.toString() ??
-                '',
-            merchantServicePhoto: b['servicePhotoUrl']?.toString() ??
-                b['servicePhoto']?.toString() ??
-                '',
-            address:
-                b['addressLine']?.toString() ?? b['address']?.toString() ?? '',
-            latitude: (b['latitude'] as num?)?.toDouble() ?? 0,
-            longitude: (b['longitude'] as num?)?.toDouble() ?? 0,
-            // `totalAmount` is not a column on the bookings table and never
-            // was — it stores quoted_price and final_price. So this key was
-            // absent from every response, the `?? 0` default took over, and the
-            // Payment section rendered "₱0.00" on every booking ever opened.
-            //
-            // The backend now aliases COALESCE(final_price, quoted_price) AS
-            // total_amount, but the fallbacks stay: they make the screen
-            // correct against a backend that has not been deployed yet, and
-            // finalPrice/quotedPrice are the names the admin portal and
-            // provider app already use.
-            //
-            // num covers both int and double — Postgres numeric arrives as
-            // either depending on the value, and casting to double directly
-            // throws on an int.
-            totalAmount: (b['totalAmount'] as num?)?.toDouble() ??
-                (b['finalPrice'] as num?)?.toDouble() ??
-                (b['quotedPrice'] as num?)?.toDouble() ??
-                double.tryParse(b['finalPrice']?.toString() ?? '') ??
-                double.tryParse(b['quotedPrice']?.toString() ?? '') ??
-                0,
-            downPayment: (b['downPayment'] as num?)?.toDouble() ?? 0,
-            numberOfPersonnel: (b['numberOfPersonnel'] as num?)?.toInt() ?? 0,
+            jobOrderNumber: booking.bookingNumber,
+            scheduleDate: booking.scheduledAt,
+            merchantServiceName: booking.serviceName,
+            merchantName: booking.serviceCategory,
+            merchantServicePhoto: booking.servicePhotoUrl ?? '',
+            address: booking.addressLine,
+            latitude: booking.latitude ?? 0,
+            longitude: booking.longitude ?? 0,
+            totalAmount: booking.totalAmount,
+            downPayment: booking.downPayment,
+            numberOfPersonnel: booking.numberOfPersonnel,
             distanceFromOffice: 0,
             paymentType: 0,
-            createdDate: createdAtRaw != null
-                ? (DateTime.tryParse(createdAtRaw) ?? now)
-                : now,
+            createdDate: booking.createdAt,
             paymentStatus: paymentStatus.isEmpty ? null : paymentStatus,
             paymentMethodUsed: paymentMethod.isEmpty ? null : paymentMethod,
             jobOrderStatusToString: statusLabel,
@@ -311,10 +260,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         if (workerUid != null && workerUid.isNotEmpty) {
           _workerUid = workerUid;
         }
-        if (eta is num) _etaMinutes = eta.toInt();
-        if (assignedAtRaw != null && assignedAtRaw.isNotEmpty) {
-          _assignedAt = DateTime.tryParse(assignedAtRaw);
-        }
+        if (eta != null) _etaMinutes = eta;
+        if (assignedAt != null) _assignedAt = assignedAt;
         if (workerCode != null && workerCode.isNotEmpty) {
           _workerCode = workerCode;
         }

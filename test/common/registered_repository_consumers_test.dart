@@ -6,8 +6,8 @@
 /// domain, each one a data-source pair behind a repository, each repository
 /// registered in `main_injector.dart`. Some were never wired to a screen:
 ///
-///  - `BookingRepository` — the booking detail screen still calls
-///    `ServanaApiClient.getBooking` by hand,
+///  - `BookingRepository` — **now wired.** The booking detail screen used to
+///    call `ServanaApiClient.getBooking` by hand and re-derive every field.
 ///  - `BookingExperiencesRepository` — change orders and disputes have no UI
 ///    at all.
 ///
@@ -53,9 +53,6 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// Removing a name from this set is the goal. Adding one needs a decision.
 const Map<String, String> _knownUnconsumed = <String, String>{
-  'BookingRepository':
-      'TAB 09 canonical booking reads; booking_detail_screen still calls '
-          'ServanaApiClient.getBooking directly',
   'BookingExperiencesRepository':
       'TAB 12 change orders and disputes; no dispute screen exists',
 };
