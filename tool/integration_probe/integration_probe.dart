@@ -138,10 +138,24 @@ void main(List<String> argv) async {
     );
   }
 
-  final contractLegacyKeys =
-      _groupLegacy(legacy).map((e) => '${e['method']} ${e['path']}').toSet();
+  // Compare route SHAPE, not literal text.
+  //
+  // The contract spells a parameter `:bookingId`; the client's call site
+  // produces a concrete id, which this probe substitutes with a stub. Comparing
+  // the two literally reports `/api/:id/timeline` and `/api/999999999/timeline`
+  // as different routes — which inflated the undeclared count from 30 to 50 and
+  // made a real finding look nearly twice its size. Both sides normalise to
+  // `:id` first, so a route is flagged only when the contract genuinely has no
+  // mapping for it, not when the two spell an identifier differently.
+  final paramOrStub = RegExp(':[A-Za-z0-9_]+|$_paramStub');
+  String shapeOf(String path) => path.replaceAll(paramOrStub, ':id');
+
+  final contractLegacyShapes = _groupLegacy(legacy)
+      .map((e) => '${e['method']} ${shapeOf(e['path'] as String)}')
+      .toSet();
   final undeclared = clientRoutes
-      .where((r) => !contractLegacyKeys.contains('${r['method']} ${r['path']}'))
+      .where((r) => !contractLegacyShapes
+          .contains('${r['method']} ${shapeOf(r['path']!)}'))
       .toList();
 
   const mounted = {

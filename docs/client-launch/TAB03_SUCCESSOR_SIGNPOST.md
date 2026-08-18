@@ -98,7 +98,7 @@ the committed tree.
 
 ## Handoff
 
-**To the contract owner.** 50 of the 70 legacy routes the customer app actually
+**To the contract owner.** 30 of the 70 legacy routes the customer app actually
 calls carry no contract legacy mapping — including `/api/services` and
 `/api/bookings`, two of the busiest. They therefore have no successor, no
 disposition and no migration story, and the deprecation clock cannot see them.

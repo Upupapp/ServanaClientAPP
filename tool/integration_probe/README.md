@@ -77,7 +77,12 @@ this probe exists to catch.
   Pairing the verb matters: probing a POST-only route with GET draws a router
   404 and would report a healthy route as a P0 outage.
 
-  As of the committed baseline, **50 of the 70 routes the client actually calls
+  Comparison is on route SHAPE: the contract writes `:bookingId` and a call site
+  yields a concrete id, so both normalise to `:id` before diffing. Comparing the
+  literal text counted those as different routes and inflated this figure from
+  30 to 50.
+
+  As of the committed baseline, **30 of the 70 routes the client actually calls
   are not declared as legacy by the contract at all** — so probing either list
   alone leaves a hole precisely where field breakage would appear.
 

@@ -147,14 +147,22 @@ lands or is reverted.
 
 ---
 
-## M6 — 50 of 70 legacy routes the client calls are undeclared by the contract
+## M6 — 30 of 70 legacy routes the client calls are undeclared by the contract
 
 **Owner:** backend / contract owner · **Raised:** TAB 01, confirmed TAB 03
 
-The customer app constructs **70** legacy routes. Only **20** appear in the v1
-contract's `legacy` mappings. The other 50 — including `/api/services` and
-`/api/bookings`, two of the busiest — have no successor, no disposition and no
-migration story, and the deprecation clock cannot see them.
+The customer app constructs **70** legacy routes. **30** of them have no entry in
+the v1 contract's `legacy` mappings — including `/api/services`, `/api/quote`
+and the whole `/api/support` surface. They have no successor, no disposition and
+no migration story, and the deprecation clock cannot see them.
+
+The itemised work-list is `docs/integration/M6_UNDECLARED_LEGACY_ROUTES.md`,
+grouped by domain and regenerable from the probe.
+
+**Corrected 2026-08-18:** first reported as 50. The probe compared route text
+literally, so `/api/:id/timeline` and a concrete `/api/123/timeline` counted as
+two different routes. Both sides now normalise parameters before comparing; the
+real figure is 30.
 
 This is why `/api/services` now correctly publishes *no* successor rather than a
 wrong one: there is nothing in the contract to point at. Whether these routes

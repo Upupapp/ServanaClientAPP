@@ -46,7 +46,7 @@ legacy routes (contract-derived)          115 / 115    zero 404
 legacy routes the shipped client calls     70 /  70    zero 404
 planned entries wrongly answering                 0
 successor signpost wrong                          1    (TAB 03, undeployed)
-client routes undeclared by the contract         50 / 70   ← M6
+client routes undeclared by the contract          30 / 70   ← M6
 ```
 
 **The integration is blocked on neither side.** v1 is deployed and complete; the
@@ -125,7 +125,7 @@ there is no 13-screen matrix here to extend to 62.
    translator because its body already carried a nested `error` key.
 2. **The Android release build did not build at all** (TAB 13). Two version
    floors, no repository change — the unpinned CI toolchain moved underneath it.
-3. **50 of the 70 legacy routes the client calls have no contract mapping**
+3. **30 of the 70 legacy routes the client calls have no contract mapping**
    (TAB 01). The deprecation clock cannot see them.
 4. **`.gitignore` stated two contradictory Firebase policies** (TAB 18), and
    root-level `key.properties`, `*.jks` and `mapping.txt` were unignored (TAB 13).
