@@ -104,6 +104,16 @@ programmes' backend work.
 
 ---
 
+## M4.17 — `docs/DEPENDENCY_CADENCE.md` has no owner
+
+**Owner:** to be assigned · **Raised:** TAB 19
+
+The classification, pinning policy and pre-release checklist are written. Nobody
+is named. A cadence with no owner decays within a quarter, which is the exact
+failure the document exists to prevent.
+
+---
+
 ## M8 — CI pins no Flutter version, and it has already broken the Android build
 
 **Owner:** repository owner · **Raised:** TAB 02 (as a risk), realised in TAB 13
@@ -113,12 +123,9 @@ version. When stable moved to **3.47.0**, its minimum Gradle (8.14.0) and Kotlin
 (2.2.20) floors rose above what the repository pinned (8.13, 2.0.0) and
 **the Android release build stopped building** — with no repository change.
 
-TAB 13 cleared both floors, so the build works today. The *mechanism* is
-untouched: the next stable release can do this again. Pinning
-`flutter-version:` in the workflow costs one line per job and converts a
-surprise outage into a deliberate upgrade. It belongs to TAB 19
-(supply-chain hygiene) but is recorded here because it is a launch blocker
-whenever it fires, not a hygiene nicety.
+**CLOSED by TAB 19 (`404dc23`).** `flutter-version: 3.47.0` is now pinned in all
+five CI jobs, converting a surprise outage into a deliberate upgrade. Raising it
+is now a decision: bump, run the gates, run a release build, commit.
 
 ---
 
