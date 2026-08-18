@@ -17,6 +17,8 @@ import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/common/presentation/widgets/booking_ux_components.dart';
 import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
 import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/modules/booking_experiences/application/booking_experiences_controller.dart';
+import 'package:client/modules/booking_experiences/presentation/widgets/change_orders_section.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_reschedule_sheet.dart';
@@ -78,6 +80,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   static const _pollMaxAttempts = 12;
   int _pollAttempts = 0;
 
+  /// Change orders the provider raised on this booking.
+  ///
+  /// The legacy route has always returned these and this app never called it,
+  /// so a customer could be asked to pay for extra work with no sign of it
+  /// anywhere they could look.
+  final _experiences = dpLocator<BookingExperiencesController>();
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +95,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     // everything comes from the API.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshBooking();
+      // Not awaited and never fatal: a change-order fetch that fails must not
+      // cost the customer the rest of their booking detail.
+      unawaited(_experiences.load(_bookingId));
     });
   }
 
@@ -681,6 +693,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 valueColor: _needsPayment ? Colors.orange : Colors.green,
               ),
             ]),
+
+            // Change orders the provider raised on this booking. Sits under
+            // Payment because that is what it is about, and draws nothing at
+            // all when there are none — which is almost every booking.
+            ListenableBuilder(
+              listenable: _experiences,
+              builder: (context, _) =>
+                  ChangeOrdersSection(state: _experiences.state),
+            ),
 
             const SizedBox(height: 16),
 

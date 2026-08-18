@@ -4,12 +4,10 @@
 ///
 /// The convergence work built canonical `/api/v1` transports domain by
 /// domain, each one a data-source pair behind a repository, each repository
-/// registered in `main_injector.dart`. Some were never wired to a screen:
-///
-///  - `BookingRepository` — **now wired.** The booking detail screen used to
-///    call `ServanaApiClient.getBooking` by hand and re-derive every field.
-///  - `BookingExperiencesRepository` — change orders and disputes have no UI
-///    at all.
+/// registered in `main_injector.dart`. Three of them reached no screen —
+/// `BookingRepository`, `BookingExperiencesRepository` and
+/// `HomeCompositionRepository` — and all three are wired now. **The allowlist
+/// is empty**, which is the state this test exists to keep.
 ///
 /// A registered singleton nobody resolves is not neutral. It reads as
 /// "migrated" to the next person who greps the injector, and it makes the
@@ -57,10 +55,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// Registered but deliberately unconsumed, each with the reason it is here.
 ///
 /// Removing a name from this set is the goal. Adding one needs a decision.
-const Map<String, String> _knownUnconsumed = <String, String>{
-  'BookingExperiencesRepository':
-      'TAB 12 change orders and disputes; no dispute screen exists',
-};
+const Map<String, String> _knownUnconsumed = <String, String>{};
 
 /// The layers from which a screen can be driven.
 const List<String> _consumerRoots = <String>[

@@ -18,6 +18,7 @@ import 'package:client/modules/tracking/application/tracking_controller.dart';
 import 'package:client/modules/booking_experiences/data/booking_experiences_canonical_data_source.dart';
 import 'package:client/modules/booking_experiences/data/booking_experiences_compatibility_data_source.dart';
 import 'package:client/modules/booking_experiences/data/booking_experiences_repository.dart';
+import 'package:client/modules/booking_experiences/application/booking_experiences_controller.dart';
 import 'package:client/modules/payments/data/payments_canonical_data_source.dart';
 import 'package:client/modules/payments/data/payments_compatibility_data_source.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
@@ -485,6 +486,10 @@ void initInjector(AppConfig config) {
       canonical: HomeCompositionCanonicalDataSource(dpLocator()),
       router: dpLocator(),
     ),
+  );
+  // Booking detail's caller for the experiences repository above.
+  dpLocator.registerFactory(
+    () => BookingExperiencesController(dpLocator()),
   );
   // Home's caller for the composition above. Singleton, so switching tabs
   // back to Home does not re-compose the catalog on every rebuild.
