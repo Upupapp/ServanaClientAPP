@@ -64,6 +64,32 @@ the old one and reintroduced libraries that break 16 KB alignment.
 
 ---
 
+## Local Android builds need a JDK that Gradle accepts
+
+Measured 2026-08-18: **`flutter build apk --debug` fails on this machine with
+Flutter's default JDK.** Android Studio bundles Java **25**; Gradle 8.14.3
+supports up to Java **24**.
+
+```
+The Java version used for the build is 25.0.2, which is incompatible with Gradle 8.14.3.
+```
+
+CI is unaffected — every Android-touching job pins **Java 17 (temurin)**, which
+is also what the release artefact is built with. So this is a developer-machine
+problem, not a pipeline one, and it fails with a clear message rather than
+silently.
+
+**Point Flutter at a JDK between 17 and 24, matching CI:**
+
+```bash
+flutter config --jdk-dir="/path/to/jdk-17"
+```
+
+Raising Gradle to 9.x would also accept Java 25, but that crosses a major
+boundary with AGP 8.11.1 and needs its own functional pass. It is a deliberate
+upgrade, not a workaround for a local JDK — and the version this project ships
+should be the version CI builds, which is 17.
+
 ## The failure this policy exists to prevent
 
 On 2026-08-18, `flutter build appbundle --release` failed on two version floors

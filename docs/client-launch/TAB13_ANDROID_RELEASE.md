@@ -105,6 +105,21 @@ The functional pass matters most of the remaining three: R8 failures appear
 only in the shrunk artefact, and only at the moment a reflective lookup runs.
 A green build is not evidence the app works.
 
+## Verified after the fact — two claims that were assertions
+
+**"Debug and profile builds are unaffected"** was written into the commit
+message and never measured. It is now: with no `key.properties` and no `CM_*`
+environment — the exact condition that refuses a release build —
+`flutter build apk --debug` exits **0**, produces an APK, and the guard's
+message appears **zero** times. Had the task regex matched a debug task,
+`flutter run` would have broken for every developer.
+
+**Local Android builds need a JDK ≤ 24.** Flutter's default here is Android
+Studio's bundled Java 25, and Gradle 8.14.3 accepts up to Java 24, so a debug
+build fails on this machine out of the box. CI is unaffected — it pins Java 17.
+Recorded in `docs/DEPENDENCY_CADENCE.md`; it fails with a clear message rather
+than silently.
+
 ## Gates after the change
 
 `dart format` exit 0 · `flutter analyze --no-fatal-infos` **No issues found** ·
