@@ -98,6 +98,24 @@ programmes' backend work.
 
 ---
 
+## M8 — CI pins no Flutter version, and it has already broken the Android build
+
+**Owner:** repository owner · **Raised:** TAB 02 (as a risk), realised in TAB 13
+
+All four CI jobs use `subosito/flutter-action@v2` with `channel: stable` and no
+version. When stable moved to **3.47.0**, its minimum Gradle (8.14.0) and Kotlin
+(2.2.20) floors rose above what the repository pinned (8.13, 2.0.0) and
+**the Android release build stopped building** — with no repository change.
+
+TAB 13 cleared both floors, so the build works today. The *mechanism* is
+untouched: the next stable release can do this again. Pinning
+`flutter-version:` in the workflow costs one line per job and converts a
+surprise outage into a deliberate upgrade. It belongs to TAB 19
+(supply-chain hygiene) but is recorded here because it is a launch blocker
+whenever it fires, not a hygiene nicety.
+
+---
+
 ## M5 — The backend tree carries uncommitted Provider Web work
 
 **Owner:** repository owner · **Raised:** TAB 03
@@ -152,8 +170,9 @@ a store account, a console, or a deploy.
 
 | # | Item | TAB |
 | --- | --- | --- |
-| M4.1 | Play upload-key fingerprint; `apksigner verify --print-certs` on a real bundle | 13 |
-| M4.2 | Crashlytics mapping upload + a symbolicated release-mode crash | 13 |
+| M4.1 | Play upload-key fingerprint; `apksigner verify --print-certs` on a real bundle. **TAB 13 verified R8 with a throwaway key only** (`CN=TAB13 Local Verification Only`, deleted after) — nothing is established about the real key | 13 |
+| M4.2 | Crashlytics mapping upload + a symbolicated release-mode crash. R8 is now on, so an un-uploaded mapping means unreadable crash reports | 13 |
+| M4.13 | **Full functional pass against the R8 artefact on a device.** R8 failures appear only in the shrunk build, at the moment a reflective lookup runs — a green build is not evidence the app works | 13 |
 | M4.3 | Hosting `/.well-known/assetlinks.json` and `apple-app-site-association` | 14 |
 | M4.4 | Apple portal: Associated Domains, Sign in with Apple, push capability | 14, 16 |
 | M4.5 | APNs key uploaded to Firebase console for `servana-59bee` | 16 |
