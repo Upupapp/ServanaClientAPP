@@ -65,6 +65,46 @@ without deploying, which is outside the boundary.
 
 Fixes can be written and committed locally; **deploy and re-probe are manual.**
 
+**TAB 03 status (2026-08-18):** fixed and committed locally at backend
+`d7a2097`, with a pinning test watched to fail and the full suite green.
+**Not deployed** — production still publishes the wrong signpost. The
+after-state capture required by the acceptance gate cannot be taken until it
+ships.
+
+---
+
+## M5 — The backend tree carries uncommitted Provider Web work
+
+**Owner:** repository owner · **Raised:** TAB 03
+
+`/Users/user/servana_api` holds unlanded changes from the *Provider Web*
+programme's TAB 03 — `tests/deploy-gating.test.ts`,
+`docs/audits/TAB03_DEPLOY_GATING.md`, and edits to `deploy.yml`,
+`release-gate.yml` and that repo's own manual-task list. They were left
+untouched and are **not** in the TAB 03 commit.
+
+Consequence: `tests/suite-inventory.test.ts` pins the suite count, and while
+those files sit untracked the local count reads **282** against a committed
+value of **281**, so `npm run test:ci` is red on an otherwise green tree. The
+committed value is correct; the discrepancy resolves when the Provider Web work
+lands or is reverted.
+
+---
+
+## M6 — 50 of 70 legacy routes the client calls are undeclared by the contract
+
+**Owner:** backend / contract owner · **Raised:** TAB 01, confirmed TAB 03
+
+The customer app constructs **70** legacy routes. Only **20** appear in the v1
+contract's `legacy` mappings. The other 50 — including `/api/services` and
+`/api/bookings`, two of the busiest — have no successor, no disposition and no
+migration story, and the deprecation clock cannot see them.
+
+This is why `/api/services` now correctly publishes *no* successor rather than a
+wrong one: there is nothing in the contract to point at. Whether these routes
+should be classified `KEEP`, `ALIAS_TEMPORARILY` or `RETIRE` is a contract
+decision, not a client one.
+
 ---
 
 ## M3 — Backend working tree is not clean
