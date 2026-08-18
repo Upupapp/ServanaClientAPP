@@ -1,0 +1,2844 @@
+{
+  "probe": "tool/integration_probe/integration_probe.dart",
+  "origin": "https://api.servana.com.ph",
+  "probedAtUtc": "2026-08-18T09:54:11.571310Z",
+  "durationSeconds": 1,
+  "backendCommit": "0aaf89f7b0aaf428387bae605532856186070d1c",
+  "backendDirty": true,
+  "counts": {
+    "v1Implemented": 105,
+    "v1Planned": 4,
+    "legacyProbed": 115,
+    "v1NotMounted": 0,
+    "legacyNotMounted": 0,
+    "plannedAnswering": 0,
+    "wrongSuccessor": 1,
+    "clientRoutesProbed": 70,
+    "clientRoutesNotMounted": 0,
+    "clientRoutesUndeclaredByContract": 50
+  },
+  "clientRoutesProbed": 70,
+  "clientRoutesUndeclaredByContract": [
+    "DELETE /api/reviews/999999999",
+    "DELETE /api/user/notifications/999999999",
+    "GET /api/999999999",
+    "GET /api/999999999/timeline",
+    "GET /api/999999999/tracking",
+    "GET /api/auth/refresh",
+    "GET /api/booking/999999999/provider",
+    "GET /api/booking/999999999/provider-location",
+    "GET /api/bookings/999999999/conversation",
+    "GET /api/bookings/999999999/review-eligibility",
+    "GET /api/bookings/999999999/reviews",
+    "GET /api/chat/conversations/999999999/messages",
+    "GET /api/providers/999999999/rating",
+    "GET /api/reviews/999999999",
+    "GET /api/reviews/me",
+    "GET /api/services",
+    "GET /api/services/999999999/branches",
+    "GET /api/services/999999999/coverage-geo",
+    "GET /api/services/999999999/level2",
+    "GET /api/services/999999999/options-with-addons",
+    "GET /api/support/safety/emergency-config",
+    "GET /api/support/safety/incidents",
+    "GET /api/support/tickets",
+    "GET /api/support/tickets/999999999",
+    "GET /api/support/unread-count",
+    "GET /api/user/getaddressbyid",
+    "GET /api/user/registereduser",
+    "GET /api/users/999999999/bookings",
+    "PATCH /api/user/notifications/999999999/read",
+    "POST /api/999999999/approve",
+    "POST /api/999999999/confirm-otp",
+    "POST /api/999999999/gcash-submit",
+    "POST /api/999999999/mark-cash-paid",
+    "POST /api/999999999/paymongo/create",
+    "POST /api/999999999/resend-otp",
+    "POST /api/bookings",
+    "POST /api/bookings/999999999/cancel",
+    "POST /api/bookings/999999999/reviews",
+    "POST /api/branches/slots",
+    "POST /api/chat/conversations/999999999/messages",
+    "POST /api/chat/conversations/999999999/read",
+    "POST /api/quote",
+    "POST /api/reviews/999999999/report",
+    "POST /api/services/999999999/coverage-geo",
+    "POST /api/support/safety/incidents",
+    "POST /api/support/tickets/999999999/close",
+    "POST /api/support/tickets/999999999/mark-read",
+    "POST /api/support/tickets/999999999/reopen",
+    "POST /api/support/tickets/999999999/replies",
+    "PUT /api/reviews/999999999"
+  ],
+  "clientRouteResults": [
+    {
+      "id": "client-call-site",
+      "method": "DELETE",
+      "path": "/api/reviews/999999999",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "DELETE",
+      "path": "/api/user/deleteaddress",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses/:addressId>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "DELETE",
+      "path": "/api/user/fcm-token",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/me/devices>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "DELETE",
+      "path": "/api/user/notifications/999999999",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/999999999",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/999999999/timeline",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/timeline>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/999999999/tracking",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/tracking>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/auth/refresh",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/auth/resendverification",
+      "status": 429,
+      "verdict": "rateLimited",
+      "deprecation": "true",
+      "link": "</api/v1/auth/resend-verification>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/booking/999999999/provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/booking/999999999/provider-location",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/tracking>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/bookings/999999999/conversation",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/conversations>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/bookings/999999999/review-eligibility",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/review>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/bookings/999999999/reviews",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/review>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/chat/conversations",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/conversations>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/chat/conversations/999999999/messages",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/messages>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/providers/999999999/rating",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/reviews/providers/:providerUid/rating>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/reviews/999999999",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/reviews/me",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/services",
+      "status": 200,
+      "verdict": "publicLive",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/services/999999999/branches",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/services/999999999/coverage-geo",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/services/999999999/level2",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/services/999999999/options-with-addons",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/services/full",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/support/safety/emergency-config",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/support/safety/incidents",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/support/tickets",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/support/tickets/999999999",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/support/unread-count",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/user/alluseraddresses",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/user/getaddressbyid",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/user/notifications",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/notifications>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/user/notifications/unread-count",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/notifications/unread-count>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/user/profile",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/customer/profile>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/user/registereduser",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "GET",
+      "path": "/api/users/999999999/bookings",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "PATCH",
+      "path": "/api/user/notifications/999999999/read",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/notifications/:key/read>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/999999999/approve",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/999999999/confirm-otp",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/otp/verify>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/999999999/gcash-submit",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/999999999/mark-cash-paid",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/999999999/paymongo/create",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/payment-intents>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/999999999/resend-otp",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/otp/request>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/auth/customer-firebase-login",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/auth/logout>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/auth/resend-email-otp",
+      "status": 429,
+      "verdict": "rateLimited",
+      "deprecation": "true",
+      "link": "</api/v1/auth/resend-verification>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/auth/signin",
+      "status": 429,
+      "verdict": "rateLimited",
+      "deprecation": "true",
+      "link": "</api/v1/auth/login>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "status": 429,
+      "verdict": "rateLimited",
+      "deprecation": "true",
+      "link": "</api/v1/auth/register>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/auth/verify-email-otp",
+      "status": 429,
+      "verdict": "rateLimited",
+      "deprecation": "true",
+      "link": "</api/v1/auth/verify-email>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/bookings",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/bookings/999999999/cancel",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/cancel>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/bookings/999999999/reviews",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/review>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/branches/slots",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/chat/conversations/999999999/messages",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/messages>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/chat/conversations/999999999/read",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/read>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/quote",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/reviews/999999999/report",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/services/999999999/coverage-geo",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/support/safety/incidents",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/support/tickets",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/support/tickets/999999999/close",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/support/tickets/999999999/mark-read",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/support/tickets/999999999/reopen",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/support/tickets/999999999/replies",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/user/adduseraddress",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/user/fcm-token",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/me/devices>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "POST",
+      "path": "/api/user/notifications/mark-all-read",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/notifications/read-all>; rel=\"successor-version\""
+    },
+    {
+      "id": "client-call-site",
+      "method": "PUT",
+      "path": "/api/reviews/999999999",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "client-call-site",
+      "method": "PUT",
+      "path": "/api/user/updateprofile",
+      "status": 401,
+      "verdict": "gated",
+      "deprecation": "true",
+      "link": "</api/v1/me>; rel=\"successor-version\""
+    }
+  ],
+  "v1ByVerdict": {
+    "publicLive": 10,
+    "mountedOther": 5,
+    "gated": 85,
+    "validating": 5
+  },
+  "legacyByVerdict": {
+    "publicLive": 7,
+    "mountedOther": 1,
+    "gated": 95,
+    "rateLimited": 8,
+    "validating": 4
+  },
+  "clientEndpointCheck": {
+    "skipped": true,
+    "skipReason": "client endpoint constants not found at lib/common/data/backend/v1_endpoints.dart — the canonical v1 client layer is absent from this checkout, so client/contract divergence was NOT measured",
+    "clientPathCount": 0,
+    "clientPathsNotInContract": [],
+    "contractPathsClientNeverNames": []
+  },
+  "findings": [
+    "SIGNPOST DEFECT: 1 legacy path(s) publish a Link rel=\"successor-version\" that disagrees with the contract. RFC 8288 successor links are followed automatically by client generators.",
+    "SKIPPED: client endpoint constants not found at lib/common/data/backend/v1_endpoints.dart — the canonical v1 client layer is absent from this checkout, so client/contract divergence was NOT measured"
+  ],
+  "v1": [
+    {
+      "id": "catalog.browse",
+      "method": "GET",
+      "path": "/api/v1/catalog",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "catalog.summary",
+      "method": "GET",
+      "path": "/api/v1/catalog/summary",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "catalog.services.list",
+      "method": "GET",
+      "path": "/api/v1/catalog/services",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "catalog.services.get",
+      "method": "GET",
+      "path": "/api/v1/catalog/services/:serviceId",
+      "contractAuth": "public",
+      "status": 404,
+      "verdict": "mountedOther"
+    },
+    {
+      "id": "identity.me",
+      "method": "GET",
+      "path": "/api/v1/me",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.listMine",
+      "method": "GET",
+      "path": "/api/v1/bookings",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.get",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.timeline",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/timeline",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.list",
+      "method": "GET",
+      "path": "/api/v1/provider/jobs",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.get",
+      "method": "GET",
+      "path": "/api/v1/provider/jobs/:bookingId",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "notifications.list",
+      "method": "GET",
+      "path": "/api/v1/notifications",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "notifications.unreadCount",
+      "method": "GET",
+      "path": "/api/v1/notifications/unread-count",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "notifications.markRead",
+      "method": "PATCH",
+      "path": "/api/v1/notifications/:key/read",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "notifications.dismiss",
+      "method": "DELETE",
+      "path": "/api/v1/notifications/:key",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "notifications.markAllRead",
+      "method": "POST",
+      "path": "/api/v1/notifications/read-all",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.notificationPreferences.get",
+      "method": "GET",
+      "path": "/api/v1/me/notification-preferences",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.notificationPreferences.patch",
+      "method": "PATCH",
+      "path": "/api/v1/me/notification-preferences",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.devices.register",
+      "method": "POST",
+      "path": "/api/v1/me/devices",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.devices.release",
+      "method": "DELETE",
+      "path": "/api/v1/me/devices",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.patch",
+      "method": "PATCH",
+      "path": "/api/v1/me",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.settings.get",
+      "method": "GET",
+      "path": "/api/v1/me/settings",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.settings.patch",
+      "method": "PATCH",
+      "path": "/api/v1/me/settings",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.security.get",
+      "method": "GET",
+      "path": "/api/v1/me/security",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "me.completion.get",
+      "method": "GET",
+      "path": "/api/v1/me/completion",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.profile.get",
+      "method": "GET",
+      "path": "/api/v1/customer/profile",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.profile.patch",
+      "method": "PATCH",
+      "path": "/api/v1/customer/profile",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.addresses.list",
+      "method": "GET",
+      "path": "/api/v1/customer/addresses",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.addresses.create",
+      "method": "POST",
+      "path": "/api/v1/customer/addresses",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.addresses.update",
+      "method": "PATCH",
+      "path": "/api/v1/customer/addresses/:addressId",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.addresses.delete",
+      "method": "DELETE",
+      "path": "/api/v1/customer/addresses/:addressId",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "customer.addresses.setDefault",
+      "method": "POST",
+      "path": "/api/v1/customer/addresses/:addressId/default",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.profile.get",
+      "method": "GET",
+      "path": "/api/v1/provider/profile",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.profile.patch",
+      "method": "PATCH",
+      "path": "/api/v1/provider/profile",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.publicProfile.get",
+      "method": "GET",
+      "path": "/api/v1/providers/:providerUid/profile",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.documents.list",
+      "method": "GET",
+      "path": "/api/v1/provider/documents",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.documents.types",
+      "method": "GET",
+      "path": "/api/v1/provider/document-types",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.documents.create",
+      "method": "POST",
+      "path": "/api/v1/provider/documents",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.documents.preview",
+      "method": "GET",
+      "path": "/api/v1/provider/documents/:documentId/preview",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.documents.delete",
+      "method": "DELETE",
+      "path": "/api/v1/provider/documents/:documentId",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.availability.get",
+      "method": "GET",
+      "path": "/api/v1/provider/availability",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.availability.patch",
+      "method": "PATCH",
+      "path": "/api/v1/provider/availability",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.timeOff.list",
+      "method": "GET",
+      "path": "/api/v1/provider/time-off",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.timeOff.create",
+      "method": "POST",
+      "path": "/api/v1/provider/time-off",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.timeOff.cancel",
+      "method": "DELETE",
+      "path": "/api/v1/provider/time-off/:timeOffId",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.services.list",
+      "method": "GET",
+      "path": "/api/v1/provider/services",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "reviews.provider.list",
+      "method": "GET",
+      "path": "/api/v1/reviews/providers/:providerUid",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "reviews.provider.rating",
+      "method": "GET",
+      "path": "/api/v1/reviews/providers/:providerUid/rating",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "bookings.review.create",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/review",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.review.get",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/review",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.supportCases.create",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/support-cases",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.supportCases.list",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/support-cases",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "settings.notificationPreferences.get",
+      "method": "GET",
+      "path": "/api/v1/settings/notification-preferences",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "settings.notificationPreferences.put",
+      "method": "PUT",
+      "path": "/api/v1/settings/notification-preferences",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "auth.register",
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "contractAuth": "public",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "contractAuth": "public",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "auth.refresh",
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "contractAuth": "public",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "auth.logout",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "auth.forgotPassword",
+      "method": "POST",
+      "path": "/api/v1/auth/forgot-password",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "auth.resetPassword",
+      "method": "POST",
+      "path": "/api/v1/auth/reset-password",
+      "contractAuth": "public",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "auth.verifyEmail",
+      "method": "POST",
+      "path": "/api/v1/auth/verify-email",
+      "contractAuth": "public",
+      "status": 400,
+      "verdict": "validating"
+    },
+    {
+      "id": "auth.resendVerification",
+      "method": "POST",
+      "path": "/api/v1/auth/resend-verification",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "auth.verifyMobile",
+      "method": "POST",
+      "path": "/api/v1/auth/verify-mobile",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "search.query",
+      "method": "GET",
+      "path": "/api/v1/search",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "catalog.search",
+      "method": "GET",
+      "path": "/api/v1/catalog/search",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "catalog.categories.list",
+      "method": "GET",
+      "path": "/api/v1/catalog/categories",
+      "contractAuth": "public",
+      "status": 200,
+      "verdict": "publicLive"
+    },
+    {
+      "id": "catalog.categories.get",
+      "method": "GET",
+      "path": "/api/v1/catalog/categories/:categoryId",
+      "contractAuth": "public",
+      "status": 404,
+      "verdict": "mountedOther"
+    },
+    {
+      "id": "catalog.categories.subcategories",
+      "method": "GET",
+      "path": "/api/v1/catalog/categories/:categoryId/subcategories",
+      "contractAuth": "public",
+      "status": 404,
+      "verdict": "mountedOther"
+    },
+    {
+      "id": "catalog.subcategories.get",
+      "method": "GET",
+      "path": "/api/v1/catalog/subcategories/:subcategoryId",
+      "contractAuth": "public",
+      "status": 404,
+      "verdict": "mountedOther"
+    },
+    {
+      "id": "catalog.subcategories.services",
+      "method": "GET",
+      "path": "/api/v1/catalog/subcategories/:subcategoryId/services",
+      "contractAuth": "public",
+      "status": 404,
+      "verdict": "mountedOther"
+    },
+    {
+      "id": "home.feed",
+      "method": "GET",
+      "path": "/api/v1/home",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "home.sections",
+      "method": "GET",
+      "path": "/api/v1/home/sections",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.create",
+      "method": "POST",
+      "path": "/api/v1/conversations",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.list",
+      "method": "GET",
+      "path": "/api/v1/conversations",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.get",
+      "method": "GET",
+      "path": "/api/v1/conversations/:conversationId",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.messages.list",
+      "method": "GET",
+      "path": "/api/v1/conversations/:conversationId/messages",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.messages.create",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/messages",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.attachments.create",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/attachments",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.messages.report",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/messages/:messageId/report",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "conversations.read",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/read",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.cancel",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/cancel",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.transitions",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/transitions",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.accept",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/accept",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.decline",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/decline",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.enroute",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/en-route",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.arrived",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/arrived",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.start",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/start",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.complete",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/complete",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.jobs.cancel",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/cancel",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.tracking",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/tracking",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.otp.request",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/otp/request",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.otp.verify",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/otp/verify",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.otp.status",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/otp/status",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.reschedule",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/reschedule",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.reschedule.history",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/reschedule",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.additionalWork.create",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/additional-work",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.additionalWork.list",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/additional-work",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.disputes.open",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/disputes",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.disputes.list",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/disputes",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.payments.intent",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/payment-intents",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.payments.get",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/payment",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "bookings.refunds.create",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/refunds",
+      "contractAuth": "authenticated",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.earnings.summary",
+      "method": "GET",
+      "path": "/api/v1/provider/earnings/summary",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.earnings.transactions",
+      "method": "GET",
+      "path": "/api/v1/provider/earnings/transactions",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "provider.earnings.payouts",
+      "method": "GET",
+      "path": "/api/v1/provider/earnings/payouts",
+      "contractAuth": "provider",
+      "status": 401,
+      "verdict": "gated"
+    },
+    {
+      "id": "admin.finance.reconciliation",
+      "method": "GET",
+      "path": "/api/v1/admin/finance/reconciliation",
+      "contractAuth": "admin",
+      "status": 401,
+      "verdict": "gated"
+    }
+  ],
+  "legacy": [
+    {
+      "id": "catalog.browse,home.feed",
+      "method": "GET",
+      "path": "/api/catalog",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "ALIAS_TEMPORARILY,KEEP",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/catalog | /api/v1/home",
+      "successorVerdict": "WRONG"
+    },
+    {
+      "id": "catalog.browse,search.query",
+      "method": "GET",
+      "path": "/api/services/full",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/catalog | /api/v1/search"
+    },
+    {
+      "id": "catalog.summary",
+      "method": "GET",
+      "path": "/api/catalog/summary",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/catalog/summary>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/catalog/summary",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "catalog.services.list",
+      "method": "GET",
+      "path": "/api/catalog/services",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/catalog/services>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/catalog/services",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "catalog.services.get",
+      "method": "GET",
+      "path": "/api/catalog/services/:serviceId",
+      "status": 404,
+      "verdict": "mountedOther",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/catalog/services/:serviceId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/catalog/services/:serviceId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "identity.me",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "identity.me,customer.profile.get",
+      "method": "GET",
+      "path": "/api/user/profile",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC,ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/customer/profile>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me | /api/v1/customer/profile",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.listMine",
+      "method": "GET",
+      "path": "/api/users/:userId/bookings",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.get",
+      "method": "GET",
+      "path": "/api/:id",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.timeline,bookings.transitions",
+      "method": "GET",
+      "path": "/api/:id/timeline",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY,KEEP",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/timeline>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/timeline | /api/v1/bookings/:bookingId/transitions",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.timeline",
+      "method": "GET",
+      "path": "/api/provider/bookings/:bookingId/timeline",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/timeline"
+    },
+    {
+      "id": "provider.jobs.list",
+      "method": "GET",
+      "path": "/api/worker/job-cards",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.list",
+      "method": "GET",
+      "path": "/api/workers/:workerId/job-cards",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.get",
+      "method": "GET",
+      "path": "/api/worker/job-cards/:bookingId",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "notifications.list",
+      "method": "GET",
+      "path": "/api/user/notifications",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/notifications>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/notifications",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "notifications.unreadCount,home.feed",
+      "method": "GET",
+      "path": "/api/user/notifications/unread-count",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY,KEEP",
+      "deprecation": "true",
+      "link": "</api/v1/notifications/unread-count>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/notifications/unread-count | /api/v1/home",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "notifications.markRead",
+      "method": "PATCH",
+      "path": "/api/user/notifications/:key/read",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/notifications/:key/read>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/notifications/:key/read",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "notifications.dismiss",
+      "method": "DELETE",
+      "path": "/api/provider/notifications/:key",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/notifications/:key"
+    },
+    {
+      "id": "notifications.markAllRead",
+      "method": "POST",
+      "path": "/api/user/notifications/mark-all-read",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/notifications/read-all>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/notifications/read-all",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.notificationPreferences.get,settings.notificationPreferences.get",
+      "method": "GET",
+      "path": "/api/provider/notification-preferences",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me/notification-preferences>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me/notification-preferences | /api/v1/settings/notification-preferences",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.notificationPreferences.patch,settings.notificationPreferences.put",
+      "method": "PUT",
+      "path": "/api/provider/notification-preferences",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me/notification-preferences>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me/notification-preferences | /api/v1/settings/notification-preferences",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.devices.register",
+      "method": "POST",
+      "path": "/api/provider/fcm-token",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me/devices>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me/devices",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.devices.register",
+      "method": "POST",
+      "path": "/api/user/fcm-token",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me/devices>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me/devices",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.devices.release",
+      "method": "DELETE",
+      "path": "/api/provider/fcm-token",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me/devices>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me/devices",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.devices.release",
+      "method": "DELETE",
+      "path": "/api/user/fcm-token",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me/devices>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me/devices",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.patch,customer.profile.patch",
+      "method": "PUT",
+      "path": "/api/user/updateprofile",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/me>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/me | /api/v1/customer/profile",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "me.completion.get",
+      "method": "GET",
+      "path": "/api/provider/account-state",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "KEEP",
+      "contractSuccessor": "/api/v1/me/completion"
+    },
+    {
+      "id": "customer.addresses.list",
+      "method": "GET",
+      "path": "/api/user/alluseraddresses",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/customer/addresses",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "customer.addresses.list",
+      "method": "GET",
+      "path": "/api/user/:userId/addresses",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/customer/addresses"
+    },
+    {
+      "id": "customer.addresses.create,customer.addresses.update",
+      "method": "POST",
+      "path": "/api/user/adduseraddress",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/customer/addresses | /api/v1/customer/addresses/:addressId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "customer.addresses.delete",
+      "method": "DELETE",
+      "path": "/api/user/deleteaddress",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses/:addressId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/customer/addresses/:addressId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "customer.addresses.setDefault",
+      "method": "PUT",
+      "path": "/api/user/makeaddressprimary",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/customer/addresses/:addressId/default>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/customer/addresses/:addressId/default",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.profile.get",
+      "method": "GET",
+      "path": "/api/provider/profile",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/profile>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/profile",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.profile.get",
+      "method": "GET",
+      "path": "/api/provider/profile-center",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/provider/profile"
+    },
+    {
+      "id": "provider.profile.patch",
+      "method": "POST",
+      "path": "/api/provider/public-profile-revisions",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/profile>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/profile",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.documents.list",
+      "method": "GET",
+      "path": "/api/provider/documents",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/documents>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/documents",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.documents.types",
+      "method": "GET",
+      "path": "/api/provider/document-types",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/document-types>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/document-types",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.documents.create",
+      "method": "POST",
+      "path": "/api/provider/documents",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/documents>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/documents",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.documents.preview",
+      "method": "GET",
+      "path": "/api/provider/documents/:documentId/preview",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/documents/:documentId/preview>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/documents/:documentId/preview",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.documents.delete",
+      "method": "DELETE",
+      "path": "/api/provider/documents/:documentId",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/documents/:documentId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/documents/:documentId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.availability.get",
+      "method": "GET",
+      "path": "/api/worker/availability",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/availability>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/availability",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.availability.patch",
+      "method": "PUT",
+      "path": "/api/worker/availability",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/availability>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/availability",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.timeOff.list",
+      "method": "GET",
+      "path": "/api/worker/time-off",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/time-off>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/time-off",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.timeOff.create",
+      "method": "POST",
+      "path": "/api/worker/time-off",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/time-off>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/time-off",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.timeOff.cancel",
+      "method": "DELETE",
+      "path": "/api/worker/time-off/:id",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/time-off/:timeOffId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/time-off/:timeOffId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.services.list",
+      "method": "GET",
+      "path": "/api/worker/services-overview",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/services>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/services",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.services.list",
+      "method": "GET",
+      "path": "/api/worker/service-applications",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "KEEP",
+      "contractSuccessor": "/api/v1/provider/services"
+    },
+    {
+      "id": "reviews.provider.list",
+      "method": "GET",
+      "path": "/api/providers/:providerUid/reviews",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/reviews/providers/:providerUid>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/reviews/providers/:providerUid",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "reviews.provider.rating",
+      "method": "GET",
+      "path": "/api/providers/:providerUid/rating",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/reviews/providers/:providerUid/rating>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/reviews/providers/:providerUid/rating",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.review.create",
+      "method": "POST",
+      "path": "/api/bookings/:bookingId/reviews",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/review>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/review",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.review.get",
+      "method": "GET",
+      "path": "/api/bookings/:bookingId/reviews",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/review>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/review",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.review.get",
+      "method": "GET",
+      "path": "/api/bookings/:bookingId/review-eligibility",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/review>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/review",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.supportCases.create",
+      "method": "POST",
+      "path": "/api/support/tickets",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/support-cases"
+    },
+    {
+      "id": "settings.notificationPreferences.get",
+      "method": "GET",
+      "path": "/api/workers/:uid/notification-preferences",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/settings/notification-preferences>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/settings/notification-preferences",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "settings.notificationPreferences.put",
+      "method": "PUT",
+      "path": "/api/workers/:uid/notification-preferences",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/settings/notification-preferences>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/settings/notification-preferences",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.register",
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/register>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/register",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.register",
+      "method": "POST",
+      "path": "/api/auth/provider/register",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/register>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/register",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.register",
+      "method": "POST",
+      "path": "/api/auth/add-employees",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/auth/register"
+    },
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/api/auth/signin",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/login>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/login",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/api/auth/admin-signin",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/login>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/login",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/api/auth/firebase-login",
+      "status": 400,
+      "verdict": "validating",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/login>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/login",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/api/auth/customer-firebase-login",
+      "status": 400,
+      "verdict": "validating",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/auth/login"
+    },
+    {
+      "id": "auth.refresh",
+      "method": "POST",
+      "path": "/api/auth/refresh",
+      "status": 400,
+      "verdict": "validating",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/refresh>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/refresh",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/logout>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/logout",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.forgotPassword",
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/forgot-password>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/forgot-password",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.resetPassword",
+      "method": "POST",
+      "path": "/api/auth/reset-password",
+      "status": 400,
+      "verdict": "validating",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/reset-password>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/reset-password",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.verifyEmail",
+      "method": "POST",
+      "path": "/api/auth/verify-email-otp",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/verify-email>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/verify-email",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.resendVerification",
+      "method": "POST",
+      "path": "/api/auth/resend-email-otp",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/resend-verification>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/resend-verification",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "auth.resendVerification",
+      "method": "GET",
+      "path": "/api/auth/resendverification",
+      "status": 429,
+      "verdict": "rateLimited",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/auth/resend-verification>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/auth/resend-verification",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "catalog.categories.subcategories",
+      "method": "GET",
+      "path": "/api/services/:serviceId/level2",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/catalog/categories/:categoryId/subcategories"
+    },
+    {
+      "id": "catalog.subcategories.services",
+      "method": "GET",
+      "path": "/api/services/:serviceId/options-with-addons",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/catalog/subcategories/:subcategoryId/services"
+    },
+    {
+      "id": "catalog.subcategories.services",
+      "method": "GET",
+      "path": "/api/:serviceId/options-with-addons",
+      "status": 200,
+      "verdict": "publicLive",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/catalog/subcategories/:subcategoryId/services>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/catalog/subcategories/:subcategoryId/services",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.create",
+      "method": "GET",
+      "path": "/api/bookings/:bookingId/conversation",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.list",
+      "method": "GET",
+      "path": "/api/chat/conversations",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.list",
+      "method": "GET",
+      "path": "/api/admin/communications/conversations",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/conversations"
+    },
+    {
+      "id": "conversations.get",
+      "method": "GET",
+      "path": "/api/chat/conversations/:id",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations/:conversationId",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.get",
+      "method": "GET",
+      "path": "/api/admin/communications/conversations/:id",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/conversations/:conversationId"
+    },
+    {
+      "id": "conversations.messages.list",
+      "method": "GET",
+      "path": "/api/chat/conversations/:id/messages",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/messages>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/messages",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.messages.list",
+      "method": "GET",
+      "path": "/api/admin/communications/conversations/:id/messages",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/messages"
+    },
+    {
+      "id": "conversations.messages.create",
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/messages",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/messages>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/messages",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.messages.create",
+      "method": "POST",
+      "path": "/api/admin/communications/conversations/:id/messages",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/messages"
+    },
+    {
+      "id": "conversations.attachments.create",
+      "method": "POST",
+      "path": "/api/chat/attachments/upload",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/attachments"
+    },
+    {
+      "id": "conversations.messages.report",
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/messages/:msgId/report",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/messages/:messageId/report>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/messages/:messageId/report",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "conversations.read",
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/read",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/conversations/:conversationId/read>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/conversations/:conversationId/read",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.cancel",
+      "method": "POST",
+      "path": "/api/bookings/:id/cancel",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/cancel>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/cancel",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.accept",
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/accept",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/accept>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/accept",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.decline",
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/decline",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/decline>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/decline",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.enroute",
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/en-route",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/en-route>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/en-route",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.arrived",
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/arrived",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/arrived>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/arrived",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.start",
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/start",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/start>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/start",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.complete",
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/complete",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/complete>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/complete",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.cancel",
+      "method": "POST",
+      "path": "/api/provider/bookings/:bookingId/cancel",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/jobs/:bookingId/cancel>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/cancel",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.jobs.cancel",
+      "method": "GET",
+      "path": "/api/provider/bookings/:bookingId/cancellation-eligibility",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "KEEP",
+      "contractSuccessor": "/api/v1/provider/jobs/:bookingId/cancel"
+    },
+    {
+      "id": "bookings.tracking",
+      "method": "GET",
+      "path": "/api/:id/tracking",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/tracking>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/tracking",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.tracking",
+      "method": "GET",
+      "path": "/api/booking/:bookingId/provider-location",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/tracking>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/tracking",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.otp.request",
+      "method": "POST",
+      "path": "/api/:bookingId/resend-otp",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/otp/request>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/otp/request",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.otp.verify",
+      "method": "POST",
+      "path": "/api/:id/confirm-otp",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/otp/verify>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/otp/verify",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.reschedule",
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/reschedule",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/reschedule>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/reschedule",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.additionalWork.create",
+      "method": "POST",
+      "path": "/api/additional/request/:userId",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/additional-work>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/additional-work",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.additionalWork.list",
+      "method": "GET",
+      "path": "/api/additional/booking/:bookingId",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/additional-work>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/additional-work",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.disputes.open",
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/escalate",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/disputes>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/disputes",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.disputes.open",
+      "method": "GET",
+      "path": "/api/provider/bookings/:bookingId/dispute-status",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/disputes"
+    },
+    {
+      "id": "admin.bookings.list",
+      "method": "GET",
+      "path": "/api/admin/bookings",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/admin/bookings"
+    },
+    {
+      "id": "admin.bookings.assignmentCandidates",
+      "method": "GET",
+      "path": "/api/admin/bookings/:id/assignment-candidates",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/admin/bookings/:bookingId/assignment-candidates"
+    },
+    {
+      "id": "admin.bookings.assign",
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/assign",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/admin/bookings/:bookingId/assign"
+    },
+    {
+      "id": "admin.bookings.reassign",
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/reassign",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "CANONICALIZE",
+      "contractSuccessor": "/api/v1/admin/bookings/:bookingId/reassign"
+    },
+    {
+      "id": "bookings.payments.intent",
+      "method": "POST",
+      "path": "/api/:bookingId/paymongo/create",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/payment-intents>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/payment-intents",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "bookings.payments.get",
+      "method": "GET",
+      "path": "/api/admin/finance/ledger/booking/:bookingId",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ROLE_SPECIFIC",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/payment"
+    },
+    {
+      "id": "bookings.refunds.create",
+      "method": "POST",
+      "path": "/api/admin/finance/refunds",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/bookings/:bookingId/refunds>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/bookings/:bookingId/refunds",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.earnings.summary",
+      "method": "GET",
+      "path": "/api/provider/earnings/summary",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/earnings/summary>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/earnings/summary",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.earnings.transactions",
+      "method": "GET",
+      "path": "/api/provider/earnings",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/earnings/transactions>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/earnings/transactions",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.earnings.transactions",
+      "method": "GET",
+      "path": "/api/provider/ledger",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/earnings/transactions>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/earnings/transactions",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "provider.earnings.transactions",
+      "method": "GET",
+      "path": "/api/workers/:uid/earnings-history",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "RETIRE",
+      "contractSuccessor": "/api/v1/provider/earnings/transactions"
+    },
+    {
+      "id": "provider.earnings.payouts",
+      "method": "GET",
+      "path": "/api/provider/payouts",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/provider/earnings/payouts>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/provider/earnings/payouts",
+      "successorVerdict": "OK"
+    },
+    {
+      "id": "admin.finance.reconciliation",
+      "method": "GET",
+      "path": "/api/admin/finance/reconciliation/exceptions",
+      "status": 401,
+      "verdict": "gated",
+      "disposition": "ALIAS_TEMPORARILY",
+      "deprecation": "true",
+      "link": "</api/v1/admin/finance/reconciliation>; rel=\"successor-version\"",
+      "contractSuccessor": "/api/v1/admin/finance/reconciliation",
+      "successorVerdict": "OK"
+    }
+  ],
+  "planned": [
+    {
+      "id": "admin.bookings.list",
+      "method": "GET",
+      "path": "/api/v1/admin/bookings",
+      "contractAuth": "admin",
+      "status": 404,
+      "verdict": "notMounted"
+    },
+    {
+      "id": "admin.bookings.assignmentCandidates",
+      "method": "GET",
+      "path": "/api/v1/admin/bookings/:bookingId/assignment-candidates",
+      "contractAuth": "admin",
+      "status": 404,
+      "verdict": "notMounted"
+    },
+    {
+      "id": "admin.bookings.assign",
+      "method": "POST",
+      "path": "/api/v1/admin/bookings/:bookingId/assign",
+      "contractAuth": "admin",
+      "status": 404,
+      "verdict": "notMounted"
+    },
+    {
+      "id": "admin.bookings.reassign",
+      "method": "POST",
+      "path": "/api/v1/admin/bookings/:bookingId/reassign",
+      "contractAuth": "admin",
+      "status": 404,
+      "verdict": "notMounted"
+    }
+  ]
+}

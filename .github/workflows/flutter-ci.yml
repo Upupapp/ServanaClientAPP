@@ -928,3 +928,96 @@ jobs:
               open(summary, 'a').write('### 16 KB alignment: OK\n')
           print('All arm64 libraries are 16 KB aligned.')
           PY
+
+  # ---------------------------------------------------------------------------
+  # Integration probe (TAB 01). Ground truth about the backend, measured on the
+  # day the build runs rather than remembered from the day somebody wrote it
+  # down.
+  #
+  # This job exists because a recorded position was wrong: memory held that
+  # /api/v1 was unreachable and GET /api/catalog returned 401, both false, and
+  # a migration was nearly cancelled off that stale reading. Nothing in this
+  # repository was watching, so nothing corrected it.
+  #
+  # Advisory on pull requests, blocking on main — drift should surface as a red
+  # build on the branch that ships, without turning an unrelated PR red because
+  # somebody else's deploy is mid-flight.
+  #
+  # Read-only. No credential is used and none is needed: the probe classifies
+  # by mounting, not by authorisation, and a 401 is a PASS.
+  # ---------------------------------------------------------------------------
+  integration-probe:
+    name: Integration probe (production)
+    runs-on: ubuntu-latest
+    needs: validate
+    # Never block a release on a third party being reachable; the release jobs
+    # do not `needs:` this one.
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Probe production
+        id: probe
+        run: |
+          dart run tool/integration_probe/integration_probe.dart \
+            --origin https://api.servana.com.ph \
+            --contract docs/integration/contract_snapshot.json \
+            --out-dir build/integration \
+            --client-endpoints lib/common/data/backend/v1_endpoints.dart
+
+      - name: Report
+        if: always()
+        run: |
+          if [ -f build/integration/BASELINE.md ]; then
+            cat build/integration/BASELINE.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '### Integration probe produced no baseline — it did not run to completion.' \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # The committed baseline is the artefact later TABs cite instead of
+      # re-measuring. If the probe's own output has moved away from it, the
+      # citation is stale and somebody should look — but a shifting rate-limit
+      # bucket is not a reason to fail a build, so this reports and does not
+      # gate.
+      - name: Baseline drift (advisory)
+        if: always()
+        run: |
+          if [ -f build/integration/baseline.json ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          try:
+              new = json.load(open('build/integration/baseline.json'))['counts']
+              old = json.load(open('docs/integration/baseline.json'))['counts']
+          except Exception as e:
+              print(f'### Baseline drift: could not compare ({e})')
+              raise SystemExit(0)
+          diff = {k: (old.get(k), new.get(k)) for k in set(old) | set(new)
+                  if old.get(k) != new.get(k)}
+          if diff:
+              print('### Baseline drift vs `docs/integration/baseline.json`')
+              print('')
+              print('| count | committed | now |')
+              print('|---|---|---|')
+              for k, (o, n) in sorted(diff.items()):
+                  print(f'| `{k}` | {o} | {n} |')
+          else:
+              print('### Baseline drift: none')
+          PY
+          fi
+
+      - name: Upload baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-baseline
+          path: build/integration/
+          if-no-files-found: warn

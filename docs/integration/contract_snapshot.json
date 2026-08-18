@@ -1,0 +1,3495 @@
+{
+  "generator": "tool/integration_probe/extract_contract.ts",
+  "backendCommit": "0aaf89f7b0aaf428387bae605532856186070d1c",
+  "backendDirty": true,
+  "v1Prefix": "/api/v1",
+  "counts": {
+    "entries": 109,
+    "implemented": 105,
+    "planned": 4,
+    "legacyMappings": 124
+  },
+  "v1": [
+    {
+      "id": "catalog.browse",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/catalogPublicService.getPublicCatalog + getPublicCatalogSummary",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.summary",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/summary",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/catalogPublicService.getPublicCatalogSummary",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.services.list",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/services",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/catalogPublicService.listPublicServices",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.services.get",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/services/:serviceId",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CATALOG_SERVICE_NOT_FOUND"
+      ],
+      "domainService": "services/catalogPublicService.getServiceDetail",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "identity.me",
+      "domain": "identity",
+      "method": "GET",
+      "path": "/api/v1/me",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "NOT_FOUND"
+      ],
+      "domainService": "services/identityService.getIdentity",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.listMine",
+      "domain": "bookings",
+      "method": "GET",
+      "path": "/api/v1/bookings",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/bookingService.getBookingsByUserId + formatBookings",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.get",
+      "domain": "bookings",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/bookingAccessService.assertBookingAccess + bookingService.getBookingById",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.timeline",
+      "domain": "bookings",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/timeline",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/bookingAccessService.assertBookingAccess + bookingService.getCustomerBookingTimeline",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.list",
+      "domain": "provider-jobs",
+      "method": "GET",
+      "path": "/api/v1/provider/jobs",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "PROVIDER_ROLE_REQUIRED"
+      ],
+      "domainService": "services/technicianService.getJobCardsByWorker + controllers/jobCardView.formatJobCard",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.get",
+      "domain": "provider-jobs",
+      "method": "GET",
+      "path": "/api/v1/provider/jobs/:bookingId",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "NOT_FOUND",
+        "PROVIDER_ROLE_REQUIRED"
+      ],
+      "domainService": "services/technicianService.getJobCardByWorker + controllers/jobCardView.formatJobCard",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "notifications.list",
+      "domain": "notifications",
+      "method": "GET",
+      "path": "/api/v1/notifications",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/events/notificationInbox.listNotifications",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "notifications.unreadCount",
+      "domain": "notifications",
+      "method": "GET",
+      "path": "/api/v1/notifications/unread-count",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/events/notificationInbox.countUnread",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "notifications.markRead",
+      "domain": "notifications",
+      "method": "PATCH",
+      "path": "/api/v1/notifications/:key/read",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "NOTIFICATION_NOT_FOUND",
+        "NOTIFICATION_NOT_ACTIONABLE"
+      ],
+      "domainService": "services/events/notificationInbox.markRead",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "notifications.dismiss",
+      "domain": "notifications",
+      "method": "DELETE",
+      "path": "/api/v1/notifications/:key",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "NOTIFICATION_NOT_FOUND",
+        "NOTIFICATION_NOT_ACTIONABLE"
+      ],
+      "domainService": "services/events/notificationInbox.dismiss",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "notifications.markAllRead",
+      "domain": "notifications",
+      "method": "POST",
+      "path": "/api/v1/notifications/read-all",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/events/notificationInbox.markAllRead",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.notificationPreferences.get",
+      "domain": "notifications",
+      "method": "GET",
+      "path": "/api/v1/me/notification-preferences",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/events/notificationPreferences.getPreferences",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.notificationPreferences.patch",
+      "domain": "notifications",
+      "method": "PATCH",
+      "path": "/api/v1/me/notification-preferences",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/events/notificationPreferences.patchPreferences",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.devices.register",
+      "domain": "notifications",
+      "method": "POST",
+      "path": "/api/v1/me/devices",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/events/deviceTokenService.registerDevice",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "me.devices.release",
+      "domain": "notifications",
+      "method": "DELETE",
+      "path": "/api/v1/me/devices",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/events/deviceTokenService.releaseDevice",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "me.patch",
+      "domain": "account",
+      "method": "PATCH",
+      "path": "/api/v1/me",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ACCOUNT_FIELD_NOT_WRITABLE",
+        "NOT_FOUND"
+      ],
+      "domainService": "services/account/accountService.patchAccount",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.settings.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/me/settings",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/account/accountSettingsService.getSettings",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.settings.patch",
+      "domain": "account",
+      "method": "PATCH",
+      "path": "/api/v1/me/settings",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ACCOUNT_FIELD_NOT_WRITABLE"
+      ],
+      "domainService": "services/account/accountSettingsService.patchSettings",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.security.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/me/security",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/account/accountSettingsService.getSecurity",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "me.completion.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/me/completion",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/account/profileCompletionService.getCompletion",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "customer.profile.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/customer/profile",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "NOT_FOUND"
+      ],
+      "domainService": "services/account/accountService.getCustomerProfile",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "customer.profile.patch",
+      "domain": "account",
+      "method": "PATCH",
+      "path": "/api/v1/customer/profile",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ACCOUNT_FIELD_NOT_WRITABLE",
+        "NOT_FOUND"
+      ],
+      "domainService": "services/account/accountService.patchCustomerProfile",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "customer.addresses.list",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/customer/addresses",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/account/addressBookService.listAddresses",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "customer.addresses.create",
+      "domain": "account",
+      "method": "POST",
+      "path": "/api/v1/customer/addresses",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ADDRESS_LIMIT_REACHED"
+      ],
+      "domainService": "services/account/addressBookService.createAddress",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "customer.addresses.update",
+      "domain": "account",
+      "method": "PATCH",
+      "path": "/api/v1/customer/addresses/:addressId",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ADDRESS_NOT_FOUND"
+      ],
+      "domainService": "services/account/addressBookService.updateAddress",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "customer.addresses.delete",
+      "domain": "account",
+      "method": "DELETE",
+      "path": "/api/v1/customer/addresses/:addressId",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ADDRESS_NOT_FOUND"
+      ],
+      "domainService": "services/account/addressBookService.deleteAddress",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "customer.addresses.setDefault",
+      "domain": "account",
+      "method": "POST",
+      "path": "/api/v1/customer/addresses/:addressId/default",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ADDRESS_NOT_FOUND"
+      ],
+      "domainService": "services/account/addressBookService.setDefaultAddress",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.profile.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/profile",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "NOT_FOUND"
+      ],
+      "domainService": "services/account/providerProfileService.getProviderProfile",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "provider.profile.patch",
+      "domain": "account",
+      "method": "PATCH",
+      "path": "/api/v1/provider/profile",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "ACCOUNT_FIELD_NOT_WRITABLE"
+      ],
+      "domainService": "services/account/providerProfileService.patchProviderProfile",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.publicProfile.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/providers/:providerUid/profile",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "NOT_FOUND"
+      ],
+      "domainService": "services/account/providerProfileService.getProviderProfile",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "provider.documents.list",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/documents",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/account/providerProfileService.listDocuments",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.documents.types",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/document-types",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/providerProfileComplianceService.DOCUMENT_TYPE_CATALOG",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.documents.create",
+      "domain": "account",
+      "method": "POST",
+      "path": "/api/v1/provider/documents",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "NOT_FOUND",
+        "CONFLICT"
+      ],
+      "domainService": "services/providerProfileComplianceService.uploadDocument",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.documents.preview",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/documents/:documentId/preview",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "NOT_FOUND"
+      ],
+      "domainService": "services/providerProfileComplianceService.getDocumentPreview",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.documents.delete",
+      "domain": "account",
+      "method": "DELETE",
+      "path": "/api/v1/provider/documents/:documentId",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "NOT_FOUND",
+        "CONFLICT"
+      ],
+      "domainService": "services/providerProfileComplianceService.deleteDocument",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.availability.get",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/availability",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/providerAvailabilityEngine.getAvailabilityProfile",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.availability.patch",
+      "domain": "account",
+      "method": "PATCH",
+      "path": "/api/v1/provider/availability",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "STALE_STATE"
+      ],
+      "domainService": "services/providerAvailabilityEngine.saveWeeklySchedule",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.timeOff.list",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/time-off",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/providerAvailabilityEngine.listTimeOff",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.timeOff.create",
+      "domain": "account",
+      "method": "POST",
+      "path": "/api/v1/provider/time-off",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/providerAvailabilityEngine.createTimeOff",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.timeOff.cancel",
+      "domain": "account",
+      "method": "DELETE",
+      "path": "/api/v1/provider/time-off/:timeOffId",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "NOT_FOUND"
+      ],
+      "domainService": "services/providerAvailabilityEngine.cancelTimeOff",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.services.list",
+      "domain": "account",
+      "method": "GET",
+      "path": "/api/v1/provider/services",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/account/providerProfileService.listServices",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "reviews.provider.list",
+      "domain": "reviews",
+      "method": "GET",
+      "path": "/api/v1/reviews/providers/:providerUid",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/customerReviewService.listProviderReviews",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "reviews.provider.rating",
+      "domain": "reviews",
+      "method": "GET",
+      "path": "/api/v1/reviews/providers/:providerUid/rating",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/customerReviewService.getProviderAggregate",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.review.create",
+      "domain": "reviews",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/review",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "REVIEW_FORBIDDEN",
+        "REVIEW_NOT_ELIGIBLE",
+        "REVIEW_ALREADY_EXISTS"
+      ],
+      "domainService": "services/customerReviewService.createReview",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.review.get",
+      "domain": "reviews",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/review",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "REVIEW_FORBIDDEN"
+      ],
+      "domainService": "services/customerReviewService.getReviewByBooking",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.supportCases.create",
+      "domain": "reviews",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/support-cases",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "SUPPORT_BOOKING_NOT_ELIGIBLE",
+        "SUPPORT_CASE_LIMIT_REACHED"
+      ],
+      "domainService": "services/reviews/postServiceSupportService.createSupportCase",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.supportCases.list",
+      "domain": "reviews",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/support-cases",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/reviews/postServiceSupportService.listSupportCases",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "settings.notificationPreferences.get",
+      "domain": "settings",
+      "method": "GET",
+      "path": "/api/v1/settings/notification-preferences",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/notificationService.getNotificationPrefs",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "settings.notificationPreferences.put",
+      "domain": "settings",
+      "method": "PUT",
+      "path": "/api/v1/settings/notification-preferences",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/notificationService.saveNotificationPrefs",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "auth.register",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "REGISTRATION_REJECTED",
+        "WEAK_PASSWORD",
+        "ACCOUNT_LINK_REQUIRED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/auth.service.registerUser | services/firebaseFunctions.service.firebaseProviderRegister",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "auth.login",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "INVALID_CREDENTIALS",
+        "ACCOUNT_UNVERIFIED",
+        "ACCOUNT_DISABLED",
+        "AUDIENCE_MISMATCH",
+        "PASSWORD_NOT_AVAILABLE",
+        "ACCOUNT_LINK_REQUIRED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/authLoginService → services/auth.service.loggedInUser | firebaseFunctions.firebaseAuthLogin",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "auth.refresh",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "REFRESH_TOKEN_INVALID",
+        "REFRESH_UNAVAILABLE",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/tokenRefreshService.refreshIdToken",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "auth.logout",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/authSessionService.endAllSessions",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "auth.forgotPassword",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/forgot-password",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/auth.service.forgotPassword",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "auth.resetPassword",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/reset-password",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "RESET_TOKEN_INVALID",
+        "WEAK_PASSWORD",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/auth.service.resetPassword → services/authSessionService.endSessionsOnCredentialChange",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "auth.verifyEmail",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/verify-email",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "OTP_INVALID",
+        "OTP_EXPIRED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/otpService.verifyEmailOtp + services/auth.service.verifyEmailOtp",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "planned",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "auth.resendVerification",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/resend-verification",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "services/auth.service.resendEmailOtp | getAndSendEmailVerificationLink",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "auth.verifyMobile",
+      "domain": "auth",
+      "method": "POST",
+      "path": "/api/v1/auth/verify-mobile",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "INVALID_CREDENTIALS",
+        "ACCOUNT_LINK_REQUIRED"
+      ],
+      "domainService": "services/identityVerificationSync.provenFrom + recordProvenIdentifiers, guarded by services/accountLinkGuard",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "search.query",
+      "domain": "search",
+      "method": "GET",
+      "path": "/api/v1/search",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/catalogSearchService.searchCatalog",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.search",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/search",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/catalogSearchService.searchCatalog",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.categories.list",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/categories",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/catalogPublicService.listCategories",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.categories.get",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/categories/:categoryId",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CATALOG_CATEGORY_NOT_FOUND"
+      ],
+      "domainService": "services/catalogPublicService.getCategory",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.categories.subcategories",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/categories/:categoryId/subcategories",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CATALOG_CATEGORY_NOT_FOUND"
+      ],
+      "domainService": "services/catalogPublicService.listSubcategoriesOfCategory",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.subcategories.get",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/subcategories/:subcategoryId",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CATALOG_SUBCATEGORY_NOT_FOUND"
+      ],
+      "domainService": "services/catalogPublicService.getSubcategory",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "catalog.subcategories.services",
+      "domain": "catalog",
+      "method": "GET",
+      "path": "/api/v1/catalog/subcategories/:subcategoryId/services",
+      "auth": "public",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CATALOG_SUBCATEGORY_NOT_FOUND"
+      ],
+      "domainService": "services/catalogPublicService.listServicesOfSubcategory",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "legacy",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "home.feed",
+      "domain": "home",
+      "method": "GET",
+      "path": "/api/v1/home",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED"
+      ],
+      "domainService": "services/home/homeService.composeHome",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "home.sections",
+      "domain": "home",
+      "method": "GET",
+      "path": "/api/v1/home/sections",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/home/homeService.describeSections",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "conversations.create",
+      "domain": "conversations",
+      "method": "POST",
+      "path": "/api/v1/conversations",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "CONVERSATION_ACCESS_DENIED",
+        "CONVERSATION_NOT_AVAILABLE"
+      ],
+      "domainService": "services/messaging/messagingService.openConversation",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "conversations.list",
+      "domain": "conversations",
+      "method": "GET",
+      "path": "/api/v1/conversations",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/messaging/messagingService.listConversations",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "conversations.get",
+      "domain": "conversations",
+      "method": "GET",
+      "path": "/api/v1/conversations/:conversationId",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CONVERSATION_ACCESS_DENIED"
+      ],
+      "domainService": "services/messaging/messagingService.getConversation",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "conversations.messages.list",
+      "domain": "conversations",
+      "method": "GET",
+      "path": "/api/v1/conversations/:conversationId/messages",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CONVERSATION_ACCESS_DENIED",
+        "MESSAGE_HISTORY_UNAVAILABLE"
+      ],
+      "domainService": "services/messaging/messagingService.listMessages",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "conversations.messages.create",
+      "domain": "conversations",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/messages",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CONVERSATION_ACCESS_DENIED",
+        "CONVERSATION_NOT_WRITABLE",
+        "MESSAGE_INVALID",
+        "MESSAGE_IDEMPOTENCY_KEY_INVALID",
+        "MESSAGE_ATTACHMENT_REJECTED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "chat/chat.service.sendMessage",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "conversations.attachments.create",
+      "domain": "conversations",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/attachments",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CONVERSATION_ACCESS_DENIED",
+        "CONVERSATION_NOT_WRITABLE",
+        "MESSAGE_ATTACHMENT_REJECTED",
+        "RATE_LIMITED"
+      ],
+      "domainService": "chat/chat.service.uploadAttachment",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "conversations.messages.report",
+      "domain": "conversations",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/messages/:messageId/report",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CONVERSATION_ACCESS_DENIED",
+        "MESSAGE_NOT_FOUND",
+        "MESSAGE_INVALID",
+        "RATE_LIMITED"
+      ],
+      "domainService": "chat/chat.service.reportMessage",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "conversations.read",
+      "domain": "conversations",
+      "method": "POST",
+      "path": "/api/v1/conversations/:conversationId/read",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "CONVERSATION_ACCESS_DENIED",
+        "READ_POINTER_INVALID"
+      ],
+      "domainService": "services/messaging/messagingService.markRead",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "bookings.cancel",
+      "domain": "bookings",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/cancel",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (CUSTOMER_CANCEL)",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.transitions",
+      "domain": "bookings",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/transitions",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/booking/transitionExecutor.getBookingTimeline",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "provider.jobs.accept",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/accept",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "PROVIDER_ROLE_REQUIRED",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_ACCEPT)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.decline",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/decline",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "PROVIDER_ROLE_REQUIRED",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_DECLINE)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.enroute",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/en-route",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "PROVIDER_ROLE_REQUIRED",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_EN_ROUTE)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.arrived",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/arrived",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "PROVIDER_ROLE_REQUIRED",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_ARRIVED)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.start",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/start",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "BOOKING_WORKER_CODE_INVALID",
+        "PROVIDER_ROLE_REQUIRED",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_START)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.complete",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/complete",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "PROVIDER_ROLE_REQUIRED",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_COMPLETE)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.jobs.cancel",
+      "domain": "provider-jobs",
+      "method": "POST",
+      "path": "/api/v1/provider/jobs/:bookingId/cancel",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "PROVIDER_ROLE_REQUIRED",
+        "BOOKING_POLICY_REFUSED",
+        "BOOKING_PROVIDER_CANCEL_WINDOW_EXPIRED",
+        "BOOKING_PROVIDER_CANCEL_STAGE_INVALID",
+        "BOOKING_PROVIDER_CANCEL_SCHEDULE_UNKNOWN",
+        "BOOKING_PROVIDER_CANCEL_REASON_INVALID",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (PROVIDER_CANCEL)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.tracking",
+      "domain": "booking-experiences",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/tracking",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/booking/bookingTrackingService.getBookingTracking",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.otp.request",
+      "domain": "booking-experiences",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/otp/request",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_OTP_PURPOSE_INVALID",
+        "BOOKING_OTP_NOT_APPLICABLE",
+        "BOOKING_OTP_ACTOR_NOT_PERMITTED",
+        "BOOKING_OTP_RESEND_COOLDOWN",
+        "BOOKING_OTP_RESEND_LIMIT"
+      ],
+      "domainService": "services/booking/bookingOtpService.requestBookingOtp",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.otp.verify",
+      "domain": "booking-experiences",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/otp/verify",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_OTP_PURPOSE_INVALID",
+        "BOOKING_OTP_NOT_APPLICABLE",
+        "BOOKING_OTP_ACTOR_NOT_PERMITTED",
+        "BOOKING_OTP_EXPIRED",
+        "BOOKING_OTP_ATTEMPTS_EXHAUSTED",
+        "BOOKING_OTP_NOT_ISSUED",
+        "BOOKING_OTP_INVALID",
+        "BOOKING_WORKER_CODE_INVALID",
+        "BOOKING_STATE_CONFLICT",
+        "BOOKING_TRANSITION_INVALID",
+        "BOOKING_TERMINAL",
+        "IDEMPOTENCY_KEY_INVALID",
+        "IDEMPOTENCY_KEY_REUSED"
+      ],
+      "domainService": "services/booking/bookingOtpService.verifyBookingOtp",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.otp.status",
+      "domain": "booking-experiences",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/otp/status",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_OTP_PURPOSE_INVALID"
+      ],
+      "domainService": "services/booking/bookingOtpService.readCredentialState",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.reschedule",
+      "domain": "booking-experiences",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/reschedule",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_NOT_RESCHEDULABLE",
+        "BOOKING_SCHEDULE_INVALID",
+        "BOOKING_RESCHEDULE_NOTICE_REQUIRED",
+        "BOOKING_RESCHEDULE_REASON_INVALID",
+        "BOOKING_RESCHEDULE_PROVIDER_CONFLICT",
+        "BOOKING_SCHEDULE_CHANGED"
+      ],
+      "domainService": "services/booking/bookingRescheduleService.rescheduleBooking",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "bookings.reschedule.history",
+      "domain": "booking-experiences",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/reschedule",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/booking/bookingRescheduleService.listRescheduleRequests",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.additionalWork.create",
+      "domain": "booking-experiences",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/additional-work",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "PROVIDER_ROLE_REQUIRED",
+        "BOOKING_ADDITIONAL_WORK_INVALID",
+        "BOOKING_ADDITIONAL_WORK_NOT_IN_PROGRESS"
+      ],
+      "domainService": "services/additional.service.additionalService.createRequest",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "bookings.additionalWork.list",
+      "domain": "booking-experiences",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/additional-work",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/additional.service.additionalService.getByBooking",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "legacy",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.disputes.open",
+      "domain": "booking-experiences",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/disputes",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "BOOKING_DISPUTE_ALREADY_OPEN",
+        "BOOKING_DISPUTE_NOT_ACTIONABLE",
+        "BOOKING_DISPUTE_CATEGORY_INVALID"
+      ],
+      "domainService": "services/booking/bookingDisputeService.openDispute",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "bookings.disputes.list",
+      "domain": "booking-experiences",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/disputes",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/booking/bookingDisputeService.listDisputes",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "admin.bookings.list",
+      "domain": "admin-bookings",
+      "method": "GET",
+      "path": "/api/v1/admin/bookings",
+      "auth": "admin",
+      "status": "planned",
+      "idempotent": true,
+      "errors": [
+        "PERMISSION_REQUIRED"
+      ],
+      "domainService": "services/adminBookingService.listBookings",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "admin.bookings.assignmentCandidates",
+      "domain": "admin-bookings",
+      "method": "GET",
+      "path": "/api/v1/admin/bookings/:bookingId/assignment-candidates",
+      "auth": "admin",
+      "status": "planned",
+      "idempotent": true,
+      "errors": [
+        "PERMISSION_REQUIRED",
+        "VALIDATION_FAILED",
+        "NOT_FOUND"
+      ],
+      "domainService": "services/providerEligibilityEngine.listAssignmentCandidatePool",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "admin.bookings.assign",
+      "domain": "admin-bookings",
+      "method": "POST",
+      "path": "/api/v1/admin/bookings/:bookingId/assign",
+      "auth": "admin",
+      "status": "planned",
+      "idempotent": false,
+      "errors": [
+        "PERMISSION_REQUIRED",
+        "VALIDATION_FAILED",
+        "NOT_FOUND",
+        "BOOKING_STATE_CONFLICT",
+        "CONFLICT"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (ADMIN_ASSIGN)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "admin.bookings.reassign",
+      "domain": "admin-bookings",
+      "method": "POST",
+      "path": "/api/v1/admin/bookings/:bookingId/reassign",
+      "auth": "admin",
+      "status": "planned",
+      "idempotent": false,
+      "errors": [
+        "PERMISSION_REQUIRED",
+        "VALIDATION_FAILED",
+        "NOT_FOUND",
+        "BOOKING_STATE_CONFLICT",
+        "CONFLICT"
+      ],
+      "domainService": "services/booking/transitionExecutor.transitionBooking (ADMIN_REASSIGN)",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "bookings.payments.intent",
+      "domain": "finance",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/payment-intents",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "PAYMENT_ACTOR_NOT_PERMITTED",
+        "PAYMENT_STATE_CONFLICT",
+        "PAYMENT_PROCESSOR_UNAVAILABLE"
+      ],
+      "domainService": "services/finance/bookingPaymentService.startPaymentIntent",
+      "callers": {
+        "customerMobile": "legacy",
+        "customerWeb": "legacy",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.payments.get",
+      "domain": "finance",
+      "method": "GET",
+      "path": "/api/v1/bookings/:bookingId/payment",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED"
+      ],
+      "domainService": "services/finance/bookingPaymentService.getBookingPayment",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "planned",
+        "providerWeb": "planned",
+        "admin": "planned"
+      }
+    },
+    {
+      "id": "bookings.refunds.create",
+      "domain": "finance",
+      "method": "POST",
+      "path": "/api/v1/bookings/:bookingId/refunds",
+      "auth": "authenticated",
+      "status": "implemented",
+      "idempotent": false,
+      "errors": [
+        "VALIDATION_FAILED",
+        "BOOKING_NOT_FOUND",
+        "BOOKING_ACCESS_DENIED",
+        "PAYMENT_NOT_FOUND",
+        "PAYMENT_ACTOR_NOT_PERMITTED",
+        "REFUND_PAYMENT_NOT_CAPTURED",
+        "REFUND_ALREADY_SETTLED",
+        "REFUND_IN_PROGRESS",
+        "REFUND_EXCEEDS_CAPTURED",
+        "REFUND_TRIGGER_INVALID",
+        "REFUND_OUTCOME_NOT_REFUNDABLE"
+      ],
+      "domainService": "services/finance/bookingPaymentService.refundBookingPayment",
+      "callers": {
+        "customerMobile": "planned",
+        "customerWeb": "planned",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    },
+    {
+      "id": "provider.earnings.summary",
+      "domain": "finance",
+      "method": "GET",
+      "path": "/api/v1/provider/earnings/summary",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "EARNINGS_RANGE_INVALID"
+      ],
+      "domainService": "services/finance/providerEarningsService.getEarningsSummary",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.earnings.transactions",
+      "domain": "finance",
+      "method": "GET",
+      "path": "/api/v1/provider/earnings/transactions",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "EARNINGS_RANGE_INVALID"
+      ],
+      "domainService": "services/finance/providerEarningsService.listEarningsTransactions",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "provider.earnings.payouts",
+      "domain": "finance",
+      "method": "GET",
+      "path": "/api/v1/provider/earnings/payouts",
+      "auth": "provider",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [],
+      "domainService": "services/finance/providerEarningsService.listProviderPayouts",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "legacy",
+        "providerWeb": "legacy",
+        "admin": "n/a"
+      }
+    },
+    {
+      "id": "admin.finance.reconciliation",
+      "domain": "finance",
+      "method": "GET",
+      "path": "/api/v1/admin/finance/reconciliation",
+      "auth": "admin",
+      "status": "implemented",
+      "idempotent": true,
+      "errors": [
+        "PERMISSION_REQUIRED"
+      ],
+      "domainService": "services/finance/financeReconciliationService.getReconciliationReport",
+      "callers": {
+        "customerMobile": "n/a",
+        "customerWeb": "n/a",
+        "providerMobile": "n/a",
+        "providerWeb": "n/a",
+        "admin": "legacy"
+      }
+    }
+  ],
+  "legacy": [
+    {
+      "method": "GET",
+      "path": "/api/catalog",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Shadowed by booking.routes GET /:id until this command reordered the mounts. Never deployed, has no installed caller, and is superseded by this route — but it stays because the unpushed 2bdaf0d advertised it and removing a path in the same session it was fixed would be two contradictory signals to the Client team.",
+      "supersededBy": "catalog.browse",
+      "expectedSuccessor": "/api/v1/catalog",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/services/full",
+      "disposition": "CANONICALIZE",
+      "note": "The legacy LEVEL-2/LEVEL-3 projection the customer app reads today. Cannot be retired until ServanaClient migrates: it is the only catalog either Flutter app has ever consumed.",
+      "supersededBy": "catalog.browse",
+      "expectedSuccessor": "/api/v1/catalog",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/summary",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same router, superseded by this route.",
+      "supersededBy": "catalog.summary",
+      "expectedSuccessor": "/api/v1/catalog/summary",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/services",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same router, superseded by this route.",
+      "supersededBy": "catalog.services.list",
+      "expectedSuccessor": "/api/v1/catalog/services",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog/services/:serviceId",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same router, superseded by this route.",
+      "supersededBy": "catalog.services.get",
+      "expectedSuccessor": "/api/v1/catalog/services/:serviceId",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web reads this on every session bootstrap. It now delegates to the same identityService.getIdentity this route uses, so the two cannot drift; only the envelope differs.",
+      "supersededBy": "identity.me",
+      "expectedSuccessor": "/api/v1/me",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/profile",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "Not a duplicate: returns the CUSTOMER profile aggregate (addresses, preferences), not the identity record. Retained; a v1 successor belongs in the customer-profile domain command, not here.",
+      "supersededBy": "identity.me",
+      "expectedSuccessor": "/api/v1/me",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/:userId/bookings",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Takes the customer uid from the PATH and then asserts it equals the token subject — so the parameter is decoration that has already caused one real BOLA. v1 drops it. ServanaClient and the customer web portal both still call the legacy form.",
+      "supersededBy": "bookings.listMine",
+      "expectedSuccessor": "/api/v1/bookings",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/:id",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "A single-segment wildcard at the API root. It is the reason no unknown one-segment GET can 404, and it swallowed GET /api/catalog. It is a live protected-client contract (§5) so it cannot be moved, but every new client must use the v1 form. Retirement is gated on telemetry showing zero non-numeric ids and zero legacy callers.",
+      "supersededBy": "bookings.get",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/:id/timeline",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same handler chain; v1 is the unambiguous path.",
+      "supersededBy": "bookings.timeline",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/timeline",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/bookings/:bookingId/timeline",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "Genuinely role-specific: the shared builder is written from the provider's seat, where \"YOU\" means the provider. Same domain service, different voicing. Documented rather than merged.",
+      "supersededBy": "bookings.timeline",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/timeline",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/worker/job-cards",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web calls this today. Same service, same view function, legacy envelope (a bare array).",
+      "supersededBy": "provider.jobs.list",
+      "expectedSuccessor": "/api/v1/provider/jobs",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/workers/:workerId/job-cards",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "ServanaWorker calls this. Takes the provider uid from the PATH; it is now behind verifyAuth + verifyOwnership, but the parameter remains a BOLA shape that v1 removes. Retirement gated on a ServanaWorker release.",
+      "supersededBy": "provider.jobs.list",
+      "expectedSuccessor": "/api/v1/provider/jobs",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/worker/job-cards/:bookingId",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web. Same service and view function.",
+      "supersededBy": "provider.jobs.get",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/notifications",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Customer clients call this today.",
+      "supersededBy": "notifications.list",
+      "expectedSuccessor": "/api/v1/notifications",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/notifications/unread-count",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Declared before /user/notifications/:key on the legacy router precisely so \"unread-count\" is not parsed as a notification key. v1 has the same ordering requirement and the shadow test now enforces it.",
+      "supersededBy": "notifications.unreadCount",
+      "expectedSuccessor": "/api/v1/notifications/unread-count",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/user/notifications/:key/read",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service and the same key validation. The path differs only in the /user prefix, which named the caller rather than the resource.",
+      "supersededBy": "notifications.markRead",
+      "expectedSuccessor": "/api/v1/notifications/:key/read",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/provider/notifications/:key",
+      "disposition": "CANONICALIZE",
+      "note": "The provider inbox had list, read, read-all and dismiss; v1 took the first three and left dismiss behind, so every provider client kept one legacy call for one verb. The legacy route is provider-only and reaches provider_notifications directly; this one resolves the store from the caller, so a CUSTOMER can dismiss for the first time.",
+      "supersededBy": "notifications.dismiss",
+      "expectedSuccessor": "/api/v1/notifications/:key",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/notifications/mark-all-read",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service; v1 uses the resource-shaped path.",
+      "supersededBy": "notifications.markAllRead",
+      "expectedSuccessor": "/api/v1/notifications/read-all",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/notification-preferences",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web. Same uid-keyed table - nothing about it is provider-specific, and the role gate on this path is the reason customers had no way to configure notifications they were already receiving.",
+      "supersededBy": "me.notificationPreferences.get",
+      "expectedSuccessor": "/api/v1/me/notification-preferences",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/provider/notification-preferences",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web sends a full replace. Both shapes reach one writer, so a provider who has not migrated keeps the exact behaviour they have.",
+      "supersededBy": "me.notificationPreferences.patch",
+      "expectedSuccessor": "/api/v1/me/notification-preferences",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/provider/fcm-token",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "ServanaWorker and Provider Web. Multi-device already, and dual-written by the canonical service so a device registered either way stays reachable.",
+      "supersededBy": "me.devices.register",
+      "expectedSuccessor": "/api/v1/me/devices",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/fcm-token",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "ServanaClient. Wrote a SINGLE column, so a customer with a phone and a tablet only ever received push on whichever signed in last - silently. The canonical route gives customers the multi-device behaviour providers already had.",
+      "supersededBy": "me.devices.register",
+      "expectedSuccessor": "/api/v1/me/devices",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/provider/fcm-token",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same operation, provider-gated. Both reach one service.",
+      "supersededBy": "me.devices.release",
+      "expectedSuccessor": "/api/v1/me/devices",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/fcm-token",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same operation for customers, against the single legacy column.",
+      "supersededBy": "me.devices.release",
+      "expectedSuccessor": "/api/v1/me/devices",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/user/updateprofile",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live profile write for every client. Same writer - this entry delegates to `user.service.updateUserProfile` rather than touching the columns, so the two paths cannot grow different rules. It additionally REFUSES unwritable fields by name instead of stripping them silently.",
+      "supersededBy": "me.patch",
+      "expectedSuccessor": "/api/v1/me",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/account-state",
+      "disposition": "KEEP",
+      "note": "NOT a duplicate. Account state answers \"what may this provider do RIGHT NOW\" - suspended, pending, active - and is what gates the app. Completion answers \"what is left to fill in\". A suspended provider can be 100% complete, and a pending one can be active-eligible and missing a photo.",
+      "supersededBy": "me.completion.get",
+      "expectedSuccessor": "/api/v1/me/completion",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/profile",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live customer profile aggregate. It returns the credential row joined to the profile row; this entry returns the customer EXTENSION only, because the identity half is `/me` and duplicating it is how two endpoints come to disagree about a name.",
+      "supersededBy": "customer.profile.get",
+      "expectedSuccessor": "/api/v1/customer/profile",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/user/updateprofile",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "One legacy route wrote both halves. Same writer underneath; the split is in the DTO.",
+      "supersededBy": "customer.profile.patch",
+      "expectedSuccessor": "/api/v1/customer/profile",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/alluseraddresses",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live list for Customer Web and Mobile. It branches on role inside the service and returns EVERY customer address to an admin; the canonical route is owner-scoped in SQL with no role branch, and admin address access belongs on an admin route.",
+      "supersededBy": "customer.addresses.list",
+      "expectedSuccessor": "/api/v1/customer/addresses",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/:userId/addresses",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The provider portal reading a booking customer's address. A genuinely different authorization question - it is answered from the booking relationship, not from ownership - and it stays on its own route rather than becoming a uid parameter here.",
+      "supersededBy": "customer.addresses.list",
+      "expectedSuccessor": "/api/v1/customer/addresses",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/adduseraddress",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "A create verb that doubles as an update when the body happens to carry an addressId. The canonical pair splits them, and both reach the same writer so the MongoDB geocode sync has one caller.",
+      "supersededBy": "customer.addresses.create",
+      "expectedSuccessor": "/api/v1/customer/addresses",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/adduseraddress",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The same legacy route, taking the update branch when the body carries an addressId.",
+      "supersededBy": "customer.addresses.update",
+      "expectedSuccessor": "/api/v1/customer/addresses/:addressId",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/deleteaddress",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Takes the id in a query string and leaves the account with NO default when the primary is removed - a checkout screen with nothing selected and no way to tell why.",
+      "supersededBy": "customer.addresses.delete",
+      "expectedSuccessor": "/api/v1/customer/addresses/:addressId",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/user/makeaddressprimary",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "TWO statements with no transaction - set the new default, then clear the others. A failure between them leaves the account with two primaries, and every reader picks whichever the planner returned first, including checkout.",
+      "supersededBy": "customer.addresses.setDefault",
+      "expectedSuccessor": "/api/v1/customer/addresses/:addressId/default",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/profile",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider profile, built inline in a controller with a hand-written column list. Safe only for as long as nobody adds a column; the canonical route emits the fields the policy says this seat may read.",
+      "supersededBy": "provider.profile.get",
+      "expectedSuccessor": "/api/v1/provider/profile",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/profile-center",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The compliance view: revision history, review state, field-level edit affordances. A genuinely different question, and it already reads the same field registry this entry projects from.",
+      "supersededBy": "provider.profile.get",
+      "expectedSuccessor": "/api/v1/provider/profile",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/provider/public-profile-revisions",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live revision submit. IDENTICAL domain call - this is a second URL onto one workflow.",
+      "supersededBy": "provider.profile.patch",
+      "expectedSuccessor": "/api/v1/provider/profile",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/documents",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live document list. Same `worker_requirements` model - the command is explicit that provider_documents must not be invented, and it does not exist.",
+      "supersededBy": "provider.documents.list",
+      "expectedSuccessor": "/api/v1/provider/documents",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/document-types",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The same static catalog constant. No per-caller data of any kind.",
+      "supersededBy": "provider.documents.types",
+      "expectedSuccessor": "/api/v1/provider/document-types",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/provider/documents",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live submit for both provider clients. IDENTICAL domain call, and it carries the same post-commit `autoOnlineEngine.evaluateProvider` — submitting the last outstanding requirement is what makes a provider eligible to go online, so an endpoint that stored the file without re-evaluating would leave them blocked.",
+      "supersededBy": "provider.documents.create",
+      "expectedSuccessor": "/api/v1/provider/documents",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/documents/:documentId/preview",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same authorization and the same short-lived grant. The `Cache-Control: private, no-store` and `Pragma: no-cache` headers are set by the handler rather than the route, so they travel with the only v1 response that contains a private storage URL.",
+      "supersededBy": "provider.documents.preview",
+      "expectedSuccessor": "/api/v1/provider/documents/:documentId/preview",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/provider/documents/:documentId",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "IDENTICAL domain call, and it re-evaluates online eligibility for the same reason the upload does: withdrawing a requirement can make a provider ineligible, and skipping it would leave someone online against a document they just removed.",
+      "supersededBy": "provider.documents.delete",
+      "expectedSuccessor": "/api/v1/provider/documents/:documentId",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/worker/availability",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider availability read. Same engine; the legacy shape bridges it to a web schedule.",
+      "supersededBy": "provider.availability.get",
+      "expectedSuccessor": "/api/v1/provider/availability",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/availability",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live write. IDENTICAL engine call, including its expectedVersion check.",
+      "supersededBy": "provider.availability.patch",
+      "expectedSuccessor": "/api/v1/provider/availability",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/worker/time-off",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same engine, same active-only filter. A cancelled period is history rather than a commitment and appears in neither.",
+      "supersededBy": "provider.timeOff.list",
+      "expectedSuccessor": "/api/v1/provider/time-off",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/worker/time-off",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "IDENTICAL engine call, and it carries the same bookingConflicts and conflictNotice. Time off is created even when it overlaps confirmed work - a provider who is ill must be able to record it - but the work is still theirs, and a response that did not say so would leave them assuming leave cancels their jobs.",
+      "supersededBy": "provider.timeOff.create",
+      "expectedSuccessor": "/api/v1/provider/time-off",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/worker/time-off/:id",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "IDENTICAL engine call. Cancels rather than deletes; the row survives as history.",
+      "supersededBy": "provider.timeOff.cancel",
+      "expectedSuccessor": "/api/v1/provider/time-off/:timeOffId",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/worker/services-overview",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider services screen. Same `employee_services` qualification; the canonical entry projects it keyed on services.id with the active flag matching actually selects on.",
+      "supersededBy": "provider.services.list",
+      "expectedSuccessor": "/api/v1/provider/services",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/worker/service-applications",
+      "disposition": "KEEP",
+      "note": "NOT a duplicate. An application is the REQUEST to be approved for a service and carries its own lifecycle; this entry is the resulting qualification. A provider can have a pending application and no qualification, which is exactly the state the two endpoints exist to tell apart.",
+      "supersededBy": "provider.services.list",
+      "expectedSuccessor": "/api/v1/provider/services",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/providers/:providerUid/reviews",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service. The legacy form does not clamp limit/offset; v1 does (BE-10).",
+      "supersededBy": "reviews.provider.list",
+      "expectedSuccessor": "/api/v1/reviews/providers/:providerUid",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/providers/:providerUid/rating",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service. Kept because it sits beside the reviews list that a future customer client may already be calling; retiring one without the other would be half a change.",
+      "supersededBy": "reviews.provider.rating",
+      "expectedSuccessor": "/api/v1/reviews/providers/:providerUid/rating",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/:bookingId/reviews",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live customer review write. IDENTICAL domain call - this is a second URL onto one write, and the legacy route keeps its role guard and its response shape.",
+      "supersededBy": "bookings.review.create",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/review",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookings/:bookingId/reviews",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live read. Same service; the canonical entry folds in the eligibility verdict.",
+      "supersededBy": "bookings.review.get",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/review",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookings/:bookingId/review-eligibility",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "A SECOND call the client makes to decide whether to show the form. Folded into the read above, because asking twice means a screen that offers a form the next call refuses.",
+      "supersededBy": "bookings.review.get",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/review",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/tickets",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The general customer contact surface. It carries no bookingId, so a quality complaint raised through it arrives with no way to see which visit it is about. Kept for contact that is genuinely not about a booking.",
+      "supersededBy": "bookings.supportCases.create",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/support-cases",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/notification-preferences",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web. Same uid-keyed service — nothing about it is provider-specific.",
+      "supersededBy": "settings.notificationPreferences.get",
+      "expectedSuccessor": "/api/v1/settings/notification-preferences",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/workers/:uid/notification-preferences",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "ServanaWorker. Same service, uid taken from the path instead of the token.",
+      "supersededBy": "settings.notificationPreferences.get",
+      "expectedSuccessor": "/api/v1/settings/notification-preferences",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/provider/notification-preferences",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Provider Web. Same service.",
+      "supersededBy": "settings.notificationPreferences.put",
+      "expectedSuccessor": "/api/v1/settings/notification-preferences",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/workers/:uid/notification-preferences",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "ServanaWorker. Same service.",
+      "supersededBy": "settings.notificationPreferences.put",
+      "expectedSuccessor": "/api/v1/settings/notification-preferences",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Email + password registration. Same service; v1 accepts either credential kind on one path instead of splitting them across two routes with two response shapes.",
+      "supersededBy": "auth.register",
+      "expectedSuccessor": "/api/v1/auth/register",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/provider/register",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Firebase-token registration, provider-shaped. Same service. Its 403 for a non-provider role is preserved in v1 as an audience assertion rather than a separate path.",
+      "supersededBy": "auth.register",
+      "expectedSuccessor": "/api/v1/auth/register",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/add-employees",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "Admin bulk-creates provider accounts with generated temporary passwords. Genuinely different: a different actor, a different credential origin, and a partial-success response shape. Retained; it is account PROVISIONING, not registration.",
+      "supersededBy": "auth.register",
+      "expectedSuccessor": "/api/v1/auth/register",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signin",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Email + password. v1 calls the same `authService.loggedInUser` and adds identifier resolution in front of it, so a mobile number now names the account.",
+      "supersededBy": "auth.login",
+      "expectedSuccessor": "/api/v1/auth/login",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/admin-signin",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Identical to /auth/signin plus a role-1 gate. The gate is a property of the CALLER, not the credential, so v1 takes it as `audience: \"admin\"` rather than as a second path.",
+      "supersededBy": "auth.login",
+      "expectedSuccessor": "/api/v1/auth/login",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/firebase-login",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Firebase ID token, provider-shaped. Same service; v1 expresses the role gate as an audience.",
+      "supersededBy": "auth.login",
+      "expectedSuccessor": "/api/v1/auth/login",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/customer-firebase-login",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "NOT collapsed. Its link-collision contract is a 200 carrying `status: \"failed\"` and no token, because the installed customer app throws on any non-2xx before reading the body and fires onUnauthorized on 401 — either would show \"session expired\" to somebody who has no session yet. Changing that shape is a client release, so it stays until the customer app migrates.",
+      "supersededBy": "auth.login",
+      "expectedSuccessor": "/api/v1/auth/login",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/refresh",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service. Unauthenticated by design on both: the caller is here BECAUSE their ID token expired, so requiring a valid one would be circular. The refresh token is the credential and Google validates it.",
+      "supersededBy": "auth.refresh",
+      "expectedSuccessor": "/api/v1/auth/refresh",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same effect; both now go through the one session service so the side-effect set is decided once.",
+      "supersededBy": "auth.logout",
+      "expectedSuccessor": "/api/v1/auth/logout",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service, same neutral acknowledgement, same platform-scoped continue URL.",
+      "supersededBy": "auth.forgotPassword",
+      "expectedSuccessor": "/api/v1/auth/forgot-password",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset-password",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service — and the session revocation added in this command applies to BOTH, because it lives in the service rather than in either handler.",
+      "supersededBy": "auth.resetPassword",
+      "expectedSuccessor": "/api/v1/auth/reset-password",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email-otp",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service. v1 scopes the read to the REGISTRATION_VERIFICATION purpose, so a code minted for a different purpose can never satisfy it.",
+      "supersededBy": "auth.verifyEmail",
+      "expectedSuccessor": "/api/v1/auth/verify-email",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/resend-email-otp",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Same service. v1 takes `channel: \"otp\" | \"link\"` instead of splitting the two across paths.",
+      "supersededBy": "auth.resendVerification",
+      "expectedSuccessor": "/api/v1/auth/resend-verification",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/resendverification",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "A GET that sends an email — a read path that writes and mails. v1 is a POST. The legacy form stays until both mobile clients move, because it is what they call today.",
+      "supersededBy": "auth.resendVerification",
+      "expectedSuccessor": "/api/v1/auth/resend-verification",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/services/full",
+      "disposition": "CANONICALIZE",
+      "note": "Not a search endpoint — it is the whole legacy catalog, which ServanaClient downloads and searches ON THE DEVICE. That is why one absent `level2` key emptied the search cache and every query rendered \"No services match your search\". Retiring it needs the client to move to this route AND to /api/v1/catalog.",
+      "supersededBy": "search.query",
+      "expectedSuccessor": "/api/v1/search",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/services/:serviceId/level2",
+      "disposition": "CANONICALIZE",
+      "note": "The legacy equivalent, and NOT a rename. Its `:serviceId` is a service_families.id and it returns DISTINCT level_2 STRINGS with no ids at all. This route takes a catalog_categories.id and returns identified Subcategories. Different input, different output, different table.",
+      "supersededBy": "catalog.categories.subcategories",
+      "expectedSuccessor": "/api/v1/catalog/categories/:categoryId/subcategories",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/services/:serviceId/options-with-addons",
+      "disposition": "CANONICALIZE",
+      "note": "The legacy shape. Its `:serviceId` is a service_families.id and it returns level_2 / level_3 option groups, not Services. ServanaWorker calls the un-prefixed twin instead, which is the only catalog route without the /services/ prefix its neighbours use.",
+      "supersededBy": "catalog.subcategories.services",
+      "expectedSuccessor": "/api/v1/catalog/subcategories/:subcategoryId/services",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/:serviceId/options-with-addons",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The original un-prefixed form, and what ServanaWorker calls in production. It cannot be retired until that app moves; the customer app followed the convention instead of the exception and 404d for months as a result.",
+      "supersededBy": "catalog.subcategories.services",
+      "expectedSuccessor": "/api/v1/catalog/subcategories/:subcategoryId/services",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog",
+      "disposition": "KEEP",
+      "note": "NOT superseded. The customer app calls it directly for the category browse, and it remains the canonical catalog read. Home REFERENCES it - the categories section delegates to the same service - rather than replacing it.",
+      "supersededBy": "home.feed",
+      "expectedSuccessor": "/api/v1/home",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/notifications/unread-count",
+      "disposition": "KEEP",
+      "note": "NOT superseded. Home carries the unread count as one section so a launch costs one round trip; the standalone endpoint is still what a client polls when only the badge changed.",
+      "supersededBy": "home.feed",
+      "expectedSuccessor": "/api/v1/home",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookings/:bookingId/conversation",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live resolve-by-booking call. It is a GET that never creates, and the customer app already maps its 404 to \"no conversation yet\". This entry adds the explicit open, gated by the same rule: a booking conversation exists because a provider was confirmed, not because somebody opened a screen.",
+      "supersededBy": "conversations.create",
+      "expectedSuccessor": "/api/v1/conversations",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/conversations",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live inbox for all four apps. Chat routes do NOT use an envelope — the stores read a top-level `conversations` key — so the legacy shape is kept exactly and this entry adds the canonical one alongside. Both now read the same unread expression.",
+      "supersededBy": "conversations.list",
+      "expectedSuccessor": "/api/v1/conversations",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/communications/conversations",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The admin oversight list carries a named permission and a booking filter, and joins moderation state this route has no business publishing to a customer. Same tables, same conversation ids; a genuinely different question.",
+      "supersededBy": "conversations.list",
+      "expectedSuccessor": "/api/v1/conversations",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/conversations/:id",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live detail call. Same authorization; the canonical shape adds the seat, the send capability with its reason, the unread count and a last-message preview built through the caller's own read floor.",
+      "supersededBy": "conversations.get",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/communications/conversations/:id",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The admin detail view, permissioned, and carrying report and moderation state. Different fields, different authorization, same conversation id.",
+      "supersededBy": "conversations.get",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/conversations/:id/messages",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live transcript read, now a narrower projection of the SAME page reader — same authorization, same read floor, same builder. Its cursor parameter is called `before`; the canonical one is `cursor`, and both mean the same message id.",
+      "supersededBy": "conversations.messages.list",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/messages",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/communications/conversations/:id/messages",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The permissioned admin transcript. It reads the whole thread by design — the audit trail is the point — where this route applies the caller's own read floor.",
+      "supersededBy": "conversations.messages.list",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/messages",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/messages",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live send for all four apps. IDENTICAL domain call — this entry is a second URL onto one write, not a second write path.",
+      "supersededBy": "conversations.messages.create",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/messages",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/communications/conversations/:id/messages",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The admin send. Permissioned and audited, and it already delegates to `chat.service.sendMessage`, so an admin message obeys the same idempotency, validation and attachment rules as anyone else's.",
+      "supersededBy": "conversations.messages.create",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/messages",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/attachments/upload",
+      "disposition": "CANONICALIZE",
+      "note": "The legacy route takes the conversation as an OPTIONAL body field and checks access only when it is present, so omitting it stored a file and returned a URL with no conversation consulted. This route carries the id in its path, so the check cannot be declined. Same validation, same storage call — `chat.service.uploadAttachment` is now the one implementation and the legacy controller delegates to it.",
+      "supersededBy": "conversations.attachments.create",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/attachments",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/messages/:msgId/report",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "IDENTICAL domain call. This entry is a second URL onto one write, in the resource shape the rest of the conversations domain already uses.",
+      "supersededBy": "conversations.messages.report",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/messages/:messageId/report",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/read",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live read-pointer call, which answers `{ success: true }` and nothing else. The canonical one returns the resulting unread count, so a client stops having to guess what its badge should now say.",
+      "supersededBy": "conversations.read",
+      "expectedSuccessor": "/api/v1/conversations/:conversationId/read",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookings/:id/cancel",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live customer cancel. It still writes status directly and is Phase C of the executor migration — deliberately after the provider lifecycle, because cancellation touches fees, refunds and provider compensation and is the worst first test of whether the executor architecture works.",
+      "supersededBy": "bookings.cancel",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/cancel",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/:id/timeline",
+      "disposition": "KEEP",
+      "note": "NOT a duplicate. The legacy timeline is a re-voiced operational narrative built from per-stage timestamps for the customer to read. This is the append-only event log the executor writes inside each transaction — the evidence, not the story. Admin, Customer and Provider all read THIS to agree on what happened.",
+      "supersededBy": "bookings.transitions",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/transitions",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/accept",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider action. Still writes status directly via technicianService; Phase B of the executor migration. Authorization is equivalent — both resolve the provider from the token and check the CURRENT assignment.",
+      "supersededBy": "provider.jobs.accept",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/accept",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/decline",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider action. Still writes status directly via technicianService; Phase B of the executor migration. Authorization is equivalent — both resolve the provider from the token and check the CURRENT assignment.",
+      "supersededBy": "provider.jobs.decline",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/decline",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/en-route",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider action. Still writes status directly via technicianService; Phase B of the executor migration. Authorization is equivalent — both resolve the provider from the token and check the CURRENT assignment.",
+      "supersededBy": "provider.jobs.enroute",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/en-route",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/arrived",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider action. Still writes status directly via technicianService; Phase B of the executor migration. Authorization is equivalent — both resolve the provider from the token and check the CURRENT assignment.",
+      "supersededBy": "provider.jobs.arrived",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/arrived",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/start",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider action. Still writes status directly via technicianService; Phase B of the executor migration. Authorization is equivalent — both resolve the provider from the token and check the CURRENT assignment.",
+      "supersededBy": "provider.jobs.start",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/start",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/worker/bookings/:bookingId/complete",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider action. Still writes status directly via technicianService; Phase B of the executor migration. Authorization is equivalent — both resolve the provider from the token and check the CURRENT assignment.",
+      "supersededBy": "provider.jobs.complete",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/complete",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/provider/bookings/:bookingId/cancel",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live Provider Web / Provider Mobile cancel. It ALREADY runs the executor and the same providerCancellationWindow guard — this entry gives it a canonical path and a v1 error vocabulary, it does not give it a second implementation.",
+      "supersededBy": "provider.jobs.cancel",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/cancel",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/bookings/:bookingId/cancellation-eligibility",
+      "disposition": "KEEP",
+      "note": "NOT a duplicate. It answers \"may I cancel, and until when\" without cancelling, from the same evaluateCancellation function. The canonical successor for that question is the availableActions block on GET /bookings/:id/transitions.",
+      "supersededBy": "provider.jobs.cancel",
+      "expectedSuccessor": "/api/v1/provider/jobs/:bookingId/cancel",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/:id/tracking",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live customer tracking call. It returns the raw booking_tracking rows through formatBookings and applies NO state or time-window rule to the provider position, because it never returned one — the position came from a separate route.",
+      "supersededBy": "bookings.tracking",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/tracking",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/booking/:bookingId/provider-location",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The authenticated position route. Booking-scoped already, but answers in EVERY state — a customer could watch their provider on a booking cancelled last week. This entry adds the state and time-window rules §64 requires.",
+      "supersededBy": "bookings.tracking",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/tracking",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/:bookingId/resend-otp",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The OTP screen's Resend button. It rotates the code with no cooldown and no issue ceiling; it now delegates to the same service, so the legacy path inherits the policy rather than remaining an unlimited rotation oracle.",
+      "supersededBy": "bookings.otp.request",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/otp/request",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/:id/confirm-otp",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live customer confirmation. Already on the executor since Phase C; it now delegates through the OTP service so expiry and the attempt limit apply to it too. Accepts the code in the query string for builds that cannot be changed.",
+      "supersededBy": "bookings.otp.verify",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/otp/verify",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/reschedule",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The admin-only predecessor, and the only reschedule that has ever existed. A bare UPDATE with no optimistic concurrency and no provider-calendar check — two admins moving one booking produced a silent winner. Kept until the portal migrates.",
+      "supersededBy": "bookings.reschedule",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/reschedule",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/additional/request/:userId",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live Provider Web call. Its :userId segment is legacy and has never been treated as identity — the provider comes from the token in both paths, and both call the same additionalService instance.",
+      "supersededBy": "bookings.additionalWork.create",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/additional-work",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/additional/booking/:bookingId",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "Already booking-scoped and already the same service. The canonical path differs only in living under the booking it belongs to, which is what §60 asks for.",
+      "supersededBy": "bookings.additionalWork.list",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/additional-work",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/escalate",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The admin-only predecessor, and the only way to open a dispute before this. Writes the same booking_escalations row; it does not record a category, the opening role or the state snapshot §66 requires. Kept until the portal migrates.",
+      "supersededBy": "bookings.disputes.open",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/disputes",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/bookings/:bookingId/dispute-status",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "Provider-facing eligibility summary, shipped as \"entry point only; opening is later\". It reads the same table and the same categories. It stays because it answers \"may I open one\" for a live client that has no other way to ask.",
+      "supersededBy": "bookings.disputes.open",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/disputes",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/bookings",
+      "disposition": "CANONICALIZE",
+      "note": "The admin portal is the only caller and deploys from git on every push, so it is the cheapest client to migrate — but it is also the only one whose list carries permission-scoped columns, so the DTO needs the permission model resolved first.",
+      "supersededBy": "admin.bookings.list",
+      "expectedSuccessor": "/api/v1/admin/bookings",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/bookings/:id/assignment-candidates",
+      "disposition": "CANONICALIZE",
+      "note": "Live, and the only caller is the admin portal. Already returns the canonical pool plus its diagnostics; the diagnostics are a sibling key so the array under `data` stays exactly what the portal parses today.",
+      "supersededBy": "admin.bookings.assignmentCandidates",
+      "expectedSuccessor": "/api/v1/admin/bookings/:bookingId/assignment-candidates",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/assign",
+      "disposition": "CANONICALIZE",
+      "note": "Live admin portal route, already on the canonical executor. Path-only migration: the business rules, locks and events do not move with it.",
+      "supersededBy": "admin.bookings.assign",
+      "expectedSuccessor": "/api/v1/admin/bookings/:bookingId/assign",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/bookings/:id/reassign",
+      "disposition": "CANONICALIZE",
+      "note": "Live admin portal route, already on the canonical executor. A separate permission from assign (bookings.reassign_provider), which is the reason it stays a separate endpoint rather than an assign with a different body.",
+      "supersededBy": "admin.bookings.reassign",
+      "expectedSuccessor": "/api/v1/admin/bookings/:bookingId/reassign",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "POST",
+      "path": "/api/:bookingId/paymongo/create",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live customer checkout call. Identical domain service — this entry adds the booking-scoped authorization and refuses a provider, which the legacy route does not do. Kept until Customer Web and Customer Mobile migrate.",
+      "supersededBy": "bookings.payments.intent",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/payment-intents",
+      "customerMobile": "legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/finance/ledger/booking/:bookingId",
+      "disposition": "ROLE_SPECIFIC",
+      "note": "The admin revenue-recognition view over finance_ledger_entries. It answers a different question (what was recognised, when, by whom) and carries its own permission. Both now read the same underlying capture events.",
+      "supersededBy": "bookings.payments.get",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/payment",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/finance/refunds",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The admin portal opens refund reviews here today. Same table, same eligibility rule once migrated; this entry adds the customer-initiated path, which had no route at all.",
+      "supersededBy": "bookings.refunds.create",
+      "expectedSuccessor": "/api/v1/bookings/:bookingId/refunds",
+      "customerMobile": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/earnings/summary",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live provider portal call, now delegating to the same domain service so the two paths return identical figures during migration rather than merely similar ones.",
+      "supersededBy": "provider.earnings.summary",
+      "expectedSuccessor": "/api/v1/provider/earnings/summary",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/earnings",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live earnings list. Same domain service now; the v1 shape adds the economic model, the payout block reason and minor-unit amounts.",
+      "supersededBy": "provider.earnings.transactions",
+      "expectedSuccessor": "/api/v1/provider/earnings/transactions",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/ledger",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "A THIRD reading of the same columns, which used to hardcode every completed booking as \"settled\" and report failed payouts as money in hand. Superseded entirely.",
+      "supersededBy": "provider.earnings.transactions",
+      "expectedSuccessor": "/api/v1/provider/earnings/transactions",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/workers/:uid/earnings-history",
+      "disposition": "RETIRE",
+      "note": "Takes the provider uid from the URL and has no auth, so it answers for anybody. No located caller in any of the five clients. Carried over from the planned placeholder this entry replaces; delete once telemetry confirms zero traffic.",
+      "supersededBy": "provider.earnings.transactions",
+      "expectedSuccessor": "/api/v1/provider/earnings/transactions",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/provider/payouts",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The live payouts list, now delegating to the same domain service. Both exclude the processor id, servana_share, payout_error and the admin hold fields by projection.",
+      "supersededBy": "provider.earnings.payouts",
+      "expectedSuccessor": "/api/v1/provider/earnings/payouts",
+      "customerMobile": "n/a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/finance/reconciliation/exceptions",
+      "disposition": "ALIAS_TEMPORARILY",
+      "note": "The paged exception list the admin portal reads today. This entry adds the check catalog, the money totals and the outstanding provider liability, so an admin can see that the ledger balances rather than only that a page of rows exists.",
+      "supersededBy": "admin.finance.reconciliation",
+      "expectedSuccessor": "/api/v1/admin/finance/reconciliation",
+      "customerMobile": "n/a"
+    }
+  ]
+}
