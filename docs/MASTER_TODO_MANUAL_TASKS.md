@@ -173,7 +173,10 @@ a store account, a console, or a deploy.
 | M4.1 | Play upload-key fingerprint; `apksigner verify --print-certs` on a real bundle. **TAB 13 verified R8 with a throwaway key only** (`CN=TAB13 Local Verification Only`, deleted after) — nothing is established about the real key | 13 |
 | M4.2 | Crashlytics mapping upload + a symbolicated release-mode crash. R8 is now on, so an un-uploaded mapping means unreadable crash reports | 13 |
 | M4.13 | **Full functional pass against the R8 artefact on a device.** R8 failures appear only in the shrunk build, at the moment a reflective lookup runs — a green build is not evidence the app works | 13 |
-| M4.3 | Hosting `/.well-known/assetlinks.json` and `apple-app-site-association` | 14 |
+| M4.3 | Host `/.well-known/assetlinks.json` and `apple-app-site-association` on all three hosts. **Both files are written and valid** in `docs/deep-links/well-known/`; serve the Apple one as `application/json`, **no extension, no redirect**, and check the well-known path is not shadowed — a wildcard route has eaten a new sibling on this backend before | 14 |
+| M4.14 | On-device App Link / Universal Link verification, cold **and** warm. Use `adb shell pm get-app-links com.servana.serviceclient` rather than observing that a tap worked; on iOS open from Mail and Notes, not Safari's address bar (which deliberately does not trigger Universal Links) | 14 |
+| M4.15 | **Two** Android fingerprints for `assetlinks.json`: the Play app-signing certificate (what devices see) **and** the upload key (so internal-testing builds verify). Shipping only one is the usual mistake | 14 |
+| M4.16 | `DEVELOPMENT_TEAM` differs between targets — Runner `2K2SF7NRQP`, RunnerTests `CAB884NRSN`. The AASA uses the app target's. Reconcile before iOS signing | 16 |
 | M4.4 | Apple portal: Associated Domains, Sign in with Apple, push capability | 14, 16 |
 | M4.5 | APNs key uploaded to Firebase console for `servana-59bee` | 16 |
 | M4.6 | App Store Connect API key / signing certificates as CI secrets | 16 |
