@@ -5,8 +5,8 @@
 | | |
 | --- | --- |
 | Origin probed | `https://api.servana.com.ph` |
-| Probed at (UTC) | 2026-08-18T09:54:11.571310Z |
-| Duration | 1s |
+| Probed at (UTC) | 2026-08-18T11:57:08.187288Z |
+| Duration | 2s |
 | Backend contract commit | `0aaf89f7b0aaf428387bae605532856186070d1c` **(working tree dirty)** |
 | Implemented v1 entries | 105 |
 | Planned v1 entries | 4 |
@@ -148,7 +148,7 @@ The contract documents these and does NOT mount them. A planned entry that answe
 
 `successor` compares the `Link rel="successor-version"` production publishes against the successor the contract declares. `WRONG` means the backend is signposting migrating clients at the wrong endpoint.
 
-{publicLive: 7, mountedOther: 1, gated: 95, rateLimited: 8, validating: 4}
+{publicLive: 8, mountedOther: 1, gated: 95, validating: 11}
 
 | Method | Path | Disposition | Status | Verdict | Deprecation | Successor published | Contract successor | successor |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -175,20 +175,20 @@ The contract documents these and does NOT mount them. A planned entry that answe
 | GET | `/api/admin/finance/reconciliation/exceptions` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/admin/finance/reconciliation` | `/api/v1/admin/finance/reconciliation` | OK |
 | POST | `/api/admin/finance/refunds` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/bookings/:bookingId/refunds` | `/api/v1/bookings/:bookingId/refunds` | OK |
 | POST | `/api/auth/add-employees` | ROLE_SPECIFIC | 401 | gated | — | `—` | `/api/v1/auth/register` | — |
-| POST | `/api/auth/admin-signin` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/login` | `/api/v1/auth/login` | OK |
+| POST | `/api/auth/admin-signin` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/login` | `/api/v1/auth/login` | OK |
 | POST | `/api/auth/customer-firebase-login` | ROLE_SPECIFIC | 400 | validating | — | `—` | `/api/v1/auth/login` | — |
 | POST | `/api/auth/firebase-login` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/login` | `/api/v1/auth/login` | OK |
-| POST | `/api/auth/forgot-password` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/forgot-password` | `/api/v1/auth/forgot-password` | OK |
+| POST | `/api/auth/forgot-password` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/forgot-password` | `/api/v1/auth/forgot-password` | OK |
 | POST | `/api/auth/logout` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/auth/logout` | `/api/v1/auth/logout` | OK |
 | GET | `/api/auth/me` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/me` | `/api/v1/me` | OK |
-| POST | `/api/auth/provider/register` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/register` | `/api/v1/auth/register` | OK |
+| POST | `/api/auth/provider/register` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/register` | `/api/v1/auth/register` | OK |
 | POST | `/api/auth/refresh` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/refresh` | `/api/v1/auth/refresh` | OK |
-| POST | `/api/auth/resend-email-otp` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/resend-verification` | `/api/v1/auth/resend-verification` | OK |
-| GET | `/api/auth/resendverification` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/resend-verification` | `/api/v1/auth/resend-verification` | OK |
+| POST | `/api/auth/resend-email-otp` | ALIAS_TEMPORARILY | 200 | publicLive | true | `/api/v1/auth/resend-verification` | `/api/v1/auth/resend-verification` | OK |
+| GET | `/api/auth/resendverification` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/resend-verification` | `/api/v1/auth/resend-verification` | OK |
 | POST | `/api/auth/reset-password` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/reset-password` | `/api/v1/auth/reset-password` | OK |
-| POST | `/api/auth/signin` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/login` | `/api/v1/auth/login` | OK |
-| POST | `/api/auth/signup` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/register` | `/api/v1/auth/register` | OK |
-| POST | `/api/auth/verify-email-otp` | ALIAS_TEMPORARILY | 429 | rateLimited | true | `/api/v1/auth/verify-email` | `/api/v1/auth/verify-email` | OK |
+| POST | `/api/auth/signin` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/login` | `/api/v1/auth/login` | OK |
+| POST | `/api/auth/signup` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/register` | `/api/v1/auth/register` | OK |
+| POST | `/api/auth/verify-email-otp` | ALIAS_TEMPORARILY | 400 | validating | true | `/api/v1/auth/verify-email` | `/api/v1/auth/verify-email` | OK |
 | GET | `/api/booking/:bookingId/provider-location` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/bookings/:bookingId/tracking` | `/api/v1/bookings/:bookingId/tracking` | OK |
 | GET | `/api/bookings/:bookingId/conversation` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/conversations` | `/api/v1/conversations` | OK |
 | GET | `/api/bookings/:bookingId/review-eligibility` | ALIAS_TEMPORARILY | 401 | gated | true | `/api/v1/bookings/:bookingId/review` | `/api/v1/bookings/:bookingId/review` | OK |
@@ -286,7 +286,7 @@ Enumerated from the client source, not from a list. These are the routes an inst
 | GET | `/api/999999999/timeline` | 401 | gated | true | **no** |
 | GET | `/api/999999999/tracking` | 401 | gated | true | **no** |
 | GET | `/api/auth/refresh` | 401 | gated | — | **no** |
-| GET | `/api/auth/resendverification` | 429 | rateLimited | true | yes |
+| GET | `/api/auth/resendverification` | 400 | validating | true | yes |
 | GET | `/api/booking/999999999/provider` | 401 | gated | — | **no** |
 | GET | `/api/booking/999999999/provider-location` | 401 | gated | true | **no** |
 | GET | `/api/bookings/999999999/conversation` | 401 | gated | true | **no** |
@@ -324,9 +324,9 @@ Enumerated from the client source, not from a list. These are the routes an inst
 | POST | `/api/999999999/resend-otp` | 401 | gated | true | **no** |
 | POST | `/api/auth/customer-firebase-login` | 400 | validating | — | yes |
 | POST | `/api/auth/logout` | 401 | gated | true | yes |
-| POST | `/api/auth/resend-email-otp` | 429 | rateLimited | true | yes |
-| POST | `/api/auth/signin` | 429 | rateLimited | true | yes |
-| POST | `/api/auth/signup` | 429 | rateLimited | true | yes |
+| POST | `/api/auth/resend-email-otp` | 200 | publicLive | true | yes |
+| POST | `/api/auth/signin` | 400 | validating | true | yes |
+| POST | `/api/auth/signup` | 400 | validating | true | yes |
 | POST | `/api/auth/verify-email-otp` | 429 | rateLimited | true | yes |
 | POST | `/api/bookings` | 401 | gated | — | **no** |
 | POST | `/api/bookings/999999999/cancel` | 401 | gated | true | **no** |
