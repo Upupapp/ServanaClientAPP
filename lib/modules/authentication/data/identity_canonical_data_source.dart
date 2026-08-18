@@ -34,9 +34,15 @@ class IdentityCanonicalDataSource implements IdentityDataSource {
 
   @override
   Future<void> resendEmailVerification(String email) async {
+    // `channel` is an ENUM of exactly {'otp', 'link'} — it is not the kind of
+    // identifier being resent to. This used to send `'email'`, which is not a
+    // member, and the handler's `body.channel === 'link' ? 'link' : 'otp'`
+    // quietly resolved it to 'otp'. Right answer, wrong reason: the value was
+    // being corrected by a default, so the day someone wanted the link channel
+    // the bug would have looked like a backend fault.
     await _api.post(
       V1Endpoints.authResendVerification(),
-      body: <String, dynamic>{'email': email, 'channel': 'email'},
+      body: <String, dynamic>{'identifier': email, 'channel': 'otp'},
     );
   }
 
@@ -48,29 +54,59 @@ class IdentityCanonicalDataSource implements IdentityDataSource {
     // up and read by anyone with host access.
     await _api.post(
       V1Endpoints.authVerifyEmail(),
-      body: <String, dynamic>{'email': email, 'otp': otp},
+      body: <String, dynamic>{'identifier': email, 'code': otp},
     );
   }
 
+  /// v1 mobile verification is a different proof, not a renamed field.
+  ///
+  /// `VerifyMobileRequest` requires exactly one thing — `idToken`, a Firebase
+  /// ID token whose sign-in provider is `phone`. Firebase only issues one
+  /// after running its OWN SMS OTP, and the backend has no SMS sender of its
+  /// own: `auth.verifyMobile` verifies the token, reads the phone number off
+  /// the credential and refuses anything that does not prove one.
+  ///
+  /// This interface carries a `mobileNumber` and an `otp` the app collected
+  /// itself. Neither can be turned into that token here, so there is no body
+  /// to send. Posting the pair anyway would earn a `VALIDATION_FAILED` and
+  /// read, at the call site, as a server problem.
+  ///
+  /// So it refuses in the open — the same answer the compatibility source
+  /// gives for the same operation, for a different reason. Closing this needs
+  /// a Firebase phone-auth flow in the app and an interface that carries a
+  /// token, which is a redesign rather than a field rename.
   @override
   Future<void> verifyMobile({
     required String mobileNumber,
     required String otp,
   }) async {
-    await _api.post(
-      V1Endpoints.authVerifyMobile(),
-      body: <String, dynamic>{'mobileNumber': mobileNumber, 'otp': otp},
+    throw const UnsupportedTransportOperation(
+      'verifyMobile',
+      'v1 verifies a mobile number from a Firebase phone credential '
+          '(idToken), not from a number and an OTP this app collected. The '
+          'app has no such credential to send.',
     );
   }
 
   @override
   Future<void> forgotPassword(String email) async {
+    // `platform` is deliberately omitted: it chooses which allowlisted app the
+    // reset link lands in, and the backend's default is the right one for this
+    // client. Sending a value here would mean maintaining a second copy of an
+    // allowlist that lives on the server.
     await _api.post(
       V1Endpoints.authForgotPassword(),
-      body: <String, dynamic>{'email': email},
+      body: <String, dynamic>{'identifier': email},
     );
   }
 
+  /// [token] is Firebase's single-use `oobCode` from the reset email.
+  ///
+  /// The interface name is generic; the wire name is not, and the handler has
+  /// no fallback for it — `auth.resetPassword` reads `body.oobCode` and
+  /// `body.newPassword` and answers `VALIDATION_FAILED` for anything else.
+  /// This previously sent `{token, password}` and so could never have
+  /// succeeded.
   @override
   Future<void> resetPassword({
     required String token,
@@ -78,7 +114,7 @@ class IdentityCanonicalDataSource implements IdentityDataSource {
   }) async {
     await _api.post(
       V1Endpoints.authResetPassword(),
-      body: <String, dynamic>{'token': token, 'password': newPassword},
+      body: <String, dynamic>{'oobCode': token, 'newPassword': newPassword},
     );
   }
 
