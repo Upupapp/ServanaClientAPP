@@ -76,6 +76,7 @@ import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/modules/homepage/data/home_composition_canonical_data_source.dart';
 import 'package:client/modules/homepage/data/home_composition_compatibility_data_source.dart';
 import 'package:client/modules/homepage/data/home_composition_repository.dart';
+import 'package:client/modules/homepage/application/home_composition_controller.dart';
 import 'package:client/modules/homepage/domain/home_composition.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/modules/search/data/search_canonical_data_source.dart';
@@ -484,6 +485,11 @@ void initInjector(AppConfig config) {
       canonical: HomeCompositionCanonicalDataSource(dpLocator()),
       router: dpLocator(),
     ),
+  );
+  // Home's caller for the composition above. Singleton, so switching tabs
+  // back to Home does not re-compose the catalog on every rebuild.
+  dpLocator.registerLazySingleton(
+    () => HomeCompositionController(dpLocator()),
   );
   dpLocator.registerFactory(
     () => ServiceDetailController(dpLocator()),

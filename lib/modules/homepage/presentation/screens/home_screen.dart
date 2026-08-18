@@ -38,6 +38,9 @@ import 'package:client/modules/homepage/presentation/widgets/drawer_item_widget.
 import 'package:client/modules/homepage/presentation/widgets/home_atmosphere.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_benefit_section.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_category_grid.dart';
+import 'package:client/modules/homepage/presentation/widgets/home_more_categories.dart';
+import 'package:client/modules/homepage/application/home_composition_controller.dart';
+import 'package:client/common/presentation/routes/catalog_routes.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_header.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_promotion_banner.dart';
 import 'package:client/modules/homepage/presentation/widgets/home_search.dart';
@@ -71,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final _promoRepo = HomePromotionRepository();
   final _campaign = dpLocator<HomeCampaignController>();
+  final _composition = dpLocator<HomeCompositionController>();
 
   /// Presents category promo banners and owns their single-instance guard.
   ///
@@ -94,6 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadAppVersion();
     _maybeShowConsentGate();
     _precacheCategoryCampaigns();
+    // Fills the composition cache that logout has always cleared. Not awaited
+    // and never surfaced as an error: the curated grid renders regardless, so
+    // a catalog that cannot be read costs Home nothing.
+    unawaited(_composition.load());
   }
 
   /// Warms the category campaign artwork once Home has drawn.
@@ -348,6 +356,19 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Only an explicit tap on a Home category card reaches here — a deep link
   /// resolves the category route directly through the router and never sees a
   /// popup.
+  /// Opens a catalog category that has no curated Home card.
+  ///
+  /// Routed by `catalog_categories.id`, never by slug: `CatalogRoutes` is
+  /// keyed on the id so that renaming a category cannot break a link already
+  /// in the field. The curated four keep `_handleCategoryTap`, which is what
+  /// the category campaign registry is keyed on.
+  void _openCatalogCategory(HomeCategory category) {
+    context.pushNamed(
+      CatalogRoutes.category,
+      pathParameters: <String, String>{'categoryId': '${category.id}'},
+    );
+  }
+
   Future<void> _handleCategoryTap(String key) async {
     if (CategoryCampaignCoordinator.hasCampaignFor(key)) {
       final explore = await _categoryCampaigns.present(
@@ -472,6 +493,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             ServanaHomeCategoryGrid(
                               animate: true,
                               onCategoryTap: _handleCategoryTap,
+                            ),
+                            // Catalog categories with no curated card. Renders
+                            // nothing until the composition answers, so the
+                            // grid above is never gated on it.
+                            ListenableBuilder(
+                              listenable: _composition,
+                              builder: (context, _) => HomeMoreCategories(
+                                state: _composition.state,
+                                onTap: _openCatalogCategory,
+                              ),
                             ),
                             if (bannerA != null) ...[
                               const SizedBox(height: 20),

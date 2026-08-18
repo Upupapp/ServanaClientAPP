@@ -43,6 +43,11 @@
 ///     screen through `domain/use_cases/`, so restricting the roots to
 ///     presentation and application alone reports it falsely. It was reported
 ///     falsely, by the first version of this file.
+///
+/// `HomeCompositionRepository` now has a real consumer —
+/// `HomeCompositionController` — so the caveat above is history rather than a
+/// live exemption. It is kept because the measure's blind spot has not
+/// changed.
 library;
 
 import 'dart:io';
