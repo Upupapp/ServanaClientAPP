@@ -13,8 +13,8 @@ convergence-v1 work. This one targets the tree as it stands after TABs 01–14.
 | Also read | admin `b4742b3`, customer web `6f1a510`, worker mobile `5e42679`, worker web `2bed987` |
 | Scope | 566 Dart files under `lib/`, 60 screens, 138 test files |
 | Gates at audit time | `dart analyze` 39 infos / 0 errors · `flutter test` **1901 pass, 6 skipped** · `dart format` **FAILED, 55 files** |
-| Gates after remediation | all three **green** — format 0 of 709 changed, analyze exit 0, **1957 pass, 6 skipped** |
-| Findings | 9 (P1: 6 · P2: 3) — **6 fixed, 3 open by decision** |
+| Gates after remediation | all three **green** — format 0 of 717 changed, analyze exit 0, **1996 pass, 6 skipped** |
+| Findings | 9 (P1: 6 · P2: 3) — **all 9 closed** |
 
 **Repo location note.** The repo has moved since the memory index was written:
 it is at `Desktop\servana_client-mobile`, not `servana_client-main`, and the
@@ -22,9 +22,9 @@ remote is `ServanaClientAPP`, not `ServanaClient`.
 
 ---
 
-## Remediation — five commits, all local
+## Remediation — nine commits, all local
 
-Nothing pushed. The tree is 34 commits ahead of `origin/main`.
+Nothing pushed. The tree is 39 commits ahead of `origin/main`.
 
 | Commit | Finding | What it did |
 | --- | --- | --- |
@@ -33,6 +33,10 @@ Nothing pushed. The tree is 34 commits ahead of `origin/main`.
 | `a84c852` | SC2-07, SC2-08 | Rewards and Favourites made scrollable; a screen viewport matrix, 3 handsets × 3 text scales |
 | `c070990` | SC2-06 | password recovery wired to the legacy route the backend has had all along |
 | `f0c70e8` | SC2-03, SC2-04 | a detector that fails when a repository is registered with no consumer |
+| `960b0c2` | SC2-03 | booking detail reads through `BookingRepository`; the model made lossless first |
+| `91a466a` | SC2-05 | Home fills the composition cache logout has always cleared |
+| `f905cb2` | SC2-04 | change orders surfaced on booking detail; disputes gated honestly |
+| `6778af1` | SC2-01 | `verifyMobile` re-shaped to `{idToken}`, the proof v1 actually asks for |
 
 **Every gate added here was mutation-tested** — the fix reverted, the test
 watched to fail, then restored and the control re-run. A green new gate proves
@@ -42,12 +46,31 @@ viewport/scale combinations the original measurement named and stayed green at
 the third, and the first version of the repository detector reported a healthy
 wire as dark.
 
-**Still open, by decision rather than by omission:** SC2-03, SC2-04 and SC2-05
-— the three unconsumed transports. Wiring `booking_detail_screen` to
-`BookingRepository`, building a dispute screen, and pointing Home at
-`HomeCompositionRepository` are screen-level refactors on the app's
-highest-traffic surfaces, and they are TAB-sized scope decisions rather than
-audit fixes. The detector prevents a fourth appearing.
+**All three unconsumed transports now have callers**, and the detector's
+allowlist is empty. Two things found along the way that the audit had not:
+
+- **A blind swap of booking detail onto `BookingRepository` would have
+  regressed five behaviours**, one of them the ₱0.00 amount bug an earlier
+  sweep had already closed. `CustomerBooking` was lossier than the screen's
+  own parsing. The model was made lossless and pinned by
+  `test/bookings/customer_booking_fidelity_test.dart` before anything was
+  rewired.
+- **`(x as num?)` throws on a String rather than yielding null**, so the
+  amount chain's own `double.tryParse` fallbacks were unreachable and a
+  string-valued price crashed the parse. Postgres numeric reaches JSON as int,
+  double or string depending on value and driver.
+
+**Two things deliberately not built**, both for the same reason — the
+compatibility transport cannot serve them on any shipped build, so a UI would
+fail at the moment of use:
+
+- **A dispute screen.** `canOpenDispute` is false everywhere: the only legacy
+  dispute route is admin-only. The controller exposes it and the affordance
+  appears the moment a transport can serve one.
+- **The Firebase phone-auth flow.** `verifyMobile`'s signature is now correct
+  (`{idToken}`), so the canonical source is implementable rather than
+  permanently blocked by its own arguments. Acquiring the token belongs with
+  the screen that will run it.
 
 ---
 
@@ -114,7 +137,7 @@ a one-command fix and it currently blocks every downstream job.
 
 ---
 
-## SC2-03 · `BookingRepository` — TAB 09's canonical booking reads — has zero consumers and zero direct tests; the screens still call legacy transport by hand — **OPEN**, detector added in `f0c70e8`
+## SC2-03 · `BookingRepository` — TAB 09's canonical booking reads — has zero consumers and zero direct tests; the screens still call legacy transport by hand — **FIXED** in `960b0c2`
 
 **P1** · fix in **client-mobile** · protected release: **no**
 
@@ -141,7 +164,7 @@ resolves reads as "migrated" to the next person who greps the injector.
 
 ---
 
-## SC2-04 · `BookingExperiencesRepository` — TAB 12's change orders and disputes — has no UI at all — **OPEN**, detector added in `f0c70e8`
+## SC2-04 · `BookingExperiencesRepository` — TAB 12's change orders and disputes — has no UI at all — **FIXED** in `f905cb2` (change orders; disputes gated, see below)
 
 **P1** · fix in **client-mobile** · protected release: **no**
 
@@ -165,7 +188,7 @@ the dispute screen is in scope before TAB 15.
 
 ---
 
-## SC2-05 · `HomeCompositionRepository` never renders Home — its only caller outside its own directory is the logout cache-clear — **OPEN**
+## SC2-05 · `HomeCompositionRepository` never renders Home — its only caller outside its own directory is the logout cache-clear — **FIXED** in `91a466a`
 
 **P1** · fix in **client-mobile** · protected release: **no**
 
