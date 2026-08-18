@@ -108,13 +108,21 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
                     const Icon(Icons.emergency_outlined,
                         color: Color(0xFFDC2626), size: 22),
                     const SizedBox(width: 8),
-                    Text(
-                      'In Immediate Danger?',
-                      style: TextStyle(
-                        fontFamily: FontPalette.primaryFontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFDC2626),
+                    // Expanded, because this heading has nowhere to go
+                    // otherwise. It overflowed at every viewport and every
+                    // text scale measured — including a 390dp phone at 100% —
+                    // and in a release build an overflow is silent clipping,
+                    // so the words "In Immediate Danger?" were being cut off
+                    // on the one screen where that matters most.
+                    Expanded(
+                      child: Text(
+                        'In Immediate Danger?',
+                        style: TextStyle(
+                          fontFamily: FontPalette.primaryFontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFDC2626),
+                        ),
                       ),
                     ),
                   ],

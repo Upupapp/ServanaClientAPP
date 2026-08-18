@@ -33,18 +33,37 @@
 ///
 /// ## Scope, stated rather than implied
 ///
-/// This covers the screens that can be constructed without the dependency
-/// locator. Screens that resolve `dpLocator` in `initState` need a registered
-/// container and are NOT covered here — see the count asserted at the bottom,
-/// which is deliberately a floor rather than a total so that adding a screen
-/// to this list never requires editing a number in two places.
+/// `test/support/screen_test_container.dart` registers the dependencies these
+/// screens resolve, so this is no longer limited to the four that construct
+/// without the locator. The container holds REAL controllers over a
+/// `MockClient` that answers an empty envelope — a hand-written fake would
+/// agree with the screen by construction, and a real controller over a dead
+/// network produces the empty states a real screen actually meets.
+///
+/// Still NOT covered, and named rather than quietly omitted:
+///
+///  - **Home and the booking flows** — a live MobX store graph.
+///  - **The permissions screen** — reaches Firebase Messaging directly.
+///  - **Anything needing a GoRouter ancestor** to build.
+///
+/// A screen whose dependency is missing fails with GetIt's own message naming
+/// the type, which says exactly what to add to the container.
 library;
 
 import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
+import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
+import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
+import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
+import 'package:client/modules/support/presentation/screens/help_center_screen.dart';
+import 'package:client/modules/support/presentation/screens/safety_support_screen.dart';
+import 'package:client/modules/support/presentation/screens/support_home_screen.dart';
+import 'package:client/modules/support/presentation/screens/support_tickets_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/screen_test_container.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -60,15 +79,25 @@ const Map<String, Size> _viewports = <String, Size>{
 /// 1.3 and dies at 2.0 is a screen that fails exactly the users who need it.
 const List<double> _scales = <double>[1.0, 1.3, 2.0];
 
-/// Every screen here must be constructible with no `dpLocator` registration.
+/// Every screen here builds against the container in `setUp`.
 final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'AboutScreen': () => const AboutScreen(),
   'SecurityScreen': () => const SecurityScreen(),
   'RewardsScreen': () => const RewardsScreen(),
   'FavouritesScreen': () => const FavouritesScreen(),
+  'AppearanceScreen': () => const AppearanceScreen(),
+  'PrivacyLegalScreen': () => const PrivacyLegalScreen(),
+  'SupportHomeScreen': () => const SupportHomeScreen(),
+  'SupportTicketsScreen': () => const SupportTicketsScreen(),
+  'HelpCenterScreen': () => const HelpCenterScreen(),
+  'SafetySupportScreen': () => const SafetySupportScreen(),
+  'ReviewFormScreen': () => const ReviewFormScreen(bookingId: '42'),
 };
 
 void main() {
+  setUp(registerScreenDependencies);
+  tearDown(resetScreenDependencies);
+
   group('screens lay out without overflow at every supported viewport', () {
     for (final screen in _screens.entries) {
       for (final viewport in _viewports.entries) {
@@ -92,8 +121,20 @@ void main() {
               );
               await tester.pump(const Duration(milliseconds: 350));
 
+              final overflow = tester.takeException();
+
+              // Tear the tree down and let any armed timer fire before the
+              // binding checks for pending ones. `ServanaApiClient` wraps every
+              // request in a 30s timeout, so a screen that loads on build arms
+              // one — that is the harness meeting a real client, not a leak,
+              // and pumping past it is how the two are told apart. A timer
+              // still pending after this WOULD be a leak, and the binding
+              // still says so.
+              await tester.pumpWidget(const SizedBox.shrink());
+              await tester.pump(const Duration(seconds: 31));
+
               expect(
-                tester.takeException(),
+                overflow,
                 isNull,
                 reason: '${screen.key} overflowed at ${viewport.key} with text '
                     'scale $scale. In a release build this is silent '
@@ -114,7 +155,7 @@ void main() {
       expect(_scales, containsAll(<double>[1.0, 1.3, 2.0]));
       expect(
         _screens.length,
-        greaterThanOrEqualTo(4),
+        greaterThanOrEqualTo(11),
         reason: 'screens should only ever be added to this matrix',
       );
     });
