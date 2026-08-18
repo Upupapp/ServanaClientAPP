@@ -77,6 +77,23 @@ app.*.map.json
 /android/local.properties
 /android/key.properties
 
+# Release signing material. `/android/key.properties` above is the path Gradle
+# actually reads — `rootProject` in android/app/build.gradle is the android/
+# directory — but the root-level spelling was NOT matched, and a Play upload key
+# committed once is a key that has to be treated as compromised. Play upload-key
+# mistakes are close to unrecoverable, and this project has already been through
+# re-signing pain requiring both certificates.
+/key.properties
+key.properties
+*.jks
+*.keystore
+!android/app/debug.keystore
+
+# R8 mapping. Not a secret, but it deobfuscates a shipped bundle, so it is
+# uploaded to Crashlytics rather than committed.
+/android/app/mapping.txt
+mapping.txt
+
 # Firebase credentials — must never be committed; inject via CI or flutterfire configure.
 # NOTE: these entries were inert until 2026-08-01. .gitignore does not untrack a
 # file git already knows about, so all three stayed committed (and rotated keys

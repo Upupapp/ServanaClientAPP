@@ -23,9 +23,48 @@ if (flutterVersionName == null) {
 }
 
 def keystoreProperties = new Properties()
-  def keystorePropertiesFile = rootProject.file('key.properties')
-    if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// Is a real upload key available at all? Read once, used both to populate the
+// signing config and to refuse a release build that has none.
+def hasCodemagicSigning = System.getenv("CM_KEYSTORE_PATH") != null
+def hasLocalSigning = keystorePropertiesFile.exists()
+def hasReleaseSigning = hasCodemagicSigning || hasLocalSigning
+
+/**
+ * A release build with no key must FAIL, not quietly produce something.
+ *
+ * `signingConfigs.release` is populated only when the Codemagic environment
+ * variables or `key.properties` are present. With neither it is an EMPTY
+ * config, and on AGP 8.x that yields an UNSIGNED artefact — the inline comment
+ * claiming the build falls back to the debug key was simply wrong. Either
+ * outcome, unsigned or signed with something unexpected, was discovered at
+ * upload time rather than at build time.
+ *
+ * Play upload-key mistakes are close to unrecoverable, and this project has
+ * already been through Play re-signing requiring both certificates. A build
+ * that cannot state which key signed it is a build that should not exist.
+ *
+ * Checked on the task graph rather than at configuration time, so `flutter run`
+ * and every debug and profile build are completely unaffected.
+ */
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any { t ->
+        t.name ==~ /(?i).*(assemble|bundle)Release.*/
+    }
+    if (wantsRelease && !hasReleaseSigning) {
+        throw new GradleException(
+            "Release signing is not configured, so this build would produce an " +
+            "UNSIGNED artefact.\n" +
+            "  Provide EITHER the Codemagic environment variables " +
+            "(CM_KEYSTORE_PATH, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD)\n" +
+            "  OR android/key.properties with storeFile, storePassword, keyAlias, keyPassword.\n" +
+            "Debug and profile builds are unaffected. Never commit either — see .gitignore."
+        )
+    }
 }
 
 android {
@@ -73,14 +112,30 @@ android {
                 storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
             }
-            // GitHub Actions / dev CI: no signing config set —
-            // release buildType uses signingConfigs.debug anyway
+            // No third branch. When neither source is present this config stays
+            // empty and the task-graph guard above refuses the build, rather
+            // than emitting an unsigned bundle that fails at upload.
         }
     }
 
     buildTypes {
         release {
             signingConfig signingConfigs.release
+
+            // `proguardFiles` was declared here WITHOUT `minifyEnabled true`,
+            // and without that flag neither the shrinker nor the obfuscator
+            // runs. The 8-line proguard-rules.pro was dead configuration that
+            // read, to anyone opening the repository, as evidence of a
+            // hardening step that was not happening.
+            //
+            // That compounds badly with what else ships here: freerasp is a
+            // runtime self-protection SDK whose whole purpose is to detect
+            // tampering and repackaging, and it was shipping alongside fully
+            // readable, unobfuscated bytecode. Paying for RASP and skipping
+            // obfuscation is the worst of both positions.
+            minifyEnabled true
+            shrinkResources true
+
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
