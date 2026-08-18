@@ -42,10 +42,7 @@ class _FakeSource implements IdentityDataSource {
       _maybeThrow('verifyEmail', null);
 
   @override
-  Future<void> verifyMobile({
-    required String mobileNumber,
-    required String otp,
-  }) async =>
+  Future<void> verifyMobile({required String idToken}) async =>
       _maybeThrow('verifyMobile', null);
 
   @override
@@ -164,7 +161,7 @@ void main() {
         ),
       );
       try {
-        await repo.verifyMobile(mobileNumber: '+63', otp: '1');
+        await repo.verifyMobile(idToken: 'firebase-id-token');
         fail('should have thrown');
       } on ApiFailure catch (failure) {
         expect(failure.isRetryable, isFalse);

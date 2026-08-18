@@ -56,10 +56,7 @@ class IdentityCompatibilityDataSource implements IdentityDataSource {
   /// [UnsupportedTransportOperation] is the honest answer — a silent no-op
   /// would report a number as verified when nothing verified it.
   @override
-  Future<void> verifyMobile({
-    required String mobileNumber,
-    required String otp,
-  }) async {
+  Future<void> verifyMobile({required String idToken}) async {
     throw const UnsupportedTransportOperation(
       'verifyMobile',
       'The legacy API has no mobile-verification route; it exists only under '

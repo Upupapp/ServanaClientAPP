@@ -73,12 +73,12 @@ class IdentityRepository {
   Future<void> verifyEmail({required String email, required String otp}) =>
       _guard(() => _source.verifyEmail(email: email, otp: otp), 'verifyEmail');
 
-  Future<void> verifyMobile({
-    required String mobileNumber,
-    required String otp,
-  }) =>
-      _guard(
-        () => _source.verifyMobile(mobileNumber: mobileNumber, otp: otp),
+  /// Claims the mobile number proven by a Firebase phone credential.
+  ///
+  /// [idToken] comes from Firebase's own SMS OTP, never from a code this app
+  /// collected — see [IdentityDataSource.verifyMobile].
+  Future<void> verifyMobile({required String idToken}) => _guard(
+        () => _source.verifyMobile(idToken: idToken),
         'verifyMobile',
       );
 

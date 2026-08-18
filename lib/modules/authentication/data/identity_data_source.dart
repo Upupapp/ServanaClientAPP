@@ -46,14 +46,26 @@ abstract interface class IdentityDataSource {
   /// Proves ownership of [email] with [otp].
   Future<void> verifyEmail({required String email, required String otp});
 
-  /// Proves ownership of a mobile number with [otp].
+  /// Claims the mobile number proven by [idToken].
   ///
-  /// The backend supports email, mobile or both. The compatibility transport
-  /// has no route for this at all and says so by throwing an
-  /// [UnsupportedTransportOperation], which the repository turns into a
-  /// deterministic failure rather than a silent no-op.
-  Future<void> verifyMobile(
-      {required String mobileNumber, required String otp});
+  /// **The proof is Firebase's, not ours.** [idToken] must be a Firebase ID
+  /// token whose sign-in provider is `phone`, or which has a phone credential
+  /// linked — and Firebase only issues one after running its OWN SMS OTP. The
+  /// backend has no SMS sender and does not pretend to verify a number itself:
+  /// `auth.verifyMobile` verifies the token, reads the number off the
+  /// credential and refuses anything that does not prove one.
+  ///
+  /// This used to take a `mobileNumber` and an `otp` the app had collected,
+  /// which no transport could ever satisfy — the canonical one would answer
+  /// `VALIDATION_FAILED` and the legacy one has no route at all. Carrying the
+  /// wrong two arguments made an unimplementable call look implemented, so the
+  /// signature now says what v1 actually wants.
+  ///
+  /// Acquiring the token is a Firebase phone-auth flow and belongs with the
+  /// screen that will run it. There is no such screen yet, and there is
+  /// deliberately not one here: the compatibility transport cannot serve this
+  /// on any shipped build, so a UI would fail at the moment of use.
+  Future<void> verifyMobile({required String idToken});
 
   /// Starts a password reset for [email].
   Future<void> forgotPassword(String email);

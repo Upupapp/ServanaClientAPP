@@ -25,7 +25,6 @@ import 'dart:convert';
 
 import 'package:client/core/network/v1_api_client.dart';
 import 'package:client/modules/authentication/data/identity_canonical_data_source.dart';
-import 'package:client/modules/authentication/data/identity_data_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -124,45 +123,30 @@ void main() {
     });
   });
 
-  group('verifyMobile', () {
-    test('refuses rather than posting a body v1 cannot accept', () async {
+  group('verifyMobile carries the proof v1 actually wants', () {
+    test('sends VerifyMobileRequest {idToken}', () async {
       final c = sourceThat();
+      await c.source.verifyMobile(idToken: 'firebase-id-token');
 
-      // VerifyMobileRequest requires an `idToken` — a Firebase phone
-      // credential. A number and an OTP this app collected cannot be turned
-      // into one, so there is no honest body to send.
-      await expectLater(
-        c.source.verifyMobile(mobileNumber: '+639171234567', otp: '123456'),
-        throwsA(isA<UnsupportedTransportOperation>()),
-      );
+      final body = bodyOf(c.sent.single);
+      // openapi.ts VerifyMobileRequest: required [idToken],
+      // additionalProperties: false. The handler reads body.idToken with NO
+      // fallback, so `{mobileNumber, otp}` — what this used to send — was a
+      // guaranteed VALIDATION_FAILED.
+      expect(body.keys.toSet(), <String>{'idToken'});
+      expect(body['idToken'], 'firebase-id-token');
     });
 
-    test('sends no request at all when it refuses', () async {
+    test('never sends a number or an OTP the app collected itself', () async {
+      // The proof is Firebase's. This backend has no SMS sender and does not
+      // pretend to verify a number, so a code this app gathered proves
+      // nothing and must not be presented as though it did.
       final c = sourceThat();
-      try {
-        await c.source.verifyMobile(
-          mobileNumber: '+639171234567',
-          otp: '123456',
-        );
-      } on UnsupportedTransportOperation {
-        // expected
-      }
+      await c.source.verifyMobile(idToken: 'firebase-id-token');
 
-      // A refusal that still hit the network would consume the endpoint's rate
-      // limit budget for a call that could never succeed.
-      expect(c.sent, isEmpty);
-    });
-
-    test('names the operation, so a caller can log which one refused',
-        () async {
-      final c = sourceThat();
-      try {
-        await c.source.verifyMobile(mobileNumber: '+63917', otp: '1');
-        fail('expected UnsupportedTransportOperation');
-      } on UnsupportedTransportOperation catch (e) {
-        expect(e.operation, 'verifyMobile');
-        expect(e.reason, isNotEmpty);
-      }
+      final body = bodyOf(c.sent.single);
+      expect(body.containsKey('mobileNumber'), isFalse);
+      expect(body.containsKey('otp'), isFalse);
     });
   });
 
@@ -173,9 +157,10 @@ void main() {
       await c.source.resendEmailVerification('a@b.test');
       await c.source.forgotPassword('a@b.test');
       await c.source.resetPassword(token: 'x', newPassword: 'y');
+      await c.source.verifyMobile(idToken: 't');
       await c.source.logout();
 
-      expect(c.sent, hasLength(5));
+      expect(c.sent, hasLength(6));
       for (final request in c.sent) {
         expect(request.url.path, startsWith('/api/v1/'));
         expect(request.method, 'POST');

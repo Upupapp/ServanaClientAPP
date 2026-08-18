@@ -58,33 +58,18 @@ class IdentityCanonicalDataSource implements IdentityDataSource {
     );
   }
 
-  /// v1 mobile verification is a different proof, not a renamed field.
+  /// `VerifyMobileRequest` is exactly `{idToken}`, `additionalProperties:false`.
   ///
-  /// `VerifyMobileRequest` requires exactly one thing — `idToken`, a Firebase
-  /// ID token whose sign-in provider is `phone`. Firebase only issues one
-  /// after running its OWN SMS OTP, and the backend has no SMS sender of its
-  /// own: `auth.verifyMobile` verifies the token, reads the phone number off
-  /// the credential and refuses anything that does not prove one.
-  ///
-  /// This interface carries a `mobileNumber` and an `otp` the app collected
-  /// itself. Neither can be turned into that token here, so there is no body
-  /// to send. Posting the pair anyway would earn a `VALIDATION_FAILED` and
-  /// read, at the call site, as a server problem.
-  ///
-  /// So it refuses in the open — the same answer the compatibility source
-  /// gives for the same operation, for a different reason. Closing this needs
-  /// a Firebase phone-auth flow in the app and an interface that carries a
-  /// token, which is a redesign rather than a field rename.
+  /// This used to post `{mobileNumber, otp}` and could never have succeeded —
+  /// the handler reads `body.idToken` with no fallback and answers
+  /// `VALIDATION_FAILED` for anything else. It was not a field rename: v1
+  /// takes a Firebase phone credential as the proof, because the backend has
+  /// no SMS sender of its own.
   @override
-  Future<void> verifyMobile({
-    required String mobileNumber,
-    required String otp,
-  }) async {
-    throw const UnsupportedTransportOperation(
-      'verifyMobile',
-      'v1 verifies a mobile number from a Firebase phone credential '
-          '(idToken), not from a number and an OTP this app collected. The '
-          'app has no such credential to send.',
+  Future<void> verifyMobile({required String idToken}) async {
+    await _api.post(
+      V1Endpoints.authVerifyMobile(),
+      body: <String, dynamic>{'idToken': idToken},
     );
   }
 
