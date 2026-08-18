@@ -48,47 +48,62 @@ class RewardsScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: ColorPalette.primaryColorDark.withOpacity(.10),
-                  borderRadius: BorderRadius.circular(20),
+      // Scrollable, because the copy below is long enough to outgrow a small
+      // phone once the text scales.
+      //
+      // `Center > Column(min)` has no give: the Column's height is a function
+      // of TEXT SCALE while the space it is given is a function of the
+      // VIEWPORT, and at the 2.0 this app declares supported
+      // (AccessibilityTokens.maxRequiredTextScale) the body copy wraps past
+      // the bottom — measured at 411px over on a 320x568 phone and 171px on
+      // 360x640. In a release build that is not an exception, it is silent
+      // clipping, so the explanation simply vanished for large-text users.
+      //
+      // The scroll view is what absorbs the slack; `Center` stays so the
+      // content still sits mid-screen when it does fit.
+      body: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: ColorPalette.primaryColorDark.withOpacity(.10),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.stars_rounded,
+                    size: 36,
+                    color: ColorPalette.primaryColorDark,
+                  ),
                 ),
-                child: Icon(
-                  Icons.stars_rounded,
-                  size: 36,
-                  color: ColorPalette.primaryColorDark,
+                const SizedBox(height: 16),
+                Text(
+                  "Rewards coming soon",
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: ColorPalette.secondaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "Rewards coming soon",
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  color: ColorPalette.secondaryText,
+                const SizedBox(height: 10),
+                Text(
+                  "Earn points on every completed booking and redeem them for service vouchers and discounts. We're setting it up now.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontSize: 13,
+                    color: ColorPalette.secondaryText.withOpacity(.65),
+                    height: 1.6,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Earn points on every completed booking and redeem them for service vouchers and discounts. We're setting it up now.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 13,
-                  color: ColorPalette.secondaryText.withOpacity(.65),
-                  height: 1.6,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -130,39 +145,45 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
           ),
         ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.favorite_border_rounded,
-                color: ColorPalette.secondaryText.withOpacity(.3),
-                size: 56,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                "No favourites yet",
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w700,
-                  color: ColorPalette.secondaryText,
-                  fontSize: 16,
+      // Same arrangement as Rewards, scrollable for the same reason. This one
+      // measures clean at 2.0 today only because its copy is two lines
+      // shorter — that is a property of the sentence, not of the layout, so
+      // the next wording change would have brought the clipping back.
+      body: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.favorite_border_rounded,
+                  color: ColorPalette.secondaryText.withOpacity(.3),
+                  size: 56,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Browse services and tap the heart icon to save them here.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 13,
-                  color: ColorPalette.secondaryText.withOpacity(.6),
-                  height: 1.5,
+                const SizedBox(height: 14),
+                Text(
+                  "No favourites yet",
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w700,
+                    color: ColorPalette.secondaryText,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  "Browse services and tap the heart icon to save them here.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontSize: 13,
+                    color: ColorPalette.secondaryText.withOpacity(.6),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
