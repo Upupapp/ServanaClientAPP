@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:client/common/presentation/version_gate/version_gate_barrier.dart';
 import 'package:client/common/constants/color_palette.dart';
 
 import 'package:client/common/config/app_config.dart';
@@ -273,12 +274,19 @@ class _MyAppState extends State<MyApp> {
             routeInformationParser: _router.routeInformationParser,
             routeInformationProvider: _router.routeInformationProvider,
             routerDelegate: _router.routerDelegate,
-            builder: (context, child) => OfflineBanner(
-              monitor: _connectivity,
-              child: ForegroundNotificationBanner(
-                fcmCoordinator: _fcmCoord,
-                navigationCoordinator: _navCoord,
-                child: child ?? const SizedBox.shrink(),
+            // TAB 15: the version gate is the OUTERMOST wrapper, so a build
+            // below the remote minimum cannot reach a route, a banner or an
+            // authenticated request. It fails open — no config, an unreadable
+            // build number or any throw during evaluation all render the app
+            // normally.
+            builder: (context, child) => VersionGateBarrier(
+              child: OfflineBanner(
+                monitor: _connectivity,
+                child: ForegroundNotificationBanner(
+                  fcmCoordinator: _fcmCoord,
+                  navigationCoordinator: _navCoord,
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             ),
           ),
