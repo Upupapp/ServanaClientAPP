@@ -50,7 +50,7 @@ class _ServanaBookActionState extends State<ServanaBookAction> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = ColorPalette.navBookAction;
+    const accent = ColorPalette.navBookAction;
 
     return Semantics(
       button: true,

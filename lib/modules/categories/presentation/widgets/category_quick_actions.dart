@@ -24,8 +24,9 @@ class CategoryQuickActionsSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (chips.length <= 1)
+    if (chips.length <= 1) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     return SliverPersistentHeader(
       pinned: true,

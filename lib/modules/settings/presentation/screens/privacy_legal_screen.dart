@@ -73,7 +73,7 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
           : ListView(
               children: [
                 const SizedBox(height: 8),
-                SettingsSectionHeader('Analytics & Diagnostics'),
+                const SettingsSectionHeader('Analytics & Diagnostics'),
                 SettingsGroup(children: [
                   SettingsToggleTile(
                     icon: Icons.analytics_outlined,
@@ -85,7 +85,7 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                     onChanged: _onAnalyticsToggled,
                   ),
                 ]),
-                SettingsSectionHeader('Legal Documents'),
+                const SettingsSectionHeader('Legal Documents'),
                 SettingsGroup(children: [
                   SettingsNavTile(
                     icon: Icons.description_outlined,
@@ -112,8 +112,8 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                     onTap: () => _launch(context, ServanaUrls.refundPolicy),
                   ),
                 ]),
-                SettingsSectionHeader('Your Data'),
-                SettingsGroup(children: [
+                const SettingsSectionHeader('Your Data'),
+                const SettingsGroup(children: [
                   SettingsUnavailableTile(
                     icon: Icons.download_outlined,
                     title: 'Export My Data',

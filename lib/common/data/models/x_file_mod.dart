@@ -59,19 +59,16 @@ class XFileMod extends XFile {
   XFileMod(
     this.path, {
     this.mimeType,
-    String? name,
-    int? length,
+    super.name,
+    super.length,
     this.bytes,
-    DateTime? lastModified,
+    super.lastModified,
   })  : _name = name,
         _length = length,
         _lastModified = lastModified,
         super(
           path,
           mimeType: mimeType,
-          name: name,
-          length: length,
           bytes: bytes,
-          lastModified: lastModified,
         );
 }

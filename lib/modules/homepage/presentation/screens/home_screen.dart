@@ -543,7 +543,8 @@ class _HomeScreenState extends State<HomeScreen> {
               // page content, so this must NOT re-add it — doing so is the
               // double-count §18 warns about. 24 is the visible gap between the
               // last card and the bar, nothing more.
-              SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
+              const SliverToBoxAdapter(
+                  child: SizedBox(height: AppSpacing.section)),
             ],
           ),
         ),
@@ -604,7 +605,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   // one. It used to add 28 here while the Services heading
                   // added another 20 above itself, giving a 48pt trench that
                   // neither file could see on its own.
-                  SizedBox(height: AppSpacing.section),
+                  const SizedBox(height: AppSpacing.section),
                 ],
               );
             }),

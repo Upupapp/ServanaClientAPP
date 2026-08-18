@@ -14,8 +14,9 @@ abstract final class SafeDiagnostics {
     if (msg.contains('handshake')) return true;
     if (msg.contains('certificate')) return true;
     if (msg.contains('statuscode: 4')) return true; // 4xx — expected failures
-    if (msg.contains('statuscode: 5'))
+    if (msg.contains('statuscode: 5')) {
       return true; // 5xx — expected server errors
+    }
     return false;
   }
 

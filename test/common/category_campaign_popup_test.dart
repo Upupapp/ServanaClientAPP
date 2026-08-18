@@ -504,7 +504,7 @@ void main() {
       final handle = tester.ensureSemantics();
       await _openPopup(tester, CategoryCampaignRegistry.hairAndNails);
 
-      final c = CategoryCampaignRegistry.hairAndNails;
+      const c = CategoryCampaignRegistry.hairAndNails;
       expect(find.bySemanticsLabel(c.semanticSummary), findsOneWidget);
       expect(find.bySemanticsLabel(c.primaryActionLabel), findsOneWidget);
       expect(find.bySemanticsLabel(c.closeLabel), findsOneWidget);

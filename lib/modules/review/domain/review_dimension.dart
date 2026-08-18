@@ -74,8 +74,9 @@ class ReviewDimensionSet {
   static List<String> forCategory(String? category) {
     final c = (category ?? '').toLowerCase();
     if (c.contains('clean') || c.contains('housekeep')) return cleaning;
-    if (c.contains('install') || c.contains('repair') || c.contains('tech'))
+    if (c.contains('install') || c.contains('repair') || c.contains('tech')) {
       return installation;
+    }
     return general;
   }
 }

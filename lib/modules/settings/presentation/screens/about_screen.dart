@@ -49,7 +49,7 @@ class _AboutScreenState extends State<AboutScreen> {
           const SizedBox(height: 8),
 
           // App identity
-          SettingsSectionHeader('Application'),
+          const SettingsSectionHeader('Application'),
           SettingsGroup(children: [
             SettingsValueTile(
               icon: Icons.smartphone_rounded,
@@ -69,7 +69,7 @@ class _AboutScreenState extends State<AboutScreen> {
           ]),
 
           // Links
-          SettingsSectionHeader('Links'),
+          const SettingsSectionHeader('Links'),
           SettingsGroup(children: [
             SettingsNavTile(
               icon: Icons.language_rounded,

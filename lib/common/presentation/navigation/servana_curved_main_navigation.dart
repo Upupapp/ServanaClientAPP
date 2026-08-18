@@ -129,7 +129,7 @@ class ServanaCurvedMainNavigation extends StatelessWidget {
             //
             // The minimum keeps a bubble radius plus the corner radius clear of
             // each end, so the surface always has straight edge to curve from.
-            final minCentre = (ServanaNavMotion.bubbleDiameter / 2) +
+            const minCentre = (ServanaNavMotion.bubbleDiameter / 2) +
                 ServanaNavMotion.surfaceRadius * 0.5;
             final rawCentreX = (slotOf(activeTab) + 0.5) * slotWidth;
             final activeCentreX =

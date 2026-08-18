@@ -91,16 +91,19 @@ class ScreenAnalyticsObserver {
 
     // Pattern matches — strip dynamic segments
     if (_matchesPattern(p, r'^/bookings/[^/]+$')) return 'booking_detail';
-    if (_matchesPattern(p, r'^/bookings/[^/]+/payment$'))
+    if (_matchesPattern(p, r'^/bookings/[^/]+/payment$')) {
       return 'payment_webview';
+    }
     if (_matchesPattern(p, r'^/bookings/[^/]+/otp$')) return 'booking_otp';
-    if (_matchesPattern(p, r'^/bookings/[^/]+/confirm$'))
+    if (_matchesPattern(p, r'^/bookings/[^/]+/confirm$')) {
       return 'booking_confirmation';
+    }
     if (_matchesPattern(p, r'^/bookings/[^/]+/track$')) return 'tracking';
     if (_matchesPattern(p, r'^/bookings/[^/]+/chat$')) return 'conversation';
     if (_matchesPattern(p, r'^/messages/[^/]+$')) return 'conversation';
-    if (_matchesPattern(p, r'^/support/tickets/[^/]+$'))
+    if (_matchesPattern(p, r'^/support/tickets/[^/]+$')) {
       return 'support_ticket_detail';
+    }
     if (_matchesPattern(p, r'^/review/new$')) return 'review_form';
     if (_matchesPattern(p, r'^/review/detail$')) return 'review_detail';
     if (_matchesPattern(p, r'^/categories/[^/]+$')) return 'category_detail';

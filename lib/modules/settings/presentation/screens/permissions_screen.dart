@@ -62,8 +62,9 @@ class _PermissionsScreenState extends State<PermissionsScreen>
         };
       });
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => _locationStatus = PermissionStatus.unavailable);
+      }
     }
   }
 
@@ -125,7 +126,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       body: ListView(
         children: [
           const SizedBox(height: 8),
-          SettingsSectionHeader('Location'),
+          const SettingsSectionHeader('Location'),
           SettingsGroup(children: [
             SettingsPermissionTile(
               icon: Icons.location_on_outlined,
@@ -152,7 +153,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 ),
               ),
             ),
-          SettingsSectionHeader('Notifications'),
+          const SettingsSectionHeader('Notifications'),
           SettingsGroup(children: [
             SettingsPermissionTile(
               icon: Icons.notifications_outlined,
@@ -181,7 +182,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 ),
               ),
             ),
-          SettingsSectionHeader('Camera & Photos'),
+          const SettingsSectionHeader('Camera & Photos'),
           SettingsGroup(children: [
             SettingsNavTile(
               icon: Icons.camera_alt_outlined,

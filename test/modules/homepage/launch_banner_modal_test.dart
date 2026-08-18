@@ -377,7 +377,7 @@ void main() {
     test('the hotspot sits inside the artboard and is not full-width', () {
       expect(ServanaLaunchBenefitsModal.ctaLeftFraction, greaterThan(0.0));
       expect(ServanaLaunchBenefitsModal.ctaRightFraction, lessThan(1.0));
-      final width = ServanaLaunchBenefitsModal.ctaRightFraction -
+      const width = ServanaLaunchBenefitsModal.ctaRightFraction -
           ServanaLaunchBenefitsModal.ctaLeftFraction;
       expect(width, lessThan(0.75));
       expect(width, greaterThan(0.4));

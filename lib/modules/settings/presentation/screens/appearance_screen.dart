@@ -36,7 +36,7 @@ class AppearanceScreen extends StatelessWidget {
           body: ListView(
             children: [
               const SizedBox(height: 8),
-              SettingsSectionHeader('Theme'),
+              const SettingsSectionHeader('Theme'),
               SettingsGroup(children: [
                 _ThemeOption(
                   icon: Icons.brightness_auto_rounded,
@@ -58,13 +58,13 @@ class AppearanceScreen extends StatelessWidget {
                     ctrl.setThemeMode(ThemeMode.light);
                   },
                 ),
-                SettingsUnavailableTile(
+                const SettingsUnavailableTile(
                   icon: Icons.dark_mode_rounded,
                   title: 'Dark',
                   reason: 'Dark mode is being added in a future update',
                 ),
               ]),
-              SettingsSectionHeader('Interaction'),
+              const SettingsSectionHeader('Interaction'),
               SettingsGroup(children: [
                 SettingsToggleTile(
                   icon: Icons.vibration_rounded,

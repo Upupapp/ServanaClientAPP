@@ -29,8 +29,8 @@ class SecurityScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 8),
-          SettingsSectionHeader('Sign-In'),
-          SettingsGroup(children: [
+          const SettingsSectionHeader('Sign-In'),
+          const SettingsGroup(children: [
             SettingsUnavailableTile(
               icon: Icons.lock_outline_rounded,
               title: 'Change Password',
@@ -42,8 +42,8 @@ class SecurityScreen extends StatelessWidget {
               reason: 'Biometric authentication is coming in a future update',
             ),
           ]),
-          SettingsSectionHeader('Sessions'),
-          SettingsGroup(children: [
+          const SettingsSectionHeader('Sessions'),
+          const SettingsGroup(children: [
             SettingsUnavailableTile(
               icon: Icons.devices_rounded,
               title: 'Active Sessions',

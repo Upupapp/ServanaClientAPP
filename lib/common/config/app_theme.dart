@@ -17,16 +17,16 @@ ThemeData buildDarkAppTheme(AppBrand brand) {
     brightness: Brightness.dark,
     scaffoldBackgroundColor: const Color(0xFF121218),
     fontFamily: 'Poppins',
-    appBarTheme: AppBarTheme(
+    appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
       foregroundColor: Colors.white,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: Colors.white,
       ),
-      iconTheme: const IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: Colors.white),
     ),
     textTheme: const TextTheme(
       titleLarge: TextStyle(fontWeight: FontWeight.w700),
@@ -37,10 +37,10 @@ ThemeData buildDarkAppTheme(AppBrand brand) {
       bodySmall: TextStyle(fontWeight: FontWeight.w500),
     ),
     dividerTheme: const DividerThemeData(color: Color(0xFF2A2A35)),
-    cardTheme: CardThemeData(
-      color: const Color(0xFF1E1E28),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF1E1E28),
       elevation: 0,
-      shape: const RoundedRectangleBorder(borderRadius: borderRadius),
+      shape: RoundedRectangleBorder(borderRadius: borderRadius),
       margin: EdgeInsets.zero,
     ),
     inputDecorationTheme: InputDecorationTheme(
