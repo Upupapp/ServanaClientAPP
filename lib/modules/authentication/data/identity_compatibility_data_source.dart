@@ -67,18 +67,30 @@ class IdentityCompatibilityDataSource implements IdentityDataSource {
     );
   }
 
+  /// Asks the backend to email a Firebase reset link.
+  ///
+  /// This used to throw, on the stated grounds that *"the customer app
+  /// initiates password reset through Firebase, not the legacy API"*. That
+  /// was not true of this app: `sendPasswordResetEmail`,
+  /// `confirmPasswordReset` and `verifyPasswordResetCode` appear nowhere in
+  /// it. Nothing initiated a reset by any route, and the login screen told
+  /// customers the feature was "coming soon" while
+  /// `POST /api/auth/forgot-password` had been deployed and rate-limited the
+  /// whole time.
   @override
   Future<void> forgotPassword(String email) async {
-    // Password reset is initiated through Firebase on this client today, and
-    // the legacy backend route is not wired into the app. Surfaced rather than
-    // silently succeeding, for the same reason as verifyMobile.
-    throw const UnsupportedTransportOperation(
-      'forgotPassword',
-      'The customer app initiates password reset through Firebase, not the '
-          'legacy API.',
-    );
+    await _api.forgotPassword(email: email);
   }
 
+  /// There is nothing for this app to complete.
+  ///
+  /// The legacy route emails a Firebase reset LINK, and the customer sets
+  /// their new password on Firebase's hosted page in a browser. The app never
+  /// sees the `oobCode`, so it has no reset to finish — this is a genuine
+  /// absence of a step, not a missing route.
+  ///
+  /// It stays a refusal rather than a silent no-op: a no-op here would report
+  /// a password as changed when nothing changed it.
   @override
   Future<void> resetPassword({
     required String token,
@@ -86,8 +98,8 @@ class IdentityCompatibilityDataSource implements IdentityDataSource {
   }) async {
     throw const UnsupportedTransportOperation(
       'resetPassword',
-      'The customer app completes password reset through Firebase, not the '
-          'legacy API.',
+      'Legacy recovery completes on Firebase\'s hosted page, not in the app — '
+          'this client never receives an oobCode to spend.',
     );
   }
 

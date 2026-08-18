@@ -475,6 +475,30 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Starts password recovery by asking the backend to email a reset link.
+  ///
+  /// `platform` is deliberately NOT sent. The backend only gives a
+  /// platform-specific `continueUrl` to allowlisted names, and its own comment
+  /// on `forgotPasswordController` records that the customer mobile app omits
+  /// the field and lands on Firebase's hosted reset page — which is the right
+  /// destination here, because the reset itself happens in a browser and never
+  /// in this app. Sending a name would mean keeping a copy of a server-side
+  /// allowlist in the client.
+  ///
+  /// The response is deliberately neutral: the backend answers "if an account
+  /// with that email exists…" whether or not it does, so this cannot be used
+  /// to enumerate accounts. Callers must not branch on it to say whether the
+  /// address was known.
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    final uri = _uri('/api/auth/forgot-password');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'email': email}),
+    );
+    return _decodeJson(res);
+  }
+
   /// Ends the session server-side.
   ///
   /// POST /api/auth/logout revokes the Firebase refresh tokens and clears the
