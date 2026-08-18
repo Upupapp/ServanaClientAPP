@@ -1,2 +1,50 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalise on commit, and check out LF *everywhere* — including Windows.
+#
+# `* text=auto` alone normalises the blob but still hands a Windows working
+# tree CRLF. `dart format --set-exit-if-changed .` is the CI contract and it is
+# line-ending sensitive, so a CRLF checkout turns the Validate job red for
+# every developer except whoever last touched the file — and it reads as an
+# unrelated bug, because nothing in the diff looks wrong.
+#
+# This repository's own history is the argument: a prior sweep shipped 55
+# unformatted files and turned Validate red the moment anything was pushed, and
+# the 43 unlanded commits were authored on Windows.
+* text=auto eol=lf
+
+# Sources the gates actually read.
+*.dart   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.gradle text eol=lf
+*.kts    text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.sh     text eol=lf
+*.podspec text eol=lf
+*.pbxproj text eol=lf
+gradlew  text eol=lf
+Podfile  text eol=lf
+
+# Windows-native tooling that must keep CRLF.
+gradlew.bat text eol=crlf
+*.bat       text eol=crlf
+*.ps1       text eol=crlf
+
+# Never munge binaries.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.ttf  binary
+*.otf  binary
+*.woff  binary
+*.woff2 binary
+*.jar  binary
+*.keystore binary
+*.jks  binary
+*.riv  binary
+*.pdf  binary
+*.mp4  binary
+*.zip  binary
