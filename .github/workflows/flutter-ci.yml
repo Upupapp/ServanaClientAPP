@@ -42,6 +42,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # PINNED (TAB 19). `channel: stable` with no version is not
+          # reproducibility, it is a subscription to whatever Flutter ships
+          # next — and it has already cost this project a working Android
+          # build. When stable moved to 3.47.0 its minimum Gradle (8.14.0) and
+          # Kotlin (2.2.20) rose above what this repository pinned (8.13,
+          # 2.0.0) and `flutter build appbundle --release` stopped working,
+          # with no commit to explain it.
+          #
+          # pubspec.lock pins the packages; nothing pinned the SDK that
+          # resolves them. This is that line.
+          #
+          # Raise it deliberately: bump here, run the gates, run a release
+          # build, then commit. An upgrade is a decision, not a Tuesday.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
@@ -118,6 +132,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # PINNED (TAB 19). `channel: stable` with no version is not
+          # reproducibility, it is a subscription to whatever Flutter ships
+          # next — and it has already cost this project a working Android
+          # build. When stable moved to 3.47.0 its minimum Gradle (8.14.0) and
+          # Kotlin (2.2.20) rose above what this repository pinned (8.13,
+          # 2.0.0) and `flutter build appbundle --release` stopped working,
+          # with no commit to explain it.
+          #
+          # pubspec.lock pins the packages; nothing pinned the SDK that
+          # resolves them. This is that line.
+          #
+          # Raise it deliberately: bump here, run the gates, run a release
+          # build, then commit. An upgrade is a decision, not a Tuesday.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
@@ -224,6 +252,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # PINNED (TAB 19). `channel: stable` with no version is not
+          # reproducibility, it is a subscription to whatever Flutter ships
+          # next — and it has already cost this project a working Android
+          # build. When stable moved to 3.47.0 its minimum Gradle (8.14.0) and
+          # Kotlin (2.2.20) rose above what this repository pinned (8.13,
+          # 2.0.0) and `flutter build appbundle --release` stopped working,
+          # with no commit to explain it.
+          #
+          # pubspec.lock pins the packages; nothing pinned the SDK that
+          # resolves them. This is that line.
+          #
+          # Raise it deliberately: bump here, run the gates, run a release
+          # build, then commit. An upgrade is a decision, not a Tuesday.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
@@ -376,6 +418,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # PINNED (TAB 19). `channel: stable` with no version is not
+          # reproducibility, it is a subscription to whatever Flutter ships
+          # next — and it has already cost this project a working Android
+          # build. When stable moved to 3.47.0 its minimum Gradle (8.14.0) and
+          # Kotlin (2.2.20) rose above what this repository pinned (8.13,
+          # 2.0.0) and `flutter build appbundle --release` stopped working,
+          # with no commit to explain it.
+          #
+          # pubspec.lock pins the packages; nothing pinned the SDK that
+          # resolves them. This is that line.
+          #
+          # Raise it deliberately: bump here, run the gates, run a release
+          # build, then commit. An upgrade is a decision, not a Tuesday.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
@@ -961,6 +1017,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # PINNED (TAB 19). `channel: stable` with no version is not
+          # reproducibility, it is a subscription to whatever Flutter ships
+          # next — and it has already cost this project a working Android
+          # build. When stable moved to 3.47.0 its minimum Gradle (8.14.0) and
+          # Kotlin (2.2.20) rose above what this repository pinned (8.13,
+          # 2.0.0) and `flutter build appbundle --release` stopped working,
+          # with no commit to explain it.
+          #
+          # pubspec.lock pins the packages; nothing pinned the SDK that
+          # resolves them. This is that line.
+          #
+          # Raise it deliberately: bump here, run the gates, run a release
+          # build, then commit. An upgrade is a decision, not a Tuesday.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
