@@ -177,7 +177,7 @@ a store account, a console, or a deploy.
 | M4.4 | Apple portal: Associated Domains, Sign in with Apple, push capability | 14, 16 |
 | M4.5 | APNs key uploaded to Firebase console for `servana-59bee` | 16 |
 | M4.6 | App Store Connect API key / signing certificates as CI secrets | 16 |
-| M4.7 | Remote Config schema published; version-gate propagation rehearsal | 15 |
+| M4.7 | Publish the six `version_gate_*` Remote Config parameters in `servana-59bee`; rehearse a block/restore on real Android **and** iOS devices and **record the propagation delay**. TAB 05 needs that number — over an hour and TAB 15 becomes its prerequisite, not a parallel workstream. Code and runbook are done (`docs/runbooks/VERSION_GATE.md`) | 15 |
 | M4.8 | Canary customer account on production with real booking history | 05 |
 | M4.9 | Security headers (HSTS, nosniff, frame-deny, referrer policy) at the nginx edge — **confirmed absent today** | 18 |
 | M4.10 | RASP `watcherMail` moved off a personal Gmail to a team alias | 18 |
