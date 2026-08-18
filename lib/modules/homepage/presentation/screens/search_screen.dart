@@ -234,11 +234,22 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_outlined,
-                size: 48, color: ColorPalette.secondaryText.withOpacity(0.4)),
+            // The icon and the wording follow the ACTUAL failure.
+            //
+            // Both used to be hardcoded to connectivity, so a server-side 401
+            // — which is what `GET /api/catalog` returns in production today,
+            // shadowed by a booking wildcard — told the customer to check a
+            // network that was working perfectly. They cannot fix it, support
+            // cannot reproduce it, and the real cause is invisible to both.
+            Icon(
+                _ctrl.errorIsConnectivity
+                    ? Icons.wifi_off_outlined
+                    : Icons.error_outline_rounded,
+                size: 48,
+                color: ColorPalette.secondaryText.withOpacity(0.4)),
             const SizedBox(height: 12),
             Text(
-              'Could not load services. Check your connection and try again.',
+              _ctrl.error ?? 'Could not load services. Please try again.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: FontPalette.primaryFontFamily,

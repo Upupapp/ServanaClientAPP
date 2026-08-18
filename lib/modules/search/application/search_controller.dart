@@ -10,6 +10,7 @@ import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/data/search_local_data_source.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:client/modules/search/domain/search_result.dart';
+import 'package:client/core/network/api_failure.dart';
 import 'package:flutter/foundation.dart';
 
 enum SearchLoadState { idle, loading, ready, error }
@@ -28,6 +29,7 @@ class SearchController extends ChangeNotifier {
   int? _categoryFilter;
   SearchSort _sort = SearchSort.recommended;
   String? _error;
+  bool _errorIsConnectivity = false;
   bool _disposed = false;
   Timer? _debounce;
 
@@ -45,6 +47,14 @@ class SearchController extends ChangeNotifier {
   List<SearchCategoryChip> get categoryChips => _repository.categoryChips;
   SearchSort get sort => _sort;
   String? get error => _error;
+
+  /// True only when the load failed for a reason the CUSTOMER can act on by
+  /// checking their network.
+  ///
+  /// The search screen used to say "check your connection" for every failure,
+  /// including a server-side 401. That is worse than saying nothing: it sends
+  /// the customer, and then support, to look at a network that is working.
+  bool get errorIsConnectivity => _errorIsConnectivity;
   bool get hasQuery => _query.trim().isNotEmpty;
   bool get isEmpty =>
       _state == SearchLoadState.ready && _filteredResults.isEmpty;
@@ -79,9 +89,18 @@ class SearchController extends ChangeNotifier {
         resultCountBucket: CountBucketValues.forCount(_allResults.length),
         latencyBucket: LatencyBucketValues.forMillis(sw.elapsedMilliseconds),
       ));
+    } on ApiFailure catch (failure) {
+      _state = SearchLoadState.error;
+      // `safeMessage` is the only string a UI may render, and it is the one
+      // the mapper wrote for THIS failure rather than a guess.
+      _error = failure.safeMessage;
+      _errorIsConnectivity = failure is RetryableFailure;
+      _track(SearchFailedEvent(failureCode: failure.runtimeType.toString()));
+      if (!_disposed) notifyListeners();
     } on Exception catch (e) {
       _state = SearchLoadState.error;
       _error = e.toString();
+      _errorIsConnectivity = true;
       _track(const SearchFailedEvent(failureCode: 'network_error'));
       if (!_disposed) notifyListeners();
     }
