@@ -45,13 +45,20 @@ class ChangeOrdersSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                'Additional work',
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: ColorPalette.secondaryText,
+              // Flexible, not fixed. The heading and the badge share one line
+              // and the badge is the part that must stay whole — a count
+              // clipped to "1 to p" is worse than a shortened heading. At 200%
+              // text the two together are wider than a 320dp phone.
+              Flexible(
+                child: Text(
+                  'Additional work',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: ColorPalette.secondaryText,
+                  ),
                 ),
               ),
               if (awaiting.isNotEmpty) ...[
@@ -148,7 +155,8 @@ class _ChangeOrderRow extends StatelessWidget {
               ],
             ),
           ),
-          if (request.isPaid)
+          if (request.isPaid) ...[
+            const SizedBox(width: 8),
             Text(
               'Paid',
               style: TextStyle(
@@ -158,6 +166,7 @@ class _ChangeOrderRow extends StatelessWidget {
                 color: ColorPalette.primaryColorDark,
               ),
             ),
+          ],
         ],
       ),
     );

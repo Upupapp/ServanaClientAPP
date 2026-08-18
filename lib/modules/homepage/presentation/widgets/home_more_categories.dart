@@ -87,21 +87,28 @@ class HomeMoreCategories extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           // Wrap rather than a fixed-count grid: the number of extra
-          // categories is whatever Admin has created, and it reflows instead
-          // of overflowing when the text scales.
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final category in extra)
-                _CategoryChip(
-                  category: category,
-                  onTap: () {
-                    AppHaptics.selection();
-                    onTap(category);
-                  },
-                ),
-            ],
+          // categories is whatever Admin has created.
+          //
+          // A Wrap gives each child UNBOUNDED width, so reflowing protects the
+          // row and not the chip — a long category name at 200% text still
+          // overflows its own run. LayoutBuilder supplies the cap, and each
+          // chip is told what it may not exceed.
+          LayoutBuilder(
+            builder: (context, constraints) => Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final category in extra)
+                  _CategoryChip(
+                    category: category,
+                    maxWidth: constraints.maxWidth,
+                    onTap: () {
+                      AppHaptics.selection();
+                      onTap(category);
+                    },
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -110,9 +117,17 @@ class HomeMoreCategories extends StatelessWidget {
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.category, required this.onTap});
+  const _CategoryChip({
+    required this.category,
+    required this.maxWidth,
+    required this.onTap,
+  });
 
   final HomeCategory category;
+
+  /// The widest this chip may be. A Wrap does not impose one.
+  final double maxWidth;
+
   final VoidCallback onTap;
 
   @override
@@ -131,7 +146,7 @@ class _CategoryChip extends StatelessWidget {
         child: Container(
           // 44 is AccessibilityTokens.minTouchTarget. A chip that reflows is
           // still a tap target.
-          constraints: const BoxConstraints(minHeight: 44),
+          constraints: BoxConstraints(minHeight: 44, maxWidth: maxWidth),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -141,13 +156,19 @@ class _CategoryChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                category.name,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: ColorPalette.secondaryText,
+              // Flexible so the NAME yields first. The count is two or three
+              // characters and clipping it turns "12 services" into noise,
+              // whereas a shortened name is still recognisable.
+              Flexible(
+                child: Text(
+                  category.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: ColorPalette.secondaryText,
+                  ),
                 ),
               ),
               if (count != null && count > 0) ...[
