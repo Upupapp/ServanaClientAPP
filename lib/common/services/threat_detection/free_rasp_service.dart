@@ -84,6 +84,27 @@ class FreeRasp {
   static const String _appleTeamId =
       String.fromEnvironment('APPLE_TEAM_ID', defaultValue: '2K2SF7NRQP');
 
+  /// Where tamper, hooking and repackaging alerts are delivered.
+  ///
+  /// This was a named individual's personal Gmail address, receiving the
+  /// security signal for a production application with real customers. The
+  /// address is deliberately not repeated here: it belongs to a person, not to
+  /// the project, and `git log` has it if anyone needs the history. That is a single point of failure for exactly the alert
+  /// you cannot afford to miss: one person on leave, one full inbox, one spam
+  /// rule, and nobody learns the app is being repackaged.
+  ///
+  /// An alert nobody owns is telemetry, not security.
+  ///
+  /// Defaults to a team alias on a domain the organisation controls, and is
+  /// overridable per build so a staging or fork build can route elsewhere
+  /// without editing source. The alias must exist and be monitored by more than
+  /// one person — see M4.10 in docs/MASTER_TODO_MANUAL_TASKS.md and the
+  /// response procedure in docs/runbooks/RASP_ALERTS.md.
+  static const String _watcherMail = String.fromEnvironment(
+    'RASP_WATCHER_MAIL',
+    defaultValue: 'security@servana.com.ph',
+  );
+
   /// Whether freeRASP has the configuration it needs on the running platform.
   ///
   /// Android has always had it. iOS never did: `iosConfig` was absent, so
@@ -137,7 +158,7 @@ class FreeRasp {
               bundleIds: const <String>[_iosBundleId],
               teamId: _appleTeamId,
             ),
-      watcherMail: 'hcalmerin+freerasp@gmail.com',
+      watcherMail: _watcherMail,
       isProd: !kDebugMode,
     );
 

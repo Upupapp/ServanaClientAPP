@@ -72,6 +72,12 @@ without deploying, which is outside the boundary.
 
 Fixes can be written and committed locally; **deploy and re-probe are manual.**
 
+**One deploy closes three TABs.** TAB 03's successor signpost, TAB 04's v1 auth
+envelope and TAB 18's security headers are all implemented, committed and
+undeployed in `/Users/user/servana_api`. Production still exhibits all three
+defects. Deploying that repository is the single highest-value manual action
+outstanding.
+
 **TAB 03 status (2026-08-18):** fixed and committed locally at backend
 `d7a2097`, with a pinning test watched to fail and the full suite green.
 **Not deployed** — production still publishes the wrong signpost. The
@@ -182,7 +188,7 @@ a store account, a console, or a deploy.
 | M4.6 | App Store Connect API key / signing certificates as CI secrets | 16 |
 | M4.7 | Publish the six `version_gate_*` Remote Config parameters in `servana-59bee`; rehearse a block/restore on real Android **and** iOS devices and **record the propagation delay**. TAB 05 needs that number — over an hour and TAB 15 becomes its prerequisite, not a parallel workstream. Code and runbook are done (`docs/runbooks/VERSION_GATE.md`) | 15 |
 | M4.8 | Canary customer account on production with real booking history | 05 |
-| M4.9 | Security headers (HSTS, nosniff, frame-deny, referrer policy) at the nginx edge — **confirmed absent today** | 18 |
-| M4.10 | RASP `watcherMail` moved off a personal Gmail to a team alias | 18 |
+| M4.9 | Security headers — **already implemented and committed** at backend `f5c4743` (`apiSecurityHeaders`, mounted before CORS, HSTS one year + subdomains, deliberately no `preload`). Production serves none of them. This is a **deploy**, not a code task — see M2 | 18 |
+| M4.10 | **Create and staff `security@servana.com.ph`** as a distribution list with at least two people. The code change is done (TAB 18) and now points there; the alias must actually exist and be monitored, and the response procedure is `docs/runbooks/RASP_ALERTS.md`. An alert with no named owner is telemetry, not security | 18 |
 | M4.11 | IAM verification that both historical service-account keys are **deleted**, not merely rotated | 18 |
 | M4.12 | Play data-safety declaration and Apple privacy nutrition labels | 20 |
