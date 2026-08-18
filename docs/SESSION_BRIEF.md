@@ -72,6 +72,36 @@ web portal still cannot get its own return origin without breaking this app.
 installed +37 keeps the old allowlist. The real fix is a per-request origin in
 the backend.
 
+> **RESOLVED — re-measured 2026-08-18. Do not act on the paragraph above.**
+>
+> The per-request origin this item asks for **exists**:
+> `servana_api/src/services/paymentReturnOrigin.ts`, with `payments.return_origin`
+> added by migration `018-payment-return-origin.sql` and covered by
+> `tests/paymongo-return-origin.test.ts`.
+>
+> It resolves the return origin from the caller's `Origin` header against a
+> server-side allowlist, and **never echoes the caller's string** — only the
+> allowlist entry it matched, so a forged header cannot redirect a payment. No
+> `Origin` header resolves to the configured default, and so does an
+> unrecognised one: resolution failure cannot fail a checkout that works today.
+>
+> **Mobile is correct by construction, verified from both sides rather than
+> reasoned about.** The backend assumes native mobile sends no `Origin`; read
+> against this repository, that holds — `Origin` appears in no Dart source,
+> `ServanaApiClient._headers()` emits only `Content-Type` and `Authorization`,
+> nothing bypasses that client, and the checkout call
+> `/api/:bookingId/paymongo/create` goes through it like everything else. So
+> mobile receives the default origin, which this allowlist already accepts.
+>
+> **Adding `client.servana.com.ph` to `_approvedHosts` is now the WRONG action.**
+> The backend will only ever return mobile to the default origin, so the entry
+> buys nothing — and it widens a WebView allowlist, on the money surface, to a
+> host this app must never navigate to. The allowlist is correct as it stands.
+>
+> What remains true from the original item: an installed +37 keeps its old
+> allowlist whatever this file says. That is a fleet-version question, and it is
+> what the TAB 15 version gate exists to answer.
+
 Mitigating detail, verified in source: the redirect is treated as a *signal*,
 not proof. `_startPolling` polls every 5s for up to 30 minutes and the success
 path calls `_verifyAndClose()`. So a blocked success redirect costs seconds, not
