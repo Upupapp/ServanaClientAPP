@@ -63,6 +63,13 @@ without deploying, which is outside the boundary.
   `{"status":"failed","code":"UNAUTHENTICATED"}` with no `requestId`, while
   every v1 `404`/`400` returns `{"error":{code,message,requestId}}`.
 
+  **Status (2026-08-18):** the translator already existed and is committed but
+  undeployed, which is why production still shows the legacy shape. Verifying
+  it found a real defect — a **revoked session** was escaping translation
+  entirely — fixed at backend `086738c`. Demonstrating `TOKEN_REVOKED` and
+  `TOKEN_EXPIRED` against a **real token**, which the acceptance gate requires,
+  needs a live Firebase credential and a deploy.
+
 Fixes can be written and committed locally; **deploy and re-probe are manual.**
 
 **TAB 03 status (2026-08-18):** fixed and committed locally at backend
@@ -70,6 +77,24 @@ Fixes can be written and committed locally; **deploy and re-probe are manual.**
 **Not deployed** — production still publishes the wrong signpost. The
 after-state capture required by the acceptance gate cannot be taken until it
 ships.
+
+---
+
+## M7 — A parallel session is committing in the backend tree
+
+**Owner:** repository owner · **Raised:** TAB 04
+
+`/Users/user/servana_api` has **two agents committing concurrently**. During
+TAB 04 the other session landed `c2c73d2` and `37d9a7f` interleaved with this
+programme's `d7a2097` and `086738c`, and both sessions raised
+`tests/suite-inventory.test.ts`'s ratchet for their own suite without seeing the
+other — leaving the committed count one behind committed reality until
+`fcba273` reconciled it.
+
+Nothing was lost and no work was clobbered: every commit here staged explicit
+paths and left the other session's files untouched. But the pattern will repeat.
+Worth deciding who owns that repository per session, or serialising the two
+programmes' backend work.
 
 ---
 
