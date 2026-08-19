@@ -50,6 +50,11 @@
 ///    worth doing, and not free.
 ///  - **`NotificationsScreen`** — needs the notifications repository graph
 ///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
+///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
+///    whose platform channel never completes under the test binding. It
+///    logs `session unreadable, treating as signed out` after a 4s timeout
+///    and carries on, which is the right behaviour and still not a screen
+///    this harness can render.
 ///  - **`ProfileScreen`** — its dependencies ARE registered here now and it
 ///    builds, but rendering it raises **four exceptions** the harness cannot
 ///    yet attribute. That is an open question, not a clean skip: it may be
@@ -84,6 +89,7 @@ import 'package:client/modules/profile/presentation/screens/profile_screen.dart'
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
+import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -126,6 +132,7 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'ProfileScreen': () => const ProfileScreen(),
   'BookingsScreen': () => const BookingsScreen(),
   'BookingCalendarScreen': () => const BookingCalendarScreen(),
+  'SearchScreen': () => const SearchScreen(),
 };
 
 void main() {
