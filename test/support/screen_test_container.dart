@@ -69,6 +69,11 @@ import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/core/analytics/application/consent_gate_service.dart';
+// NB: there are TWO classes named StoreItemsReporsitory. This is the one
+// main_injector and StoreItemsBloc use; the merchant_menu copy is dead.
+import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
+import 'package:client/modules/store_items/domain/use_cases/get_store_items_use_case.dart';
+import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -215,6 +220,15 @@ Future<void> registerScreenDependencies() async {
 AuthenticationBloc buildTestAuthenticationBloc() => AuthenticationBloc(
       repo: AuthenticationRepository(backend: MockBackend()),
     );
+
+/// A [StoreItemsBloc] for the merchant screens, which build under one.
+StoreItemsBloc buildTestStoreItemsBloc() {
+  final repo = StoreItemsReporsitory(backend: MockBackend());
+  return StoreItemsBloc(
+    getStoreItemsUseCase: GetStoreItemsUseCase(storeItemsRepo: repo),
+    storeItemsRepo: repo,
+  );
+}
 
 /// A [JobOrderBloc] for SelectPaymentMethodScreen, which builds under one.
 ///

@@ -103,6 +103,9 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_options_screen
 import 'package:client/modules/job_order/presentation/screens/select_payment_method_screen.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
+import 'package:client/modules/merchant_menu/presentation/screens/merchant_menu_screen.dart';
+import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
+import 'package:client/modules/store_items/presentation/screens/store_items_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -157,6 +160,9 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'BwCheckoutScreen': () => const BwCheckoutScreen(),
   'BwConfirmationScreen': () => const BwConfirmationScreen(),
   'WelcomeScreen': () => const WelcomeScreen(),
+  'MerchantMenuScreen': () => const MerchantMenuScreen(),
+  'StoreItemsScreen': () =>
+      const StoreItemsScreen(merchantId: '1', merchantName: 'Test Merchant'),
 };
 
 void main() {
@@ -192,6 +198,9 @@ void main() {
                       ),
                       BlocProvider<JobOrderBloc>(
                         create: (_) => buildTestJobOrderBloc(),
+                      ),
+                      BlocProvider<StoreItemsBloc>(
+                        create: (_) => buildTestStoreItemsBloc(),
                       ),
                     ],
                     child: MaterialApp.router(
