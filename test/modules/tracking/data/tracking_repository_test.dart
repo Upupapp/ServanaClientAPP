@@ -1,4 +1,5 @@
 import 'package:client/common/domain/booking/booking_status.dart';
+import 'package:client/modules/tracking/data/tracking_compatibility_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_repository.dart';
 import 'package:client/modules/tracking/domain/geo_position_snapshot.dart';
@@ -31,6 +32,17 @@ class _FakeDataSource extends Fake implements TrackingDataSource {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/// A repository pinned to the legacy transport — the state of every shipped
+/// build, and the one these tests are about.
+///
+/// TAB 10 put a router in front of [TrackingRepository], so it no longer takes
+/// a data source directly. Nothing else about these cases changed: the stitch
+/// they exercise moved into [TrackingCompatibilityDataSource] intact, and
+/// passing no canonical source and no router is exactly what the injector does
+/// when the capability is off.
+TrackingRepository _legacyRepo(TrackingDataSource ds) =>
+    TrackingRepository(compatibility: TrackingCompatibilityDataSource(ds));
+
 GeoPositionSnapshot makeLocation() => GeoPositionSnapshot(
       latitude: 14.5547,
       longitude: 121.0244,
@@ -58,7 +70,7 @@ void main() {
   group('TrackingRepository.fetchSnapshot — argument validation', () {
     test('throws ArgumentError when bookingId is not numeric', () async {
       final ds = _FakeDataSource();
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       expect(
         () => repo.fetchSnapshot(bookingId: 'not-a-number'),
         throwsArgumentError,
@@ -72,7 +84,7 @@ void main() {
         ..bookingResponse = makeBookingBody(workerUid: 'uid-001')
         ..locationResponse = makeLocation();
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: 'uid-001');
 
       expect(ds.bookingCallCount, 1);
@@ -90,7 +102,7 @@ void main() {
         ..bookingResponse = makeBookingBody(workerUid: 'uid-001')
         ..locationResponse = loc;
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: 'uid-001');
 
@@ -104,7 +116,7 @@ void main() {
             makeBookingBody(status: 'INPROGRESS', workerUid: 'uid-001')
         ..locationError = Exception('network error');
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: 'uid-001');
 
@@ -122,7 +134,7 @@ void main() {
         ..bookingResponse = makeBookingBody()
         ..locationResponse = makeLocation();
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: '');
 
@@ -141,7 +153,7 @@ void main() {
         ..bookingResponse = makeBookingBody(workerUid: 'uid-from-booking')
         ..locationResponse = makeLocation();
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: null);
 
@@ -156,7 +168,7 @@ void main() {
             makeBookingBody(status: 'ENROUTE', workerUid: 'uid-from-booking')
         ..locationError = Exception('timeout');
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.providerLocation, isNull);
@@ -176,7 +188,7 @@ void main() {
         ..bookingResponse = makeBookingBody()
         ..locationResponse = null;
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(ds.locationCallCount, 1);
@@ -194,7 +206,7 @@ void main() {
           'workerName': 'Maria Santos',
         };
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.providerName, 'Maria Santos');
@@ -208,7 +220,7 @@ void main() {
           'worker_name': 'Maria Santos',
         };
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.providerName, 'Maria Santos');
@@ -222,7 +234,7 @@ void main() {
         }
         ..locationResponse = makeLocation();
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.providerUid, 'uid-snake');
@@ -232,7 +244,7 @@ void main() {
       final ds = _FakeDataSource()
         ..bookingResponse = {'status': 'ENROUTE', 'workerUid': 'uid-001'};
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', seedName: 'Seeded Name');
 
@@ -242,7 +254,7 @@ void main() {
     test('service address falls back to seedAddress', () async {
       final ds = _FakeDataSource()..bookingResponse = {'status': 'ENROUTE'};
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(
           bookingId: '42', seedAddress: '123 Seed Street');
 
@@ -252,7 +264,7 @@ void main() {
     test('service coordinates fall back to Metro Manila default', () async {
       final ds = _FakeDataSource()..bookingResponse = {'status': 'ENROUTE'};
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.serviceLatitude, closeTo(14.5995, 0.001));
@@ -267,7 +279,7 @@ void main() {
           'longitude': 121.0437,
         };
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.serviceLatitude, closeTo(14.6760, 0.001));
@@ -285,7 +297,7 @@ void main() {
           }
         };
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.bookingStatus, BookingStatus.arrived);
@@ -299,7 +311,7 @@ void main() {
           }
         };
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.bookingStatus, BookingStatus.inProgress);
@@ -308,7 +320,7 @@ void main() {
     test('uses raw response body when no envelope key is present', () async {
       final ds = _FakeDataSource()..bookingResponse = {'status': 'COMPLETED'};
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.bookingStatus, BookingStatus.completed);
@@ -319,7 +331,7 @@ void main() {
     test('returned state has the correct bookingId', () async {
       final ds = _FakeDataSource()..bookingResponse = {'status': 'ENROUTE'};
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '99');
 
       expect(state.bookingId, '99');
@@ -335,7 +347,7 @@ void main() {
           'worker_phone': '+639171234567',
         };
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state = await repo.fetchSnapshot(bookingId: '42');
 
       expect(state.providerPhone, '+639171234567');
@@ -345,7 +357,7 @@ void main() {
       final ds = _FakeDataSource()
         ..bookingResponse = {'status': 'ENROUTE', 'workerUid': 'uid-001'};
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', seedPhone: '+639179999999');
 
@@ -359,7 +371,7 @@ void main() {
         ..bookingResponse = {'status': 'ENROUTE'} // no uid in body
         ..locationResponse = makeLocation();
 
-      final repo = TrackingRepository(ds);
+      final repo = _legacyRepo(ds);
       final state =
           await repo.fetchSnapshot(bookingId: '42', knownWorkerUid: 'seed-uid');
 

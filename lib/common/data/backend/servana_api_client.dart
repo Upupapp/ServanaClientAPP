@@ -3,6 +3,7 @@ import 'dart:developer' as dev;
 
 import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/core/session/session_token_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -50,12 +51,18 @@ class ServanaApiClient {
   /// app wires a refreshing provider in `main_injector.dart`.
   final Future<String?> Function()? tokenProvider;
 
+  /// Where session credentials live. Injectable for tests; defaults to the
+  /// shared store so every existing call site is unaffected.
+  final SessionTokenStore _tokenStore;
+
   ServanaApiClient({
     required this.baseUrl,
     http.Client? client,
     this.onUnauthorized,
     this.tokenProvider,
-  }) : _client = _TimeoutClient(client ?? http.Client(), _kTimeout);
+    SessionTokenStore? tokenStore,
+  })  : _client = _TimeoutClient(client ?? http.Client(), _kTimeout),
+        _tokenStore = tokenStore ?? SessionTokenStore();
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     return Uri.parse('$baseUrl$path').replace(
@@ -95,7 +102,23 @@ class ServanaApiClient {
           '[ServanaApi] session read failed, continuing anonymously: $e');
       session = null;
     }
-    final stored = session?.token;
+
+    // Token material comes from SessionTokenStore, which prefers secure
+    // storage and migrates a pre-existing Hive copy on first read. The Hive
+    // record above is still read for the NON-SECRET fields — the subject that
+    // `_matchesSession` compares against — because those are not credentials
+    // and ~20 other call sites depend on them.
+    SessionTokens tokens = SessionTokens.none;
+    try {
+      tokens = await _tokenStore.read();
+    } catch (e) {
+      // Same rule as the session read: a storage fault degrades to anonymous,
+      // it does not fail the request. The message is the exception TYPE only —
+      // never the value.
+      debugPrint(
+          '[ServanaApi] token read failed (${e.runtimeType}), continuing anonymously');
+    }
+    final stored = tokens.accessToken.isEmpty ? null : tokens.accessToken;
 
     // 1. Firebase SDK, for SOCIAL sign-in. getIdToken() renews when near expiry.
     final provider = tokenProvider;
@@ -130,10 +153,10 @@ class ServanaApiClient {
     //    everyone who did not use Google or Facebook.
     if (!_isExpiringSoon(stored)) return stored;
 
-    final refresh = session?.refreshToken ?? '';
+    final refresh = tokens.refreshToken ?? '';
     if (refresh.isEmpty) return stored;
 
-    _refreshInFlight ??= _exchangeRefreshToken(refresh, session!)
+    _refreshInFlight ??= _exchangeRefreshToken(refresh, tokens.subject)
         .whenComplete(() => _refreshInFlight = null);
     // Fall back to the stale token if the exchange fails: the server answers
     // 401 and onUnauthorized decides, so one place owns sign-out.
@@ -180,7 +203,7 @@ class ServanaApiClient {
 
   Future<String?> _exchangeRefreshToken(
     String refreshToken,
-    UserSession session,
+    String subject,
   ) async {
     try {
       // Deliberately does NOT go through _headers(): that would call back into
@@ -205,12 +228,13 @@ class ServanaApiClient {
       if (token is! String || token.isEmpty) return null;
 
       final rotated = data is Map ? data['refreshToken'] : null;
-      await SessionService.saveSession(
-        session.copyWith(
-          token: token,
-          refreshToken:
-              rotated is String && rotated.isNotEmpty ? rotated : refreshToken,
-        ),
+      // Secure storage only. The rotated refresh token never touches Hive —
+      // this is the steady-state write path the migration exists to establish.
+      await _tokenStore.write(
+        accessToken: token,
+        refreshToken:
+            rotated is String && rotated.isNotEmpty ? rotated : refreshToken,
+        subject: subject,
       );
       return token;
     } catch (_) {
@@ -451,6 +475,30 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Starts password recovery by asking the backend to email a reset link.
+  ///
+  /// `platform` is deliberately NOT sent. The backend only gives a
+  /// platform-specific `continueUrl` to allowlisted names, and its own comment
+  /// on `forgotPasswordController` records that the customer mobile app omits
+  /// the field and lands on Firebase's hosted reset page — which is the right
+  /// destination here, because the reset itself happens in a browser and never
+  /// in this app. Sending a name would mean keeping a copy of a server-side
+  /// allowlist in the client.
+  ///
+  /// The response is deliberately neutral: the backend answers "if an account
+  /// with that email exists…" whether or not it does, so this cannot be used
+  /// to enumerate accounts. Callers must not branch on it to say whether the
+  /// address was known.
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    final uri = _uri('/api/auth/forgot-password');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({'email': email}),
+    );
+    return _decodeJson(res);
+  }
+
   /// Ends the session server-side.
   ///
   /// POST /api/auth/logout revokes the Firebase refresh tokens and clears the
@@ -501,6 +549,48 @@ class ServanaApiClient {
 
   Future<Map<String, dynamic>> listFullCatalog() async {
     final uri = _uri('/api/services/full');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  // ─── Canonical Catalog V2 ─────────────────────────────────────────────────
+  //
+  // Category → Subcategory → Service, keyed on `services.id`. These are the
+  // canonical reads; everything above them on this class is the legacy
+  // `service_families` + `service_options` projection, kept because builds in
+  // the field still call it.
+  //
+  // Public and unauthenticated, like their legacy neighbours. `_headers()` is
+  // still applied so an authenticated session sends its token and the backend
+  // can attribute the read — but nothing here requires one.
+
+  /// The whole customer-visible hierarchy in one request.
+  ///
+  /// One call, not `1 + categories + subcategories`. On today's 3/12 shape the
+  /// per-level alternative would be 16 round trips before the first card
+  /// renders.
+  Future<Map<String, dynamic>> getCanonicalCatalog() async {
+    final uri = _uri('/api/catalog');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// Shape counters plus `lastUpdatedAt`, for cheap cache revalidation.
+  Future<Map<String, dynamic>> getCanonicalCatalogSummary() async {
+    final uri = _uri('/api/catalog/summary');
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// One Service by canonical `services.id`.
+  ///
+  /// Resolves regardless of status so a deep link to an archived Service lands
+  /// on an honest "currently unavailable" rather than a 404 the app would have
+  /// to render as a dead end. Read `available` on the response, never infer it.
+  Future<Map<String, dynamic>> getCanonicalService({
+    required int serviceId,
+  }) async {
+    final uri = _uri('/api/catalog/services/$serviceId');
     final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }
@@ -670,6 +760,28 @@ class ServanaApiClient {
   Future<Map<String, dynamic>> resendOtp({required int bookingId}) async {
     final uri = _uri('/api/$bookingId/resend-otp');
     final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
+  /// `GET /api/additional/booking/:bookingId` — the change orders raised
+  /// against this booking.
+  ///
+  /// Additive. The customer app has never called this; the route exists, is
+  /// already booking-scoped, and is served by the same `additionalService` the
+  /// canonical path uses. The contract classifies it `ALIAS_TEMPORARILY` and
+  /// notes the canonical entry *"differs only in living under the booking it
+  /// belongs to."*
+  ///
+  /// Envelope: `{ success: true, data: [ … ] }` or the rows at the root,
+  /// depending on the wrapper. Rows are raw Postgres columns — snake_case, with
+  /// Postgres' native timestamp rendering.
+  ///
+  /// There is deliberately no `createAdditionalWork` here. Raising a change
+  /// order is `auth: 'provider'` and requires an IN_PROGRESS assignment row; a
+  /// customer client must not hold the call at all.
+  Future<Map<String, dynamic>> getBookingAdditionalWork(int bookingId) async {
+    final uri = _uri('/api/additional/booking/$bookingId');
+    final res = await _client.get(uri, headers: await _headers());
     return _decodeJson(res);
   }
 

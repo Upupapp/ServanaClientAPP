@@ -1,109 +1,94 @@
+/// Bookings feature repository.
+///
+///     BookingRepository
+///       → BookingsCanonicalDataSource      when V1Capability.bookingReads
+///       → BookingsCompatibilityDataSource  otherwise
+///       → the same CustomerBooking either way
+///
+/// [canonical] and [router] are optional. Omitting either pins the repository
+/// to the compatibility source, which is what every build does today because
+/// `/api/v1` is not deployed.
+///
+/// ## Reads are migratable; create is not
+///
+/// `bookings.listMine`, `bookings.get` and `bookings.timeline` all exist in the
+/// canonical contract and are marked `implemented`. Booking CREATION does not
+/// exist there at all, which is why it lives in `BookingSubmissionService` on
+/// the legacy route instead of here. See
+/// `docs/convergence-v1/TAB08_ENDPOINT_GAP.md`.
+///
+/// Cancellation likewise stays on its existing call: `bookings.cancel` exists
+/// canonically, but moving a state-changing action is TAB 10's job, with the
+/// idempotency and state-conflict handling that tab specifies. Reading is safe
+/// to move on its own; mutating is not.
+library;
+
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/domain/booking/customer_booking.dart';
+import 'package:client/core/network/canonical_availability.dart';
+import 'package:client/core/network/compat/canonical_router.dart';
+import 'package:client/modules/bookings/data/bookings_data_source.dart';
 
-/// Repository that mediates between [ServanaApiClient] and the bookings domain.
-///
-/// All methods map the raw API response envelope to typed domain objects so
-/// that higher-level code (stores, BLoCs) never touches raw JSON.
-///
-/// Response envelope reference (from backend sweep):
-///   Customer routes  → { success: bool, booking/bookings/tracking: ..., message?: string }
-///   Admin routes     → { status: 'success'|'error', data: ..., meta?: {...} }
+/// Maps the raw API envelope to typed domain objects so higher-level code —
+/// stores, BLoCs, screens — never touches raw JSON.
 class BookingRepository {
+  BookingRepository(
+    this._api, {
+    required BookingsDataSource compatibility,
+    BookingsDataSource? canonical,
+    CanonicalRouter? router,
+  })  : _compatibility = compatibility,
+        _canonical = canonical,
+        _router = router;
+
   final ServanaApiClient _api;
+  final BookingsDataSource _compatibility;
+  final BookingsDataSource? _canonical;
+  final CanonicalRouter? _router;
 
-  BookingRepository(this._api);
-
-  // ──────────────────────────── List ──────────────────────────────────────────
-
-  /// Fetch all bookings for [userId].
-  ///
-  /// Maps the customer envelope `{ success: true, bookings: [...] }` to a
-  /// typed list.  Returns an empty list when the backend returns no bookings
-  /// rather than throwing.
-  Future<List<CustomerBooking>> getBookings(String userId) async {
-    final result = await _api.getUserBookings(userId: userId);
-
-    // Envelope: { success: true, bookings: [...] }
-    final raw = result['bookings'];
-    if (raw == null) return const [];
-
-    final list = raw is List ? raw : <dynamic>[];
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(CustomerBooking.fromApiMap)
-        .toList();
-  }
-
-  // ──────────────────────────── Detail ────────────────────────────────────────
-
-  /// Fetch a single booking by its numeric ID string.
-  ///
-  /// Uses GET /api/<id> (the correct mobile/customer path — NOT /api/bookings/<id>
-  /// which does not exist).  Maps the envelope `{ success: true, booking: {...} }`
-  /// to a [CustomerBooking].
-  Future<CustomerBooking> getBookingById(String bookingId) async {
-    final result = await _api.getBookingDetail(bookingId);
-
-    // Envelope: { success: true, booking: { ... } }
-    final bookingMap = result['booking'];
-    if (bookingMap is Map<String, dynamic>) {
-      return CustomerBooking.fromApiMap(bookingMap);
-    }
-
-    // Some responses return the booking fields at the root level.
-    if (result.containsKey('id') || result.containsKey('bookingId')) {
-      return CustomerBooking.fromApiMap(result);
-    }
-
-    throw ServanaApiException(
-      statusCode: 200,
-      body: 'getBookingById: unexpected response shape — no "booking" key. '
-          'Raw keys: ${result.keys.join(', ')}',
+  /// The transport answering right now. Falls back to compatibility whenever
+  /// the canonical source or router is absent, so a half-wired injector cannot
+  /// route at a transport that does not exist.
+  BookingsDataSource get _source {
+    final canonical = _canonical;
+    final router = _router;
+    if (canonical == null || router == null) return _compatibility;
+    return router.select<BookingsDataSource>(
+      V1Capability.bookingReads,
+      canonical: canonical,
+      compatibility: _compatibility,
     );
   }
 
-  // ──────────────────────────── Cancel ────────────────────────────────────────
+  /// True when reads are served by `/api/v1/bookings`. Diagnostics only.
+  bool get isCanonical =>
+      _canonical != null &&
+      (_router?.isCanonical(V1Capability.bookingReads) ?? false);
 
-  /// Request cancellation of [bookingId] with a mandatory [reason].
+  /// Bookings for [userId].
   ///
-  // BACKEND_GAP-C15-001: No customer-facing cancel endpoint exists.  This
-  // method calls the admin endpoint and will receive HTTP 403 for non-admin
-  // tokens.  The [ServanaApiException] is re-thrown unchanged so the caller
-  // (store/BLoC) can surface an appropriate user message.
-  // Once a POST /api/<id>/cancel customer route exists, update
-  // ServanaApiClient.cancelBooking() to point there instead.
+  /// The canonical transport ignores [userId] and reads identity from the
+  /// token; the legacy one requires it as a query parameter. Callers pass it
+  /// either way, and it confers no authority on either transport.
+  Future<List<CustomerBooking>> getBookings(String userId) =>
+      _source.list(userId);
+
+  Future<CustomerBooking> getBookingById(String bookingId) =>
+      _source.byId(bookingId);
+
+  /// The customer's timeline for [bookingId].
+  Future<List<Map<String, dynamic>>> getTimeline(String bookingId) =>
+      _source.timeline(bookingId);
+
+  /// Requests cancellation of [bookingId] with a mandatory [reason].
+  ///
+  /// Still on the legacy call. `bookings.cancel` exists canonically and carries
+  /// real `Idempotency-Key` semantics — `IDEMPOTENCY_KEY_REUSED` — and adopting
+  /// them properly is TAB 10's scope, not a read migration's.
   Future<void> cancelBooking(String bookingId, String reason) async {
     await _api.cancelBooking(
       bookingId: int.parse(bookingId),
       reason: reason,
     );
-  }
-
-  // ──────────────────────────── Timeline ──────────────────────────────────────
-
-  /// Fetch the customer's timeline for [bookingId].
-  ///
-  /// GAP-C15-002 is closed: [ServanaApiClient.getBookingTimeline] now calls the
-  /// real customer route (GET /api/<id>/timeline) instead of falling back to
-  /// tracking.  Each event is `{ code, label, at, actor, sequence }`, already
-  /// worded for the customer by the backend — `label` is safe to render as-is
-  /// and `actor` is "YOU" | "PROVIDER" | "SERVANA" from the CUSTOMER's seat.
-  ///
-  /// `tracking` and `data` stay in the fallback chain. An app build outlives a
-  /// deploy in both directions, and a released binary pointed at an API that
-  /// has not shipped the route yet should degrade to an empty timeline rather
-  /// than throw. Nothing calls this method yet — Command 6 built the route and
-  /// the web portal consumes it; this keeps the mobile surface honest for the
-  /// screen that eventually will.
-  Future<List<Map<String, dynamic>>> getTimeline(String bookingId) async {
-    final result = await _api.getBookingTimeline(int.parse(bookingId));
-
-    // Timeline envelope: { success: true, timeline: [...] }
-    final raw = result['timeline'] ?? result['tracking'] ?? result['data'];
-    if (raw == null) return const [];
-
-    final list = raw is List ? raw : <dynamic>[];
-    return list.whereType<Map<String, dynamic>>().toList();
   }
 }

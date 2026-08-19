@@ -15,12 +15,28 @@ import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/tracking/application/tracking_controller.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_canonical_data_source.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_compatibility_data_source.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_repository.dart';
+import 'package:client/modules/booking_experiences/application/booking_experiences_controller.dart';
+import 'package:client/modules/payments/data/payments_canonical_data_source.dart';
+import 'package:client/modules/payments/data/payments_compatibility_data_source.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
+import 'package:client/modules/tracking/data/tracking_canonical_data_source.dart';
+import 'package:client/modules/tracking/data/tracking_compatibility_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_data_source.dart';
 import 'package:client/modules/tracking/data/tracking_repository.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
+import 'package:client/modules/messaging/data/messaging_canonical_data_source.dart';
+import 'package:client/modules/messaging/data/messaging_compatibility_data_source.dart';
 import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_canonical_data_source.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_compatibility_data_source.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
 import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/modules/bookings/data/bookings_canonical_data_source.dart';
+import 'package:client/modules/bookings/data/bookings_compatibility_data_source.dart';
 import 'package:client/modules/messaging/domain/repositories/messaging_repository.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:client/modules/registration/domain/use_cases/load_registration_from_local.dart';
@@ -54,6 +70,18 @@ import 'package:client/modules/registration/domain/repositories/registration_rep
 import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
+import 'package:client/modules/catalog/application/catalog_controller.dart';
+import 'package:client/modules/catalog/application/service_detail_controller.dart';
+import 'package:client/modules/catalog/data/catalog_canonical_data_source.dart';
+import 'package:client/modules/catalog/data/catalog_repository.dart';
+import 'package:client/modules/homepage/data/home_composition_canonical_data_source.dart';
+import 'package:client/modules/homepage/data/home_composition_compatibility_data_source.dart';
+import 'package:client/modules/homepage/data/home_composition_repository.dart';
+import 'package:client/modules/homepage/application/home_composition_controller.dart';
+import 'package:client/modules/homepage/domain/home_composition.dart';
+import 'package:client/common/data/booking/booking_submission_service.dart';
+import 'package:client/modules/search/data/search_canonical_data_source.dart';
+import 'package:client/modules/search/data/search_compatibility_data_source.dart';
 import 'package:client/modules/notifications/application/fcm_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
 import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
@@ -69,6 +97,8 @@ import 'package:client/modules/profile/data/profile_repository.dart';
 import 'package:client/modules/settings/application/settings_controller.dart';
 import 'package:client/modules/review/application/review_detail_controller.dart';
 import 'package:client/modules/review/application/review_form_controller.dart';
+import 'package:client/modules/review/data/reviews_canonical_data_source.dart';
+import 'package:client/modules/review/data/reviews_compatibility_data_source.dart';
 import 'package:client/modules/review/data/reviews_repository.dart';
 import 'package:client/modules/support/application/support_controller.dart';
 import 'package:client/modules/support/application/support_create_controller.dart';
@@ -76,6 +106,16 @@ import 'package:client/modules/support/application/support_ticket_controller.dar
 import 'package:client/modules/support/data/support_draft_repository.dart';
 import 'package:client/modules/support/data/support_repository.dart';
 import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
+import 'package:client/core/network/canonical_availability.dart';
+import 'package:client/core/network/compat/canonical_router.dart';
+import 'package:client/core/network/v1_api_client.dart';
+import 'package:client/core/session/secure_session_store.dart';
+import 'package:client/core/session/session_cleanup_service.dart';
+import 'package:client/core/session/session_token_store.dart';
+import 'package:client/modules/authentication/data/identity_canonical_data_source.dart';
+import 'package:client/modules/authentication/data/identity_compatibility_data_source.dart';
+import 'package:client/modules/authentication/data/identity_repository.dart';
+import 'package:client/modules/notifications/data/notifications_canonical_data_source.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final dpLocator = GetIt.instance;
@@ -141,6 +181,17 @@ void initInjector(AppConfig config) {
 
   // Booking draft — lives in memory, cleared on logout / booking submit.
   dpLocator.registerLazySingleton(() => BookingDraftService());
+  // TAB 08 — one booking-create ceremony for every category flow. The
+  // customer id is resolved from the session here, never handed in by a
+  // screen; the legacy route still takes it as `?userId=`, which is the
+  // endpoint's gap and not the caller's to fix.
+  dpLocator.registerLazySingleton(
+    () => BookingSubmissionService(
+      api: dpLocator(),
+      journal: dpLocator(),
+      customerId: () async => (await SessionService.getSession())?.customerID,
+    ),
+  );
 
   // Address repository — shared by both checkout screens.
   dpLocator.registerLazySingleton(
@@ -176,6 +227,65 @@ void initInjector(AppConfig config) {
     ),
   );
 
+  // Canonical /api/v1 transport.
+  //
+  // Registered unconditionally so it is constructible and testable, and gated
+  // by CanonicalAvailability so it carries no traffic. The gate is deny-by-
+  // default and can only be opened by a build define — never by the network.
+  // /api/v1 is absent from the backend's origin/main, so no shipped build
+  // enables it. See docs/convergence-v1/TAB02_MIGRATION_MANIFEST.md.
+  dpLocator.registerLazySingleton(() => const CanonicalAvailability());
+  dpLocator.registerLazySingleton(
+    () => CanonicalRouter(availability: dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => V1ApiClient(
+      // Same environment switch as every other call. No literal host.
+      baseUrl: config.baseUrl,
+      tokenProvider: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return null;
+        return user.getIdToken();
+      },
+      // A 401 must mean the same thing on both transports, or the two would
+      // disagree about whether the session is alive.
+      onUnauthorized: () {
+        try {
+          dpLocator<AuthStateService>().update(AuthStatus.expired);
+          SessionService.deleteSession().ignore();
+        } catch (_) {}
+      },
+    ),
+  );
+
+  // Session hardening (TAB 03).
+  //
+  // SecureSessionStore is additive: it keeps credentials in flutter_secure_storage
+  // with their own lifetime, alongside the existing Hive-backed SessionService
+  // rather than replacing it. Rewriting the read path would break every
+  // signed-in customer on the installed base, which still runs 1.0.0+37.
+  dpLocator.registerLazySingleton(() => SecureSessionStore());
+  // The one authority for token material: secure storage, with a verified
+  // one-time migration of any legacy Hive token. Registered as a singleton so
+  // the in-memory cache is shared rather than re-read per consumer.
+  dpLocator.registerLazySingleton(() => SessionTokenStore(secure: dpLocator()));
+  dpLocator.registerLazySingleton(() => const SessionCleanupService());
+
+  // Identity: canonical /api/v1/me + verification, gated OFF; legacy otherwise.
+  dpLocator.registerLazySingleton(
+    () => IdentityCompatibilityDataSource(dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => IdentityCanonicalDataSource(dpLocator()),
+  );
+  dpLocator.registerLazySingleton(
+    () => IdentityRepository(
+      compatibility: dpLocator<IdentityCompatibilityDataSource>(),
+      canonical: dpLocator<IdentityCanonicalDataSource>(),
+      router: dpLocator(),
+    ),
+  );
+
   // Backend
   dpLocator.registerLazySingleton<Backend>(
     () => config.mockBackend
@@ -197,10 +307,61 @@ void initInjector(AppConfig config) {
   dpLocator
       .registerLazySingleton(() => JonOrderRepository(backend: dpLocator()));
   dpLocator.registerLazySingleton(
-    () => BookingRepository(dpLocator()),
+    // Both transports constructed; the router decides. With the bookings
+    // capability unset — every build today — the legacy source answers.
+    // READS only: there is no canonical booking create, and cancel is a
+    // state-changing action that belongs to TAB 10.
+    () => BookingRepository(
+      dpLocator(),
+      compatibility: BookingsCompatibilityDataSource(dpLocator()),
+      canonical: BookingsCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
+  // Booking ACTIONS — cancel, reschedule, the OTP ceremony. A separate object
+  // on a separate capability from the reads above, because routing a read at
+  // the wrong transport shows stale data and routing an action at the wrong
+  // one changes a customer's booking. Singleton, not a factory: it holds the
+  // live idempotency keys, and a fresh instance per call site would mint a new
+  // key for what the customer performed as one tap.
+  // Change orders and disputes. Two capabilities over one repository: the
+  // change-order read has a live legacy relative, disputes have no customer
+  // route at all, so an operator must be able to flip the safe half first.
+  dpLocator.registerLazySingleton(
+    () => BookingExperiencesRepository(
+      compatibility: BookingExperiencesCompatibilityDataSource(dpLocator()),
+      canonical: BookingExperiencesCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
+  // Payments — one ceremony for the four places that each had their own.
+  // Compatibility answers today: the legacy transport can start a checkout,
+  // reads payment state by re-fetching the whole booking (R-06), and cannot
+  // accept a refund request at all.
+  dpLocator.registerLazySingleton(
+    () => PaymentsRepository(
+      compatibility: PaymentsCompatibilityDataSource(dpLocator()),
+      canonical: PaymentsCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
-    () => MessagingRepository(api: dpLocator()),
+    () => BookingLifecycleRepository(
+      compatibility: BookingLifecycleCompatibilityDataSource(dpLocator()),
+      canonical: BookingLifecycleCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
+  // Conversations. The capability has existed since TAB 02 and had no
+  // transport behind it until TAB 13; reportMessage stays legacy in every
+  // configuration because it has no canonical successor.
+  dpLocator.registerLazySingleton(
+    () => MessagingRepository(
+      api: dpLocator(),
+      compatibility: MessagingCompatibilityDataSource(dpLocator()),
+      canonical: MessagingCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => ChatSocketService(baseUrl: config.baseUrl),
@@ -254,6 +415,90 @@ void initInjector(AppConfig config) {
   dpLocator.registerLazySingleton(
     () => CategoryExperienceRepository(dpLocator()),
   );
+
+  // ── Canonical Catalog V2 ──────────────────────────────────────────────────
+  //
+  // The repository and the browse controller are singletons because the whole
+  // hierarchy arrives in one fetch and is then shared by every catalog screen —
+  // a per-screen instance would refetch on each push and defeat the single-read
+  // design (§92).
+  //
+  // ServiceDetailController is a FACTORY. It holds the selected add-ons for one
+  // Service, so sharing it would carry a previous Service's configuration onto
+  // the next one.
+  dpLocator.registerLazySingleton(
+    // Both sources constructed; the router decides. With the catalog
+    // capability unset — every build today — the compatibility source answers
+    // and the canonical box is never written.
+    () => CatalogRepository(
+      api: dpLocator(),
+      canonical: CatalogCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
+  dpLocator.registerLazySingleton(
+    () => CatalogController(dpLocator()),
+  );
+
+  // ── Home composition (TAB 05) ──────────────────────────────────────────────
+  //
+  // Both transports are constructed and the router decides, exactly as catalog
+  // and notifications do. With the `home` capability unset — every build today
+  // — the compatibility source answers, so this registration moves no traffic.
+  //
+  // Only `categories` has a loader, and that is deliberate rather than
+  // unfinished:
+  //
+  //  - featured/popular/recentServices have NO legacy endpoint. Reported
+  //    absent, not failed: there is nothing to retry until /api/v1/home ships.
+  //  - promotions/banners stays with HomeCampaignController, HomePromotionRepository
+  //    and its Remote Config kill switch. The backend reports this section
+  //    NOT_CONFIGURED on purpose — it has no promotions source and declines to
+  //    invent one — so routing banners through the composition would move
+  //    protected campaign creatives behind a transport that cannot serve them.
+  //  - notificationSummary already has one owner in NotificationsController.
+  //    A second unread count assembled here would be a duplicate truth.
+  //
+  // `categories` reads the canonical Catalog V2 hierarchy, so Home and the
+  // catalog cannot disagree about what exists.
+  dpLocator.registerLazySingleton(
+    () => HomeCompositionRepository(
+      compatibility: HomeCompositionCompatibilityDataSource(
+        loaders: <HomeSectionType, HomeSectionLoader>{
+          HomeSectionType.categories: () async {
+            final categories =
+                await dpLocator<CatalogRepository>().categories();
+            return categories
+                .map((c) => <String, dynamic>{
+                      'id': c.id,
+                      'name': c.name,
+                      'slug': c.slug,
+                      'displayOrder': c.displayOrder,
+                      'description': c.description,
+                      'imageUrl': c.imageUrl,
+                      'subcategoryCount': c.subcategoryCount,
+                      'serviceCount': c.serviceCount,
+                    })
+                .toList(growable: false);
+          },
+        },
+      ),
+      canonical: HomeCompositionCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
+  );
+  // Booking detail's caller for the experiences repository above.
+  dpLocator.registerFactory(
+    () => BookingExperiencesController(dpLocator()),
+  );
+  // Home's caller for the composition above. Singleton, so switching tabs
+  // back to Home does not re-compose the catalog on every rebuild.
+  dpLocator.registerLazySingleton(
+    () => HomeCompositionController(dpLocator()),
+  );
+  dpLocator.registerFactory(
+    () => ServiceDetailController(dpLocator()),
+  );
   dpLocator.registerLazySingleton(
       () => GetStoreOptionsUseCase(storeOptionsRepository: dpLocator()));
   dpLocator.registerLazySingleton(
@@ -283,7 +528,14 @@ void initInjector(AppConfig config) {
   );
 
   dpLocator.registerLazySingleton(
-    () => SearchRepository(api: dpLocator()),
+    // Both transports constructed; the router decides. With the search
+    // capability unset — every build today — the on-device index answers, and
+    // `/api/v1/search` is never called.
+    () => SearchRepository(
+      compatibility: SearchCompatibilityDataSource(catalog: dpLocator()),
+      canonical: SearchCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => SearchController(repository: dpLocator()),
@@ -297,9 +549,17 @@ void initInjector(AppConfig config) {
     () => NotificationsLocalDataSource(),
   );
   dpLocator.registerLazySingleton(
+    () => NotificationsCanonicalDataSource(dpLocator()),
+  );
+  // Both sources are constructed; the router decides which one answers. With
+  // CANONICAL_V1_ENABLED unset — every build today — that is always the legacy
+  // source, so this registration changes no runtime behaviour.
+  dpLocator.registerLazySingleton(
     () => NotificationsRepository(
       remote: dpLocator(),
       local: dpLocator(),
+      canonical: dpLocator<NotificationsCanonicalDataSource>(),
+      router: dpLocator(),
     ),
   );
   dpLocator.registerLazySingleton(
@@ -319,12 +579,22 @@ void initInjector(AppConfig config) {
     ),
   );
 
-  // ── Tracking (C16 LIVETRACK+) ─────────────────────────────────────────────
+  // ── Tracking (C16 LIVETRACK+, TAB 10 transport boundary) ──────────────────
+  //
+  // Both transports constructed; the router decides. With bookingTracking
+  // unset — every build today — the two-call legacy stitch answers and the
+  // visibility verdict is inferred rather than measured.
   dpLocator.registerLazySingleton(
     () => TrackingDataSource(dpLocator()),
   );
   dpLocator.registerLazySingleton(
-    () => TrackingRepository(dpLocator()),
+    () => TrackingRepository(
+      compatibility: TrackingCompatibilityDataSource(
+        dpLocator<TrackingDataSource>(),
+      ),
+      canonical: TrackingCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   // Factory so each LiveTrackingScreen gets its own controller instance.
   dpLocator.registerFactory(
@@ -357,7 +627,14 @@ void initInjector(AppConfig config) {
 
   // ── Reviews (C19 REVIEWCORE+) ─────────────────────────────────────────────
   dpLocator.registerLazySingleton(
-    () => ReviewsRepository(api: dpLocator()),
+    // Four of nine calls route; the five that manage a review by its own id
+    // have no canonical successor and stay on the legacy client permanently.
+    () => ReviewsRepository(
+      api: dpLocator(),
+      compatibility: ReviewsCompatibilityDataSource(dpLocator()),
+      canonical: ReviewsCanonicalDataSource(dpLocator()),
+      router: dpLocator(),
+    ),
   );
   dpLocator.registerLazySingleton(
     () => ReviewFormController(repository: dpLocator()),

@@ -1,22 +1,13 @@
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
-import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
-import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
-import 'package:client/modules/bw_booking/presentation/screens/bw_options_screen.dart';
 import 'package:client/modules/search/application/search_controller.dart';
 import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/domain/search_result.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:go_router/go_router.dart';
-import 'package:client/common/presentation/routes/category_routes.dart';
-
-class _ChipData {
-  const _ChipData(this.id, this.label);
-  final ServiceCategoryId id;
-  final String label;
-}
+import 'package:client/common/presentation/routes/catalog_routes.dart';
 
 class SearchScreen extends StatefulWidget {
   static String routeName = "SearchScreen";
@@ -33,12 +24,10 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _textCtrl = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  static const _kChips = [
-    _ChipData(ServiceCategoryId.aircon, 'Aircon'),
-    _ChipData(ServiceCategoryId.beautyWellness, 'Beauty & Wellness'),
-    _ChipData(ServiceCategoryId.hairAndNails, 'Hair & Nails'),
-    _ChipData(ServiceCategoryId.massage, 'Massage'),
-  ];
+  /// Filter chips come from the loaded catalog, so they always describe what
+  /// the backend actually has. The previous hardcoded four could not offer
+  /// Home Maintenance at all.
+  List<SearchCategoryChip> get _chips => _ctrl.categoryChips;
 
   @override
   void initState() {
@@ -54,19 +43,18 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  /// Routes on the canonical `services.id` carried by the result.
+  ///
+  /// This used to switch on a hardcoded app-side category enum and push the
+  /// category's OPTIONS screen — so tapping "Pimple Facial" landed the customer
+  /// on a list of every Beauty & Wellness treatment with their search discarded,
+  /// and any Service whose family the enum did not recognise routed nowhere at
+  /// all. The result now resolves to its own Service Detail (§35, §109).
   void _onResultTap(SearchResult result) {
-    switch (result.categoryId) {
-      case ServiceCategoryId.aircon:
-        context.pushNamed(AirconOptionsScreen.routeName);
-      case ServiceCategoryId.beautyWellness:
-        context.pushNamed(BwOptionsScreen.routeName);
-      case ServiceCategoryId.hairAndNails:
-        context.pushNamed(CategoryRoutes.hairNails);
-      case ServiceCategoryId.massage:
-        context.pushNamed(CategoryRoutes.massage);
-      case ServiceCategoryId.generic:
-        break;
-    }
+    context.pushNamed(
+      CatalogRoutes.service,
+      pathParameters: {'serviceId': '${result.serviceId}'},
+    );
   }
 
   void _clearQuery() {
@@ -246,11 +234,22 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_outlined,
-                size: 48, color: ColorPalette.secondaryText.withOpacity(0.4)),
+            // The icon and the wording follow the ACTUAL failure.
+            //
+            // Both used to be hardcoded to connectivity, so a server-side 401
+            // — which is what `GET /api/catalog` returns in production today,
+            // shadowed by a booking wildcard — told the customer to check a
+            // network that was working perfectly. They cannot fix it, support
+            // cannot reproduce it, and the real cause is invisible to both.
+            Icon(
+                _ctrl.errorIsConnectivity
+                    ? Icons.wifi_off_outlined
+                    : Icons.error_outline_rounded,
+                size: 48,
+                color: ColorPalette.secondaryText.withOpacity(0.4)),
             const SizedBox(height: 12),
             Text(
-              'Could not load services. Check your connection and try again.',
+              _ctrl.error ?? 'Could not load services. Please try again.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: FontPalette.primaryFontFamily,
@@ -361,7 +360,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _kChips.map((chip) {
+              children: _chips.map((chip) {
                 return GestureDetector(
                   onTap: () {
                     _textCtrl.text = chip.label;
@@ -423,10 +422,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 // Same defect the Home category grid had vertically.
                 padding: EdgeInsets.zero,
                 scrollDirection: Axis.horizontal,
-                itemCount: _kChips.length,
+                itemCount: _chips.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final chip = _kChips[i];
+                  final chip = _chips[i];
                   final selected = _ctrl.categoryFilter == chip.id;
                   return Semantics(
                     label: chip.label,
@@ -671,7 +670,7 @@ class SearchResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: result.level2,
+      label: result.serviceName,
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -721,7 +720,7 @@ class SearchResultCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  result.level2,
+                  result.serviceName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -752,7 +751,7 @@ class SearchResultCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    result.categoryLabel,
+                    result.hierarchyPath,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

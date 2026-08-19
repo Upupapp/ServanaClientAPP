@@ -40,6 +40,15 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_s
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/presentation/routes/category_routes.dart';
+import 'package:client/common/presentation/routes/catalog_routes.dart';
+import 'package:client/modules/catalog/application/canonical_booking_handoff.dart';
+import 'package:client/modules/catalog/application/catalog_controller.dart';
+import 'package:client/modules/catalog/application/service_detail_controller.dart';
+import 'package:client/modules/catalog/presentation/screens/catalog_browse_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/catalog_unavailable_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/category_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/service_detail_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/subcategory_screen.dart';
 import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
 import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
@@ -75,6 +84,32 @@ class MainRouter {
         'aircon' => ServiceCategoryId.aircon,
         _ => null,
       };
+
+  /// Reads a canonical `services.id` out of a route extra.
+  ///
+  /// Returns null when the extra is absent, unparseable, or not a positive id,
+  /// so the caller can bounce Home rather than continue with a placeholder.
+  ///
+  /// This exists because the alternative shipped: the Beauty & Wellness options
+  /// route coerced a bad extra with `int.tryParse('$extra') ?? 0` and handed
+  /// `serviceId: 0` to the screen, which then fetched options for a Service that
+  /// cannot exist. It is reachable — `StoreOptionItems.merchantServiceID` is a
+  /// String that DEFAULTS TO "0", so a row the API omits the id for walks
+  /// straight into it — and it fails silently, showing an empty options screen
+  /// instead of an error.
+  ///
+  /// Zero is rejected rather than treated as a sentinel: an id is a row that
+  /// exists, and every other identity-bearing route in this file already bounces
+  /// Home instead of inventing one.
+  @visibleForTesting
+  static int? asServiceId(Object? extra) {
+    final id = switch (extra) {
+      final int value => value,
+      final String value => int.tryParse(value.trim()),
+      _ => null,
+    };
+    return (id != null && id > 0) ? id : null;
+  }
 
   static CustomTransitionPage<T> _fadePage<T>(
     GoRouterState state,
@@ -298,6 +333,88 @@ class MainRouter {
                           const CategoryExperienceScreen(
                               categoryId: ServiceCategoryId.massage),
                     ),
+                    // ── Canonical Catalog V2 ───────────────────────────────
+                    //
+                    // Category → Subcategory → Service, every hop keyed on a
+                    // canonical backend id. These sit alongside the legacy
+                    // category routes above rather than replacing them: those
+                    // names are live deep links and notification targets, and
+                    // retiring them is a separate, deliberate step once no
+                    // build in the field still emits them.
+                    GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: CatalogRoutes.browsePath,
+                      name: CatalogRoutes.browse,
+                      builder: (context, state) => CatalogBrowseScreen(
+                        controller: dpLocator<CatalogController>(),
+                        onCategorySelected: (categoryId) => context.pushNamed(
+                          CatalogRoutes.category,
+                          pathParameters: {'categoryId': '$categoryId'},
+                        ),
+                      ),
+                    ),
+                    GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: CatalogRoutes.categoryPath,
+                      name: CatalogRoutes.category,
+                      builder: (context, state) {
+                        final id = CatalogRoutes.parseId(
+                            state.pathParameters['categoryId']);
+                        if (id == null) return const CatalogUnavailableScreen();
+                        return CategoryScreen(
+                          controller: dpLocator<CatalogController>(),
+                          categoryId: id,
+                          onSubcategorySelected: (subcategoryId) =>
+                              context.pushNamed(
+                            CatalogRoutes.subcategory,
+                            pathParameters: {'subcategoryId': '$subcategoryId'},
+                          ),
+                        );
+                      },
+                    ),
+                    GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: CatalogRoutes.subcategoryPath,
+                      name: CatalogRoutes.subcategory,
+                      builder: (context, state) {
+                        final id = CatalogRoutes.parseId(
+                            state.pathParameters['subcategoryId']);
+                        if (id == null) return const CatalogUnavailableScreen();
+                        return SubcategoryScreen(
+                          controller: dpLocator<CatalogController>(),
+                          subcategoryId: id,
+                          // Routes on service.id — identity is never rebuilt
+                          // from the name (§35).
+                          onServiceSelected: (service) => context.pushNamed(
+                            CatalogRoutes.service,
+                            pathParameters: {'serviceId': '${service.id}'},
+                          ),
+                        );
+                      },
+                    ),
+                    GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: CatalogRoutes.servicePath,
+                      name: CatalogRoutes.service,
+                      builder: (context, state) {
+                        final id = CatalogRoutes.parseId(
+                            state.pathParameters['serviceId']);
+                        if (id == null) return const CatalogUnavailableScreen();
+                        return ServiceDetailScreen(
+                          // Factory, not singleton: add-on selection belongs to
+                          // one Service and must not follow the customer to the
+                          // next.
+                          controller: dpLocator<ServiceDetailController>(),
+                          serviceId: id,
+                          onStartBooking: (detail, addonIds) =>
+                              startCanonicalBooking(
+                            context: context,
+                            detail: detail,
+                            selectedAddonIds: addonIds,
+                          ),
+                        );
+                      },
+                    ),
                     // Deep-link path route: /category/:categoryKey
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
@@ -361,9 +478,16 @@ class MainRouter {
                       path: BwOptionsScreen.route,
                       name: BwOptionsScreen.routeName,
                       builder: (context, state) {
-                        final extra = state.extra;
-                        final serviceId =
-                            extra is int ? extra : int.tryParse('$extra') ?? 0;
+                        final serviceId = asServiceId(state.extra);
+                        if (serviceId == null) {
+                          // Same recovery every other identity-bearing route
+                          // uses. Booking options for a Service we cannot name
+                          // is not a degraded screen, it is a wrong one.
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => context.goNamed(HomeScreen.routeName),
+                          );
+                          return const Scaffold();
+                        }
                         return BwOptionsScreen(serviceId: serviceId);
                       },
                     ),

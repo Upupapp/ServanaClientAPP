@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
@@ -11,6 +10,7 @@ import 'package:client/modules/search/application/search_sort.dart';
 import 'package:client/modules/search/data/search_local_data_source.dart';
 import 'package:client/modules/search/data/search_repository.dart';
 import 'package:client/modules/search/domain/search_result.dart';
+import 'package:client/core/network/api_failure.dart';
 import 'package:flutter/foundation.dart';
 
 enum SearchLoadState { idle, loading, ready, error }
@@ -26,9 +26,10 @@ class SearchController extends ChangeNotifier {
   List<SearchResult> _allResults = [];
   List<SearchResult> _filteredResults = [];
   List<String> _history = [];
-  ServiceCategoryId? _categoryFilter;
+  int? _categoryFilter;
   SearchSort _sort = SearchSort.recommended;
   String? _error;
+  bool _errorIsConnectivity = false;
   bool _disposed = false;
   Timer? _debounce;
 
@@ -36,9 +37,24 @@ class SearchController extends ChangeNotifier {
   SearchLoadState get state => _state;
   List<SearchResult> get results => List.unmodifiable(_filteredResults);
   List<String> get history => List.unmodifiable(_history);
-  ServiceCategoryId? get categoryFilter => _categoryFilter;
+
+  /// Canonical `catalog_categories.id`, or null for "all".
+  int? get categoryFilter => _categoryFilter;
+
+  /// Filter chips derived from the loaded catalog, not from a list compiled
+  /// into the binary. A Category an admin adds becomes filterable on the next
+  /// catalog refresh rather than on the next app release.
+  List<SearchCategoryChip> get categoryChips => _repository.categoryChips;
   SearchSort get sort => _sort;
   String? get error => _error;
+
+  /// True only when the load failed for a reason the CUSTOMER can act on by
+  /// checking their network.
+  ///
+  /// The search screen used to say "check your connection" for every failure,
+  /// including a server-side 401. That is worse than saying nothing: it sends
+  /// the customer, and then support, to look at a network that is working.
+  bool get errorIsConnectivity => _errorIsConnectivity;
   bool get hasQuery => _query.trim().isNotEmpty;
   bool get isEmpty =>
       _state == SearchLoadState.ready && _filteredResults.isEmpty;
@@ -73,9 +89,18 @@ class SearchController extends ChangeNotifier {
         resultCountBucket: CountBucketValues.forCount(_allResults.length),
         latencyBucket: LatencyBucketValues.forMillis(sw.elapsedMilliseconds),
       ));
+    } on ApiFailure catch (failure) {
+      _state = SearchLoadState.error;
+      // `safeMessage` is the only string a UI may render, and it is the one
+      // the mapper wrote for THIS failure rather than a guess.
+      _error = failure.safeMessage;
+      _errorIsConnectivity = failure is RetryableFailure;
+      _track(SearchFailedEvent(failureCode: failure.runtimeType.toString()));
+      if (!_disposed) notifyListeners();
     } on Exception catch (e) {
       _state = SearchLoadState.error;
       _error = e.toString();
+      _errorIsConnectivity = true;
       _track(const SearchFailedEvent(failureCode: 'network_error'));
       if (!_disposed) notifyListeners();
     }
@@ -112,7 +137,7 @@ class SearchController extends ChangeNotifier {
     _applyFilters();
   }
 
-  void setCategoryFilter(ServiceCategoryId? id) {
+  void setCategoryFilter(int? id) {
     _categoryFilter = (_categoryFilter == id) ? null : id;
     _applyFilters();
   }
@@ -139,25 +164,93 @@ class SearchController extends ChangeNotifier {
   static Future<void> clearHistoryOnLogout() =>
       SearchLocalDataSource.clearHistory();
 
+  /// Kicks off a query. Returns immediately; the result arrives through
+  /// [notifyListeners] when its turn comes.
   void _applyFilters() {
-    if (_state != SearchLoadState.ready) return;
-    final q = _query.trim().toLowerCase();
-    Iterable<SearchResult> filtered = _allResults;
+    // `error` is allowed through deliberately. A failed query leaves the
+    // controller in `error`, and if that state blocked the next keystroke the
+    // screen would be stuck on its retry affordance with a text field that no
+    // longer did anything. Only `idle` and `loading` — where there is no index
+    // yet — are refused.
+    if (_state != SearchLoadState.ready && _state != SearchLoadState.error) {
+      return;
+    }
+
+    // Bumped even on the synchronous path, so a chip tap or a cleared box
+    // invalidates a query still in flight rather than letting it repaint over
+    // the newer state.
+    final seq = ++_querySeq;
+    final q = _query.trim();
+
+    // No term is a browse, not a search: it is answered from the already-loaded
+    // index. Kept SYNCHRONOUS on purpose — category chips and the sort control
+    // both land here, and routing them through a future would add a frame of
+    // latency to a filter that never leaves the device.
+    if (q.isEmpty) {
+      _publish(_allResults, q);
+      return;
+    }
+
+    _runQuery(seq, q);
+  }
+
+  /// Applies the category filter and sort, then repaints.
+  void _publish(List<SearchResult> found, String query) {
+    Iterable<SearchResult> filtered = found;
     if (_categoryFilter != null) {
       filtered = filtered.where((r) => r.categoryId == _categoryFilter);
     }
-    if (q.isNotEmpty) {
-      filtered = filtered.where((r) =>
-          r.level2.toLowerCase().contains(q) ||
-          r.serviceName.toLowerCase().contains(q) ||
-          r.categoryLabel.toLowerCase().contains(q));
-    }
+
+    _state = SearchLoadState.ready;
+    _error = null;
     _filteredResults = _sortResults(filtered.toList());
-    if (q.isNotEmpty && _filteredResults.isEmpty) {
-      _track(
-          SearchZeroResultsEvent(queryLengthBucket: _lengthBucket(q.length)));
+    if (query.isNotEmpty && _filteredResults.isEmpty) {
+      _track(SearchZeroResultsEvent(
+          queryLengthBucket: _lengthBucket(query.length)));
     }
     if (!_disposed) notifyListeners();
+  }
+
+  /// Monotonic query counter. Search-as-you-type issues overlapping requests,
+  /// and the network does not promise to answer them in order — a slow answer
+  /// to `fac` can land after a fast answer to `facial` and repaint the screen
+  /// with results for a query the customer finished typing two keystrokes ago.
+  ///
+  /// Every run captures the counter it was issued under and discards itself if
+  /// a newer one has started. The compatibility transport resolves too quickly
+  /// to interleave in practice, but the guard belongs to the boundary rather
+  /// than to whichever transport happens to be selected.
+  int _querySeq = 0;
+
+  Future<void> _runQuery(int seq, String q) async {
+    final List<SearchResult> found;
+    try {
+      final results = await _repository.search(q);
+      // Category and Subcategory hits are dropped here rather than in the data
+      // layer: the transport reports everything that matched, and this screen's
+      // card renders a bookable Service. They stay available on SearchResults
+      // for a surface that wants to render them.
+      found = results.hits
+          .map(SearchResult.fromHit)
+          .whereType<SearchResult>()
+          .toList();
+    } on Exception catch (e) {
+      if (seq != _querySeq || _disposed) return;
+      // A failed query is a different fact from a query that matched nothing.
+      // Saying "no results" here would be a claim about the catalog that was
+      // never established.
+      _state = SearchLoadState.error;
+      _error = e.toString();
+      _track(const SearchFailedEvent(failureCode: 'network_error'));
+      notifyListeners();
+      return;
+    }
+
+    // A newer query started while this one was in flight, so this answer is
+    // stale before it is rendered.
+    if (seq != _querySeq || _disposed) return;
+
+    _publish(found, q);
   }
 
   List<SearchResult> _sortResults(List<SearchResult> results) {

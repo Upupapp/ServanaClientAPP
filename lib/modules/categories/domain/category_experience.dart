@@ -62,13 +62,37 @@ class ServiceOptionSummary {
   final String formattedPrice;
   final String? imageAsset;
 
-  /// Raw `level_2` value; used for chip filtering in the controller.
+  /// Raw `level_2` value; used ONLY for chip filtering in the controller.
+  ///
+  /// Never rendered. `CategoryFilterChip` carries its own customer-facing
+  /// [CategoryFilterChip.label] precisely so this migration-era value cannot
+  /// reach a screen — see the Catalog V2 acceptance gate, "no UI labels expose
+  /// Level 2/3 semantics".
   final String categoryKey;
 
   final bool hasAddons;
 
+  /// Canonical `services.id`, when the payload carries one.
+  ///
+  /// **Null on the legacy path, and that is correct rather than a gap.** The
+  /// public catalog deliberately does not expose `legacy_service_option_id`
+  /// (it is a migration artefact, and surfacing it would put migration
+  /// semantics in the client), so this build cannot map a legacy option id to
+  /// a canonical Service id locally.
+  ///
+  /// The backend does that resolution itself on booking creation —
+  /// `services.legacy_service_option_id` is looked up in the insert — so a
+  /// payload carrying only [id] still books the right Service. Callers should
+  /// prefer this when non-null and fall back to [id] when null, which is what
+  /// "carry canonical serviceId when available" means here.
+  final int? canonicalServiceId;
+
   /// Original API map — preserved for BwBookingStore.selectOption() /
   /// AirconBookingStore.selectOption() compatibility.
+  ///
+  /// Compatibility surface, data layer only. It is passed to the booking
+  /// stores, which already parse this exact shape; it must not be read by a
+  /// widget for display, and nothing derives a label from it.
   final Object rawData;
 
   const ServiceOptionSummary({
@@ -81,10 +105,24 @@ class ServiceOptionSummary {
     required this.categoryKey,
     required this.hasAddons,
     required this.rawData,
+    this.canonicalServiceId,
   });
+
+  /// The identity a booking entry point should send.
+  ///
+  /// Canonical when known, else the legacy option id the backend resolves.
+  /// One accessor so no call site has to re-derive the precedence.
+  Object get bookableIdentity => canonicalServiceId ?? id;
 }
 
 // ── Mapper ─────────────────────────────────────────────────────────────────
+
+int? _asInt(Object? v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString());
+}
 
 abstract final class ServiceOptionSummaryMapper {
   static ServiceOptionSummary fromMap(Map<String, dynamic> o) {
@@ -108,6 +146,12 @@ abstract final class ServiceOptionSummaryMapper {
       categoryKey: level2,
       hasAddons: hasAddons,
       rawData: o,
+      // Read only from an explicitly canonical key. Deliberately NOT derived
+      // from `id`: `services.id` equals `service_options.id` for the rows the
+      // promotion migration created, and stops equalling it for the first
+      // Service an admin creates through the catalog API. Treating the legacy
+      // id as canonical would be right today and silently wrong later.
+      canonicalServiceId: _asInt(o['catalogServiceId'] ?? o['serviceId']),
     );
   }
 

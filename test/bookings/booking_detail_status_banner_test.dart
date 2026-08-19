@@ -23,6 +23,7 @@ library;
 import 'dart:io';
 
 import 'package:client/common/domain/booking/booking_status.dart';
+import 'package:client/common/domain/booking/customer_booking.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Comments are stripped before every assertion below.
@@ -131,14 +132,37 @@ void main() {
   });
 
   group('the service name has somewhere to come from', () {
-    test('the screen reads the fields the backend now sends', () {
+    test('the alias chain is read, wherever it lives', () {
       // getBookingById joined payments, branches, addresses and workers but
-      // never the service, so serviceName was absent from the response and this
-      // chain resolved to ''. Both halves had to change; this pins the client
-      // half.
-      expect(screen, contains("b['serviceOptionName']"));
-      expect(screen, contains("b['serviceName']"));
-      expect(screen, contains("b['branchName']"));
+      // never the service, so serviceName was absent from the response and
+      // this chain resolved to ''. Both halves had to change; this pins the
+      // client half.
+      //
+      // It used to pin it by grepping this screen's SOURCE for `b['…']`, which
+      // stopped being true the moment the screen started reading through
+      // `BookingRepository` — the chain moved into
+      // `CustomerBooking.fromApiMap`, where both transports share it, and the
+      // grep failed while the behaviour was intact. A source match tests where
+      // code is written; this tests what it does, so the next move does not
+      // break it.
+      final booking = CustomerBooking.fromApiMap(<String, dynamic>{
+        'bookingId': 42,
+        'status': 'CONFIRMED',
+        'serviceOptionName': "Emperor's Drip",
+        'serviceName': 'Massage & Wellness',
+        'branchName': 'Servana Makati',
+      });
+
+      expect(booking.serviceName, "Emperor's Drip");
+      expect(booking.serviceCategory, 'Servana Makati');
+
+      // And the parent still answers when the option name is absent.
+      final withoutOption = CustomerBooking.fromApiMap(<String, dynamic>{
+        'bookingId': 42,
+        'status': 'CONFIRMED',
+        'serviceName': 'Massage & Wellness',
+      });
+      expect(withoutOption.serviceName, 'Massage & Wellness');
     });
   });
 }

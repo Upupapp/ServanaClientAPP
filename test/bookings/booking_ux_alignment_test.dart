@@ -9,11 +9,40 @@ void main() {
     final source = read(
       'lib/common/presentation/screens/payment_webview_screen.dart',
     );
-    expect(source, contains('PaymentStatusParser.isPaid(booking)'));
+    // The rule is unchanged: only the payment record may close checkout as
+    // paid. TAB 11 moved WHERE that is decided — the screen used to fetch the
+    // whole booking and call PaymentStatusParser inline, which was the third
+    // copy of the same code. It now asks the one payment ceremony.
+    //
+    // Following the code rather than relaxing the assertion: the negative
+    // clauses below are the actual protection and they are untouched.
+    expect(source, contains('PaymentsRepository'));
+    expect(source, contains('.isPaid('));
     expect(source, isNot(contains('status == BookingStatus.confirmed')));
     expect(source, isNot(contains('status == BookingStatus.assigned')));
     expect(
         source, isNot(contains('status == BookingStatus.awaitingAssignment')));
+  });
+
+  test('payment truth is decided in exactly one place', () {
+    // What the assertion above can no longer prove on its own, now that the
+    // decision lives behind a repository. Before TAB 11 there were three
+    // implementations of "is it paid" — both booking stores and the checkout
+    // screen — each with its own envelope fallback chain.
+    final decisive = read('lib/modules/payments/data/payments_repository.dart');
+    expect(decisive, contains('Future<bool> isPaid('));
+
+    for (final path in [
+      'lib/common/presentation/screens/payment_webview_screen.dart',
+      'lib/modules/aircon_booking/data/aircon_booking_store.dart',
+      'lib/modules/bw_booking/data/bw_booking_store.dart',
+    ]) {
+      final source = read(path);
+      // None of them re-derives the answer from a booking payload any more.
+      expect(source, isNot(contains('PaymentStatusParser.isPaid')),
+          reason: path);
+      expect(source, contains('PaymentsRepository'), reason: path);
+    }
   });
 
   test('both checkout paths disclose cancellation terms before submission', () {

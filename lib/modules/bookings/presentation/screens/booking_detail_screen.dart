@@ -15,7 +15,13 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/common/presentation/widgets/qr_worker_code_display.dart';
 import 'package:client/common/presentation/widgets/booking_ux_components.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
+import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/modules/booking_experiences/application/booking_experiences_controller.dart';
+import 'package:client/modules/booking_experiences/presentation/widgets/change_orders_section.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:client/modules/bookings/presentation/widgets/booking_cancellation_sheet.dart';
+import 'package:client/modules/bookings/presentation/widgets/booking_reschedule_sheet.dart';
 import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
 import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
@@ -46,6 +52,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _isRefreshing = false;
   String? _refreshError;
 
+  /// The schedule exactly as the backend sent it, or null when it sent none.
+  ///
+  /// Distinct from `JobOrder.scheduleDate`, which falls back to `DateTime.now()`
+  /// so the detail card always has something to render. That fallback must not
+  /// travel back to the server as `expectedSchedule`.
+  DateTime? _scheduledAt;
+
   // Worker assignment surfaced from the booking JSON. The JobOrder freezed
   // model predates the BE auto-assignment feature, so these live in screen
   // state until the model is extended.
@@ -67,6 +80,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   static const _pollMaxAttempts = 12;
   int _pollAttempts = 0;
 
+  /// Change orders the provider raised on this booking.
+  ///
+  /// The legacy route has always returned these and this app never called it,
+  /// so a customer could be asked to pay for extra work with no sign of it
+  /// anywhere they could look.
+  final _experiences = dpLocator<BookingExperiencesController>();
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +95,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     // everything comes from the API.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshBooking();
+      // Not awaited and never fatal: a change-order fetch that fails must not
+      // cost the customer the rest of their booking detail.
+      unawaited(_experiences.load(_bookingId));
     });
   }
 
@@ -156,45 +179,41 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       });
     }
     try {
-      final api = dpLocator<ServanaApiClient>();
-      final res = await api.getBooking(bookingId);
-      final b = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
+      // Through the repository, not ServanaApiClient.
+      //
+      // The repository is the seam that chooses between the canonical
+      // `/api/v1/bookings/:id` transport and the legacy one, and returns the
+      // same `CustomerBooking` either way. It was built, registered and never
+      // resolved — this screen kept calling `getBooking` and re-deriving every
+      // field from the raw map, so `V1Capability.bookingReads` was inert no
+      // matter how it was configured: the object that reads the flag had no
+      // callers.
+      //
+      // Every fallback chain this used to run inline now lives in
+      // `CustomerBooking.fromApiMap`, which is where both transports share it.
+      // They were moved rather than dropped, and
+      // `test/bookings/customer_booking_fidelity_test.dart` pins each one —
+      // the amount that falls back to finalPrice/quotedPrice, the service
+      // OPTION name winning over its parent, branchName as the place, and the
+      // three-source status reconciliation.
+      final booking =
+          await dpLocator<BookingRepository>().getBookingById(_bookingId);
 
-      final paymentStatus = PaymentStatusParser.fromBooking(b);
-      final bookingStatus = (b['status'] ?? '').toString().toUpperCase();
-      final workerStatus = (b['workerStatus'] ??
-              b['worker_status'] ??
-              b['assignmentStatus'] ??
-              '')
-          .toString()
-          .toUpperCase();
-      final status = BookingStatusMapper.effectiveWireStatus(
-        bookingStatus: bookingStatus,
-        effectiveStatus: b['effectiveStatus']?.toString(),
-        workerStatus: workerStatus,
-      );
-      final workerUid = b['workerUid']?.toString() ??
-          b['worker_uid']?.toString() ??
-          b['providerUid']?.toString();
-      final eta = b['etaMinutes'];
-      final assignedAtRaw = b['assignedAt']?.toString();
-      final workerCode = b['workerCode']?.toString();
-      final paymentMethod = (b['paymentMethod'] ??
-              b['paymentMethodUsed'] ??
-              b['payment_method'] ??
-              (b['payment'] is Map ? (b['payment'] as Map)['method'] : null) ??
-              '')
-          .toString()
-          .toUpperCase();
+      final paymentStatus = booking.paymentStatus;
+      final status = booking.effectiveWireStatus;
+      final workerUid = booking.workerUid;
+      final eta = booking.etaMinutes;
+      final assignedAt = booking.assignedAt;
+      final workerCode = booking.workerCode;
+      final paymentMethod = (booking.paymentMethod ?? '').toUpperCase();
 
-      // Parse scheduled datetime from any of the backend's canonical aliases.
-      final scheduleRaw = b['scheduledAt']?.toString() ??
-          b['scheduleAt']?.toString() ??
-          b['schedule']?.toString();
-      final scheduleDate =
-          scheduleRaw != null ? DateTime.tryParse(scheduleRaw) : null;
+      // `scheduledAt` on the model substitutes `now` when the backend sends
+      // nothing parseable. That substitution is fine for RENDERING and wrong
+      // for `expectedSchedule`: sending a fabricated instant as "the schedule
+      // I last read" would refuse every reschedule with
+      // BOOKING_SCHEDULE_CHANGED. So the unresolved value is kept separately
+      // and null must stay null.
+      _scheduledAt = booking.hasResolvedSchedule ? booking.scheduledAt : null;
 
       String statusLabel;
       if (status == 'WORKER_ASSIGNED') {
@@ -205,76 +224,34 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             ? 'PENDING_PAYMENT'
             : 'AWAITING_ASSIGNMENT';
       } else {
-        statusLabel = b['statusLower']?.toString() ?? status;
+        statusLabel = status;
       }
 
       setState(() {
         if (_booking == null) {
-          // First load — construct JobOrder from API map.
-          final now = DateTime.now();
-          final createdAtRaw = b['createdAt']?.toString();
+          // First load — project the domain model onto the render model.
+          //
+          // Every alias chain that used to be written out here now lives in
+          // `CustomerBooking.fromApiMap`, so both transports share one reading
+          // of the payload and this screen cannot drift from the bookings
+          // list. `latitude`/`longitude` arrive NULL rather than 0 when
+          // unknown, which is what `_nullIfZero` below already wanted.
           _booking = JobOrder(
             jobOrderID: _bookingId,
-            jobOrderNumber: b['bookingCode']?.toString() ??
-                b['bookingNumber']?.toString() ??
-                _bookingId,
-            scheduleDate: scheduleDate ?? now,
-            // `serviceOptionName` is the specific thing booked (service_options
-            // .level_3, e.g. "Emperor's Drip"); `serviceName` is its parent
-            // (level_2). Prefer the specific one — it is what the customer
-            // chose and what the checkout screen showed them.
-            //
-            // Until the backend joined service_options none of these keys were
-            // in the response at all, so this whole chain resolved to '' and the
-            // row rendered as a lone "Service" label.
-            merchantServiceName: b['serviceOptionName']?.toString() ??
-                b['serviceName']?.toString() ??
-                (b['service'] is Map
-                    ? (b['service'] as Map)['name']?.toString()
-                    : null) ??
-                '',
-            // "Brand" on this screen is the place the service belongs to. The
-            // branch was already joined and returned as branchName; it simply
-            // was not read. serviceCategory is the family fallback.
-            merchantName: b['merchantName']?.toString() ??
-                b['branchName']?.toString() ??
-                b['providerName']?.toString() ??
-                b['serviceCategory']?.toString() ??
-                '',
-            merchantServicePhoto: b['servicePhotoUrl']?.toString() ??
-                b['servicePhoto']?.toString() ??
-                '',
-            address:
-                b['addressLine']?.toString() ?? b['address']?.toString() ?? '',
-            latitude: (b['latitude'] as num?)?.toDouble() ?? 0,
-            longitude: (b['longitude'] as num?)?.toDouble() ?? 0,
-            // `totalAmount` is not a column on the bookings table and never
-            // was — it stores quoted_price and final_price. So this key was
-            // absent from every response, the `?? 0` default took over, and the
-            // Payment section rendered "₱0.00" on every booking ever opened.
-            //
-            // The backend now aliases COALESCE(final_price, quoted_price) AS
-            // total_amount, but the fallbacks stay: they make the screen
-            // correct against a backend that has not been deployed yet, and
-            // finalPrice/quotedPrice are the names the admin portal and
-            // provider app already use.
-            //
-            // num covers both int and double — Postgres numeric arrives as
-            // either depending on the value, and casting to double directly
-            // throws on an int.
-            totalAmount: (b['totalAmount'] as num?)?.toDouble() ??
-                (b['finalPrice'] as num?)?.toDouble() ??
-                (b['quotedPrice'] as num?)?.toDouble() ??
-                double.tryParse(b['finalPrice']?.toString() ?? '') ??
-                double.tryParse(b['quotedPrice']?.toString() ?? '') ??
-                0,
-            downPayment: (b['downPayment'] as num?)?.toDouble() ?? 0,
-            numberOfPersonnel: (b['numberOfPersonnel'] as num?)?.toInt() ?? 0,
+            jobOrderNumber: booking.bookingNumber,
+            scheduleDate: booking.scheduledAt,
+            merchantServiceName: booking.serviceName,
+            merchantName: booking.serviceCategory,
+            merchantServicePhoto: booking.servicePhotoUrl ?? '',
+            address: booking.addressLine,
+            latitude: booking.latitude ?? 0,
+            longitude: booking.longitude ?? 0,
+            totalAmount: booking.totalAmount,
+            downPayment: booking.downPayment,
+            numberOfPersonnel: booking.numberOfPersonnel,
             distanceFromOffice: 0,
             paymentType: 0,
-            createdDate: createdAtRaw != null
-                ? (DateTime.tryParse(createdAtRaw) ?? now)
-                : now,
+            createdDate: booking.createdAt,
             paymentStatus: paymentStatus.isEmpty ? null : paymentStatus,
             paymentMethodUsed: paymentMethod.isEmpty ? null : paymentMethod,
             jobOrderStatusToString: statusLabel,
@@ -295,10 +272,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         if (workerUid != null && workerUid.isNotEmpty) {
           _workerUid = workerUid;
         }
-        if (eta is num) _etaMinutes = eta.toInt();
-        if (assignedAtRaw != null && assignedAtRaw.isNotEmpty) {
-          _assignedAt = DateTime.tryParse(assignedAtRaw);
-        }
+        if (eta != null) _etaMinutes = eta;
+        if (assignedAt != null) _assignedAt = assignedAt;
         if (workerCode != null && workerCode.isNotEmpty) {
           _workerCode = workerCode;
         }
@@ -430,7 +405,38 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (mounted) context.go('/bookings/$_bookingId/messages');
   }
 
+  /// Whether the active transport can move a booking at all.
+  ///
+  /// Not a state rule and deliberately not one: the state rule
+  /// (`RESCHEDULABLE_STATES`) belongs to the backend, and a copy here would be
+  /// the fourth client-side duplicate of a server policy in this file's
+  /// vicinity. This asks only whether the endpoint is reachable.
+  bool get _canReschedule =>
+      !_isCompleted &&
+      dpLocator<BookingLifecycleRepository>().canOfferReschedule;
+
+  void _showRescheduleSheet() {
+    BookingRescheduleSheet.show(
+      context,
+      bookingId: _bookingId,
+      currentSchedule: _scheduledAt,
+      onRescheduled: (_) => _refreshBooking(),
+    );
+  }
+
   void _showCancellationSheet() {
+    // `expectedState` is deliberately NOT passed.
+    //
+    // The sheet accepts it and the canonical route honours it, but the only
+    // state this screen holds is `_bookingStatus` — the LEGACY status string,
+    // whose vocabulary includes values like CONFIRMED and PAID that are not
+    // canonical states at all. Sending one would not add a concurrency guard;
+    // it would manufacture a BOOKING_STATE_CONFLICT on a booking that is
+    // perfectly cancellable.
+    //
+    // Supplying it correctly needs the canonical state on the read path, which
+    // is a booking-read concern rather than an action one. Recorded in
+    // docs/convergence-v1/TAB10_CERTIFICATION.md.
     BookingCancellationSheet.show(
       context,
       bookingId: _bookingId,
@@ -688,6 +694,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               ),
             ]),
 
+            // Change orders the provider raised on this booking. Sits under
+            // Payment because that is what it is about, and draws nothing at
+            // all when there are none — which is almost every booking.
+            ListenableBuilder(
+              listenable: _experiences,
+              builder: (context, _) =>
+                  ChangeOrdersSection(state: _experiences.state),
+            ),
+
             const SizedBox(height: 16),
 
             // Booking meta
@@ -812,6 +827,26 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               ),
             ],
 
+            // Reschedule — offered only when the active transport HAS the
+            // endpoint, which is never in a shipped build.
+            //
+            // The gate is the transport's own answer, not a state check. The
+            // only reschedule route that has ever existed is admin-only and
+            // answers a customer token with 403, so a button drawn from a
+            // status rule would be a feature the app appears to have and does
+            // not. Whether THIS booking may be moved is then the backend's
+            // decision, and it names the rule that refused.
+            if (_canReschedule) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _showRescheduleSheet,
+                  icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                  label: const Text('Reschedule'),
+                ),
+              ),
+            ],
+
             // Cancel Booking — only for pre-service states.
             if (_isCancellable) ...[
               const SizedBox(height: 8),
@@ -920,11 +955,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     String? checkoutUrl;
     String? errorMsg;
     try {
-      final api = dpLocator<ServanaApiClient>();
-      final res = await api.createPaymongoSession(bookingId: bookingId);
-      final data = res['data'] ?? res;
-      checkoutUrl =
-          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      // The fourth copy of this call, and the one that was subtly wrong: it
+      // read `data ?? res` for the envelope but only ever looked at the root
+      // for the URL, so a response shape both booking stores handled would have
+      // produced "Payment session could not be started" here. One ceremony now.
+      final intent =
+          await dpLocator<PaymentsRepository>().startCheckout('$bookingId');
+      checkoutUrl = intent.isUsable ? intent.checkoutUrl : null;
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
         errorMsg = 'Payment session could not be started. Please retry.';
       }

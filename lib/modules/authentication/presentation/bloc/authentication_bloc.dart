@@ -1,3 +1,4 @@
+import 'package:client/modules/homepage/data/home_composition_repository.dart';
 import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
 import 'package:client/common/services/threat_detection/provider/threat_detection_provider.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -36,6 +37,10 @@ import 'package:client/core/recovery/pending_payment_service.dart';
 import 'package:client/core/recovery/session_generation_coordinator.dart';
 import 'package:client/core/accessibility/live_region_manager.dart';
 import 'package:client/common/constants/boxes.dart';
+import 'package:client/core/session/secure_session_store.dart';
+import 'package:client/core/session/session_cleanup_service.dart';
+import 'package:client/core/session/session_token_store.dart';
+import 'package:client/common/data/models/user_session.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -56,8 +61,13 @@ class AuthenticationBloc
     required this.repo,
     GoogleSignIn? googleSignIn,
     FacebookAuth? facebookAuth,
+    SessionCleanupService? cleanup,
   })  : _googleSignIn = googleSignIn ?? GoogleSignIn(),
         _facebookAuth = facebookAuth ?? FacebookAuth.instance,
+        // Constructed, not resolved. Looking this up in dpLocator would make
+        // logout depend on the locator being fully populated, and logout is
+        // exactly the moment when it may not be.
+        _cleanup = cleanup ?? const SessionCleanupService(),
         super(AuthenticationUninitialized()) {
     on<AuthenticationInit>(_onLogin);
     on<AuthGoogleSignIn>(_onGoogleSignIn);
@@ -77,6 +87,50 @@ class AuthenticationBloc
   // call-sites that omit the parameter are unaffected.
   final FacebookAuth _facebookAuth;
 
+  /// Runs the customer-scoped teardown on logout, isolating each step.
+  final SessionCleanupService _cleanup;
+
+  /// Persists a freshly established session.
+  ///
+  /// Token material goes to [SessionTokenStore] — secure storage only — and
+  /// the non-secret fields (customer id, display name, email, mobile) stay in
+  /// the established Hive record, which about twenty screens read. The session
+  /// is written with EMPTY token fields so a sign-in can never re-introduce a
+  /// credential into Hive after the migration has removed it.
+  ///
+  /// An account SWITCH is detected here rather than at logout: signing in as
+  /// somebody else on a device that never signed out must clear the previous
+  /// customer's cached state, or their drafts and inbox leak into the new
+  /// session.
+  Future<void> _persistSession(UserSession session) async {
+    final store = _tokenStore;
+    final switching = await store.isDifferentSubjectFrom(session.customerID);
+    if (switching) {
+      await _cleanup.run(customerScopedCleanupSteps(''));
+    }
+
+    await store.write(
+      accessToken: session.token,
+      refreshToken: session.refreshToken,
+      subject: session.customerID,
+    );
+    await SessionService.saveSession(
+      session.copyWith(token: '', refreshToken: null),
+    );
+  }
+
+  SessionTokenStore get _tokenStore => _tokenStoreOverride ?? _sharedTokenStore;
+
+  /// Injectable for tests; null in production so the shared store is used.
+  SessionTokenStore? _tokenStoreOverride;
+
+  @visibleForTesting
+  // ignore: use_setters_to_change_properties
+  void debugSetTokenStore(SessionTokenStore store) =>
+      _tokenStoreOverride = store;
+
+  static final SessionTokenStore _sharedTokenStore = SessionTokenStore();
+
   // ───────────────── event handlers ─────────────────
 
   Future<void> _onLogin(
@@ -91,7 +145,7 @@ class AuthenticationBloc
     );
 
     if (result.session != null) {
-      await SessionService.saveSession(result.session!);
+      await _persistSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
       _setAnalyticsUserContext(result.session!.customerID);
       _trackEvent(
@@ -350,7 +404,7 @@ class AuthenticationBloc
       fcmToken: fcmToken,
     );
     if (result.session != null) {
-      await SessionService.saveSession(result.session!);
+      await _persistSession(result.session!);
       _notifyFcmLogin(result.session!.customerID);
       _setAnalyticsUserContext(result.session!.customerID);
       _trackEvent(
@@ -393,7 +447,10 @@ class AuthenticationBloc
         // A logout fired concurrently — discard this stale session check.
         return;
       }
-      if (session != null && session.token.isNotEmpty) {
+      // The Hive token field is empty after migration, so "signed in" is
+      // now asked of the token store rather than of the session record.
+      final tokens = await _tokenStore.read();
+      if (session != null && tokens.isNotEmpty) {
         _notifyFcmLogin(session.customerID);
         _setAnalyticsUserContext(session.customerID); // STITCH WARN-01
         // STITCH B2: load payment context BEFORE emitting so the BlocListener
@@ -452,73 +509,147 @@ class AuthenticationBloc
     // Best-effort: a failure here must not block a logout the customer asked
     // for. The API client independently refuses a Firebase token whose subject
     // does not match the active session, so this is one of two defences.
-    try {
-      await FirebaseAuth.instance.signOut();
-    } catch (_) {}
+    // Everything below is the same teardown, in the same order, now behind
+    // SessionCleanupService so that (a) each step is isolated — the old code
+    // grouped fifteen clears into one `try`, so a throw in the second silently
+    // skipped thirteen — and (b) the outcome is reportable instead of silent.
+    final report = await _cleanup.run(customerScopedCleanupSteps(logoutUid));
+    if (!report.isClean) {
+      // Auditable: a logout that half-worked is a fact worth recording, not a
+      // silence. Names only — never the error payloads, which can carry
+      // account detail.
+      debugPrint('[AuthenticationBloc] logout cleanup incomplete: $report');
+    }
 
-    // LEAKSHIELD LEAK H-1: purge Hive registration box so the next user cannot
-    // see Customer A's PII pre-populated in the registration form.
-    try {
-      if (Hive.isBoxOpen(Boxes.registration)) {
-        await Hive.box(Boxes.registration).close();
-      }
-      await Hive.deleteBoxFromDisk(Boxes.registration);
-    } catch (_) {}
-    // Reset all private-data singletons so no previous account's data
-    // leaks to the next user of the device (LEAKSHIELD §5).
-    try {
-      dpLocator<HomeStore>().resetPrivateData();
-      dpLocator<MessagingStore>().resetPrivateData();
-      dpLocator<AirconBookingStore>().reset();
-      dpLocator<BwBookingStore>().reset();
-      dpLocator<BookingDraftService>().clear();
-      SearchController.clearHistoryOnLogout().ignore();
-      dpLocator<ProfileController>().resetPrivateData();
-      dpLocator<AddressController>().resetPrivateData();
-      dpLocator<SearchRepository>().clearCache();
-      LiveRegionManager.clearCache();
-      dpLocator<SupportController>().resetPrivateData();
-      dpLocator<SupportCreateController>().resetPrivateData();
-      dpLocator<SupportTicketController>().resetPrivateData();
-      dpLocator<SupportDraftRepository>().clearAllDrafts().ignore();
-      // A threat detected during one customer's session must not be attributed
-      // to the next person who signs in on this device.
-      dpLocator<ThreatDetectionProvider>().reset();
-      // LAUNCHBANNER+ §25: cancel any pending campaign presentation and clear
-      // the session flag. Persisted frequency history is account-scoped and
-      // deliberately survives, so a permanent dismissal cannot be reset by
-      // signing out and back in.
-      dpLocator<HomeCampaignController>().resetSessionState();
-      dpLocator<ReviewFormController>().resetPrivateData();
-      dpLocator<ReviewDetailController>().resetPrivateData();
-    } catch (_) {}
-    // C20 Recovery layer — clear all UID-scoped state to prevent cross-account leakage.
-    // LEAK M-1: clearAll() fallback covers the empty-UID case (session error at logout).
-    try {
-      dpLocator<PendingPaymentService>().clear();
-      if (logoutUid.isNotEmpty) {
-        dpLocator<DraftRepository>().clearAllForAccount(logoutUid).ignore();
-        dpLocator<OperationJournal>().clearForAccount(logoutUid).ignore();
-      } else {
-        dpLocator<DraftRepository>().clearAll().ignore();
-        dpLocator<OperationJournal>().clearAll().ignore();
-      }
-      dpLocator<SessionGenerationCoordinator>().advance();
-    } catch (_) {}
-    // FCM + notification cleanup (non-blocking; deactivates device token).
-    try {
-      dpLocator<NotificationsController>().clearOnLogout();
-      await dpLocator<FcmCoordinator>().deactivateOnLogout();
-    } catch (_) {}
-    // C21: clear analytics identity and experiment context on logout.
-    try {
-      await dpLocator<AnalyticsCoordinator>().clearUserContext();
-      dpLocator<ExperimentCoordinator>().clearOnLogout();
-      await dpLocator<CrashlyticsService>().clearUserIdentifier();
-    } catch (_) {}
     _notify(AuthStatus.guest);
     emit(AuthenticationLoggedOut());
   }
+
+  /// The customer-scoped teardown, in the order it has always run.
+  ///
+  /// Exposed rather than inlined so an account switch can reuse exactly the
+  /// same sequence — the leak this guards against is identical whether the
+  /// customer signed out first or simply signed in as somebody else.
+  static List<CleanupStep> customerScopedCleanupSteps(String logoutUid) =>
+      <CleanupStep>[
+        // End the FIREBASE session too, not just the Servana one.
+        //
+        // Nothing in this app signed out of Firebase, so FirebaseAuth.currentUser
+        // survived a logout. That was a latent leak on shared devices; it became
+        // a live cross-user path once the API client began preferring the
+        // Firebase token — customer A signs in with Google, logs out, customer B
+        // signs in with email and password, and B's requests would carry A's
+        // credential.
+        CleanupStep('firebaseSignOut', () => FirebaseAuth.instance.signOut()),
+
+        // Credentials get their own step so a failure to clear a token is
+        // never hidden behind an unrelated cache error. SessionTokenStore.clear
+        // wipes BOTH locations — secure storage and any legacy Hive token
+        // fields — so a device mid-migration cannot be left holding one copy.
+        CleanupStep('sessionTokens', () => _sharedTokenStore.clear()),
+        CleanupStep('secureSessionStore', () async {
+          await dpLocator<SecureSessionStore>().clear();
+        }),
+
+        // LEAKSHIELD LEAK H-1: purge Hive registration box so the next user
+        // cannot see Customer A's PII pre-populated in the registration form.
+        CleanupStep('registrationBox', () async {
+          if (Hive.isBoxOpen(Boxes.registration)) {
+            await Hive.box(Boxes.registration).close();
+          }
+          await Hive.deleteBoxFromDisk(Boxes.registration);
+        }),
+
+        // Reset all private-data singletons so no previous account's data
+        // leaks to the next user of the device (LEAKSHIELD §5).
+        CleanupStep(
+            'homeStore', () async => dpLocator<HomeStore>().resetPrivateData()),
+        // The composition cache holds personalized sections — activeBooking and
+        // recentServices among them — so it is customer-scoped and must go with
+        // the rest of the account's state.
+        CleanupStep('homeComposition',
+            () async => dpLocator<HomeCompositionRepository>().clear()),
+        CleanupStep('messagingStore',
+            () async => dpLocator<MessagingStore>().resetPrivateData()),
+        CleanupStep(
+            'airconStore', () async => dpLocator<AirconBookingStore>().reset()),
+        CleanupStep('bwStore', () async => dpLocator<BwBookingStore>().reset()),
+        CleanupStep('bookingDraft',
+            () async => dpLocator<BookingDraftService>().clear()),
+        const CleanupStep(
+            'searchHistory', SearchController.clearHistoryOnLogout),
+        CleanupStep('profileController',
+            () async => dpLocator<ProfileController>().resetPrivateData()),
+        CleanupStep('addressController',
+            () async => dpLocator<AddressController>().resetPrivateData()),
+        CleanupStep('searchRepository',
+            () async => dpLocator<SearchRepository>().clearCache()),
+        CleanupStep('liveRegions', () async => LiveRegionManager.clearCache()),
+        CleanupStep('supportController',
+            () async => dpLocator<SupportController>().resetPrivateData()),
+        CleanupStep(
+            'supportCreateController',
+            () async =>
+                dpLocator<SupportCreateController>().resetPrivateData()),
+        CleanupStep(
+            'supportTicketController',
+            () async =>
+                dpLocator<SupportTicketController>().resetPrivateData()),
+        CleanupStep('supportDrafts',
+            () => dpLocator<SupportDraftRepository>().clearAllDrafts()),
+        // A threat detected during one customer's session must not be
+        // attributed to the next person who signs in on this device.
+        CleanupStep('threatDetection',
+            () async => dpLocator<ThreatDetectionProvider>().reset()),
+        // LAUNCHBANNER+ §25: cancel any pending campaign presentation and clear
+        // the session flag. Persisted frequency history is account-scoped and
+        // deliberately survives, so a permanent dismissal cannot be reset by
+        // signing out and back in.
+        CleanupStep(
+            'homeCampaign',
+            () async =>
+                dpLocator<HomeCampaignController>().resetSessionState()),
+        CleanupStep('reviewForm',
+            () async => dpLocator<ReviewFormController>().resetPrivateData()),
+        CleanupStep('reviewDetail',
+            () async => dpLocator<ReviewDetailController>().resetPrivateData()),
+
+        // C20 Recovery layer — clear all UID-scoped state to prevent
+        // cross-account leakage. LEAK M-1: the clearAll() fallback covers the
+        // empty-UID case (session error at logout).
+        CleanupStep('pendingPayment',
+            () async => dpLocator<PendingPaymentService>().clear()),
+        CleanupStep('drafts', () async {
+          if (logoutUid.isNotEmpty) {
+            await dpLocator<DraftRepository>().clearAllForAccount(logoutUid);
+          } else {
+            await dpLocator<DraftRepository>().clearAll();
+          }
+        }),
+        CleanupStep('operationJournal', () async {
+          if (logoutUid.isNotEmpty) {
+            await dpLocator<OperationJournal>().clearForAccount(logoutUid);
+          } else {
+            await dpLocator<OperationJournal>().clearAll();
+          }
+        }),
+        CleanupStep('sessionGeneration',
+            () async => dpLocator<SessionGenerationCoordinator>().advance()),
+
+        // FCM + notification cleanup (deactivates the device token).
+        CleanupStep('notifications',
+            () async => dpLocator<NotificationsController>().clearOnLogout()),
+        CleanupStep(
+            'fcm', () => dpLocator<FcmCoordinator>().deactivateOnLogout()),
+
+        // C21: clear analytics identity and experiment context on logout.
+        CleanupStep('analytics',
+            () => dpLocator<AnalyticsCoordinator>().clearUserContext()),
+        CleanupStep('experiments',
+            () async => dpLocator<ExperimentCoordinator>().clearOnLogout()),
+        CleanupStep('crashlytics',
+            () => dpLocator<CrashlyticsService>().clearUserIdentifier()),
+      ];
 
   Future<void> _onLoggedOutLegacy(
       LoggedOut event, Emitter<AuthenticationState> emit) async {

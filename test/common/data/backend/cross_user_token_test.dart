@@ -40,10 +40,48 @@ void main() {
     });
 
     test('a signOut failure cannot block the logout the user asked for', () {
+      // The guarantee is unchanged; the mechanism moved. signOut is now a
+      // CleanupStep, and SessionCleanupService.run isolates every step —
+      // recording a failure and continuing rather than propagating. That is a
+      // stronger promise than the old inline try/catch, because it also
+      // guarantees the steps AFTER signOut still run.
+      //
+      // Behaviour is asserted directly in
+      // test/core/session/session_cleanup_service_test.dart; this only checks
+      // the wiring, since a source scan cannot execute the bloc.
       final i = bloc.indexOf('FirebaseAuth.instance.signOut()');
-      final around = bloc.substring(i - 200, i + 120);
-      expect(around, contains('try {'));
-      expect(around, contains('catch (_) {}'));
+      final around = bloc.substring(i - 400, i + 120);
+      expect(around, contains('CleanupStep('),
+          reason: 'signOut must run as an isolated cleanup step');
+      expect(bloc, contains('_cleanup.run(customerScopedCleanupSteps('),
+          reason: 'the steps must be executed through the isolating runner');
+    });
+
+    test('logout clears the credential wherever it now lives', () {
+      // The cross-user invariant this file exists for moved when tokens moved:
+      // credentials are in secure storage now, so a logout that only deleted
+      // the Hive record would leave customer A's bearer token on the device
+      // for customer B's session to pick up.
+      //
+      // SessionTokenStore.clear wipes BOTH locations, which also covers a
+      // device caught mid-migration holding one copy in each.
+      expect(bloc, contains("CleanupStep('sessionTokens'"),
+          reason: 'logout must clear the token store');
+      final store =
+          File('lib/core/session/session_token_store.dart').readAsStringSync();
+      final clear = store.substring(store.indexOf('Future<void> clear()'));
+      expect(clear, contains('_secure.clear()'));
+      expect(clear, contains('stripLegacyTokens()'));
+    });
+
+    test('an account switch clears the previous customer state', () {
+      // Signing in as somebody else on a device that never signed out is the
+      // same leak as a missed logout, and it does not go through _onLogout.
+      expect(bloc, contains('isDifferentSubjectFrom('));
+      final i = bloc.indexOf('isDifferentSubjectFrom(');
+      expect(
+          bloc.substring(i, i + 400), contains('customerScopedCleanupSteps('),
+          reason: 'a detected switch must run the same teardown as a logout');
     });
   });
 

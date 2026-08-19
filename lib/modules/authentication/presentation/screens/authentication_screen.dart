@@ -1,4 +1,7 @@
 import 'package:client/common/constants/servana_urls.dart';
+import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/core/network/api_failure.dart';
+import 'package:client/modules/authentication/data/identity_repository.dart';
 import 'package:client/common/presentation/dialogs/servana_alert_dialog.dart';
 import 'package:client/common/domain/auth/auth_identifier.dart';
 import 'package:flutter/gestures.dart';
@@ -40,6 +43,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
   // Whether the current identifier input looks like a mobile number.
   bool _isMobileInput = false;
+
+  // True while a password-reset email request is in-flight.
+  bool _isRequestingReset = false;
 
   late final TapGestureRecognizer _termsRecognizer;
   late final TapGestureRecognizer _privacyRecognizer;
@@ -96,13 +102,57 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     );
   }
 
-  void _showForgotPasswordInfo() {
+  /// Requests a password reset email.
+  ///
+  /// This screen used to say "Password reset is coming soon", which was never
+  /// true of the backend: `POST /api/auth/forgot-password` has been deployed
+  /// and rate-limited throughout, and it emails a Firebase reset link. So a
+  /// customer who forgot their password had no self-service recovery at all
+  /// while the route to give them one was already there.
+  ///
+  /// The reset itself finishes in a browser on Firebase's hosted page — the
+  /// app never receives the code, so there is no in-app reset screen to reach.
+  /// Requesting the email is the whole of this app's part.
+  Future<void> _requestPasswordReset() async {
+    if (_isRequestingReset) return;
+
+    final email = _identifier.trim();
+    // Recovery needs an email. The identifier field also accepts a mobile
+    // number, and there is no SMS sender on this platform, so asking for one
+    // here would promise a message that never arrives.
+    if (email.isEmpty || _isMobileInput || !email.contains('@')) {
+      _showResetNotice('Enter your email address first, then tap Forgot '
+          'password.');
+      return;
+    }
+
+    setState(() => _isRequestingReset = true);
+    try {
+      await dpLocator<IdentityRepository>().forgotPassword(email);
+    } on ApiFailure catch (failure) {
+      // A transport failure is worth saying out loud; the OUTCOME is not.
+      _showResetNotice(failure.safeMessage);
+      return;
+    } catch (_) {
+      _showResetNotice('Could not reach Servana. Check your connection and '
+          'try again.');
+      return;
+    } finally {
+      if (mounted) setState(() => _isRequestingReset = false);
+    }
+
+    // Deliberately the same message whether or not the address is registered.
+    // The backend answers neutrally for exactly this reason, and a client that
+    // said "no account with that email" would hand back the account
+    // enumeration the backend refused to give.
+    _showResetNotice('If an account with that email exists, we have sent a '
+        'reset link. Check your inbox and spam folder.');
+  }
+
+  void _showResetNotice(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:
-            Text('Password reset is coming soon. Contact support if needed.'),
-        duration: Duration(seconds: 4),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
     );
   }
 
@@ -257,7 +307,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                   button: true,
                                   excludeSemantics: true,
                                   child: GestureDetector(
-                                    onTap: _showForgotPasswordInfo,
+                                    onTap: _requestPasswordReset,
                                     behavior: HitTestBehavior.opaque,
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(

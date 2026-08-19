@@ -131,8 +131,14 @@ void main() {
         () {
       // Ties the declaration to the code that justifies it, so removing the
       // feature and leaving the declaration (or the reverse) is visible.
-      final tracking =
-          _read('lib/modules/tracking/data/tracking_repository.dart');
+      // Both transports, because either one can be the code that justifies the
+      // declaration. TAB 10 added the canonical source; had this kept reading
+      // only the repository, the declaration would have become unjustified in
+      // this test's eyes the moment the coordinate handling moved.
+      final tracking = <String>[
+        'lib/modules/tracking/data/tracking_compatibility_data_source.dart',
+        'lib/modules/tracking/data/tracking_canonical_data_source.dart',
+      ].map(_read).join('\n');
       expect(tracking, contains('latitude'));
       expect(manifest, contains('NSPrivacyCollectedDataTypePreciseLocation'));
     });

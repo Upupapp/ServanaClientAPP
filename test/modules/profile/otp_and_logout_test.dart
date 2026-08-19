@@ -65,8 +65,12 @@ void main() {
 
     test('the screen sources the email from the profile', () {
       expect(screen, contains("_profileCtrl.profile?.email ?? ''"));
-      expect(screen, contains('_repo.verifyEmailOtp(email, otp)'));
-      expect(screen, contains('_repo.resendEmailVerification(email)'));
+      // TAB 03 rewired these behind IdentityRepository so authentication is
+      // separated from profile completion. The invariant this test protects —
+      // the email is threaded through to the backend, which looks the OTP row
+      // up by address — is unchanged.
+      expect(screen, contains('_identity.verifyEmail(email: email, otp: otp)'));
+      expect(screen, contains('_identity.resendEmailVerification(email)'));
     });
 
     test('a missing email is reported instead of sent as empty', () {

@@ -5,16 +5,18 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
-import 'package:client/common/domain/booking/payment_status_parser.dart';
-import 'package:client/common/domain/booking/booking_create_response_parser.dart';
+import 'package:client/common/data/booking/booking_submission_service.dart';
+import 'package:client/common/domain/booking/booking_create_request.dart';
+import 'package:client/common/domain/booking/booking_draft.dart'
+    show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
 import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/core/recovery/draft_repository.dart';
-import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
 
 part 'bw_booking_store.g.dart';
@@ -362,104 +364,97 @@ abstract class _BwBookingStore with Store {
     submissionError = null;
     _track(const BookingSubmittedEvent(serviceCategory: 'beauty_wellness'));
     try {
-      final session = await SessionService.getSession();
-      final userId = session?.customerID ?? '';
-      if (userId.isEmpty) {
-        submissionError = 'You must be signed in to create a booking.';
-        isSubmitting = false;
-        _track(const BookingFailedEvent(
-            serviceCategory: 'beauty_wellness',
-            failureCode: 'unauthenticated'));
-        return;
-      }
+      // The slot must be structurally valid before a schedule can be built at
+      // all — this is not a "missing field" check, it is what makes
+      // `_buildScheduleDateTime()` meaningful, so it stays ahead of the shared
+      // validation rather than inside it.
+      final slotUsable = selectedDate != null &&
+          selectedSlot != null &&
+          _hasValidSelectedSlot();
 
-      if (selectedOption == null ||
-          selectedBranch == null ||
-          selectedDate == null ||
-          selectedSlot == null ||
-          !_hasValidSelectedSlot() ||
-          selectedAddress == null ||
-          !const {'CASH', 'PAYMONGO'}.contains(paymentMethod)) {
-        submissionError =
-            'Complete the service, branch, schedule, address, and payment details.';
-        isSubmitting = false;
-        _track(const BookingFailedEvent(
-          serviceCategory: 'beauty_wellness',
-          failureCode: 'invalid_draft',
-        ));
-        return;
-      }
-
-      final schedule = _buildScheduleDateTime();
-      if (!schedule.isAfter(DateTime.now())) {
-        submissionError = 'Choose a future booking schedule.';
-        isSubmitting = false;
-        _track(const BookingFailedEvent(
-          serviceCategory: 'beauty_wellness',
-          failureCode: 'invalid_schedule',
-        ));
-        return;
-      }
-
-      // Generate a stable idempotency key once; reuse on retry — never regenerate.
-      _idempotencyKey ??= _uuidV4();
-
-      final addressId =
-          selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
-      final branchId = selectedBranch?['branchId'] ?? selectedBranch?['id'];
 
-      final payload = <String, dynamic>{
-        'userAddressId': addressId,
-        'serviceOptionId': optionId,
-        'branchId': branchId,
-        'schedule': schedule.toUtc().toIso8601String(),
-        'paymentMethod': paymentMethod,
-        'pricing': <String, dynamic>{
-          'addonOptionIds': selectedAddonIds.toList(),
-        },
-      };
-
-      // Journal the operation before the API call so a process kill during
-      // the network request leaves a reconcilable record.
-      final opId = _uuidV4();
-      final journal = dpLocator<OperationJournal>();
-      await journal.record(JournaledOperation(
-        id: opId,
-        type: 'booking.create',
-        customerUid: userId,
-        payload: {
-          'category': 'beauty_wellness',
-          'paymentMethod': paymentMethod
-        },
-        startedAt: DateTime.now(),
-        idempotencyKey: _idempotencyKey,
-      ));
-
-      final res = await api.createBooking(
-        userId: userId,
-        payload: payload,
-        idempotencyKey: _idempotencyKey,
-      );
-      bookingResult = res;
-      final created = BookingCreateResponseParser.parse(res);
-      createdBookingId = created.bookingId;
-      workerCode = created.workerCode;
-
-      // Booking confirmed — remove the pending journal entry.
-      await journal.resolveIdempotencyKey(
-        userId,
-        type: 'booking.create',
-        idempotencyKey: _idempotencyKey!,
+      // The submission ceremony — session, validation, journal, transport,
+      // parse — is shared with Aircon through one service. What stays here is
+      // genuinely category-specific: the branch, the slot-derived schedule, and
+      // how this flow speaks to the customer.
+      final outcome = await dpLocator<BookingSubmissionService>().submit(
+        request: BookingCreateRequest(
+          flowType: BookingFlowType.beautyWellness,
+          serviceOptionId: optionId,
+          userAddressId:
+              '${selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? ''}',
+          schedule: slotUsable ? _buildScheduleDateTime() : null,
+          paymentMethod: paymentMethod,
+          branchId: selectedBranch?['branchId'] ?? selectedBranch?['id'],
+          requiresBranch: true,
+          pricingInputs: <String, dynamic>{
+            'addonOptionIds': selectedAddonIds.toList(),
+          },
+        ),
+        // Generated once, on the first attempt that actually reaches the
+        // network, and reused on every retry of this draft — regenerating on
+        // retry is what turns one booking into two.
+        idempotencyKey: () => _idempotencyKey ??= _uuidV4(),
+        operationId: _uuidV4(),
       );
 
-      _track(BookingCreatedEvent(
-        serviceCategory: 'beauty_wellness',
-        paymentMethod: paymentMethod.toLowerCase(),
-        amountBand: AmountBandValues.forAmount(estimatedTotal),
-      ));
-      // isSubmitting intentionally NOT reset on success.
+      switch (outcome) {
+        case BookingRefused(unauthenticated: true):
+          submissionError = 'You must be signed in to create a booking.';
+          isSubmitting = false;
+          _track(const BookingFailedEvent(
+              serviceCategory: 'beauty_wellness',
+              failureCode: 'unauthenticated'));
+
+        // A schedule that has passed is reported separately from one that was
+        // never chosen. They are different customer mistakes and this flow has
+        // always distinguished them.
+        case BookingRefused(reasons: final reasons)
+            when slotUsable &&
+                reasons.contains(BookingRequestInvalidity.scheduleInPast):
+          submissionError = 'Choose a future booking schedule.';
+          isSubmitting = false;
+          _track(const BookingFailedEvent(
+            serviceCategory: 'beauty_wellness',
+            failureCode: 'invalid_schedule',
+          ));
+
+        case BookingRefused():
+          submissionError =
+              'Complete the service, branch, schedule, address, and payment details.';
+          isSubmitting = false;
+          _track(const BookingFailedEvent(
+            serviceCategory: 'beauty_wellness',
+            failureCode: 'invalid_draft',
+          ));
+
+        case BookingAccepted(
+            bookingId: final id,
+            workerCode: final code,
+            raw: final res
+          ):
+          bookingResult = res;
+          createdBookingId = id;
+          workerCode = code;
+          _track(BookingCreatedEvent(
+            serviceCategory: 'beauty_wellness',
+            paymentMethod: paymentMethod.toLowerCase(),
+            amountBand: AmountBandValues.forAmount(estimatedTotal),
+          ));
+        // isSubmitting intentionally NOT reset on success.
+
+        case BookingFailed(error: final e):
+          submissionError = _errorMsg(e);
+          _track(const BookingFailedEvent(
+            serviceCategory: 'beauty_wellness',
+            failureCode: FailureCodeValues.networkError,
+          ));
+          isSubmitting = false;
+      }
     } catch (e) {
+      // The service returns failures rather than throwing, so this is the
+      // belt-and-braces case: something threw building the request itself.
       submissionError = _errorMsg(e);
       _track(const BookingFailedEvent(
         serviceCategory: 'beauty_wellness',
@@ -476,11 +471,11 @@ abstract class _BwBookingStore with Store {
     isLoading = true;
     errorMessage = null;
     try {
-      final res = await api.getBooking(createdBookingId!);
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      return PaymentStatusParser.isPaid(booking);
+      // The same ceremony AirconBookingStore uses. These two methods were
+      // character-for-character identical, in two files, and either could have
+      // been changed without the other.
+      return await dpLocator<PaymentsRepository>()
+          .isPaid('${createdBookingId!}');
     } catch (e) {
       errorMessage = _errorMsg(e);
       return false;
@@ -498,10 +493,9 @@ abstract class _BwBookingStore with Store {
     try {
       final session = await SessionService.getSession();
       final uid = session?.customerID ?? '';
-      final res = await api.createPaymongoSession(bookingId: createdBookingId!);
-      final data = res['data'] ?? res;
-      paymongoCheckoutUrl =
-          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      final intent = await dpLocator<PaymentsRepository>()
+          .startCheckout('${createdBookingId!}');
+      paymongoCheckoutUrl = intent.isUsable ? intent.checkoutUrl : null;
       // Backend can return success without a URL (e.g. on a partial session
       // failure). Surface that as an error so the confirmation screen shows
       // the Retry branch instead of an indefinite spinner.

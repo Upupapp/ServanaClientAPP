@@ -5,15 +5,17 @@ import 'dart:math';
 import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
-import 'package:client/common/domain/booking/payment_status_parser.dart';
-import 'package:client/common/domain/booking/booking_create_response_parser.dart';
+import 'package:client/common/data/booking/booking_submission_service.dart';
+import 'package:client/common/domain/booking/booking_create_request.dart';
+import 'package:client/common/domain/booking/booking_draft.dart'
+    show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_property.dart';
 import 'package:client/core/analytics/events/booking_events.dart';
 import 'package:client/core/recovery/draft_repository.dart';
-import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
 
 part 'aircon_booking_store.g.dart';
@@ -381,98 +383,84 @@ abstract class _AirconBookingStore with Store {
     submissionError = null;
     _track(const BookingSubmittedEvent(serviceCategory: 'aircon'));
     try {
-      final session = await SessionService.getSession();
-      final userId = session?.customerID ?? '';
-      if (userId.isEmpty) {
-        submissionError = 'You must be signed in to create a booking.';
-        isSubmitting = false;
-        _track(const BookingFailedEvent(
-            serviceCategory: 'aircon', failureCode: 'unauthenticated'));
-        return;
-      }
-
-      if (selectedOption == null ||
-          selectedAddress == null ||
-          selectedSchedule == null ||
-          !selectedSchedule!.isAfter(DateTime.now()) ||
-          !const {'CASH', 'PAYMONGO'}.contains(paymentMethod)) {
-        submissionError =
-            'Complete the service, address, schedule, and payment details.';
-        isSubmitting = false;
-        _track(const BookingFailedEvent(
-          serviceCategory: 'aircon',
-          failureCode: 'invalid_draft',
-        ));
-        return;
-      }
-
-      // Generate a stable idempotency key once; reuse on retry — never regenerate.
-      _idempotencyKey ??= _uuidV4();
-
-      final addressId =
-          selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? '';
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
 
-      final pricing = <String, dynamic>{
-        'optionId': optionId,
-        if (selectedHpKey != null) 'hpKey': selectedHpKey,
-        if (selectedHeightKey != null) 'heightKey': selectedHeightKey,
-        if (selectedDistanceKey != null) 'distanceKey': selectedDistanceKey,
-        'addonOptionIds': selectedAddonIds.toList(),
-      };
-
-      final payload = <String, dynamic>{
-        'userAddressId': addressId,
-        'serviceOptionId': optionId,
-        'schedule': selectedSchedule!.toUtc().toIso8601String(),
-        'paymentMethod': paymentMethod,
-        'pricing': pricing,
-      };
-
-      // Journal the operation before the API call so a process kill during
-      // the network request leaves a reconcilable record.
-      final opId = _uuidV4();
-      final journal = dpLocator<OperationJournal>();
-      await journal.record(JournaledOperation(
-        id: opId,
-        type: 'booking.create',
-        customerUid: userId,
-        payload: {'category': 'aircon', 'paymentMethod': paymentMethod},
-        startedAt: DateTime.now(),
-        idempotencyKey: _idempotencyKey,
-      ));
-
-      final res = await api.createBooking(
-        userId: userId,
-        payload: payload,
-        idempotencyKey: _idempotencyKey,
-      );
-      bookingResult = res;
-      final created = BookingCreateResponseParser.parse(res);
-      createdBookingId = created.bookingId;
-      workerCode = created.workerCode;
-
-      // Booking confirmed — remove the pending journal entry.
-      await journal.resolveIdempotencyKey(
-        userId,
-        type: 'booking.create',
-        idempotencyKey: _idempotencyKey!,
+      // The submission ceremony — session, validation, journal, transport,
+      // parse — is shared with Beauty & Wellness through one service. What
+      // stays here is what is genuinely category-specific: which fields exist,
+      // what the pricing inputs are, and how this flow speaks to the customer.
+      final outcome = await dpLocator<BookingSubmissionService>().submit(
+        request: BookingCreateRequest(
+          flowType: BookingFlowType.aircon,
+          serviceOptionId: optionId,
+          userAddressId:
+              '${selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? ''}',
+          schedule: selectedSchedule,
+          paymentMethod: paymentMethod,
+          pricingInputs: <String, dynamic>{
+            'optionId': optionId,
+            if (selectedHpKey != null) 'hpKey': selectedHpKey,
+            if (selectedHeightKey != null) 'heightKey': selectedHeightKey,
+            if (selectedDistanceKey != null) 'distanceKey': selectedDistanceKey,
+            'addonOptionIds': selectedAddonIds.toList(),
+          },
+        ),
+        // Generated once, on the first attempt that actually reaches the
+        // network, and reused on every retry of this draft — regenerating on
+        // retry is what turns one booking into two.
+        idempotencyKey: () => _idempotencyKey ??= _uuidV4(),
+        operationId: _uuidV4(),
       );
 
-      _track(BookingCreatedEvent(
-        serviceCategory: 'aircon',
-        paymentMethod: paymentMethod.toLowerCase(),
-        amountBand: AmountBandValues.forAmount(quotedTotal),
-      ));
-      // isSubmitting intentionally NOT reset on success — keeps the button
-      // permanently disabled after a booking is created.
+      switch (outcome) {
+        case BookingRefused(unauthenticated: true):
+          submissionError = 'You must be signed in to create a booking.';
+          isSubmitting = false;
+          _track(const BookingFailedEvent(
+              serviceCategory: 'aircon', failureCode: 'unauthenticated'));
+
+        case BookingRefused():
+          submissionError =
+              'Complete the service, address, schedule, and payment details.';
+          isSubmitting = false;
+          _track(const BookingFailedEvent(
+            serviceCategory: 'aircon',
+            failureCode: 'invalid_draft',
+          ));
+
+        case BookingAccepted(
+            bookingId: final id,
+            workerCode: final code,
+            raw: final res
+          ):
+          bookingResult = res;
+          createdBookingId = id;
+          workerCode = code;
+          _track(BookingCreatedEvent(
+            serviceCategory: 'aircon',
+            paymentMethod: paymentMethod.toLowerCase(),
+            amountBand: AmountBandValues.forAmount(quotedTotal),
+          ));
+        // isSubmitting intentionally NOT reset on success — keeps the button
+        // permanently disabled after a booking is created.
+
+        case BookingFailed(error: final e):
+          submissionError = _errorMsg(e);
+          _track(const BookingFailedEvent(
+            serviceCategory: 'aircon',
+            failureCode: FailureCodeValues.networkError,
+          ));
+          // Reset on error only so the user can retry after a genuine failure.
+          isSubmitting = false;
+      }
     } catch (e) {
+      // The service returns failures rather than throwing, so this is the
+      // belt-and-braces case: something threw building the request itself.
       submissionError = _errorMsg(e);
       _track(const BookingFailedEvent(
         serviceCategory: 'aircon',
         failureCode: FailureCodeValues.networkError,
       ));
-      // Reset on error only so the user can retry after a genuine failure.
       isSubmitting = false;
     }
   }
@@ -486,10 +474,13 @@ abstract class _AirconBookingStore with Store {
     try {
       final session = await SessionService.getSession();
       final uid = session?.customerID ?? '';
-      final res = await api.createPaymongoSession(bookingId: createdBookingId!);
-      final data = res['data'] ?? res;
-      paymongoCheckoutUrl =
-          data['checkoutUrl']?.toString() ?? data['checkout_url']?.toString();
+      // One ceremony. This block used to unwrap the envelope and pick between
+      // `checkoutUrl` and `checkout_url` itself — as did BwBookingStore, and as
+      // did an inline block in BookingDetailScreen, which read only the root
+      // and so would have missed a wrapped response the other two handled.
+      final intent = await dpLocator<PaymentsRepository>()
+          .startCheckout('${createdBookingId!}');
+      paymongoCheckoutUrl = intent.isUsable ? intent.checkoutUrl : null;
       // Backend can return success without a URL (e.g. on a partial session
       // failure). Surface that as an error so the confirmation screen shows
       // the Retry branch instead of an indefinite spinner.
@@ -520,11 +511,13 @@ abstract class _AirconBookingStore with Store {
     isLoading = true;
     errorMessage = null;
     try {
-      final res = await api.getBooking(createdBookingId!);
-      final booking = res['booking'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      return PaymentStatusParser.isPaid(booking);
+      // Was a whole-booking fetch plus PaymentStatusParser, duplicated in
+      // BwBookingStore and again in PaymentWebViewScreen. The repository still
+      // re-reads the booking on the legacy transport — R-06 is a missing
+      // endpoint, not something a client can refactor away — but it does so in
+      // one place, and swaps to GET …/payment the moment the capability is on.
+      return await dpLocator<PaymentsRepository>()
+          .isPaid('${createdBookingId!}');
     } catch (e) {
       errorMessage = _errorMsg(e);
       return false;

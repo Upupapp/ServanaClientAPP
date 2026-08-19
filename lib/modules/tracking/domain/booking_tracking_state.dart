@@ -2,6 +2,7 @@ import 'package:client/common/domain/booking/booking_status.dart';
 import 'package:client/modules/tracking/domain/geo_position_snapshot.dart';
 import 'package:client/modules/tracking/domain/tracking_eta.dart';
 import 'package:client/modules/tracking/domain/tracking_freshness.dart';
+import 'package:client/modules/tracking/domain/tracking_visibility.dart';
 
 /// Immutable snapshot of all tracking-relevant state for an active booking.
 ///
@@ -20,7 +21,8 @@ class BookingTrackingState {
     this.providerUid,
     this.providerName,
     this.providerPhone,
-  });
+    TrackingVisibility? visibility,
+  }) : _visibility = visibility;
 
   final String bookingId;
 
@@ -54,6 +56,18 @@ class BookingTrackingState {
   /// Longitude of the customer's service location.
   final double serviceLongitude;
 
+  final TrackingVisibility? _visibility;
+
+  /// Why the position is or is not on the map.
+  ///
+  /// Never null to a caller: when the transport supplied no verdict, one is
+  /// inferred from whether a position arrived and marked
+  /// `isBackendDerived: false`. That keeps every screen on one code path while
+  /// still letting it tell a measured answer from a guess.
+  TrackingVisibility get visibility =>
+      _visibility ??
+      TrackingVisibility.inferred(hasPosition: providerLocation != null);
+
   /// Whether the booking has reached a terminal state and tracking can stop.
   bool get isTerminal => BookingStatusMapper.isTerminal(bookingStatus);
 
@@ -79,6 +93,7 @@ class BookingTrackingState {
     TrackingEta? eta,
     String? providerName,
     String? providerPhone,
+    TrackingVisibility? visibility,
   }) {
     return BookingTrackingState(
       bookingId: bookingId,
@@ -91,6 +106,7 @@ class BookingTrackingState {
       providerUid: providerUid,
       providerName: providerName ?? this.providerName,
       providerPhone: providerPhone ?? this.providerPhone,
+      visibility: visibility ?? _visibility,
     );
   }
 }

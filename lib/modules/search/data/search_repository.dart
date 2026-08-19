@@ -1,77 +1,107 @@
-import 'package:client/common/data/backend/servana_api_client.dart';
-import 'package:client/modules/search/domain/search_result.dart';
-import 'package:client/common/domain/pricing/catalog_price.dart';
-
-/// Fetches and caches the full service catalog for in-memory search.
+/// Search feature repository.
 ///
-/// The backend's GET /api/services/full returns the complete structured
-/// catalog in a single request — no pagination, no search endpoint needed.
-/// Cache is kept for the session lifetime; call [clearCache] to force refresh.
+///     SearchRepository
+///       → SearchCanonicalDataSource      when V1Capability.search
+///       → SearchCompatibilityDataSource  otherwise
+///       → the same SearchResults either way
+///
+/// [canonical] and [router] are optional. Omitting either pins the repository
+/// to the compatibility source, which is what every build does today because
+/// `/api/v1` is not deployed.
+///
+/// ## What moved, and what did not
+///
+/// The index-building that used to live here now lives in
+/// `SearchCompatibilityDataSource`, because it is one transport's private
+/// mechanism rather than the feature's contract. What stayed is the property
+/// that made it worth writing: the index is derived from `CatalogRepository`,
+/// so search and browse cannot disagree about what exists. They previously were
+/// two independent fetches of two different endpoints with two different
+/// filtering rules, and they did disagree.
+///
+/// No synonym table is maintained on the device. Aliases belong to the
+/// backend's query expansion, which is the whole point of moving search to the
+/// server; a client-side alias map would be a second taxonomy the Admin portal
+/// cannot see.
+library;
+
+import 'package:client/core/network/canonical_availability.dart';
+import 'package:client/core/network/compat/canonical_router.dart';
+import 'package:client/modules/search/data/search_compatibility_data_source.dart';
+import 'package:client/modules/search/data/search_data_source.dart';
+import 'package:client/modules/search/domain/search_hit.dart';
+import 'package:client/modules/search/domain/search_result.dart';
+
 class SearchRepository {
-  SearchRepository({required ServanaApiClient api}) : _api = api;
+  SearchRepository({
+    required SearchCompatibilityDataSource compatibility,
+    SearchDataSource? canonical,
+    CanonicalRouter? router,
+  })  : _compatibility = compatibility,
+        _canonical = canonical,
+        _router = router;
 
-  final ServanaApiClient _api;
-  List<SearchResult>? _cache;
+  final SearchCompatibilityDataSource _compatibility;
+  final SearchDataSource? _canonical;
+  final CanonicalRouter? _router;
 
+  List<SearchCategoryChip> _chips = const [];
+
+  /// Category chips for the current catalog, in the backend's display order.
+  /// Empty until the first successful [prepare].
+  ///
+  /// Always sourced from the catalog, never from a query result — a chip row
+  /// that changed with each keystroke would move the filter targets under the
+  /// customer's finger.
+  List<SearchCategoryChip> get categoryChips => List.unmodifiable(_chips);
+
+  /// The transport answering right now. Falls back to compatibility whenever
+  /// the canonical source or router is absent, so a half-wired injector cannot
+  /// route at a transport that does not exist.
+  SearchDataSource get _source {
+    final canonical = _canonical;
+    final router = _router;
+    if (canonical == null || router == null) return _compatibility;
+    return router.select<SearchDataSource>(
+      V1Capability.search,
+      canonical: canonical,
+      compatibility: _compatibility,
+    );
+  }
+
+  /// True when queries are answered by `/api/v1/search`. Diagnostics only.
+  bool get isCanonical =>
+      _canonical != null &&
+      (_router?.isCanonical(V1Capability.search) ?? false);
+
+  /// Prepares the active transport and refreshes the chips.
+  ///
+  /// Chips come from the compatibility source even when canonical answers
+  /// queries: they are a projection of the catalog, and the catalog is the same
+  /// canonical hierarchy either way.
+  Future<List<SearchCategoryChip>> prepare({bool forceRefresh = false}) async {
+    _chips = await _compatibility.prepare(forceRefresh: forceRefresh);
+    return _chips;
+  }
+
+  /// Runs one query through whichever transport is active.
+  Future<SearchResults> search(String term, {int limit = 50}) =>
+      _source.query(term, limit: limit);
+
+  /// The whole on-device index.
+  ///
+  /// Retained for the "no query yet" state, where the screen lists everything
+  /// rather than showing an empty page. The canonical transport has no
+  /// equivalent — a server-side search with no term is not a browse — so this
+  /// stays on the compatibility source by design, and the browse experience it
+  /// feeds is really the catalog's, not search's.
   Future<List<SearchResult>> fetchCatalog({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cache != null) return _cache!;
-    final json = await _api.listFullCatalog();
-    final services = json['services'] as List<dynamic>? ?? [];
-    final results = <SearchResult>[];
-    for (final rawService in services) {
-      if (rawService is! Map) continue;
-      final svc = Map<String, dynamic>.from(rawService);
-      final serviceId = _asInt(svc['serviceId'] ?? svc['service_id']);
-      final name = (svc['name'] ?? '').toString().trim();
-      final cat = (svc['category'] ?? '').toString();
-      final requiresBranch = cat == 'BRANCH_SERVICE';
-      final catId = categoryIdFromService(serviceId: serviceId, name: name);
-      if (catId == null) continue;
-      final label = categoryLabel(catId);
-      final options = svc['options'];
-      if (options is! List) continue;
-      for (final rawOption in options) {
-        if (rawOption is! Map) continue;
-        final opt = Map<String, dynamic>.from(rawOption);
-        final level2 =
-            (opt['level2'] ?? opt['level_2'] ?? '').toString().trim();
-        if (level2.isEmpty) continue;
-        final rawItems = opt['items'];
-        final items = rawItems is List
-            ? rawItems.whereType<Map>().map(Map<String, dynamic>.from).toList()
-            : const <Map<String, dynamic>>[];
-        if (items.isEmpty) continue;
-        // Shared resolver: this used to read only `base_price` and cast it
-        // `as num?`, so a price arriving as a string — or under the camelCase
-        // spelling that /options-with-addons uses — became 0 and rendered as
-        // "Get a quote" on a priced service.
-        final prices = items
-            .map(extractCatalogPricePesosInt)
-            .whereType<int>()
-            .where((p) => p > 0)
-            .toList();
-        results.add(SearchResult(
-          serviceId: serviceId,
-          serviceName: name,
-          level2: level2,
-          minPricePesos:
-              prices.isEmpty ? 0 : prices.reduce((a, b) => a < b ? a : b),
-          maxPricePesos:
-              prices.isEmpty ? 0 : prices.reduce((a, b) => a > b ? a : b),
-          requiresBranch: requiresBranch,
-          categoryId: catId,
-          categoryLabel: label,
-        ));
-      }
-    }
-    _cache = results;
-    return results;
+    await prepare(forceRefresh: forceRefresh);
+    return _compatibility.index;
   }
 
-  static int _asInt(Object? value) {
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '') ?? 0;
+  void clearCache() {
+    _compatibility.clearCache();
+    _chips = const [];
   }
-
-  void clearCache() => _cache = null;
 }

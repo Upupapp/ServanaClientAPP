@@ -21,7 +21,6 @@ library;
 
 import 'dart:io';
 
-import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
 import 'package:client/modules/search/domain/search_result.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +33,9 @@ const double kMainAxisSpacing = 12;
 const double kChildAspectRatio = 0.72;
 const EdgeInsets kGridPadding = EdgeInsets.fromLTRB(16, 4, 16, 24);
 
+// `level2` is now the Service NAME and `categoryLabel` the hierarchy path —
+// the card renders both, so the overflow rows this test pins are unchanged in
+// length even though the fields they come from moved.
 SearchResult _result({
   required String level2,
   required int minPrice,
@@ -41,14 +43,15 @@ SearchResult _result({
   required String categoryLabel,
 }) =>
     SearchResult(
-      serviceId: 2,
-      serviceName: 'Beauty & Wellness',
-      level2: level2,
+      serviceId: 15,
+      serviceName: level2,
+      subcategoryId: 7,
+      subcategoryName: level2,
+      categoryId: 3,
+      categoryName: categoryLabel,
       minPricePesos: minPrice,
       maxPricePesos: maxPrice,
-      requiresBranch: false,
-      categoryId: ServiceCategoryId.beautyWellness,
-      categoryLabel: categoryLabel,
+      bookable: true,
     );
 
 /// The exact rows from the emulator screenshot that overflowed.
