@@ -47,3 +47,26 @@ Keep `[skip ci]` on the head commit until Actions credit is restored — the job
 should exist in the repository whether or not they can run today.
 
 `flutter-ci.patch` is the same change as a diff, if applying by hand is preferred.
+
+## Also pending: the undeclared-route ceiling
+
+`tool/integration_probe` now accepts `--max-undeclared N` and fails when the
+count of client routes the contract does not declare goes ABOVE N. Thirty are
+undeclared today (see `docs/integration/M6_CLASSIFICATION_PROPOSAL.md`), so the
+ceiling starts there and ratchets down as the contract catches up.
+
+A ceiling rather than zero because a gate that is always red is a gate nobody
+reads; it blocks the count from GROWING, which is the only thing a new commit
+can do wrong.
+
+Add to the `integration-probe` job when the workflow file can be pushed:
+
+```yaml
+            --max-undeclared 30
+```
+
+Until then it runs by hand:
+
+```bash
+dart run tool/integration_probe/integration_probe.dart --max-undeclared 30
+```

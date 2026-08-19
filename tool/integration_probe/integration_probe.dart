@@ -165,6 +165,16 @@ void main(List<String> argv) async {
     _Verdict.rateLimited,
     _Verdict.mountedOther,
   };
+  if (args.maxUndeclared >= 0 && undeclared.length > args.maxUndeclared) {
+    findings.add(
+      'UNDECLARED ROUTES: ${undeclared.length} client route(s) have no contract '
+      'legacy mapping, above the ceiling of ${args.maxUndeclared}. A route the '
+      'contract does not know about has no successor and no place on the '
+      'deprecation clock. New: '
+      '${undeclared.take(5).map((r) => '${r['method']} ${r['path']!.replaceAll(_paramStub, ':id')}').join(', ')}',
+    );
+  }
+
   final plannedLive =
       plannedResults.where((r) => mounted.contains(r.verdict)).toList();
   if (plannedLive.isNotEmpty) {
@@ -242,6 +252,7 @@ void main(List<String> argv) async {
   stderr.writeln('wrote ${args.outDir}/BASELINE.md and baseline.json');
 
   final hardFail = unreachable.isNotEmpty ||
+      (args.maxUndeclared >= 0 && undeclared.length > args.maxUndeclared) ||
       notMounted.isNotEmpty ||
       legacyGone.isNotEmpty ||
       clientGone.isNotEmpty ||
@@ -716,6 +727,7 @@ class _Args {
     required this.outDir,
     required this.clientEndpointsPath,
     required this.apiClientPath,
+    required this.maxUndeclared,
     required this.strict,
   });
 
@@ -724,6 +736,17 @@ class _Args {
   final String outDir;
   final String? clientEndpointsPath;
   final String? apiClientPath;
+
+  /// Ceiling on routes the client calls that the contract does not declare.
+  ///
+  /// A CEILING, not a floor, and not zero. Thirty are undeclared today, so
+  /// failing on any at all would leave CI red for as long as the backlog
+  /// exists — and a gate that is always red is a gate nobody reads. This
+  /// blocks the count from GROWING, which is the only thing a new commit can
+  /// do wrong, and ratchets down as the contract catches up.
+  ///
+  /// -1 disables the check.
+  final int maxUndeclared;
   final bool strict;
 
   static _Args parse(List<String> argv) {
@@ -731,6 +754,7 @@ class _Args {
     String contract = 'docs/integration/contract_snapshot.json';
     String outDir = 'docs/integration';
     String? clientEndpoints;
+    int maxUndeclared = -1;
     String? apiClient = 'lib/common/data/backend/servana_api_client.dart';
     bool strict = false;
     for (var i = 0; i < argv.length; i++) {
@@ -745,6 +769,8 @@ class _Args {
           clientEndpoints = argv[++i];
         case '--api-client':
           apiClient = argv[++i];
+        case '--max-undeclared':
+          maxUndeclared = int.tryParse(argv[++i]) ?? -1;
         case '--strict':
           strict = true;
         case '-h':
@@ -761,6 +787,7 @@ class _Args {
       outDir: outDir,
       clientEndpointsPath: clientEndpoints,
       apiClientPath: apiClient,
+      maxUndeclared: maxUndeclared,
       strict: strict,
     );
   }
