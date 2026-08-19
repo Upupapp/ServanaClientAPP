@@ -94,13 +94,21 @@ class SearchController extends ChangeNotifier {
       // `safeMessage` is the only string a UI may render, and it is the one
       // the mapper wrote for THIS failure rather than a guess.
       _error = failure.safeMessage;
-      _errorIsConnectivity = failure is RetryableFailure;
+      // RetryableFailure covers BOTH a 5xx and a genuine transport fault —
+      // `isTransport` is the only thing that separates them. Testing the
+      // class alone drew the wifi-off icon over a 500, which is the same
+      // lie this field was added to remove, just narrower.
+      _errorIsConnectivity = failure is RetryableFailure && failure.isTransport;
       _track(SearchFailedEvent(failureCode: failure.runtimeType.toString()));
       if (!_disposed) notifyListeners();
-    } on Exception catch (e) {
+    } on Exception catch (_) {
       _state = SearchLoadState.error;
-      _error = e.toString();
-      _errorIsConnectivity = true;
+      // Was `e.toString()` — a developer artefact on the customer's
+      // screen. An Exception that is not an ApiFailure escaped without
+      // being classified, so we do not know it was the network and must
+      // not claim so: the icon would accuse a working connection.
+      _error = 'Could not load services. Please try again.';
+      _errorIsConnectivity = false;
       _track(const SearchFailedEvent(failureCode: 'network_error'));
       if (!_disposed) notifyListeners();
     }
