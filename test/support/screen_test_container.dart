@@ -57,6 +57,12 @@ import 'package:client/common/data/repositories/address_repository.dart';
 import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/profile/data/profile_repository.dart';
+import 'package:client/common/data/backend/mock_backend.dart';
+import 'package:client/modules/authentication/domain/authentication_repo.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/homepage/data/repositories/home_repo.dart.dart';
+import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
+import 'package:client/common/services/location_service.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -147,6 +153,23 @@ Future<void> registerScreenDependencies() async {
     ReviewDetailController(repository: reviews),
   );
 
+  // ── The shell's own store ─────────────────────────────────────────────────
+  // BookingsScreen, BookingCalendarScreen and MessagesInboxScreen all resolve
+  // HomeStore. It was named as out of scope because it is MobX; in practice
+  // it needs only a repository and a location service, both of which compose
+  // from the MockBackend already used here.
+  final locationService = LocationService();
+  dpLocator.registerSingleton<LocationService>(locationService);
+  dpLocator.registerSingleton<HomeStore>(
+    HomeStore(
+      repo: HomeRepository(
+        backend: MockBackend(),
+        locationService: locationService,
+      ),
+      locationSerive: locationService,
+    ),
+  );
+
   // ── Catalog and search ────────────────────────────────────────────────────
   final catalog = CatalogRepository(
     api: api,
@@ -161,6 +184,21 @@ Future<void> registerScreenDependencies() async {
     ),
   );
 }
+
+/// An [AuthenticationBloc] for the screens that sit under one.
+///
+/// Five screens build a `BlocBuilder<AuthenticationBloc, ...>` — profile,
+/// authentication, splash, welcome and bookings. Without a provider above them
+/// the build throws `ProviderNotFoundException`, and the three errors that
+/// follow are consequences of that first one: the error box lands where a
+/// sliver was expected, and the framework then trips two assertions tearing the
+/// broken tree down. One missing provider, four exceptions.
+///
+/// The social sign-in dependencies are left at their defaults. They are
+/// constructed but never invoked here, which is what makes that safe.
+AuthenticationBloc buildTestAuthenticationBloc() => AuthenticationBloc(
+      repo: AuthenticationRepository(backend: MockBackend()),
+    );
 
 /// Clears the container between tests.
 Future<void> resetScreenDependencies() => dpLocator.reset();

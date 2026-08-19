@@ -567,16 +567,28 @@ class _CompletenessCard extends StatelessWidget {
           if (next != null) ...[
             const SizedBox(height: 10),
             Row(
+              // crossAxisAlignment start, because once the hint wraps the icon
+              // should stay beside its FIRST line rather than float to the
+              // middle of a two-line block.
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.arrow_circle_right_outlined,
                     size: 14, color: ColorPalette.accentText),
                 const SizedBox(width: 6),
-                Text(
-                  next,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontSize: 13,
-                    color: ColorPalette.accentText,
+                // Expanded, or this Row demands the hint's full intrinsic
+                // width and overflows: 107px at 320x568, 67 at 360x640, 37 at
+                // 390x844 — all at text scale 2.0, which
+                // AccessibilityTokens.maxRequiredTextScale declares supported.
+                // In release that is silent clipping, and the text being cut
+                // off is the one telling the customer what to do next.
+                Expanded(
+                  child: Text(
+                    next,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontSize: 13,
+                      color: ColorPalette.accentText,
+                    ),
                   ),
                 ),
               ],

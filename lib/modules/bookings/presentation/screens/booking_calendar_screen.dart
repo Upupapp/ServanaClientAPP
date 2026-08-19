@@ -60,7 +60,15 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCalendar(),
+              // Flexible + scrollable, not a bare child. The cells size
+              // themselves from the text scale (see the grid delegate), so at
+              // 2.0 the calendar is legitimately taller than a 320x568 handset
+              // can spare once the schedule below it takes its share. Given a
+              // bare slot it overflowed the body Column by 75px; given this it
+              // simply scrolls, and the schedule list keeps its Expanded.
+              Flexible(
+                child: SingleChildScrollView(child: _buildCalendar()),
+              ),
               const SizedBox(height: 12),
               Text(
                 "Schedule",
@@ -285,10 +293,21 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
                 itemCount: days.length,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 7,
                   mainAxisSpacing: 6,
                   crossAxisSpacing: 6,
+                  // Without this the delegate defaults to a childAspectRatio of
+                  // 1.0 — square cells, roughly 38px across on a 320px handset
+                  // — so the cell height never grew with the text inside it.
+                  // At text scale 1.3 EVERY day cell overflowed by 14px, and
+                  // there are 27 to 43 of them on screen at once. In a release
+                  // build that is silent clipping of the date itself.
+                  //
+                  // Scaling the extent rather than shrinking the text keeps the
+                  // day numbers legible at the accessibility sizes this app
+                  // says it supports.
+                  mainAxisExtent: MediaQuery.textScalerOf(context).scale(44),
                 ),
                 itemBuilder: (context, i) {
                   final day = days[i];

@@ -79,6 +79,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../support/screen_test_container.dart';
+import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:client/modules/profile/presentation/screens/profile_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
+import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -118,6 +123,9 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   // built at a phone viewport.
   'CatalogUnavailableScreen': () => const CatalogUnavailableScreen(),
   'CreateSupportTicketScreen': () => const CreateSupportTicketScreen(),
+  'ProfileScreen': () => const ProfileScreen(),
+  'BookingsScreen': () => const BookingsScreen(),
+  'BookingCalendarScreen': () => const BookingCalendarScreen(),
 };
 
 void main() {
@@ -146,14 +154,17 @@ void main() {
                   // found in context', which the matrix used to report as an
                   // overflow. The screen is still passed BARE — it supplies
                   // its own Scaffold.
-                  child: MaterialApp.router(
-                    routerConfig: GoRouter(
-                      routes: [
-                        GoRoute(
-                          path: '/',
-                          builder: (_, __) => screen.value(),
-                        ),
-                      ],
+                  child: BlocProvider<AuthenticationBloc>(
+                    create: (_) => buildTestAuthenticationBloc(),
+                    child: MaterialApp.router(
+                      routerConfig: GoRouter(
+                        routes: [
+                          GoRoute(
+                            path: '/',
+                            builder: (_, __) => screen.value(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
