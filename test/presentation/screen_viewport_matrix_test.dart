@@ -50,15 +50,6 @@
 ///    worth doing, and not free.
 ///  - **`NotificationsScreen`** — needs the notifications repository graph
 ///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
-///  - **`WelcomeScreen`** — ⚠ has a REAL defect this harness found and this
-///    harness did not fix. Its body Column overflows **192px on the bottom
-///    at 320x568, and it does so at text scale 1.0** — the default — so the
-///    app's first screen is clipped on a small handset for everyone. The
-///    Column has an `Expanded` middle between fixed-height children, so it
-///    cannot simply be wrapped in a scroll view (the Expanded would get
-///    unbounded height and throw). It needs a deliberate layout pass with
-///    visual confirmation, not a mechanical fix. Its top bar and both
-///    shared buttons WERE fixed; this is what is left.
 ///  - **`MerchantMenuScreen`, `StoreItemsScreen`** — both build under a
 ///    `StoreItemsBloc` provider this harness does not supply yet.
 ///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
@@ -111,6 +102,7 @@ import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_s
 import 'package:client/modules/bw_booking/presentation/screens/bw_options_screen.dart';
 import 'package:client/modules/job_order/presentation/screens/select_payment_method_screen.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
+import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -164,6 +156,7 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'BwBranchSlotScreen': () => const BwBranchSlotScreen(),
   'BwCheckoutScreen': () => const BwCheckoutScreen(),
   'BwConfirmationScreen': () => const BwConfirmationScreen(),
+  'WelcomeScreen': () => const WelcomeScreen(),
 };
 
 void main() {

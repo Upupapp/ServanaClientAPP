@@ -261,140 +261,193 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 520),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // ── Top bar ──────────────────────────────────────
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const ServanaBanner(
-                                  scale: 0.9, color: Colors.white),
-                              const Spacer(),
-                              // Skip → Browse Services (§70: never Sign In)
-                              //
-                              // Flexible: the banner is a fixed width and this
-                              // label grows with the text scale, so together
-                              // they overflowed the top bar by 27px at 1.3.
-                              Flexible(
-                                child: Semantics(
-                                  label: 'Skip onboarding and browse services',
-                                  button: true,
-                                  child: TextButton(
-                                    onPressed: locked ? null : _browseAsGuest,
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                      minimumSize: const Size(44, 44),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
+                    // Scroll when the content does not fit, fill the screen
+                    // when it does. The body used to overflow 192px at
+                    // 320x568 AT TEXT SCALE 1.0 — the fixed children (two text
+                    // blocks, 80px of spacers, the buttons) already exceed a
+                    // small handset, so the Expanded middle was squeezed to
+                    // nothing and the Column still ran over.
+                    //
+                    // A bare SingleChildScrollView cannot be used here: the
+                    // Expanded below would get unbounded height and throw.
+                    // ConstrainedBox(minHeight) + IntrinsicHeight is the
+                    // pattern that gives the Column a bounded height to flex
+                    // against while still letting it grow past the viewport.
+                    child: LayoutBuilder(
+                        builder: (context, constraints) =>
+                            SingleChildScrollView(
+                                child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: constraints.maxHeight,
                                     ),
-                                    child: const Text(
-                                      'Skip',
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                                    child: IntrinsicHeight(
+                                        child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // ── Top bar ──────────────────────────────────────
+                                        Padding(
+                                          // 16, not 24. The banner is a fixed
+                                          // width and Skip is already Flexible,
+                                          // so at text scale 2.0 on a 320px
+                                          // handset the bar was still 9.6px
+                                          // over. Making the banner flexible
+                                          // was tried and rejected — it needs
+                                          // its intrinsic width and the layout
+                                          // got worse. Narrowing the gutter is
+                                          // the smaller change.
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 12),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              const ServanaBanner(
+                                                  scale: 0.9,
+                                                  color: Colors.white),
+                                              const Spacer(),
+                                              // Skip → Browse Services (§70: never Sign In)
+                                              //
+                                              // Flexible: the banner is a fixed width and this
+                                              // label grows with the text scale, so together
+                                              // they overflowed the top bar by 27px at 1.3.
+                                              Flexible(
+                                                child: Semantics(
+                                                  label:
+                                                      'Skip onboarding and browse services',
+                                                  button: true,
+                                                  child: TextButton(
+                                                    onPressed: locked
+                                                        ? null
+                                                        : _browseAsGuest,
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      minimumSize:
+                                                          const Size(44, 44),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 16,
+                                                          vertical: 10),
+                                                    ),
+                                                    child: const Text(
+                                                      'Skip',
+                                                      style: TextStyle(
+                                                        fontFamily: 'Poppins',
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
 
-                        // ── Scene-specific visual (middle) ────────────────
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: isStatic
-                                ? Duration.zero
-                                : AppMotionTokens.emphasis,
-                            switchInCurve: AppMotionTokens.enterEase,
-                            switchOutCurve: AppMotionTokens.exitEase,
-                            child: _SceneVisual(
-                              key: ValueKey('visual_$page'),
-                              visual: _sceneVisuals[page],
-                              isStatic: isStatic,
-                            ),
-                          ),
-                        ),
+                                        // ── Scene-specific visual (middle) ────────────────
+                                        Expanded(
+                                          child: AnimatedSwitcher(
+                                            duration: isStatic
+                                                ? Duration.zero
+                                                : AppMotionTokens.emphasis,
+                                            switchInCurve:
+                                                AppMotionTokens.enterEase,
+                                            switchOutCurve:
+                                                AppMotionTokens.exitEase,
+                                            child: _SceneVisual(
+                                              key: ValueKey('visual_$page'),
+                                              visual: _sceneVisuals[page],
+                                              isStatic: isStatic,
+                                            ),
+                                          ),
+                                        ),
 
-                        // ── Headline + subtext ────────────────────────────
-                        AnimatedSwitcher(
-                          duration: isStatic
-                              ? Duration.zero
-                              : AppMotionTokens.standard,
-                          transitionBuilder: (child, animation) {
-                            if (isStatic) return child;
-                            return FadeTransition(
-                              opacity: CurvedAnimation(
-                                parent: animation,
-                                curve: AppMotionTokens.enterEase,
-                              ),
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.07),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: animation,
-                                  curve: AppMotionTokens.enterEase,
-                                )),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: _TextBlock(
-                            key: ValueKey('text_$page'),
-                            scene: _scenes[page],
-                          ),
-                        ),
+                                        // ── Headline + subtext ────────────────────────────
+                                        AnimatedSwitcher(
+                                          duration: isStatic
+                                              ? Duration.zero
+                                              : AppMotionTokens.standard,
+                                          transitionBuilder:
+                                              (child, animation) {
+                                            if (isStatic) return child;
+                                            return FadeTransition(
+                                              opacity: CurvedAnimation(
+                                                parent: animation,
+                                                curve:
+                                                    AppMotionTokens.enterEase,
+                                              ),
+                                              child: SlideTransition(
+                                                position: Tween<Offset>(
+                                                  begin: const Offset(0, 0.07),
+                                                  end: Offset.zero,
+                                                ).animate(CurvedAnimation(
+                                                  parent: animation,
+                                                  curve:
+                                                      AppMotionTokens.enterEase,
+                                                )),
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                          child: _TextBlock(
+                                            key: ValueKey('text_$page'),
+                                            scene: _scenes[page],
+                                          ),
+                                        ),
 
-                        const SizedBox(height: 28),
+                                        const SizedBox(height: 28),
 
-                        // ── Primary CTA: Browse Services ──────────────────
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Semantics(
-                            label: 'Browse services without signing in',
-                            child: ServanaPrimaryButton(
-                              label: 'Browse Services',
-                              onPressed: locked ? null : _browseAsGuest,
-                            ),
-                          ),
-                        ),
+                                        // ── Primary CTA: Browse Services ──────────────────
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 24),
+                                          child: Semantics(
+                                            label:
+                                                'Browse services without signing in',
+                                            child: ServanaPrimaryButton(
+                                              label: 'Browse Services',
+                                              onPressed: locked
+                                                  ? null
+                                                  : _browseAsGuest,
+                                            ),
+                                          ),
+                                        ),
 
-                        const SizedBox(height: 12),
+                                        const SizedBox(height: 12),
 
-                        // ── Secondary CTA: Create Account ─────────────────
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Semantics(
-                            label: 'Create a new Servana account',
-                            child: ServanaOutlinedButton(
-                              label: 'Create Account',
-                              darkSurface: true,
-                              onPressed: locked ? null : _goToCreateAccount,
-                            ),
-                          ),
-                        ),
+                                        // ── Secondary CTA: Create Account ─────────────────
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 24),
+                                          child: Semantics(
+                                            label:
+                                                'Create a new Servana account',
+                                            child: ServanaOutlinedButton(
+                                              label: 'Create Account',
+                                              darkSurface: true,
+                                              onPressed: locked
+                                                  ? null
+                                                  : _goToCreateAccount,
+                                            ),
+                                          ),
+                                        ),
 
-                        const SizedBox(height: 20),
+                                        const SizedBox(height: 20),
 
-                        // ── Page indicator ────────────────────────────────
-                        Center(
-                          child: WelcomePageIndicator(
-                            controller: _ctrl,
-                            pageCount: _scenes.length,
-                          ),
-                        ),
+                                        // ── Page indicator ────────────────────────────────
+                                        Center(
+                                          child: WelcomePageIndicator(
+                                            controller: _ctrl,
+                                            pageCount: _scenes.length,
+                                          ),
+                                        ),
 
-                        const SizedBox(height: 20),
-                      ],
-                    ),
+                                        const SizedBox(height: 20),
+                                      ],
+                                    ))))),
                   ),
                 ),
               ),
