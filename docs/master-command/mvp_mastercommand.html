@@ -1,0 +1,301 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Servana Customer Mobile — MVP End-to-End Master Command</title>
+<style>
+@page { size: A4; margin: 18mm 15mm; }
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 9.6pt; line-height: 1.45; color: #1a1a1a; }
+.cover { page-break-after: always; padding-top: 20mm; }
+.bar { height: 26px; background: #2f5fd0; margin: -18mm -15mm 0 -15mm; }
+.bar2 { height: 6px; background: #f08a24; margin: 0 -15mm 14mm -15mm; }
+h1 { font-size: 26pt; color: #2f5fd0; margin: 0 0 6px; line-height: 1.15; }
+.kicker { color: #f08a24; font-weight: 700; font-size: 9pt; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+.sub { font-size: 11.5pt; color: #444; margin-bottom: 18px; }
+h2 { font-size: 15pt; color: #2f5fd0; margin: 0 0 8px; page-break-after: avoid; }
+h3 { font-size: 10.5pt; color: #f08a24; margin: 14px 0 5px; text-transform: uppercase; letter-spacing: .04em; page-break-after: avoid; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 8.8pt; }
+th { background: #eef2fb; text-align: left; font-weight: 700; }
+th, td { border: 1px solid #c9d3e8; padding: 4px 7px; vertical-align: top; }
+code, .m { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: #f3f5f9; padding: 1px 3px; border-radius: 2px; }
+pre { background: #f3f5f9; border-left: 3px solid #2f5fd0; padding: 7px 9px; font-family: "SF Mono", Menlo, monospace; font-size: 8pt; overflow-wrap: anywhere; white-space: pre-wrap; margin: 7px 0; }
+.tab { page-break-before: always; }
+.callout { border-left: 4px solid #2f5fd0; background: #eef2fb; padding: 9px 12px; margin: 10px 0; }
+.crit { border-left: 4px solid #c62828; background: #fdecea; padding: 9px 12px; margin: 10px 0; }
+.warn { border-left: 4px solid #f08a24; background: #fff5e9; padding: 9px 12px; margin: 10px 0; }
+.ok { border-left: 4px solid #2e7d32; background: #eaf5ea; padding: 9px 12px; margin: 10px 0; }
+.callout p, .crit p, .warn p, .ok p { margin: 4px 0; }
+ul, ol { margin: 5px 0 8px; padding-left: 18px; }
+li { margin: 2.5px 0; }
+.meta { color: #666; font-size: 8.4pt; }
+b.red { color: #c62828; }
+b.grn { color: #2e7d32; }
+</style></head><body>
+
+<div class="cover">
+<div class="bar"></div><div class="bar2"></div>
+<div class="kicker">Servana &middot; Customer Mobile (ServanaClientAPP)</div>
+<h1>MVP End-to-End<br>Master Command</h1>
+<div class="sub">Thirteen front-end commands to make the version we already have work, end to end, for a real customer &mdash; plus the backend blockers that no amount of front-end work can move.</div>
+
+<table>
+<tr><th style="width:26%">Field</th><th>Value</th></tr>
+<tr><td>Prepared</td><td><b>19 August 2026</b>. Every figure marked <i>measured</i> was taken on this date against <code>api.servana.com.ph</code> or the repository itself.</td></tr>
+<tr><td>Repository</td><td><code>C:\Users\paulg\OneDrive\Desktop\servana_client-unified</code> &mdash; the unified working copy. Supersedes <code>servana_client-mobile</code>.</td></tr>
+<tr><td>Remote</td><td><code>github.com/Upupapp/ServanaClientAPP</code>. Nothing in this document has been pushed.</td></tr>
+<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (729 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2161 passed</b>, 6 skipped.</td></tr>
+<tr><td>Scope</td><td><b>Front-end only.</b> Backend items appear as blockers and evidence, never as tasks in a TAB.</td></tr>
+<tr><td>Definition of MVP</td><td>One customer can install the app, create an account, sign in, find a service, book it, pay for it, watch it happen, talk to the provider, and review it &mdash; without hitting a screen that lies, dead-ends, or cannot be completed.</td></tr>
+</table>
+
+<div class="crit">
+<p><b class="red">Read this first.</b> As of this document, production is answering <code>500</code> on <b>every database-backed route</b>. The customer app cannot browse, search, sign in or book &mdash; on either transport. The cause is a single broken database credential in the running API process, and it is <b>backend work</b>. Until it is fixed, no front-end TAB below can be verified end to end. See <b>Section B</b>.</p>
+</div>
+
+<div class="meta">Front-end commands are ordered so that each one is verifiable the moment the backend is healthy. TAB 01 exists to make &ldquo;works end to end&rdquo; a measurement rather than an opinion.</div>
+</div>
+
+<!-- ================= SECTION A ================= -->
+<h2>Section A &mdash; What is already true</h2>
+
+<h3>Closed today, in this repository</h3>
+<table>
+<tr><th style="width:22%">Commit</th><th>What</th></tr>
+<tr><td><code>e29fcd9</code></td><td>Unified two divergent <code>main</code> branches &mdash; 31 production-launch commits on GitHub and 43 front-end SWEEP commits locally that had never seen each other.</td></tr>
+<tr><td><code>00320db</code></td><td>Two login-failure assertions that could not fail (the analyzer rejected them as tautologies) now classify through the base type, as production does.</td></tr>
+<tr><td><code>1bd9e39</code></td><td>Analyzer taken back to <b>zero issues</b> across the merged tree.</td></tr>
+<tr><td><code>7c4a178</code></td><td><b>The app no longer tells customers their password is wrong when the server is down.</b> See TAB 02.</td></tr>
+</table>
+
+<h3>Front-end areas measured healthy &mdash; do not spend MVP time here</h3>
+<ul>
+<li><b>Token refresh.</b> Single-flight (<code>_refreshInFlight</code>), one owner for sign-out, 401 handled in one place. No logout loop of the kind the provider portal has.</li>
+<li><b>Catalog to booking handoff.</b> <code>canonical_booking_handoff.dart</code> routes a canonical Service into a real checkout, and an <b>unknown category falls to the generic flow rather than failing</b> &mdash; a new category is bookable the day an admin creates it, with no app release.</li>
+<li><b>Booking submission error copy.</b> Substring-based, but its default is <code>serverFailure</code> and reads &ldquo;Something went wrong. Please try again.&rdquo; It fails safe; it never blames the customer.</li>
+<li><b>Route reachability.</b> 67 <code>GoRoute</code>s, derived from screen constants rather than string literals.</li>
+<li><b>Capability gating.</b> Deny-by-default, build-time only, not remote-configurable. All 15 capabilities are OFF, so the shipped app is 100% legacy transport. <b>For MVP this is correct &mdash; leave it alone</b> (TAB 13).</li>
+</ul>
+
+<!-- ================= SECTION B ================= -->
+<h2 class="tab">Section B &mdash; Backend blockers (not front-end work)</h2>
+<p>These are recorded because they determine whether the front end can be verified at all. <b>No TAB in Section C asks anyone to fix these.</b></p>
+
+<h3>B1 &mdash; P0, live now: the production database credential is broken</h3>
+<div class="crit">
+<p><b>Measured 19 Aug 2026 against <code>api.servana.com.ph</code>:</b></p>
+<pre>GET /healthz              200   {"status":"alive"}
+GET /readyz               503   "phase":"degraded", ready:false
+GET /api/catalog          500   {"status":"failed","message":"Server error"}
+GET /api/catalog/summary  500
+GET /api/catalog/services 500
+GET /api/services         500
+GET /api/services/full    500
+GET /api/v1/catalog       500      &lt;-- v1 IS deployed; it fails the same way
+GET /api/categories       401      &lt;-- auth middleware rejects before the DB</pre>
+<p>All four readiness dependencies fail with one error:</p>
+<pre>SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string</pre>
+<p>That is the <code>pg</code> driver receiving <code>undefined</code> as the password &mdash; the database password is not reaching the running process. <code>uptimeMs</code> was about 2.3&nbsp;hours, so the process restarted and came up without it.</p>
+<p><b>Consequence:</b> every database-backed route returns 500. Public reads fail outright; authenticated routes return 401 only because the auth middleware rejects them before they touch the database. <b>The app is unusable in production right now.</b></p>
+<p><b>Note for whoever fixes it:</b> this service has been bitten before by having <b>two</b> env files, with <code>pm2 env</code> showing neither. Check what the running process actually has, not what the file says.</p>
+</div>
+
+<h3>B2 &mdash; Verify after B1: the catalog route shadowing</h3>
+<p>On 18 August <code>GET /api/catalog</code> answered <b>401</b> because a booking wildcard <code>GET /:id</code> was mounted ahead of it. Today it answers <b>500</b>, which is the database fault masking whatever routing state exists underneath. <b>Re-measure all three catalog routes once B1 is fixed</b> &mdash; if they return 401 again rather than 200, the mount-order fix is still undeployed. The Home &ldquo;More services&rdquo; row and the whole Search feature depend on it.</p>
+
+<h3>B3 &mdash; Coverage and branch selection are keyed to legacy family ids</h3>
+<p><code>GET /api/services/:familyId/branches</code> and <code>/coverage-geo</code> take a legacy family id. A canonical Service created through the Admin API has no legacy option, so neither is reachable for it. The front end can only degrade honestly here (TAB 07); making them work is backend scope.</p>
+
+<h3>B4 &mdash; There is no canonical booking create</h3>
+<p><code>POST /api/bookings</code> is classified <code>KEEP</code> with no <code>/api/v1</code> successor and none planned. This is why the capability enum has <code>bookingReads</code> and <code>bookingLifecycle</code> but deliberately no <code>booking</code>. It does not block MVP &mdash; the legacy write is what ships &mdash; but it does block any future claim that the booking domain has migrated.</p>
+
+<h3>B5 &mdash; verifyMobile needs a Firebase phone credential</h3>
+<p>The canonical endpoint takes <code>{idToken}</code>, not <code>{mobileNumber, otp}</code>. That is a redesign, not a rename. It is why mobile-number login is still &ldquo;coming soon&rdquo; in the UI (TAB 04).</p>
+
+<h3>B6 &mdash; Disputes are admin-only</h3>
+<p>The only legacy dispute route is admin-scoped, so <code>canOpenDispute</code> is false for every customer. The controller already exposes the capability; the screen appears the day a transport can serve one. Out of MVP scope.</p>
+
+<!-- ================= SECTION C ================= -->
+<h2 class="tab">Section C &mdash; The front-end commands</h2>
+<p>One TAB per command. Each is independently verifiable. <b>Every TAB ends with evidence, not an assertion.</b></p>
+
+<table>
+<tr><th style="width:8%">TAB</th><th style="width:46%">Command</th><th style="width:16%">Blocked by</th><th>MVP</th></tr>
+<tr><td><b>01</b></td><td>Make &ldquo;works end to end&rdquo; a measurement</td><td>B1 to run it</td><td>Required</td></tr>
+<tr><td><b>02</b></td><td>Finish the sign-in and registration honesty pass</td><td>&mdash;</td><td>Required</td></tr>
+<tr><td><b>03</b></td><td>Prove the account-creation loop closes</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>04</b></td><td>Remove every affordance that cannot work</td><td>&mdash;</td><td>Required</td></tr>
+<tr><td><b>05</b></td><td>Home and Search must say what is actually wrong</td><td>B1, B2</td><td>Required</td></tr>
+<tr><td><b>06</b></td><td>Booking creation across every production category</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>07</b></td><td>Address, schedule and coverage degrade honestly</td><td>B3</td><td>Required</td></tr>
+<tr><td><b>08</b></td><td>Payment: cash and PayMongo, including the unhappy paths</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>09</b></td><td>My Bookings, detail, tracking and OTP completion</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>10</b></td><td>Messaging the provider</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>11</b></td><td>Review after completion</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>12</b></td><td>Session resilience and the offline banner truthfulness</td><td>&mdash;</td><td>Required</td></tr>
+<tr><td><b>13</b></td><td>Cut the MVP build with capabilities OFF</td><td>01&ndash;12</td><td>Required</td></tr>
+</table>
+
+<div class="tab"></div>
+<h2>TAB 01 &mdash; Make &ldquo;works end to end&rdquo; a measurement</h2>
+<h3>Why</h3>
+<p>&ldquo;The app works&rdquo; is currently an opinion held by whoever last tapped through it. The suite has 2161 tests and none of them walks a customer from install to review, because every one of them stops at a seam. That is the right design for unit tests and the wrong basis for an MVP go/no-go.</p>
+<h3>Do</h3>
+<ul>
+<li>Write the ten-step customer journey down as an explicit, ordered checklist &mdash; install, create account, verify, sign in, browse, open a service, book, pay, track, message, review.</li>
+<li>Build an <code>integration_test/</code> walkthrough that drives as much of it as a device can without a live provider on the other end. The existing <code>test/support/screen_test_container.dart</code> already registers the real DI graph over a <code>MockClient</code>; extend that pattern rather than inventing a second one.</li>
+<li>For the steps a test cannot reach (a provider accepting, an OTP handed over in person), write the manual script with the exact account, exact service and exact expected screen at each step.</li>
+</ul>
+<h3>Done when</h3>
+<p>A single command produces a pass or fail for the automatable portion, and a one-page manual script exists for the rest, with a named test account. <b>Record which steps are automated and which are manual</b> &mdash; a walkthrough that silently skips payment reads as a green light for payment.</p>
+
+<div class="tab"></div>
+<h2>TAB 02 &mdash; Finish the sign-in and registration honesty pass</h2>
+<div class="ok"><p><b>Largely closed today</b> in <code>7c4a178</code>. This TAB is the remainder.</p></div>
+<h3>What was wrong, and why it mattered</h3>
+<p><code>HttpBackend</code> turns an unparseable response body into <code>Login failed (502).</code> and a JSON body with no message into <code>Login failed.</code> &mdash; and <code>ErrorMessageMapper</code> classified login failures by searching those strings for keywords. Neither <code>502</code> nor <code>504</code> appears in any list; only <code>500</code> and <code>503</code> do. So both strings fell through every branch onto the default:</p>
+<pre>"The email or password is incorrect."</pre>
+<p>An nginx gateway error in front of a restarting API &mdash; <b>exactly today's production condition</b> &mdash; told the customer their password was wrong. A customer who reads that changes a password that was never wrong, and support cannot reproduce it.</p>
+<p>The status code is now threaded through <code>Backend.authenticate</code> and <code>registerCustomer</code> and consulted <b>first</b>. 401 and 403 still defer to the body, because the difference between an unverified account and a disabled one lives there and both are 401.</p>
+<p>Registration had the mirror fault: <code>registration_bloc</code> put the raw backend string on screen and showed <code>e.toString()</code> for an exception, while <code>ErrorMessageMapper.forRegistration</code> &mdash; written for exactly that, and carrying the rule <i>no raw backend strings or stack traces should ever reach the UI</i> &mdash; had <b>no callers at all</b>.</p>
+<p>22 tests were added and <b>mutation-checked</b>: with the status branch disabled, 15 of them fail.</p>
+<h3>Remaining work</h3>
+<ul>
+<li>Apply the same status-first rule to <code>resendVerificationEmail</code>, which still returns a bare record with no status and sits on the verification loop TAB 03 depends on.</li>
+<li>Add a <b>widget-level</b> test that the sign-in screen renders the mapped copy. The current tests pin the mapper and the bloc; nothing asserts what the customer actually sees.</li>
+<li>Audit the four other sites that render connectivity copy without consulting <code>isTransport</code>: <code>address_repository.dart:127</code>, <code>booking_submission_result.dart:124</code>, and <code>notifications_screen.dart:154,196</code> (a wifi-off icon). A 500 is not a wifi problem.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 03 &mdash; Prove the account-creation loop closes</h2>
+<h3>Why</h3>
+<p>Sign-up is the only door into the app, and it is a loop, not a step: register, mail lands, OTP or link, verified, sign in. Any break makes the app unusable for a brand-new customer, which is the only kind of customer an MVP has.</p>
+<h3>Do</h3>
+<ul>
+<li>Walk the whole loop with a fresh address. Confirm the verification mail actually arrives, and confirm resend works and is rate-limited sanely.</li>
+<li>Confirm the app bodies match what the deployed handler accepts. The v1 request schemas are <b>not enforced at runtime</b> &mdash; <code>src/api/v1/register.ts</code> runs no validator, so the handler is the authority and it accepts legacy aliases. Do not read the schema and assume.</li>
+<li>Confirm a customer who abandons mid-verification can get back in rather than being stranded between states.</li>
+</ul>
+<h3>Done when</h3>
+<p>A brand-new address reaches a signed-in Home screen, and the exact bodies sent at each step are recorded in the TAB.</p>
+
+<div class="tab"></div>
+<h2>TAB 04 &mdash; Remove every affordance that cannot work</h2>
+<h3>Why</h3>
+<p>An MVP is judged by what a customer can finish. A control that is visible and cannot work costs more trust than a feature that is absent &mdash; the customer does not know it is unbuilt, so they read it as broken.</p>
+<h3>Known, measured</h3>
+<table>
+<tr><th style="width:38%">Affordance</th><th>State</th><th style="width:22%">MVP call</th></tr>
+<tr><td>Mobile-number login</td><td>Says &ldquo;coming soon&rdquo;. Cannot work: the canonical endpoint needs a Firebase phone credential (B5).</td><td><b>Remove for MVP</b>, ship email-only</td></tr>
+<tr><td>Rewards screen</td><td>Placeholder &mdash; &ldquo;Rewards coming soon&rdquo;.</td><td>Remove from the drawer</td></tr>
+<tr><td>Favourites</td><td>Placeholder, same pattern.</td><td>Remove from the drawer</td></tr>
+<tr><td>Disputes</td><td>No screen. <code>canOpenDispute</code> false everywhere (B6).</td><td>Correctly absent &mdash; leave</td></tr>
+</table>
+<h3>Do</h3>
+<p>Sweep every screen for a control that cannot complete, and either remove it or make the disabled state say <i>why</i>. Then add a test that asserts the property rather than the instances &mdash; a test written for one orphan tends to find the next one immediately.</p>
+
+<div class="tab"></div>
+<h2>TAB 05 &mdash; Home and Search must say what is actually wrong</h2>
+<h3>Why</h3>
+<p>The catalog is 500ing (B1 and B2), so this is not hypothetical: it is what every customer sees today. The Home &ldquo;More services&rdquo; row draws nothing and Search returns nothing.</p>
+<p>The fail-safe is working as designed &mdash; the curated four cards still render and nothing crashes. What must be true is that the customer is <b>told the truth</b>: the service listing is unavailable, not &ldquo;check your connection&rdquo;.</p>
+<h3>Do</h3>
+<ul>
+<li>Confirm the honesty rule from TAB 02 reaches Home and Search, not just sign-in. <code>home_composition.dart:128</code> already consults <code>isTransport</code>; verify every other failure surface does.</li>
+<li>Confirm an absent section and a failed section stay visibly different. There is nothing to retry on an absent one, so a retry button there is a lie.</li>
+<li><b>Do not</b> feed catalog categories into the Home curated grid. Home keys use underscores (<code>beauty_wellness</code>) and drive both navigation and the campaign registry; the backend slugify produces hyphens. A campaign registered against a key the catalog does not use returns null: no popup, no exception, tests pass. The catalog must only <i>add</i> what the curated four do not cover, routed by <code>catalog_categories.id</code>.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 06 &mdash; Booking creation across every production category</h2>
+<h3>Why</h3>
+<p>This is the transaction. Everything before it is browsing.</p>
+<p>The handoff resolves a canonical Service into one of two checkouts by category id (2 goes to aircon, everything else to the generic Beauty and Wellness flow). That default is deliberate and good. It has not been proven for all three production categories.</p>
+<h3>Do</h3>
+<ul>
+<li>Book one service in each production category &mdash; 1 Home Maintenance, 2 Home Services, 3 Personal Care.</li>
+<li>Book a Service <b>created through the Admin API</b>, which has no legacy option row. This is the case where <code>services.id == service_options.id</code> stops holding, and it is the one that will break first in production.</li>
+<li>Confirm the payload <code>serviceOptionId</code> is the canonical <code>services.id</code> the customer actually selected, and that add-on selection does not follow the customer to the next service.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 07 &mdash; Address, schedule and coverage degrade honestly</h2>
+<h3>Why</h3>
+<p>Branch and slot selection and coverage-geo are keyed to legacy family ids and are <b>unreachable for a canonical Service</b> (B3). The front end cannot fix that. What it must not do is present a coverage answer it did not get.</p>
+<h3>Do</h3>
+<ul>
+<li>Decide and implement the MVP behaviour when coverage cannot be determined. An undeterminable coverage answer should <b>deny or ask</b>, never silently allow &mdash; a booking accepted outside the service area costs a real dispatch.</li>
+<li>Confirm saved addresses work: add, select, make primary.</li>
+<li>Confirm the Manila coordinate fallback is not silently applied to a booking whose real coordinates are simply absent from the response.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 08 &mdash; Payment: cash and PayMongo, including the unhappy paths</h2>
+<h3>Why</h3>
+<p>Payment is where an MVP either earns money or loses trust. The client sends <code>CASH</code> or <code>PAYMONGO</code> and the backend types the column <code>CASH|GCASH|PAYMONGO</code>.</p>
+<h3>Do</h3>
+<ul>
+<li>Complete a cash booking end to end.</li>
+<li>Complete a PayMongo booking through <code>PaymentWebViewScreen</code>, then deliberately <b>cancel</b> one and <b>abandon</b> one (close the sheet mid-flow).</li>
+<li>Confirm each of those three outcomes leaves a booking in a state the customer can act on. An abandoned payment that leaves an invisible half-booking is worse than a failed one.</li>
+<li>Confirm the amount shown at checkout is the amount charged, and that a price arriving as a JSON string rather than a number still renders. Postgres numeric arrives as int, double <i>or</i> string depending on value and driver.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 09 &mdash; My Bookings, detail, tracking and OTP completion</h2>
+<h3>Do</h3>
+<ul>
+<li>Confirm a booking created in TAB 06 appears in My Bookings immediately, with the right total &mdash; not &#8369;0.00.</li>
+<li>Confirm booking detail reads through <code>BookingRepository</code> and shows status, schedule, address, provider and total.</li>
+<li>Confirm tracking renders when the provider is en route, and degrades honestly when there is no location rather than dropping a pin on a default coordinate.</li>
+<li>Confirm the completion OTP path works from the customer side.</li>
+</ul>
+<div class="warn"><p><b>Watch for:</b> the domain model was once lossier than the screen own parsing &mdash; a blind swap onto the repository regressed five behaviours including the total. Pin the model against the screen before trusting it.</p></div>
+
+<div class="tab"></div>
+<h2>TAB 10 &mdash; Messaging the provider</h2>
+<h3>Do</h3>
+<ul>
+<li>Open the conversation from a booking, send and receive, confirm unread counts and read receipts settle.</li>
+<li>Confirm the conversation is reachable from both the booking detail and the inbox, and that both resolve to the same thread.</li>
+<li>Confirm a message that fails to send is visibly unsent and retryable, rather than silently dropped.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 11 &mdash; Review after completion</h2>
+<h3>Do</h3>
+<ul>
+<li>Confirm review eligibility appears only after completion, and that submitting once closes the affordance.</li>
+<li>Confirm the rating reaches the provider aggregate the app reads back.</li>
+</ul>
+<p class="meta">Note: only 4 of 9 review calls have a canonical successor, which is why <code>reviews</code> is absent from the capability enum. Irrelevant for MVP &mdash; the legacy path is what ships.</p>
+
+<div class="tab"></div>
+<h2>TAB 12 &mdash; Session resilience and the offline banner truthfulness</h2>
+<h3>Do</h3>
+<ul>
+<li>Confirm a token expiring mid-session refreshes once, not once per in-flight request, and that a dead refresh token signs the customer out exactly once.</li>
+<li>Confirm the offline banner appears only when the device is genuinely offline. During B1 the device is online and the server is broken &mdash; the banner must not claim otherwise.</li>
+<li>Confirm backgrounding the app for an hour and returning does not strand the customer on a blank screen.</li>
+</ul>
+
+<div class="tab"></div>
+<h2>TAB 13 &mdash; Cut the MVP build with capabilities OFF</h2>
+<h3>Why OFF is the right call</h3>
+<p><code>/api/v1</code> <b>is</b> deployed &mdash; measured today, <code>GET /api/v1/catalog</code> returns 500 rather than 404, which means the route exists and reached the database. So the gate original premise (&ldquo;v1 is unpushed&rdquo;) is now out of date.</p>
+<p>That is <b>not</b> a reason to enable it for MVP. Both transports fail identically today, so switching buys nothing, and every capability flipped on is a surface that has never carried real customer traffic. <b>Ship the transport that ships.</b> Migrating is a post-MVP command with its own evidence.</p>
+<h3>Do</h3>
+<ul>
+<li>Cut a release build with all 15 capabilities off, and assert that in a test rather than trusting the default.</li>
+<li>Run the built artefact, not the debug one. R8, signing and the version floors are already done; confirm the shrunk build still runs the journey from TAB 01.</li>
+<li>Confirm the version gate can retire this build later, and that the deep links resolve.</li>
+</ul>
+
+<h2 class="tab">Section D &mdash; How to run this</h2>
+<ol>
+<li><b>Get B1 fixed.</b> Nothing else can be verified until the API can reach its database. This is minutes of work for whoever holds the server, and it is currently costing every customer the whole app.</li>
+<li><b>Re-measure B2</b> the moment B1 is green. If the catalog routes answer 401 rather than 200, the mount-order fix is undeployed and TAB 05 is blocked.</li>
+<li><b>Run TAB 01</b> to fix what &ldquo;end to end&rdquo; means, then TABs 02 to 04, which need no backend.</li>
+<li><b>Then TABs 05 to 11 in order</b> &mdash; they follow the customer own path, so a break in one is felt by the next.</li>
+<li><b>TAB 12 and 13 last</b>, because they are about the build rather than the journey.</li>
+</ol>
+<div class="callout">
+<p><b>Standing rule for every TAB:</b> finish with evidence &mdash; the command run, the status codes seen, the screen reached. A TAB that ends in an assertion has not been done. Where a gate is added, watch it fail once before believing it passes.</p>
+</div>
+
+</body></html>
