@@ -39,8 +39,8 @@ b.grn { color: #2e7d32; }
 <tr><td>Prepared</td><td><b>19 August 2026</b>. Every figure marked <i>measured</i> was taken on this date against <code>api.servana.com.ph</code> or the repository itself.</td></tr>
 <tr><td>Repository</td><td><code>C:\Users\paulg\OneDrive\Desktop\servana_client-unified</code> &mdash; the unified working copy. Supersedes <code>servana_client-mobile</code>.</td></tr>
 <tr><td>Remote</td><td><code>github.com/Upupapp/ServanaClientAPP</code>. Nothing in this document has been pushed.</td></tr>
-<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2179 passed</b>, 6 skipped.</td></tr>
-<tr><td>Revision</td><td><b>Rev 2</b>, later the same day. TABs 02, 04 and 05 are <b class="grn">closed</b>; B1 and B2 are <b class="grn">closed</b>; the production outage that opened this document is <b class="grn">resolved and its cause removed</b>.</td></tr>
+<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2185 passed</b>, 6 skipped. Backend: <code>npm run verify</code> exit 0, <b>6509 tests</b>.</td></tr>
+<tr><td>Revision</td><td><b>Rev 3</b>. TABs <b class="grn">01, 02, 04, 05 closed</b>; TAB 03 in progress. Backend <b class="grn">B1, B2, B7, B9 closed</b>. The outage is resolved, <b>its cause removed</b>, and the pipeline that produced it disabled.</td></tr>
 <tr><td>Scope</td><td><b>Front-end only.</b> Backend items appear as blockers and evidence, never as tasks in a TAB.</td></tr>
 <tr><td>Definition of MVP</td><td>One customer can install the app, create an account, sign in, find a service, book it, pay for it, watch it happen, talk to the provider, and review it &mdash; without hitting a screen that lies, dead-ends, or cannot be completed.</td></tr>
 </table>
@@ -123,14 +123,25 @@ b.grn { color: #2e7d32; }
 <h3>B5 &mdash; verifyMobile needs a Firebase phone credential</h3>
 <p>The canonical endpoint takes <code>{idToken}</code>, not <code>{mobileNumber, otp}</code>. That is a redesign, not a rename. It is why mobile-number login is still &ldquo;coming soon&rdquo; in the UI (TAB 04).</p>
 
-<h3>B7 &mdash; dotenv runs after the DB pool is built</h3>
-<p><code>dist/app.js</code> loads dotenv and PM2's cwd is correct and <code>.env</code> is present &mdash; yet the app never received <code>DB_PASSWORD</code> from it. The pool must be constructed before <code>dotenv.config()</code> runs. Until that is fixed, <b>the environment must be sourced into the shell before restarting</b> and the <code>set -a</code> prefix in the runbook is load-bearing rather than belt-and-braces.</p>
+<h3>B7 &mdash; <span style="color:#2e7d32">CLOSED</span>: dotenv ran after the DB pool was built</h3>
+<p>The cause was worse than "load order". <code>config.ts</code> &mdash; imported by <b>53 modules</b>, and the module that captures the database credentials into a module-level <code>const</code> &mdash; guarded its own load with <code>if (!process.env.NODE_ENV)</code>. <code>NODE_ENV</code> is always set in production, so <b>it never ran</b>; and its path <code>"../.env"</code> resolved against the process CWD, so it pointed at the wrong file even when it could have fired. Combined with <code>app.ts</code> calling <code>dotenv.config()</code> after its imports, <b><code>.env</code> had never supplied the database credentials in production at all.</b> The API only ever worked because PM2 happened to carry them in its environment &mdash; which is exactly why a restart that lost them took the platform down.</p>
+<div class="ok">
+<p><b>Fixed and proven on production</b> via <code>src/env/loadEnv.ts</code>, imported first in <code>config.ts</code> and <code>app.ts</code>. With the variables explicitly unset in the shell:</p>
+<pre>env -u DB_PASSWORD -u DB_USER node -e "require('./dist/config')"
+  -&gt; injected env (28) from .env
+  -&gt; password resolved: true    password is a string: string</pre>
+<p>That last line is the exact inverse of the outage error. Production then survived a <b>plain <code>pm2 restart</code> with no <code>set -a</code> prefix</b>. The prefix is now a belt, not the braces.</p>
+</div>
 
 <h3>B8 &mdash; <code>servana.locations</code> is read but does not exist</h3>
 <p>Surfaced by the project's own <code>npm run db:diagnose</code>. <code>adminCreateBookingService.ts:430</code> <b>500s whenever a <code>serviceLocationId</code> is supplied</b>. Independent of the outage.</p>
 
-<h3>B9 &mdash; <code>typecheck:tests</code> cannot run on the production box</h3>
-<p>It needs more heap than a 961&nbsp;MB server can give. With no CI, decide where it runs &mdash; a dev machine is the honest answer.</p>
+<h3>B9 &mdash; <span style="color:#2e7d32">CLOSED</span>: <code>typecheck:tests</code> runs on a dev machine</h3>
+<p>It exhausts the heap on a 961&nbsp;MB server (<code>exit 134</code>) and passes <b>exit 0</b> on a developer machine. Decision recorded in the backend's <code>docs/DEPLOY_AND_GATE_POLICY.md</code>.</p>
+<div class="warn">
+<p><b>Three gates could not pass on the machine that is now the only gate.</b> With CI off, <code>scripts/hooks/pre-push</code> runs <code>npm run verify</code>, so a Linux-only assumption blocks every push &mdash; and the obvious workaround is <code>--no-verify</code>, which removes the gate rather than repairing it.</p>
+<p><b>deploy-gating</b> asserted the hook's exec bit via <code>statSync().mode &amp; 0o111</code>; NTFS carries no POSIX exec bit, so Node reports <code>666</code>. It now asserts <code>git ls-files -s</code> = <code>100755</code>, the mode that actually travels. <b>vacuous-ratchet</b> built keys with <code>test.path.replace(process.cwd() + '/', '')</code> &mdash; backslashes against a forward slash, so the replace matched nothing and it reported <i>"24 no longer on the list"</i> when nothing had regressed; after normalising, <i>3</i>, the true number. Both fixed and pushed.</p>
+</div>
 
 <h3>B6 &mdash; Disputes are admin-only</h3>
 <p>The only legacy dispute route is admin-scoped, so <code>canOpenDispute</code> is false for every customer. The controller already exposes the capability; the screen appears the day a transport can serve one. Out of MVP scope.</p>
@@ -141,9 +152,9 @@ b.grn { color: #2e7d32; }
 
 <table>
 <tr><th style="width:8%">TAB</th><th style="width:46%">Command</th><th style="width:16%">Blocked by</th><th>MVP</th></tr>
-<tr><td><b>01</b></td><td>Make &ldquo;works end to end&rdquo; a measurement</td><td>&mdash; <i>unblocked</i></td><td>Required</td></tr>
+<tr><td><b>01</b></td><td>Make &ldquo;works end to end&rdquo; a measurement</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
 <tr><td><b>02</b></td><td>Finish the sign-in and registration honesty pass</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
-<tr><td><b>03</b></td><td>Prove the account-creation loop closes</td><td>&mdash; <i>unblocked</i></td><td>Required &mdash; next</td></tr>
+<tr><td><b>03</b></td><td>Prove the account-creation loop closes</td><td>OTP in a human inbox</td><td><b>In progress</b></td></tr>
 <tr><td><b>04</b></td><td>Remove every affordance that cannot work</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
 <tr><td><b>05</b></td><td>Home and Search must say what is actually wrong</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
 <tr><td><b>06</b></td><td>Booking creation across every production category</td><td>&mdash; <i>unblocked</i></td><td>Required &mdash; next</td></tr>
