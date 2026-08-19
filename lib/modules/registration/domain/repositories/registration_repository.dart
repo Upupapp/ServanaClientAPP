@@ -18,8 +18,8 @@ class RegistrationRepository {
     //todo: implement
   }
 
-  Future<({bool isSuccess, String? message, int? statusCode})> submitRegistration(
-      {required RegistrationFormModel registration}) async {
+  Future<({bool isSuccess, String? message, int? statusCode})>
+      submitRegistration({required RegistrationFormModel registration}) async {
     return backend.registerCustomer(registration);
   }
 

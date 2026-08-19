@@ -5,7 +5,8 @@ class AuthenticationRepository {
   final Backend backend;
   AuthenticationRepository({required this.backend});
 
-  Future<({UserSession? session, String? error, int? statusCode})> authenticate({
+  Future<({UserSession? session, String? error, int? statusCode})>
+      authenticate({
     required final String email,
     required final String password,
     final String fcmToken = '',

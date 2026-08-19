@@ -47,7 +47,8 @@ class HttpBackend implements Backend {
   // ───────────────────────── Auth ─────────────────────────
 
   @override
-  Future<({UserSession? session, String? error, int? statusCode})> authenticate({
+  Future<({UserSession? session, String? error, int? statusCode})>
+      authenticate({
     required String email,
     required String password,
     String fcmToken = '',
