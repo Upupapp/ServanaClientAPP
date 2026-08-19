@@ -414,17 +414,26 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                       Row(
                                         children: [
                                           const Expanded(child: Divider()),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 12),
-                                            child: Text(
-                                              'or continue with',
-                                              style: TextStyle(
-                                                fontFamily: FontPalette
-                                                    .primaryFontFamily,
-                                                color:
-                                                    ColorPalette.secondaryText,
-                                                fontSize: 12,
+                                          // Flexible: the two Expanded dividers
+                                          // shrink to nothing at text scale
+                                          // 2.0, but the label between them
+                                          // still demanded its intrinsic width
+                                          // and overflowed by 142px. It has to
+                                          // be able to give as well.
+                                          Flexible(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12),
+                                              child: Text(
+                                                'or continue with',
+                                                style: TextStyle(
+                                                  fontFamily: FontPalette
+                                                      .primaryFontFamily,
+                                                  color: ColorPalette
+                                                      .secondaryText,
+                                                  fontSize: 12,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -476,16 +485,23 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
-                                              Text(
-                                                'Continue with Google',
-                                                style: TextStyle(
-                                                  fontFamily: FontPalette
-                                                      .primaryFontFamily,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface,
+                                              // Flexible: this label overflowed
+                                              // the button by 94px at 320x568
+                                              // AT TEXT SCALE 1.0 — the default
+                                              // — so it was clipped for every
+                                              // customer on a small handset.
+                                              Flexible(
+                                                child: Text(
+                                                  'Continue with Google',
+                                                  style: TextStyle(
+                                                    fontFamily: FontPalette
+                                                        .primaryFontFamily,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface,
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -519,16 +535,23 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                                   color: Color(0xFF1877F2),
                                                   size: 24),
                                               const SizedBox(width: 10),
-                                              Text(
-                                                'Continue with Facebook',
-                                                style: TextStyle(
-                                                  fontFamily: FontPalette
-                                                      .primaryFontFamily,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface,
+                                              // Flexible: this label overflowed
+                                              // the button by 122px at 320x568
+                                              // AT TEXT SCALE 1.0 — the default
+                                              // — so it was clipped for every
+                                              // customer on a small handset.
+                                              Flexible(
+                                                child: Text(
+                                                  'Continue with Facebook',
+                                                  style: TextStyle(
+                                                    fontFamily: FontPalette
+                                                        .primaryFontFamily,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface,
+                                                  ),
                                                 ),
                                               ),
                                             ],

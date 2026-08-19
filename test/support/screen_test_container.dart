@@ -76,6 +76,20 @@ import 'package:client/modules/store_items/domain/use_cases/get_store_items_use_
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 import 'package:client/modules/catalog/application/catalog_controller.dart';
 import 'package:client/modules/catalog/application/service_detail_controller.dart';
+import 'package:client/core/network/canonical_availability.dart';
+import 'package:client/core/network/compat/canonical_router.dart';
+import 'package:client/core/network/v1_api_client.dart';
+import 'package:client/modules/authentication/data/identity_canonical_data_source.dart';
+import 'package:client/modules/authentication/data/identity_compatibility_data_source.dart';
+import 'package:client/modules/authentication/data/identity_repository.dart';
+import 'package:client/modules/registration/domain/repositories/registration_repository.dart';
+import 'package:client/modules/registration/domain/use_cases/load_registration_from_local.dart';
+import 'package:client/modules/registration/domain/use_cases/save_registration_to_local.dart';
+import 'package:client/modules/registration/domain/use_cases/validate_registration_step1.dart';
+import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
+import 'package:client/common/domain/use_cases/get_barangays_in_city_use_case.dart';
+import 'package:client/common/domain/use_cases/get_provinces_use_case.dart';
+import 'package:client/common/domain/use_cases/get_cities_in_region_use_case.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -192,6 +206,35 @@ Future<void> registerScreenDependencies() async {
   dpLocator.registerSingleton<BookingDraftService>(BookingDraftService());
   dpLocator.registerSingleton<AirconBookingStore>(AirconBookingStore(api: api));
   dpLocator.registerSingleton<BwBookingStore>(BwBookingStore(api: api));
+
+  // ── Identity and registration ─────────────────────────────────────────────
+  // The canonical side is constructed but never chosen: CanonicalAvailability
+  // defaults to disabled, which is exactly what every shipped build does. The
+  // router therefore always answers with the compatibility source here, the
+  // same transport a real customer is on.
+  dpLocator.registerSingleton<IdentityRepository>(
+    IdentityRepository(
+      compatibility: IdentityCompatibilityDataSource(api),
+      canonical: IdentityCanonicalDataSource(
+        V1ApiClient(
+          baseUrl: 'https://example.invalid',
+          httpClient: emptyBackend(),
+        ),
+      ),
+      router: const CanonicalRouter(availability: CanonicalAvailability()),
+    ),
+  );
+  dpLocator.registerFactory<RegistrationBloc>(
+    () => RegistrationBloc(
+      saveRegistrationToLocalUseCase: SaveRegistrationToLocalUseCase(),
+      loadRegistrationFromLocal: LoadRegistrationFromLocalUseCase(),
+      validateRegistrationFormUseCase: ValidateRegistrationFormUseCase(),
+      repo: RegistrationRepository(backend: MockBackend()),
+      getBarangaysInCityUseCase: GetBarangaysInCityUseCase(),
+      getProvincesUseCase: GetProvincesUseCase(),
+      getCitiesInregionUseCase: GetCitiesInregionUseCase(),
+    ),
+  );
 
   // ── Catalog and search ────────────────────────────────────────────────────
   final catalog = CatalogRepository(

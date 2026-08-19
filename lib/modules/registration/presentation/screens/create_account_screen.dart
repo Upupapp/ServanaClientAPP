@@ -113,12 +113,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   const SizedBox(
                     width: 25,
                   ),
-                  Text(
-                    "Create your Account",
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                  // Expanded: this heading overflowed by 90px at 320x568 AT
+                  // TEXT SCALE 1.0 — the default — so the sign-up screen's own
+                  // title was clipped for every customer on a small handset.
+                  // Identical to the defect on SelectPaymentMethodScreen.
+                  Expanded(
+                    child: Text(
+                      "Create your Account",
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryFontFamily,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
                     ),
                   ),
                 ],

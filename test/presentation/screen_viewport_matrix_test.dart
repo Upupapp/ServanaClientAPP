@@ -52,6 +52,12 @@
 ///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
 ///  - **`MerchantMenuScreen`, `StoreItemsScreen`** — both build under a
 ///    `StoreItemsBloc` provider this harness does not supply yet.
+///  - **`CreateAccountScreen`** — its `initState` starts an `overlay_tooltip`
+///    tour, which throws "No overlay tooltip item has been initialized"
+///    without an `OverlayTooltipScaffold` ancestor. A harness gap, not a
+///    layout defect — and note it fires from a TIMER during the long pump,
+///    so a short probe misses it entirely. Its own 90px heading overflow at
+///    text scale 1.0 WAS found and fixed before this exclusion.
 ///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
 ///    whose platform channel never completes under the test binding. It
 ///    logs `session unreadable, treating as signed out` after a 4s timeout
@@ -113,6 +119,9 @@ import 'package:client/modules/catalog/presentation/screens/category_screen.dart
 import 'package:client/modules/catalog/presentation/screens/service_detail_screen.dart';
 import 'package:client/modules/catalog/presentation/screens/subcategory_screen.dart';
 import 'package:client/common/injectors/main_injector.dart';
+import 'package:client/modules/authentication/presentation/screens/authentication_screen.dart';
+import 'package:client/modules/profile/presentation/screens/email_verification_screen.dart';
+import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -191,6 +200,9 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
         serviceId: 1,
         onStartBooking: (_, __) {},
       ),
+  // The entry funnel.
+  'AuthenticationScreen': () => const AuthenticationScreen(),
+  'EmailVerificationScreen': () => const EmailVerificationScreen(),
 };
 
 void main() {
@@ -229,6 +241,9 @@ void main() {
                       ),
                       BlocProvider<StoreItemsBloc>(
                         create: (_) => buildTestStoreItemsBloc(),
+                      ),
+                      BlocProvider<RegistrationBloc>(
+                        create: (_) => dpLocator<RegistrationBloc>(),
                       ),
                     ],
                     child: MaterialApp.router(
