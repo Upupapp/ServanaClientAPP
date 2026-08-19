@@ -215,8 +215,8 @@ class HttpBackend implements Backend {
   }
 
   @override
-  Future<({bool isSuccess, String? message})> resendVerificationEmail(
-      {required String email}) async {
+  Future<({bool isSuccess, String? message, int? statusCode})>
+      resendVerificationEmail({required String email}) async {
     final uri = Uri.parse('$baseUrl/api/auth/resendverification')
         .replace(queryParameters: {'email': email});
     final http.Response response;
@@ -226,6 +226,7 @@ class HttpBackend implements Backend {
       return (
         isSuccess: false,
         message: 'Could not reach server. Please check your connection.',
+        statusCode: null,
       );
     }
 
@@ -238,6 +239,7 @@ class HttpBackend implements Backend {
       return (
         isSuccess: true,
         message: message ?? 'Verification email sent.',
+        statusCode: response.statusCode,
       );
     }
 
@@ -252,7 +254,11 @@ class HttpBackend implements Backend {
           'Failed to resend verification email (${response.statusCode}).';
     }
 
-    return (isSuccess: false, message: errorMessage);
+    return (
+      isSuccess: false,
+      message: errorMessage,
+      statusCode: response.statusCode,
+    );
   }
 
   // ───────────────────── User / Address ─────────────────────

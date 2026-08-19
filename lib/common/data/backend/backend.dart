@@ -85,8 +85,8 @@ abstract interface class Backend {
   Future<ServiceCoverageGeo?> getServiceCoverageGeo(
       {required String serviceId});
 
-  Future<({bool isSuccess, String? message})> resendVerificationEmail(
-      {required String email});
+  Future<({bool isSuccess, String? message, int? statusCode})>
+      resendVerificationEmail({required String email});
 
   /// Revoke the current session on the backend (best-effort; no-op if unsupported).
   Future<void> logout();

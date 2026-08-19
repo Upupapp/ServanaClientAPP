@@ -93,6 +93,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return _ErrorView(
         message: _ctrl.error ?? 'Unable to load notifications.',
         onRetry: _ctrl.refresh,
+        didReachServer: _ctrl.didReachServer,
       );
     }
 
@@ -106,12 +107,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(top: 8, bottom: 24),
-        itemCount: _ctrl.notifications.length +
-            (state == NotificationsLoadState.error ? 1 : 0),
+        // `offline` is set when a background refresh fails but a list is
+        // already on screen. It had NO reader here, so that failure showed a
+        // stale list with nothing to say it was stale.
+        itemCount: _ctrl.notifications.length + (isStaleState(state) ? 1 : 0),
         itemBuilder: (context, i) {
-          if (state == NotificationsLoadState.error &&
-              i == _ctrl.notifications.length) {
-            return _OfflineBanner(onRetry: _ctrl.refresh);
+          if (isStaleState(state) && i == _ctrl.notifications.length) {
+            return _StaleBanner(
+              onRetry: _ctrl.refresh,
+              didReachServer: _ctrl.didReachServer,
+            );
           }
           final notif = _ctrl.notifications[i];
           return NotificationCard(
@@ -141,7 +146,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
+
+  /// The icon is a claim. A wifi-off glyph over a server fault contradicts the
+  /// message beside it, and the icon is what gets read first.
+  final bool didReachServer;
+  const _ErrorView({
+    required this.message,
+    required this.onRetry,
+    required this.didReachServer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -151,8 +164,12 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded,
-                size: 48, color: ColorPalette.accentText.withOpacity(0.35)),
+            Icon(
+                didReachServer
+                    ? Icons.error_outline_rounded
+                    : Icons.wifi_off_rounded,
+                size: 48,
+                color: ColorPalette.accentText.withOpacity(0.35)),
             const SizedBox(height: 14),
             Text(
               message,
@@ -183,9 +200,12 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-class _OfflineBanner extends StatelessWidget {
+/// Renamed from `_OfflineBanner`: it is shown whenever the list is stale, and
+/// only one of those reasons is being offline.
+class _StaleBanner extends StatelessWidget {
   final VoidCallback onRetry;
-  const _OfflineBanner({required this.onRetry});
+  final bool didReachServer;
+  const _StaleBanner({required this.onRetry, required this.didReachServer});
 
   @override
   Widget build(BuildContext context) {
@@ -193,8 +213,12 @@ class _OfflineBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Icon(Icons.wifi_off_rounded,
-              size: 16, color: ColorPalette.accentText.withOpacity(0.6)),
+          Icon(
+              didReachServer
+                  ? Icons.sync_problem_rounded
+                  : Icons.wifi_off_rounded,
+              size: 16,
+              color: ColorPalette.accentText.withOpacity(0.6)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

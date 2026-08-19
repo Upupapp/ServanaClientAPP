@@ -109,11 +109,43 @@ class ErrorMessageMapper {
   static const _tooManyAttempts =
       'Too many attempts. Please wait a moment and try again.';
 
+  /// Copy for a failed verification-email resend.
+  ///
+  /// Same status-first rule as [forLogin]. The default states that the resend
+  /// did not happen; it does not imply the address was wrong, because a
+  /// customer staring at a verification screen has already proved it is not.
+  static String forResendVerification(String? raw, {int? statusCode}) {
+    final byStatus = _byStatus(statusCode);
+    if (byStatus != null) return byStatus;
+    if (raw == null || raw.isEmpty) return _defaultResend;
+    final lower = raw.toLowerCase();
+
+    if (_contains(lower, ['rate limit', 'too many', 'throttle'])) {
+      return _tooManyAttempts;
+    }
+    if (_contains(lower, ['already verified', 'already confirmed'])) {
+      return 'This account is already verified. Try signing in.';
+    }
+    if (_contains(lower, [
+      'network',
+      'connection',
+      'reach server',
+      'offline',
+      'socket',
+      'timeout'
+    ])) {
+      return forNetwork();
+    }
+    return _defaultResend;
+  }
+
   // ─────────────────────── private ───────────────────────
 
   static const _defaultLogin = 'The email or password is incorrect.';
   static const _defaultRegistration =
       'Registration failed. Please check your details and try again.';
+  static const _defaultResend =
+      'We could not resend the verification email. Please try again.';
 
   static bool _contains(String lower, List<String> terms) =>
       terms.any(lower.contains);

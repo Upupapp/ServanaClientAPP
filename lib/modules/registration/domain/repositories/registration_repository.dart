@@ -23,8 +23,8 @@ class RegistrationRepository {
     return backend.registerCustomer(registration);
   }
 
-  Future<({bool isSuccess, String? message})> resendVerificationEmail(
-      {required String email}) async {
+  Future<({bool isSuccess, String? message, int? statusCode})>
+      resendVerificationEmail({required String email}) async {
     return backend.resendVerificationEmail(email: email);
   }
 }

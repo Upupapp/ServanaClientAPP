@@ -1388,10 +1388,14 @@ class MockBackend implements Backend {
       throw UnimplementedError('getServiceCoverageGeo requires HttpBackend');
 
   @override
-  Future<({bool isSuccess, String? message})> resendVerificationEmail(
-      {required String email}) async {
+  Future<({bool isSuccess, String? message, int? statusCode})>
+      resendVerificationEmail({required String email}) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return (isSuccess: true, message: 'Verification email sent (mock).');
+    return (
+      isSuccess: true,
+      message: 'Verification email sent (mock).',
+      statusCode: 200,
+    );
   }
 
   @override

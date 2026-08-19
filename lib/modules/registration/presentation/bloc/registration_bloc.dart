@@ -573,10 +573,14 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
             message: res.message ?? 'Verification email sent.'));
       } else {
         emit(ResendVerificationFailedState(
-            error: res.message ?? 'Failed to resend verification email.'));
+            error: ErrorMessageMapper.forResendVerification(
+          res.message,
+          statusCode: res.statusCode,
+        )));
       }
-    } catch (e) {
-      emit(ResendVerificationFailedState(error: e.toString()));
+    } catch (_) {
+      emit(ResendVerificationFailedState(
+          error: ErrorMessageMapper.forServerError()));
     }
   }
 }

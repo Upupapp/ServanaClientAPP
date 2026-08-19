@@ -1,3 +1,4 @@
+import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/notification_events.dart';
@@ -18,6 +19,14 @@ class NotificationsController extends ChangeNotifier {
   String? _error;
   String? _activeUid;
 
+  /// Whether the last failure came back from the server.
+  ///
+  /// A ServanaApiException carries a status, so the server answered and the
+  /// fault is server-side. Anything else never got a response. Without this
+  /// the screen drew a wifi-off icon over a 500, telling a customer with full
+  /// signal to check their connection.
+  bool _didReachServer = false;
+
   // Incremented on logout/account-switch. Any async op that captures a
   // stale generation discards its result (LEAKSHIELD §5).
   int _sessionGen = 0;
@@ -30,6 +39,7 @@ class NotificationsController extends ChangeNotifier {
       List.unmodifiable(_notifications);
   int get unreadCount => _unreadCount;
   String? get error => _error;
+  bool get didReachServer => _didReachServer;
   bool get isEmpty =>
       _state == NotificationsLoadState.ready && _notifications.isEmpty;
 
@@ -88,6 +98,7 @@ class NotificationsController extends ChangeNotifier {
       _error = null;
     } catch (e) {
       if (gen != _sessionGen) return;
+      _didReachServer = e is ServanaApiException;
       if (isRefresh || _notifications.isEmpty) {
         _state = NotificationsLoadState.error;
         _error = 'Unable to load notifications. Pull down to retry.';
