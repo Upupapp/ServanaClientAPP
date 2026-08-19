@@ -997,22 +997,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const Gap(15),
-                    DrawerItemWidget(
-                      iconFile: "assets/icons/rewards icon.png",
-                      title: "Rewards",
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.pushNamed(RewardsScreen.routeName);
-                      },
-                    ),
-                    DrawerItemWidget(
-                      iconFile: "assets/icons/favourites icon.png",
-                      title: "Favourites",
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.pushNamed(FavouritesScreen.routeName);
-                      },
-                    ),
+                    // Rewards and Favourites are not offered here. Both
+                    // screens are placeholders that say "coming soon", and a
+                    // control a customer can reach and cannot finish reads as
+                    // broken rather than as unbuilt. The screens and their
+                    // routes are left in place for the release that builds
+                    // them; only the affordance is withdrawn.
                     DrawerItemWidget(
                       iconFile: "assets/icons/order history icon.png",
                       title: "Orders History",

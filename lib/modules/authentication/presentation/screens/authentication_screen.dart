@@ -84,7 +84,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     }
     // Backend only supports email auth; mobile detection means we gate early.
     if (_isMobileInput) {
-      _showMobileComingSoon();
+      _showEmailRequired();
       return;
     }
     FocusScope.of(context).unfocus();
@@ -92,11 +92,17 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     bloc.add(AuthenticationInit(email: id, password: _password));
   }
 
-  void _showMobileComingSoon() {
+  /// Tells the customer what to do, rather than promising a feature.
+  ///
+  /// This used to say mobile login was "coming soon". It is not scheduled:
+  /// the canonical endpoint takes a Firebase phone credential rather than a
+  /// number and an OTP, which is a redesign. Promising it sets a customer
+  /// waiting for something no release is bringing, and an MVP is judged by
+  /// what can be finished today.
+  void _showEmailRequired() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content:
-            Text('Mobile number login is coming soon. Use your email for now.'),
+        content: Text('Sign in with your email address.'),
         duration: Duration(seconds: 4),
       ),
     );
@@ -249,7 +255,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
-                                          'Mobile number login coming soon — please use your email.',
+                                          'Sign in with your email address.',
                                           style: TextStyle(
                                             fontFamily:
                                                 FontPalette.primaryFontFamily,
