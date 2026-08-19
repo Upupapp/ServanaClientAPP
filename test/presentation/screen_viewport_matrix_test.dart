@@ -44,7 +44,19 @@
 ///
 ///  - **Home and the booking flows** — a live MobX store graph.
 ///  - **The permissions screen** — reaches Firebase Messaging directly.
-///  - **Anything needing a GoRouter ancestor** to build.
+///  - **`BookingsScreen`, `MessagesInboxScreen`, `BookingCalendarScreen`** —
+///    all three resolve `HomeStore`, which is the same MobX graph. They are
+///    the shell's own tabs, so covering them means standing that graph up;
+///    worth doing, and not free.
+///  - **`NotificationsScreen`** — needs the notifications repository graph
+///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
+///  - **`ProfileScreen`** — its dependencies ARE registered here now and it
+///    builds, but rendering it raises **four exceptions** the harness cannot
+///    yet attribute. That is an open question, not a clean skip: it may be
+///    image loading over the mock client, and it may not. It is named here
+///    rather than dropped so the next person starts from the finding.
+///
+/// A GoRouter ancestor IS now supplied, so that limitation is gone.
 ///
 /// A screen whose dependency is missing fails with GetIt's own message naming
 /// the type, which says exactly what to add to the container.
@@ -60,8 +72,11 @@ import 'package:client/modules/support/presentation/screens/help_center_screen.d
 import 'package:client/modules/support/presentation/screens/safety_support_screen.dart';
 import 'package:client/modules/support/presentation/screens/support_home_screen.dart';
 import 'package:client/modules/support/presentation/screens/support_tickets_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/catalog_unavailable_screen.dart';
+import 'package:client/modules/support/presentation/screens/create_support_ticket_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../support/screen_test_container.dart';
 
@@ -92,6 +107,17 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'HelpCenterScreen': () => const HelpCenterScreen(),
   'SafetySupportScreen': () => const SafetySupportScreen(),
   'ReviewFormScreen': () => const ReviewFormScreen(bookingId: '42'),
+  // Added by the full sweep. These four ship in the drawer and had never
+  // been built at a phone viewport.
+  'SettingsScreen': () => const SettingsScreen(),
+  'LanguageScreen': () => const LanguageScreen(),
+  'SavedAddressesScreen': () => const SavedAddressesScreen(),
+  'HelpSupportScreen': () => const HelpSupportScreen(),
+  // Core customer screens, reachable now that the harness supplies a
+  // GoRouter ancestor. Every one of these ships and none had ever been
+  // built at a phone viewport.
+  'CatalogUnavailableScreen': () => const CatalogUnavailableScreen(),
+  'CreateSupportTicketScreen': () => const CreateSupportTicketScreen(),
 };
 
 void main() {
@@ -115,8 +141,21 @@ void main() {
                     size: viewport.value,
                     textScaler: TextScaler.linear(scale),
                   ),
-                  // Bare. The screen supplies its own Scaffold.
-                  child: MaterialApp(home: screen.value()),
+                  // A GoRouter ancestor, so screens that call GoRouter.of()
+                  // can build at all. Without it they throw 'No GoRouter
+                  // found in context', which the matrix used to report as an
+                  // overflow. The screen is still passed BARE — it supplies
+                  // its own Scaffold.
+                  child: MaterialApp.router(
+                    routerConfig: GoRouter(
+                      routes: [
+                        GoRoute(
+                          path: '/',
+                          builder: (_, __) => screen.value(),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
               await tester.pump(const Duration(milliseconds: 350));
@@ -133,12 +172,21 @@ void main() {
               await tester.pumpWidget(const SizedBox.shrink());
               await tester.pump(const Duration(seconds: 31));
 
+              // Name what actually happened. `takeException()` catches ANY
+              // exception, and this used to report every one of them as an
+              // overflow — so a missing DI registration read as "overflowed at
+              // 390x844 ... silent clipping" and sent the reader hunting a
+              // layout bug that did not exist. A harness that misattributes a
+              // cause is the same defect this app has been fixing all week.
               expect(
                 overflow,
                 isNull,
-                reason: '${screen.key} overflowed at ${viewport.key} with text '
-                    'scale $scale. In a release build this is silent '
-                    'clipping, not an error — the content simply disappears.',
+                reason: '${screen.key} threw at ${viewport.key}, text scale '
+                    '$scale -- ${overflow.runtimeType}: $overflow . '
+                    'If that is a RenderFlex overflow, a release build clips '
+                    'it SILENTLY — the content simply disappears. If it is '
+                    'anything else, it is the harness missing a dependency '
+                    'rather than a layout defect.',
               );
             },
           );

@@ -53,6 +53,10 @@ import 'package:client/modules/support/data/support_repository.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:client/common/data/repositories/address_repository.dart';
+import 'package:client/modules/profile/application/address_controller.dart';
+import 'package:client/modules/profile/application/profile_controller.dart';
+import 'package:client/modules/profile/data/profile_repository.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -98,6 +102,24 @@ Future<void> registerScreenDependencies() async {
   dpLocator.registerSingleton<AnalyticsCoordinator>(NoOpAnalyticsCoordinator());
   dpLocator.registerSingleton<AuthStateService>(AuthStateService());
   dpLocator.registerSingleton<SettingsController>(SettingsController());
+
+  // Saved addresses. Registered because SavedAddressesScreen resolves it on
+  // build, and without it the screen cannot be rendered at any viewport.
+  final addressRepository = AddressRepository(api: api);
+  dpLocator.registerSingleton<AddressRepository>(addressRepository);
+  final addressController =
+      AddressController(repository: addressRepository, api: api);
+  dpLocator.registerSingleton<AddressController>(addressController);
+
+  // Profile. ProfileScreen resolves both of these on build.
+  final profileRepository = ProfileRepository(api: api);
+  dpLocator.registerSingleton<ProfileRepository>(profileRepository);
+  dpLocator.registerSingleton<ProfileController>(
+    ProfileController(
+      repository: profileRepository,
+      addressController: addressController,
+    ),
+  );
 
   // ── Support ───────────────────────────────────────────────────────────────
   final support = SupportRepository(api: api);
