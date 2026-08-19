@@ -74,6 +74,8 @@ import 'package:client/core/analytics/application/consent_gate_service.dart';
 import 'package:client/modules/store_items/domain/repositories/store_items_repo.dart';
 import 'package:client/modules/store_items/domain/use_cases/get_store_items_use_case.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
+import 'package:client/modules/catalog/application/catalog_controller.dart';
+import 'package:client/modules/catalog/application/service_detail_controller.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -197,6 +199,10 @@ Future<void> registerScreenDependencies() async {
     compatibility: CatalogCompatibilityDataSource(api),
   );
   dpLocator.registerSingleton<CatalogRepository>(catalog);
+  dpLocator.registerSingleton<CatalogController>(CatalogController(catalog));
+  dpLocator.registerSingleton<ServiceDetailController>(
+    ServiceDetailController(catalog),
+  );
   dpLocator.registerSingleton<SearchController>(
     SearchController(
       repository: SearchRepository(

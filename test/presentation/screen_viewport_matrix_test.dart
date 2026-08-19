@@ -106,6 +106,13 @@ import 'package:client/modules/landing/presentation/screens/welcome_screen.dart'
 import 'package:client/modules/merchant_menu/presentation/screens/merchant_menu_screen.dart';
 import 'package:client/modules/store_items/presentation/bloc/store_items_bloc.dart';
 import 'package:client/modules/store_items/presentation/screens/store_items_screen.dart';
+import 'package:client/modules/catalog/application/catalog_controller.dart';
+import 'package:client/modules/catalog/application/service_detail_controller.dart';
+import 'package:client/modules/catalog/presentation/screens/catalog_browse_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/category_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/service_detail_screen.dart';
+import 'package:client/modules/catalog/presentation/screens/subcategory_screen.dart';
+import 'package:client/common/injectors/main_injector.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -163,6 +170,27 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'MerchantMenuScreen': () => const MerchantMenuScreen(),
   'StoreItemsScreen': () =>
       const StoreItemsScreen(merchantId: '1', merchantName: 'Test Merchant'),
+  // Catalog. These take their controller and callbacks as constructor
+  // arguments rather than resolving them, so they need no extra DI.
+  'CatalogBrowseScreen': () => CatalogBrowseScreen(
+        controller: dpLocator<CatalogController>(),
+        onCategorySelected: (_) {},
+      ),
+  'CategoryScreen': () => CategoryScreen(
+        controller: dpLocator<CatalogController>(),
+        categoryId: 1,
+        onSubcategorySelected: (_) {},
+      ),
+  'SubcategoryScreen': () => SubcategoryScreen(
+        controller: dpLocator<CatalogController>(),
+        subcategoryId: 1,
+        onServiceSelected: (_) {},
+      ),
+  'ServiceDetailScreen': () => ServiceDetailScreen(
+        controller: dpLocator<ServiceDetailController>(),
+        serviceId: 1,
+        onStartBooking: (_, __) {},
+      ),
 };
 
 void main() {
