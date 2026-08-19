@@ -47,7 +47,7 @@ class HttpBackend implements Backend {
   // ───────────────────────── Auth ─────────────────────────
 
   @override
-  Future<({UserSession? session, String? error})> authenticate({
+  Future<({UserSession? session, String? error, int? statusCode})> authenticate({
     required String email,
     required String password,
     String fcmToken = '',
@@ -68,6 +68,9 @@ class HttpBackend implements Backend {
       return (
         session: null,
         error: 'Could not reach server. Please check your connection.',
+        // Null means the request never reached the server, which is a
+        // different fact from any status the server could have sent.
+        statusCode: null,
       );
     }
 
@@ -92,6 +95,7 @@ class HttpBackend implements Backend {
           refreshToken: (data['refreshToken'] ?? '').toString(),
         ),
         error: null,
+        statusCode: response.statusCode,
       );
     }
 
@@ -105,7 +109,11 @@ class HttpBackend implements Backend {
       errorMessage = 'Login failed (${response.statusCode}).';
     }
 
-    return (session: null, error: errorMessage);
+    return (
+      session: null,
+      error: errorMessage,
+      statusCode: response.statusCode,
+    );
   }
 
   static String _buildFullName(Map<String, dynamic> json) {
@@ -115,7 +123,7 @@ class HttpBackend implements Backend {
   }
 
   @override
-  Future<({bool isSuccess, String? message})> registerCustomer(
+  Future<({bool isSuccess, String? message, int? statusCode})> registerCustomer(
       RegistrationFormModel registration) async {
     final fullName = (registration.ownerName ?? '').trim();
     final parts = fullName.split(RegExp(r'\s+'));
@@ -142,6 +150,7 @@ class HttpBackend implements Backend {
       return (
         isSuccess: false,
         message: 'Could not reach server. Please check your connection.',
+        statusCode: null,
       );
     }
 
@@ -165,6 +174,7 @@ class HttpBackend implements Backend {
         message: data['message']?.toString() ??
             body['message']?.toString() ??
             'Registration successful.',
+        statusCode: response.statusCode,
       );
     }
 
@@ -178,7 +188,11 @@ class HttpBackend implements Backend {
       errorMessage = 'Registration failed (${response.statusCode}).';
     }
 
-    return (isSuccess: false, message: errorMessage);
+    return (
+      isSuccess: false,
+      message: errorMessage,
+      statusCode: response.statusCode,
+    );
   }
 
   @override

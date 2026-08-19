@@ -26,6 +26,7 @@ import 'package:client/modules/registration/presentation/bloc/registration_event
 import 'package:client/modules/registration/presentation/bloc/registration_states.dart';
 // ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
+import 'package:client/common/services/error_message_mapper.dart';
 
 class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
   final SaveRegistrationToLocalUseCase saveRegistrationToLocalUseCase;
@@ -457,7 +458,13 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
             emit(RegistrationSubmittedFailedState(
               registration: event.registration,
               formState: formState,
-              error: res.message ?? 'Error occurred',
+              // Was `res.message ?? 'Error occurred'` — the raw backend
+              // string, straight onto the screen. ErrorMessageMapper exists
+              // to stop exactly that and had no caller.
+              error: ErrorMessageMapper.forRegistration(
+                res.message,
+                statusCode: res.statusCode,
+              ),
             ));
           }
         } catch (e) {
@@ -465,7 +472,9 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
           emit(RegistrationSubmittedFailedState(
             registration: event.registration,
             formState: formState,
-            error: e.toString(),
+            // An exception here is ours, not the customer's. Its toString()
+            // is a developer artefact and must not be shown.
+            error: ErrorMessageMapper.forServerError(),
           ));
         }
         break;

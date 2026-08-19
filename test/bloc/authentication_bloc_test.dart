@@ -149,10 +149,12 @@ void main() {
       'emits Loading then Authenticated on success',
       () async {
         when(() => repo.authenticate(
-              email: any(named: 'email'),
-              password: any(named: 'password'),
-              fcmToken: any(named: 'fcmToken'),
-            )).thenAnswer((_) async => (session: _validSession, error: null));
+                  email: any(named: 'email'),
+                  password: any(named: 'password'),
+                  fcmToken: any(named: 'fcmToken'),
+                ))
+            .thenAnswer((_) async =>
+                (session: _validSession, error: null, statusCode: 200));
 
         final bloc = AuthenticationBloc(repo: repo);
         bloc.add(AuthenticationInit(email: 'test@example.com', password: 'pw'));
@@ -175,8 +177,8 @@ void main() {
                 password: any(named: 'password'),
                 fcmToken: any(named: 'fcmToken'),
               ))
-          .thenAnswer(
-              (_) async => (session: null, error: 'invalid credentials'));
+          .thenAnswer((_) async =>
+              (session: null, error: 'invalid credentials', statusCode: 401));
 
       final bloc = AuthenticationBloc(repo: repo);
       bloc.add(AuthenticationInit(email: 'bad@example.com', password: 'x'));
@@ -196,8 +198,8 @@ void main() {
                 password: any(named: 'password'),
                 fcmToken: any(named: 'fcmToken'),
               ))
-          .thenAnswer(
-              (_) async => (session: null, error: 'invalid credentials'));
+          .thenAnswer((_) async =>
+              (session: null, error: 'invalid credentials', statusCode: 401));
 
       final bloc = AuthenticationBloc(repo: repo);
       bloc.add(AuthenticationInit(email: 'x@x.com', password: 'x'));

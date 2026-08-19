@@ -16,13 +16,13 @@ import 'package:client/modules/store_items/data/models/store_option_items.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 abstract interface class Backend {
-  Future<({UserSession? session, String? error})> authenticate({
+  Future<({UserSession? session, String? error, int? statusCode})> authenticate({
     required String email,
     required String password,
     String fcmToken = '',
   });
 
-  Future<({bool isSuccess, String? message})> registerCustomer(
+  Future<({bool isSuccess, String? message, int? statusCode})> registerCustomer(
       RegistrationFormModel registration);
 
   Future<List<MerchantLight>> getNearbyMerchants({

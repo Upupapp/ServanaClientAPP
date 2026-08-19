@@ -1086,14 +1086,18 @@ class MockBackend implements Backend {
   ];
 
   @override
-  Future<({UserSession? session, String? error})> authenticate({
+  Future<({UserSession? session, String? error, int? statusCode})> authenticate({
     required String email,
     required String password,
     String fcmToken = '',
   }) async {
     await Future.delayed(const Duration(milliseconds: 250));
     if (email.trim().isEmpty || password.trim().isEmpty) {
-      return (session: null, error: 'Email and password are required.');
+      return (
+        session: null,
+        error: 'Email and password are required.',
+        statusCode: 400,
+      );
     }
     return (
       session: UserSession(
@@ -1104,14 +1108,19 @@ class MockBackend implements Backend {
         token: 'mock-token',
       ),
       error: null,
+      statusCode: 200,
     );
   }
 
   @override
-  Future<({bool isSuccess, String? message})> registerCustomer(
+  Future<({bool isSuccess, String? message, int? statusCode})> registerCustomer(
       RegistrationFormModel registration) async {
     await Future.delayed(const Duration(milliseconds: 400));
-    return (isSuccess: true, message: 'Registration submitted (mock).');
+    return (
+      isSuccess: true,
+      message: 'Registration submitted (mock).',
+      statusCode: 200,
+    );
   }
 
   @override

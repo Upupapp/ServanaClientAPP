@@ -153,7 +153,10 @@ class AuthenticationBloc
       _notify(AuthStatus.authenticated);
       emit(AuthenticationAuthenticated());
     } else {
-      final friendly = ErrorMessageMapper.forLogin(result.error);
+      final friendly = ErrorMessageMapper.forLogin(
+        result.error,
+        statusCode: result.statusCode,
+      );
       _trackEvent(SignInFailedEvent(
         authMethod: AuthMethodValues.email,
         failureCode: _mapLoginError(result.error),
