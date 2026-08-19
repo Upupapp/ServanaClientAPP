@@ -115,9 +115,9 @@ void main() {
   group('a failure must leave Home no worse than it was', () {
     test('a failed section becomes a state, not a throw', () async {
       final c = controllerServing(
-        HomeSectionFailed(
+        const HomeSectionFailed(
           HomeSectionType.categories,
-          const RetryableFailure(safeMessage: 'offline'),
+          RetryableFailure(safeMessage: 'offline'),
         ),
       );
 
@@ -129,8 +129,8 @@ void main() {
     test('an absent section is unavailable, not failed', () async {
       // The legacy transport genuinely does not offer some sections. There is
       // nothing to retry, so a retry affordance would be a lie.
-      final c =
-          controllerServing(HomeSectionAbsent(HomeSectionType.categories));
+      final c = controllerServing(
+          const HomeSectionAbsent(HomeSectionType.categories));
 
       await c.load();
 

@@ -73,7 +73,7 @@ AdditionalWorkRequest request({
       approvedAmount: approved,
     );
 
-BookingExperiencesController controllerWith(_Source source) =>
+BookingExperiencesController _controllerWith(_Source source) =>
     BookingExperiencesController(
       BookingExperiencesRepository(compatibility: source),
     );
@@ -81,7 +81,7 @@ BookingExperiencesController controllerWith(_Source source) =>
 void main() {
   group('change orders are read on the transport every build uses', () {
     test('publishes what the booking has', () async {
-      final c = controllerWith(_Source(requests: [request()]));
+      final c = _controllerWith(_Source(requests: [request()]));
 
       await c.load('42');
 
@@ -95,7 +95,7 @@ void main() {
       // The overwhelmingly common case. It must be distinguishable from "could
       // not read", because the screen draws nothing for one and could
       // reasonably say something for the other.
-      final c = controllerWith(_Source());
+      final c = _controllerWith(_Source());
 
       await c.load('42');
 
@@ -104,7 +104,7 @@ void main() {
     });
 
     test('a failure is a state, never a throw', () async {
-      final c = controllerWith(
+      final c = _controllerWith(
         _Source(error: const RetryableFailure(safeMessage: 'offline')),
       );
 
@@ -116,7 +116,7 @@ void main() {
 
   group('only what waits on the CUSTOMER is counted as awaiting them', () {
     test('WAITING_FOR_PAYMENT is theirs to act on', () async {
-      final c = controllerWith(
+      final c = _controllerWith(
         _Source(
           requests: [request(status: AdditionalWorkStatus.waitingForPayment)],
         ),
@@ -131,7 +131,7 @@ void main() {
       // Both are unfinished, and neither is something the customer can do
       // anything about. Counting them would ask a customer to act on
       // somebody else's decision.
-      final c = controllerWith(
+      final c = _controllerWith(
         _Source(
           requests: [
             request(id: 1, status: AdditionalWorkStatus.pendingAdminApproval),
@@ -147,7 +147,7 @@ void main() {
     });
 
     test('a completed change order is not awaiting anybody', () async {
-      final c = controllerWith(
+      final c = _controllerWith(
         _Source(requests: [request(status: AdditionalWorkStatus.completed)]),
       );
 
@@ -161,7 +161,7 @@ void main() {
     test('canDispute is false on every build that exists today', () {
       // The only legacy dispute route is admin-only and a customer token
       // cannot use it. A button here would throw at the moment of use.
-      final c = controllerWith(_Source(supportsDisputes: false));
+      final c = _controllerWith(_Source(supportsDisputes: false));
 
       expect(c.canDispute, isFalse);
     });
@@ -169,7 +169,7 @@ void main() {
     test('it flips the moment a transport supports them', () {
       // Nothing else has to change for the affordance to appear: this is the
       // whole switch.
-      final c = controllerWith(_Source(supportsDisputes: true));
+      final c = _controllerWith(_Source(supportsDisputes: true));
 
       expect(c.canDispute, isTrue);
     });
