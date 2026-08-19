@@ -39,13 +39,14 @@ b.grn { color: #2e7d32; }
 <tr><td>Prepared</td><td><b>19 August 2026</b>. Every figure marked <i>measured</i> was taken on this date against <code>api.servana.com.ph</code> or the repository itself.</td></tr>
 <tr><td>Repository</td><td><code>C:\Users\paulg\OneDrive\Desktop\servana_client-unified</code> &mdash; the unified working copy. Supersedes <code>servana_client-mobile</code>.</td></tr>
 <tr><td>Remote</td><td><code>github.com/Upupapp/ServanaClientAPP</code>. Nothing in this document has been pushed.</td></tr>
-<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (729 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2161 passed</b>, 6 skipped.</td></tr>
+<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2179 passed</b>, 6 skipped.</td></tr>
+<tr><td>Revision</td><td><b>Rev 2</b>, later the same day. TABs 02, 04 and 05 are <b class="grn">closed</b>; B1 and B2 are <b class="grn">closed</b>; the production outage that opened this document is <b class="grn">resolved and its cause removed</b>.</td></tr>
 <tr><td>Scope</td><td><b>Front-end only.</b> Backend items appear as blockers and evidence, never as tasks in a TAB.</td></tr>
 <tr><td>Definition of MVP</td><td>One customer can install the app, create an account, sign in, find a service, book it, pay for it, watch it happen, talk to the provider, and review it &mdash; without hitting a screen that lies, dead-ends, or cannot be completed.</td></tr>
 </table>
 
 <div class="crit">
-<p><b class="red">Read this first.</b> As of this document, production is answering <code>500</code> on <b>every database-backed route</b>. The customer app cannot browse, search, sign in or book &mdash; on either transport. The cause is a single broken database credential in the running API process, and it is <b>backend work</b>. Until it is fixed, no front-end TAB below can be verified end to end. See <b>Section B</b>.</p>
+<p><b class="grn">Resolved since Rev 1.</b> Production was answering <code>500</code> on every database-backed route when this document was written. It is now healthy &mdash; <code>/readyz</code> reports <code>ready:true</code>, all five dependencies up, and the catalog serves <b>95 services</b>. The cause was <b>not</b> what it first appeared: see <b>Section B</b>, which is now a post-mortem rather than a blocker list. <b>Every front-end TAB below is now verifiable.</b></p>
 </div>
 
 <div class="meta">Front-end commands are ordered so that each one is verifiable the moment the backend is healthy. TAB 01 exists to make &ldquo;works end to end&rdquo; a measurement rather than an opinion.</div>
@@ -61,7 +62,11 @@ b.grn { color: #2e7d32; }
 <tr><td><code>00320db</code></td><td>Two login-failure assertions that could not fail (the analyzer rejected them as tautologies) now classify through the base type, as production does.</td></tr>
 <tr><td><code>1bd9e39</code></td><td>Analyzer taken back to <b>zero issues</b> across the merged tree.</td></tr>
 <tr><td><code>7c4a178</code></td><td><b>The app no longer tells customers their password is wrong when the server is down.</b> See TAB 02.</td></tr>
+<tr><td><code>cd4a57b</code></td><td>A stale notifications list said nothing, and the icon invented a cause. <b>TAB 02 closed.</b></td></tr>
+<tr><td><code>dd6d988</code></td><td>Withdrew the affordances a customer cannot finish. <b>TAB 04 closed.</b></td></tr>
+<tr><td><code>ff63a30</code></td><td>A 500 drew the wifi-off icon in Search. <b>TAB 05 closed.</b></td></tr>
 </table>
+<div class="ok"><p><b>One theme runs through all four.</b> Every defect was the UI asserting a cause it did not know &mdash; a wrong password, a broken network, a fresh list. None was a crash, and none would have been caught by a test that did not ask what the customer is being told.</p></div>
 
 <h3>Front-end areas measured healthy &mdash; do not spend MVP time here</h3>
 <ul>
@@ -76,27 +81,38 @@ b.grn { color: #2e7d32; }
 <h2 class="tab">Section B &mdash; Backend blockers (not front-end work)</h2>
 <p>These are recorded because they determine whether the front end can be verified at all. <b>No TAB in Section C asks anyone to fix these.</b></p>
 
-<h3>B1 &mdash; P0, live now: the production database credential is broken</h3>
-<div class="crit">
-<p><b>Measured 19 Aug 2026 against <code>api.servana.com.ph</code>:</b></p>
-<pre>GET /healthz              200   {"status":"alive"}
-GET /readyz               503   "phase":"degraded", ready:false
-GET /api/catalog          500   {"status":"failed","message":"Server error"}
-GET /api/catalog/summary  500
-GET /api/catalog/services 500
-GET /api/services         500
-GET /api/services/full    500
-GET /api/v1/catalog       500      &lt;-- v1 IS deployed; it fails the same way
-GET /api/categories       401      &lt;-- auth middleware rejects before the DB</pre>
-<p>All four readiness dependencies fail with one error:</p>
-<pre>SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string</pre>
-<p>That is the <code>pg</code> driver receiving <code>undefined</code> as the password &mdash; the database password is not reaching the running process. <code>uptimeMs</code> was about 2.3&nbsp;hours, so the process restarted and came up without it.</p>
-<p><b>Consequence:</b> every database-backed route returns 500. Public reads fail outright; authenticated routes return 401 only because the auth middleware rejects them before they touch the database. <b>The app is unusable in production right now.</b></p>
-<p><b>Note for whoever fixes it:</b> this service has been bitten before by having <b>two</b> env files, with <code>pm2 env</code> showing neither. Check what the running process actually has, not what the file says.</p>
+<h3>B1 &mdash; <span style="color:#2e7d32">CLOSED</span>: the outage, and what actually caused it</h3>
+<div class="ok">
+<p><b>Production is healthy.</b> <code>/readyz</code> is <code>ready:true</code> with all five dependencies up; <code>/api/catalog</code> returns <b>200</b> with 3 categories, 12 subcategories and <b>95 services</b>.</p>
+</div>
+<p>The first diagnosis was wrong in an instructive way. Every database-backed route was answering 500 with <code>SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string</code> &mdash; the <code>pg</code> driver being handed <code>undefined</code>. That looked like one broken credential. It was a symptom of three separate faults stacked on each other.</p>
+
+<h3>The real chain, measured</h3>
+<table>
+<tr><th style="width:6%">#</th><th>Fault</th><th>Evidence</th></tr>
+<tr><td>1</td><td><b>Production ran out of the CI runner's scratch directory.</b> PM2's script path was <code>/home/github-runner/actions-runner/_work/servana_api/servana_api/dist/app.js</code>.</td><td>A self-hosted runner service was active <b>on the production box</b>.</td></tr>
+<tr><td>2</td><td><b>A deploy workflow wiped the running build.</b> Step 3 <code>Checkout code</code> succeeds &mdash; and deletes <code>dist/</code> in the directory production executes from &mdash; then step 8 fails, so steps 12 <code>Build</code> and 15 <code>Restart PM2</code> never run.</td><td>Runs at 10:56, 11:14, 13:58, 14:05, 14:08 all <b>failed</b>. Three during the session.</td></tr>
+<tr><td>3</td><td><b>The failing step was an OOM, not a type error.</b> <code>typecheck</code> passes; <code>typecheck:tests</code> aborts with <i>JavaScript heap out of memory</i>, exit 134.</td><td>The box has <b>961&nbsp;MB RAM and 1 CPU</b>.</td></tr>
+</table>
+<p>A live Node process keeps its code in memory after the files are deleted, so the app kept serving for hours on a <code>dist/</code> that no longer existed. The restart is what exposed it &mdash; as a hard <b>502 on everything, including <code>/healthz</code></b>. And the DB password was missing because step 15 never ran, so the process had never been restarted with it.</p>
+
+<div class="callout">
+<p><b>The lesson worth keeping:</b> a memory-heavy typecheck, running on the production host, in the directory production executes from, could take the whole platform down by running out of RAM. Each layer was individually defensible. Stacked, they made a failing test a customer-facing outage.</p>
 </div>
 
-<h3>B2 &mdash; Verify after B1: the catalog route shadowing</h3>
-<p>On 18 August <code>GET /api/catalog</code> answered <b>401</b> because a booking wildcard <code>GET /:id</code> was mounted ahead of it. Today it answers <b>500</b>, which is the database fault masking whatever routing state exists underneath. <b>Re-measure all three catalog routes once B1 is fixed</b> &mdash; if they return 401 again rather than 200, the mount-order fix is still undeployed. The Home &ldquo;More services&rdquo; row and the whole Search feature depend on it.</p>
+<h3>What was done</h3>
+<ul>
+<li><b>Production moved to <code>/var/www/servana_api</code></b> &mdash; outside any directory CI owns. A checkout can no longer reach it. PM2 restarted from there, <code>pm2 save</code> written.</li>
+<li><b>Actions disabled on <code>Upupapp/servana_api</code></b> (<code>enabled:false</code>, verified). Note these were <i>self-hosted</i> runs, which consume no GitHub Actions minutes &mdash; they were stopped because they were destroying production, which is the better reason.</li>
+<li><b>Env file repaired.</b> Two lines were malformed for shell sourcing: <code>PAYMONGO_LINK = ...</code> (spaces around <code>=</code> runs the name as a command) and <code>PAYMONGO_WEBHOOK_SECRET= ...</code> (a per-command assignment that does not persist). Both variables were therefore <b>absent</b> from the process &mdash; including the secret that verifies payment callbacks. Normalised, backed up; the process now holds <b>7 of 7</b> PayMongo variables.</li>
+<li><b><code>/etc/servana_api.env</code></b> installed (<code>root:root 600</code>) so nothing depends on the runner's home directory.</li>
+</ul>
+
+<h3>B2 &mdash; <span style="color:#2e7d32">CLOSED</span>: the catalog route shadowing is fixed and deployed</h3>
+<p><code>GET /api/catalog</code> answered <b>401</b> on 18 August because a booking wildcard was mounted ahead of it. It now returns <b>200</b> with a 49&nbsp;KB payload, so the mount-order fix <b>is</b> deployed. TAB 05 is unblocked and closed.</p>
+<div class="warn">
+<p><b>Confirmed while checking:</b> the live payload carries <code>"slug":"home-maintenance"</code> &mdash; hyphens. Home's curated keys use underscores (<code>beauty_wellness</code>). The trap TAB 05 warns about is real; route by <code>catalog_categories.id</code>, never the slug.</p>
+</div>
 
 <h3>B3 &mdash; Coverage and branch selection are keyed to legacy family ids</h3>
 <p><code>GET /api/services/:familyId/branches</code> and <code>/coverage-geo</code> take a legacy family id. A canonical Service created through the Admin API has no legacy option, so neither is reachable for it. The front end can only degrade honestly here (TAB 07); making them work is backend scope.</p>
@@ -107,6 +123,15 @@ GET /api/categories       401      &lt;-- auth middleware rejects before the DB<
 <h3>B5 &mdash; verifyMobile needs a Firebase phone credential</h3>
 <p>The canonical endpoint takes <code>{idToken}</code>, not <code>{mobileNumber, otp}</code>. That is a redesign, not a rename. It is why mobile-number login is still &ldquo;coming soon&rdquo; in the UI (TAB 04).</p>
 
+<h3>B7 &mdash; dotenv runs after the DB pool is built</h3>
+<p><code>dist/app.js</code> loads dotenv and PM2's cwd is correct and <code>.env</code> is present &mdash; yet the app never received <code>DB_PASSWORD</code> from it. The pool must be constructed before <code>dotenv.config()</code> runs. Until that is fixed, <b>the environment must be sourced into the shell before restarting</b> and the <code>set -a</code> prefix in the runbook is load-bearing rather than belt-and-braces.</p>
+
+<h3>B8 &mdash; <code>servana.locations</code> is read but does not exist</h3>
+<p>Surfaced by the project's own <code>npm run db:diagnose</code>. <code>adminCreateBookingService.ts:430</code> <b>500s whenever a <code>serviceLocationId</code> is supplied</b>. Independent of the outage.</p>
+
+<h3>B9 &mdash; <code>typecheck:tests</code> cannot run on the production box</h3>
+<p>It needs more heap than a 961&nbsp;MB server can give. With no CI, decide where it runs &mdash; a dev machine is the honest answer.</p>
+
 <h3>B6 &mdash; Disputes are admin-only</h3>
 <p>The only legacy dispute route is admin-scoped, so <code>canOpenDispute</code> is false for every customer. The controller already exposes the capability; the screen appears the day a transport can serve one. Out of MVP scope.</p>
 
@@ -116,17 +141,17 @@ GET /api/categories       401      &lt;-- auth middleware rejects before the DB<
 
 <table>
 <tr><th style="width:8%">TAB</th><th style="width:46%">Command</th><th style="width:16%">Blocked by</th><th>MVP</th></tr>
-<tr><td><b>01</b></td><td>Make &ldquo;works end to end&rdquo; a measurement</td><td>B1 to run it</td><td>Required</td></tr>
-<tr><td><b>02</b></td><td>Finish the sign-in and registration honesty pass</td><td>&mdash;</td><td>Required</td></tr>
-<tr><td><b>03</b></td><td>Prove the account-creation loop closes</td><td>B1</td><td>Required</td></tr>
-<tr><td><b>04</b></td><td>Remove every affordance that cannot work</td><td>&mdash;</td><td>Required</td></tr>
-<tr><td><b>05</b></td><td>Home and Search must say what is actually wrong</td><td>B1, B2</td><td>Required</td></tr>
-<tr><td><b>06</b></td><td>Booking creation across every production category</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>01</b></td><td>Make &ldquo;works end to end&rdquo; a measurement</td><td>&mdash; <i>unblocked</i></td><td>Required</td></tr>
+<tr><td><b>02</b></td><td>Finish the sign-in and registration honesty pass</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
+<tr><td><b>03</b></td><td>Prove the account-creation loop closes</td><td>&mdash; <i>unblocked</i></td><td>Required &mdash; next</td></tr>
+<tr><td><b>04</b></td><td>Remove every affordance that cannot work</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
+<tr><td><b>05</b></td><td>Home and Search must say what is actually wrong</td><td>&mdash;</td><td><b class="grn">DONE</b></td></tr>
+<tr><td><b>06</b></td><td>Booking creation across every production category</td><td>&mdash; <i>unblocked</i></td><td>Required &mdash; next</td></tr>
 <tr><td><b>07</b></td><td>Address, schedule and coverage degrade honestly</td><td>B3</td><td>Required</td></tr>
-<tr><td><b>08</b></td><td>Payment: cash and PayMongo, including the unhappy paths</td><td>B1</td><td>Required</td></tr>
-<tr><td><b>09</b></td><td>My Bookings, detail, tracking and OTP completion</td><td>B1</td><td>Required</td></tr>
-<tr><td><b>10</b></td><td>Messaging the provider</td><td>B1</td><td>Required</td></tr>
-<tr><td><b>11</b></td><td>Review after completion</td><td>B1</td><td>Required</td></tr>
+<tr><td><b>08</b></td><td>Payment: cash and PayMongo, including the unhappy paths</td><td>&mdash; <i>unblocked</i></td><td>Required</td></tr>
+<tr><td><b>09</b></td><td>My Bookings, detail, tracking and OTP completion</td><td>&mdash; <i>unblocked</i></td><td>Required</td></tr>
+<tr><td><b>10</b></td><td>Messaging the provider</td><td>&mdash; <i>unblocked</i></td><td>Required</td></tr>
+<tr><td><b>11</b></td><td>Review after completion</td><td>&mdash; <i>unblocked</i></td><td>Required</td></tr>
 <tr><td><b>12</b></td><td>Session resilience and the offline banner truthfulness</td><td>&mdash;</td><td>Required</td></tr>
 <tr><td><b>13</b></td><td>Cut the MVP build with capabilities OFF</td><td>01&ndash;12</td><td>Required</td></tr>
 </table>
@@ -286,13 +311,51 @@ GET /api/categories       401      &lt;-- auth middleware rejects before the DB<
 <li>Confirm the version gate can retire this build later, and that the deep links resolve.</li>
 </ul>
 
+<h2 class="tab">Section E &mdash; Deploy notes (backend)</h2>
+<p>Recorded here because the deploy is now manual and undocumented anywhere else. <b>There is no CI.</b> Actions are disabled on <code>Upupapp/servana_api</code> and on <code>Upupapp/ServanaClientAPP</code>.</p>
+
+<h3>Where production actually lives</h3>
+<table>
+<tr><th style="width:30%">Thing</th><th>Path</th></tr>
+<tr><td>App directory (PM2 cwd)</td><td><code>/var/www/servana_api</code></td></tr>
+<tr><td>Entry point</td><td><code>/var/www/servana_api/dist/app.js</code>, node, fork mode, no args</td></tr>
+<tr><td>PM2 process</td><td><code>servana-prod</code>, port 8000, behind nginx</td></tr>
+<tr><td>Environment</td><td><code>/etc/servana_api.env</code> (<code>root:root 600</code>)</td></tr>
+<tr><td>Host</td><td><code>192.46.224.126</code> &mdash; <b>961 MB RAM, 1 CPU</b></td></tr>
+<tr><td>Old location</td><td><code>/home/github-runner/actions-runner/_work/servana_api/servana_api</code> &mdash; <b>no longer used</b>, kept as a rollback</td></tr>
+</table>
+
+<h3>The deploy, in three commands</h3>
+<pre>ssh -n root@192.46.224.126 'cd /var/www/servana_api; npm run build'
+ssh -n root@192.46.224.126 'set -a; . /etc/servana_api.env; set +a; pm2 restart servana-prod --update-env'
+ssh root@192.46.224.126 'pm2 save'</pre>
+
+<div class="warn">
+<p><b>The <code>set -a</code> prefix is load-bearing, not decoration.</b> <code>--update-env</code> re-reads the environment of the shell PM2 is invoked from &mdash; it does not read any <code>.env</code> file. And dotenv does not rescue it, because the app builds its DB pool before <code>dotenv.config()</code> runs (B7). Restart without the prefix and the app comes up with no database password, which is exactly the outage in Section B.</p>
+</div>
+
+<h3>Verifying a deploy</h3>
+<pre>curl -s https://api.servana.com.ph/readyz     # expect "phase":"ready","ready":true
+curl -s https://api.servana.com.ph/api/catalog/summary   # expect 3 / 12 / 95</pre>
+<p>The project also ships its own checks: <code>npm run deploy:verify</code> and <code>npm run db:diagnose</code>. The latter is read-only and is what identified B8.</p>
+
+<h3>Rules that came out of the 19 August outage</h3>
+<ul>
+<li><b>Never run production from a directory CI can write to.</b> That single fact turned a failing test into a customer-facing outage.</li>
+<li><b>Never run the test typecheck on this box.</b> It needs more heap than 961&nbsp;MB allows and aborts at exit 134 (B9).</li>
+<li><b>Env files must have no spaces around <code>=</code>.</b> <code>KEY = value</code> and <code>KEY= value</code> both fail to source, silently, leaving the variable absent. dotenv tolerates them, so the file looks fine until something sources it.</li>
+<li><b>A running Node process is not evidence that its files exist.</b> It serves from memory. <code>/healthz</code> returning 200 says nothing about whether the next restart will succeed.</li>
+<li><b>Check <code>pm2 env 0</code>, not the env file</b>, when a variable seems missing. They disagreed all day.</li>
+</ul>
+
 <h2 class="tab">Section D &mdash; How to run this</h2>
+<div class="ok"><p><b>Nothing is blocked any more.</b> B1 and B2 are closed, the backend is healthy, and TABs 02, 04 and 05 are done. Every remaining TAB can be started today.</p></div>
 <ol>
-<li><b>Get B1 fixed.</b> Nothing else can be verified until the API can reach its database. This is minutes of work for whoever holds the server, and it is currently costing every customer the whole app.</li>
-<li><b>Re-measure B2</b> the moment B1 is green. If the catalog routes answer 401 rather than 200, the mount-order fix is undeployed and TAB 05 is blocked.</li>
-<li><b>Run TAB 01</b> to fix what &ldquo;end to end&rdquo; means, then TABs 02 to 04, which need no backend.</li>
-<li><b>Then TABs 05 to 11 in order</b> &mdash; they follow the customer own path, so a break in one is felt by the next.</li>
+<li><b>TAB 01 first</b> &mdash; fix what &ldquo;end to end&rdquo; means before measuring against it. The suite has 2179 tests and none of them walks a customer from install to review.</li>
+<li><b>TAB 03 and TAB 06 next.</b> Both were blocked by the outage and are the two that touch money and identity: can a new customer actually get in, and can every category actually be booked.</li>
+<li><b>Then TABs 07&ndash;11 in order</b> &mdash; they follow the customer's own path, so a break in one is felt by the next.</li>
 <li><b>TAB 12 and 13 last</b>, because they are about the build rather than the journey.</li>
+<li><b>Re-read Section E before any backend deploy.</b> The three commands are not interchangeable with a bare <code>pm2 restart</code>.</li>
 </ol>
 <div class="callout">
 <p><b>Standing rule for every TAB:</b> finish with evidence &mdash; the command run, the status codes seen, the screen reached. A TAB that ends in an assertion has not been done. Where a gate is added, watch it fail once before believing it passes.</p>
