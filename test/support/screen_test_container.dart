@@ -68,6 +68,7 @@ import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
 import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
 import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
+import 'package:client/core/analytics/application/consent_gate_service.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -174,6 +175,9 @@ Future<void> registerScreenDependencies() async {
       locationSerive: locationService,
     ),
   );
+
+  // WelcomeScreen gates on this; it takes nothing.
+  dpLocator.registerSingleton<ConsentGateService>(ConsentGateService());
 
   // ── The booking flows ─────────────────────────────────────────────────────
   // The largest uncovered block, and the one nearest the money. Both stores

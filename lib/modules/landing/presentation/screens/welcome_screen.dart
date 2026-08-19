@@ -275,24 +275,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                   scale: 0.9, color: Colors.white),
                               const Spacer(),
                               // Skip → Browse Services (§70: never Sign In)
-                              Semantics(
-                                label: 'Skip onboarding and browse services',
-                                button: true,
-                                child: TextButton(
-                                  onPressed: locked ? null : _browseAsGuest,
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(44, 44),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 10),
-                                  ),
-                                  child: const Text(
-                                    'Skip',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: Colors.white,
+                              //
+                              // Flexible: the banner is a fixed width and this
+                              // label grows with the text scale, so together
+                              // they overflowed the top bar by 27px at 1.3.
+                              Flexible(
+                                child: Semantics(
+                                  label: 'Skip onboarding and browse services',
+                                  button: true,
+                                  child: TextButton(
+                                    onPressed: locked ? null : _browseAsGuest,
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size(44, 44),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                    ),
+                                    child: const Text(
+                                      'Skip',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),

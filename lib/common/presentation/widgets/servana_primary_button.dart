@@ -54,13 +54,19 @@ class ServanaPrimaryButton extends StatelessWidget {
                         color: ColorPalette.primaryButtonTextColor, size: 18),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryButtonTextFontFamily,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: ColorPalette.primaryButtonTextColor,
+                  // Flexible: the label overflowed this button by 63px at
+                  // text scale 1.3. Flexible rather than Expanded because the
+                  // Row is mainAxisSize.min and a short label should still let
+                  // the button hug it.
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: FontPalette.primaryButtonTextFontFamily,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: ColorPalette.primaryButtonTextColor,
+                      ),
                     ),
                   ),
                 ],
@@ -115,13 +121,17 @@ class ServanaOutlinedButton extends StatelessWidget {
               Icon(icon, color: fg, size: 18),
               const SizedBox(width: 8),
             ],
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: FontPalette.primaryButtonTextFontFamily,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-                color: fg,
+            // Same fix as the filled variant above; this one overflowed by
+            // 43px.
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: FontPalette.primaryButtonTextFontFamily,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: fg,
+                ),
               ),
             ),
           ],

@@ -57,7 +57,12 @@ class _AnalyticsConsentSheetState extends State<_AnalyticsConsentSheet> {
           top: 8,
           bottom: MediaQuery.of(context).padding.bottom + 24,
         ),
-        child: Column(
+        // Scrollable. This sheet is the first thing a new customer sees, and
+        // at text scale 1.3 its content is 688px taller than a 320x568 handset
+        // — so the consent options and the buttons that dismiss it were simply
+        // off-screen, with no way to reach them.
+        child: SingleChildScrollView(
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -165,7 +170,7 @@ class _AnalyticsConsentSheetState extends State<_AnalyticsConsentSheet> {
               ),
             ),
           ],
-        ),
+        )),
       ),
     );
   }
