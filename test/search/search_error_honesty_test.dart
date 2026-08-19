@@ -17,13 +17,19 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('connectivity is a property of the failure, not a default', () {
     test('a retryable transport failure IS connectivity', () {
-      const failure = RetryableFailure(safeMessage: 'No connection.');
+      // Held as the base type deliberately. Production classifies an
+      // ApiFailure it was handed; a variable already statically typed as
+      // RetryableFailure makes the check a tautology the analyzer rejects,
+      // and asserts nothing about the classification being tested.
+      const ApiFailure failure =
+          RetryableFailure(safeMessage: 'No connection.');
       expect(failure is RetryableFailure, isTrue);
     });
 
     test('an auth failure is NOT connectivity', () {
       // The 401 the catalog returns today.
-      const failure = AuthFailure(safeMessage: 'Authentication is required');
+      const ApiFailure failure =
+          AuthFailure(safeMessage: 'Authentication is required');
       expect(failure is RetryableFailure, isFalse);
     });
 
