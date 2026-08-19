@@ -39,12 +39,19 @@ class PrimaryButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           leading ?? const SizedBox.shrink(),
-          Text(
-            text ?? '',
-            style: TextStyle(
-              fontFamily: FontPalette.primaryButtonTextFontFamily,
-              color: ColorPalette.primaryButtonTextColor,
-              fontSize: 15,
+          // Flexible, not a bare Text — and Flexible rather than Expanded
+          // because this Row is mainAxisSize.min, so the button still hugs a
+          // short label. Without it the label demands its full intrinsic width
+          // and overflows the button at large text scales. This is the app's
+          // primary button, so that overflow was not one screen's problem.
+          Flexible(
+            child: Text(
+              text ?? '',
+              style: TextStyle(
+                fontFamily: FontPalette.primaryButtonTextFontFamily,
+                color: ColorPalette.primaryButtonTextColor,
+                fontSize: 15,
+              ),
             ),
           ),
           trailing ?? const SizedBox.shrink(),

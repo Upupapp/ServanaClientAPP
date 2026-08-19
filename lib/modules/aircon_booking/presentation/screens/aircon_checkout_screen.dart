@@ -325,17 +325,23 @@ class _AirconCheckoutScreenState extends State<AirconCheckoutScreen> {
                         Icon(Icons.calendar_month_rounded,
                             color: ColorPalette.primaryColorDark),
                         const SizedBox(width: 12),
-                        Text(
-                          store.selectedSchedule != null
-                              ? DateFormat('EEE, MMM d yyyy – h:mm a')
-                                  .format(store.selectedSchedule!)
-                              : 'Tap to select date & time',
-                          style: TextStyle(
-                            fontFamily: FontPalette.primaryFontFamily,
-                            fontWeight: FontWeight.w600,
-                            color: store.selectedSchedule != null
-                                ? ColorPalette.secondaryText
-                                : ColorPalette.accentText,
+                        // Expanded, or the formatted schedule demands its full
+                        // intrinsic width: 484px of overflow at text scale 2.0
+                        // on a 320px handset. The clipped text is the date and
+                        // time the customer just chose.
+                        Expanded(
+                          child: Text(
+                            store.selectedSchedule != null
+                                ? DateFormat('EEE, MMM d yyyy – h:mm a')
+                                    .format(store.selectedSchedule!)
+                                : 'Tap to select date & time',
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontWeight: FontWeight.w600,
+                              color: store.selectedSchedule != null
+                                  ? ColorPalette.secondaryText
+                                  : ColorPalette.accentText,
+                            ),
                           ),
                         ),
                       ],
@@ -592,16 +598,21 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontFamily: FontPalette.primaryFontFamily,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: ColorPalette.secondaryText,
+        // Expanded rather than a bare Text plus Spacer: two flex children would
+        // split the free space and the title would still lose half of it. This
+        // widget is duplicated verbatim in bw_checkout_screen.dart and carried
+        // the same 408px overflow there.
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: ColorPalette.secondaryText,
+            ),
           ),
         ),
-        const Spacer(),
         if (trailing != null) trailing!,
       ],
     );

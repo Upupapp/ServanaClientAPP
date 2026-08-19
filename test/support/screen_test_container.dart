@@ -63,6 +63,11 @@ import 'package:client/modules/authentication/presentation/bloc/authentication_b
 import 'package:client/modules/homepage/data/repositories/home_repo.dart.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:client/common/services/location_service.dart';
+import 'package:client/common/domain/booking/booking_draft_service.dart';
+import 'package:client/modules/aircon_booking/data/aircon_booking_store.dart';
+import 'package:client/modules/bw_booking/data/bw_booking_store.dart';
+import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
+import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -170,6 +175,13 @@ Future<void> registerScreenDependencies() async {
     ),
   );
 
+  // ── The booking flows ─────────────────────────────────────────────────────
+  // The largest uncovered block, and the one nearest the money. Both stores
+  // take only the api client; the draft service takes nothing.
+  dpLocator.registerSingleton<BookingDraftService>(BookingDraftService());
+  dpLocator.registerSingleton<AirconBookingStore>(AirconBookingStore(api: api));
+  dpLocator.registerSingleton<BwBookingStore>(BwBookingStore(api: api));
+
   // ── Catalog and search ────────────────────────────────────────────────────
   final catalog = CatalogRepository(
     api: api,
@@ -199,6 +211,13 @@ Future<void> registerScreenDependencies() async {
 AuthenticationBloc buildTestAuthenticationBloc() => AuthenticationBloc(
       repo: AuthenticationRepository(backend: MockBackend()),
     );
+
+/// A [JobOrderBloc] for SelectPaymentMethodScreen, which builds under one.
+///
+/// Takes only a repository, which takes only a Backend — the same MockBackend
+/// every other graph here composes from.
+JobOrderBloc buildTestJobOrderBloc() =>
+    JobOrderBloc(repo: JonOrderRepository(backend: MockBackend()));
 
 /// Clears the container between tests.
 Future<void> resetScreenDependencies() => dpLocator.reset();

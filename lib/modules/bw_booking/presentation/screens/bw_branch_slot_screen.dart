@@ -116,17 +116,22 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                       Icon(Icons.calendar_month_rounded,
                           color: ColorPalette.primaryColorDark),
                       const SizedBox(width: 12),
-                      Text(
-                        store.selectedDate != null
-                            ? DateFormat('EEE, MMM d yyyy')
-                                .format(store.selectedDate!)
-                            : 'Tap to select a date',
-                        style: TextStyle(
-                          fontFamily: FontPalette.primaryFontFamily,
-                          fontWeight: FontWeight.w600,
-                          color: store.selectedDate != null
-                              ? ColorPalette.secondaryText
-                              : ColorPalette.accentText,
+                      // Expanded, or the formatted date demands its full
+                      // intrinsic width and the Row overflows — up to 343px at
+                      // text scale 2.0. The clipped text is the chosen date.
+                      Expanded(
+                        child: Text(
+                          store.selectedDate != null
+                              ? DateFormat('EEE, MMM d yyyy')
+                                  .format(store.selectedDate!)
+                              : 'Tap to select a date',
+                          style: TextStyle(
+                            fontFamily: FontPalette.primaryFontFamily,
+                            fontWeight: FontWeight.w600,
+                            color: store.selectedDate != null
+                                ? ColorPalette.secondaryText
+                                : ColorPalette.accentText,
+                          ),
                         ),
                       ),
                     ],

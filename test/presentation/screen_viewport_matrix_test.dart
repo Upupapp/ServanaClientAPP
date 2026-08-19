@@ -90,6 +90,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_calendar_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/bookings_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/search_screen.dart';
+import 'package:client/modules/aircon_booking/presentation/screens/aircon_checkout_screen.dart';
+import 'package:client/modules/aircon_booking/presentation/screens/aircon_confirmation_screen.dart';
+import 'package:client/modules/aircon_booking/presentation/screens/aircon_options_screen.dart';
+import 'package:client/modules/bw_booking/presentation/screens/bw_addons_screen.dart';
+import 'package:client/modules/bw_booking/presentation/screens/bw_branch_slot_screen.dart';
+import 'package:client/modules/bw_booking/presentation/screens/bw_checkout_screen.dart';
+import 'package:client/modules/bw_booking/presentation/screens/bw_confirmation_screen.dart';
+import 'package:client/modules/bw_booking/presentation/screens/bw_options_screen.dart';
+import 'package:client/modules/job_order/presentation/screens/select_payment_method_screen.dart';
+import 'package:client/modules/job_order/presentation/blocs/job_order_bloc.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -133,6 +143,16 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'BookingsScreen': () => const BookingsScreen(),
   'BookingCalendarScreen': () => const BookingCalendarScreen(),
   'SearchScreen': () => const SearchScreen(),
+  // The booking flow, end to end.
+  'SelectPaymentMethodScreen': () => const SelectPaymentMethodScreen(),
+  'AirconOptionsScreen': () => const AirconOptionsScreen(),
+  'AirconCheckoutScreen': () => const AirconCheckoutScreen(),
+  'AirconConfirmationScreen': () => const AirconConfirmationScreen(),
+  'BwOptionsScreen': () => const BwOptionsScreen(serviceId: 1),
+  'BwAddOnsScreen': () => const BwAddOnsScreen(),
+  'BwBranchSlotScreen': () => const BwBranchSlotScreen(),
+  'BwCheckoutScreen': () => const BwCheckoutScreen(),
+  'BwConfirmationScreen': () => const BwConfirmationScreen(),
 };
 
 void main() {
@@ -161,8 +181,15 @@ void main() {
                   // found in context', which the matrix used to report as an
                   // overflow. The screen is still passed BARE — it supplies
                   // its own Scaffold.
-                  child: BlocProvider<AuthenticationBloc>(
-                    create: (_) => buildTestAuthenticationBloc(),
+                  child: MultiBlocProvider(
+                    providers: [
+                      BlocProvider<AuthenticationBloc>(
+                        create: (_) => buildTestAuthenticationBloc(),
+                      ),
+                      BlocProvider<JobOrderBloc>(
+                        create: (_) => buildTestJobOrderBloc(),
+                      ),
+                    ],
                     child: MaterialApp.router(
                       routerConfig: GoRouter(
                         routes: [

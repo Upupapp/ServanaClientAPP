@@ -128,10 +128,14 @@ class _PendingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 180,
-      height: 180,
+    // A MINIMUM of 180 square, not a fixed 180. The placeholder holds an icon
+    // and two lines of text, and at text scale 2.0 that content is taller than
+    // 180 — so a fixed height clipped it on both confirmation screens, which
+    // are the screens a customer lands on immediately after paying.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 180, minHeight: 180),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(

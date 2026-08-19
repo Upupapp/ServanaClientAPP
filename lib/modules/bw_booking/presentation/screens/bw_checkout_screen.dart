@@ -556,16 +556,19 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontFamily: FontPalette.primaryFontFamily,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: ColorPalette.secondaryText,
+        // Expanded: a section title beside optional trailing content overflows
+        // the Row at large text scales without it.
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontFamily: FontPalette.primaryFontFamily,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: ColorPalette.secondaryText,
+            ),
           ),
         ),
-        const Spacer(),
         if (trailing != null) trailing!,
       ],
     );
