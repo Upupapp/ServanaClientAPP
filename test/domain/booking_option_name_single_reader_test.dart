@@ -36,6 +36,7 @@ import 'dart:io';
 import 'package:client/common/domain/services/service_option_display.dart';
 import 'package:client/modules/catalog/application/canonical_booking_handoff.dart'
     show canonicalOptionMap;
+import 'package:client/modules/catalog/domain/catalog_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Line endings normalised — a CRLF checkout must not change what this sees.
@@ -61,12 +62,33 @@ const _bookingSites = <String>[
 void main() {
   group('the writer and the reader agree on the key', () {
     test('the canonical map key is one ServiceOptionDisplay understands', () {
-      // Reads the REAL map the handoff builds, so renaming the key in
-      // `canonicalOptionMap` fails here rather than silently downgrading every
-      // booking to a fallback label.
-      const map = <String, dynamic>{'level3': 'Wiring fixtures', 'id': 7};
+      // Drives the REAL `canonicalOptionMap` rather than a hand-written map of
+      // what it is believed to produce. A test that restates the production
+      // value cannot catch the production value changing — and this defect was
+      // precisely a rename on one side that the other side never saw.
+      //
+      // The service is the one that exposed the bug on a device: Electrical,
+      // the only Home Maintenance service, whose checkout read "Beauty &
+      // Wellness Service".
+      final map = canonicalOptionMap(const CatalogServiceDetail(
+        service: CatalogService(
+          id: 7,
+          subcategoryId: 24,
+          subcategoryName: 'Electrical',
+          categoryId: 3,
+          categoryName: 'Home Maintenance',
+          name: 'Wiring fixtures',
+          slug: 'wiring-fixtures',
+          status: CatalogStatus.active,
+          displayOrder: 1,
+          bookable: true,
+        ),
+        available: true,
+      ));
 
-      expect(ServiceOptionDisplay.name(map), 'Wiring fixtures');
+      expect(ServiceOptionDisplay.name(map), 'Wiring fixtures',
+          reason: 'the handoff and the display helper disagree on the key, so '
+              'every canonical booking renders a fallback label');
       // And the reverse spelling still resolves, because legacy option maps
       // coming from `service_options` use it.
       expect(
