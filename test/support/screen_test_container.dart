@@ -120,6 +120,7 @@ import 'package:client/modules/notifications/data/notifications_local_data_sourc
 import 'package:client/modules/notifications/data/notifications_remote_data_source.dart';
 import 'package:client/modules/notifications/data/notifications_repository.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
+import 'package:client/modules/support/application/support_ticket_controller.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -346,6 +347,12 @@ Future<void> registerScreenDependencies() async {
             HomeCompositionCompatibilityDataSource(loaders: const {}),
         router: const CanonicalRouter(availability: CanonicalAvailability()),
       ),
+    ),
+  );
+  dpLocator.registerSingleton<SupportTicketController>(
+    SupportTicketController(
+      repository: support,
+      supportController: supportController,
     ),
   );
   dpLocator.registerSingleton<HomeCampaignController>(HomeCampaignController());

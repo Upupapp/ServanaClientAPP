@@ -132,6 +132,7 @@ import 'package:client/common/presentation/screens/booking_otp_screen.dart';
 import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
+import 'package:client/modules/support/presentation/screens/support_ticket_detail_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -220,6 +221,8 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'ProfileEditScreen': () => const ProfileEditScreen(),
   'MessagesInboxScreen': () => const MessagesInboxScreen(),
   'NotificationsScreen': () => const NotificationsScreen(),
+  'SupportTicketDetailScreen': () =>
+      const SupportTicketDetailScreen(ticketKey: 'TKT-1'),
   'HomeScreen': () => const HomeScreen(),
   'BookingDetailScreen': () => const BookingDetailScreen(bookingId: '42'),
   'BookingOtpScreen': () => const BookingOtpScreen(
