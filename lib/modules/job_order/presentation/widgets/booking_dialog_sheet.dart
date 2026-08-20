@@ -599,12 +599,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Row(
                             children: [
-                              Text(
-                                "Distance From Office: ${bloc.jobOrder?.distanceFromOffice.toStringAsFixed(1)} km",
-                                style: TextStyle(
-                                  color: ColorPalette.secondaryText,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
+                              // Expanded: 386px of overflow at 1.3 — the longest label in this sheet.
+                              Expanded(
+                                child: Text(
+                                  "Distance From Office: ${bloc.jobOrder?.distanceFromOffice.toStringAsFixed(1)} km",
+                                  style: TextStyle(
+                                    color: ColorPalette.secondaryText,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
@@ -721,12 +724,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                                   const EdgeInsets.symmetric(horizontal: 15.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    "Subtotal:",
-                                    style: TextStyle(
-                                      color: ColorPalette.secondaryText,
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w500,
+                                  // Expanded: this label overflowed its row by 59px at text scale 1.3.
+                                  Expanded(
+                                    child: Text(
+                                      "Subtotal:",
+                                      style: TextStyle(
+                                        color: ColorPalette.secondaryText,
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                   const Spacer(),

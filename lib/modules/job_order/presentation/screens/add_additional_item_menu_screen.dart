@@ -51,12 +51,16 @@ class _AddAdditionalItemmenuScreenState
                     color: ColorPalette.primaryColorDark,
                   ),
                 ),
-                Text(
-                  "Add Service",
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                // Expanded: the back button plus this title overflowed the
+                // row by 25px at text scale 1.3.
+                Expanded(
+                  child: Text(
+                    "Add Service",
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
               ],

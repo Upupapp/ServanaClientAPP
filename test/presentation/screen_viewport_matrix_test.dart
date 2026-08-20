@@ -52,6 +52,16 @@
 ///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
 ///  - **`MerchantMenuScreen`, `StoreItemsScreen`** — both build under a
 ///    `StoreItemsBloc` provider this harness does not supply yet.
+///  - **`JobOrderSummaryScreen`** — ⚠ REAL overflows, not a harness gap, and
+///    left unfixed. It renders `booking_dialog_sheet.dart`, which overflows
+///    in several places; two were fixed (`Subtotal:` 59px, `Distance From
+///    Office:` 386px, both inside Rows) but the `BlocConsumer` at :126 sits
+///    in a Column with unbounded height, where wrapping it in Expanded
+///    throws "non-zero flex but incoming height constraints are unbounded"
+///    and turns 6 exceptions into 19. That one needs the Column bounded
+///    first, which is a structural change to a shared sheet.
+///  - **`AccountPendingForApprovalScreen`** — ⚠ REAL overflow at text scales
+///    1.3 and 2.0, not yet located.
 ///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
 ///    whose platform channel never completes under the test binding. It
 ///    logs `session unreadable, treating as signed out` after a 4s timeout
@@ -117,6 +127,9 @@ import 'package:client/modules/authentication/presentation/screens/authenticatio
 import 'package:client/modules/profile/presentation/screens/email_verification_screen.dart';
 import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
 import 'package:client/modules/registration/presentation/screens/create_account_screen.dart';
+import 'package:client/common/presentation/screens/address_form_screen.dart';
+import 'package:client/modules/job_order/presentation/screens/add_additional_item_menu_screen.dart';
+import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -199,6 +212,11 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'AuthenticationScreen': () => const AuthenticationScreen(),
   'CreateAccountScreen': () => const CreateAccountScreen(),
   'EmailVerificationScreen': () => const EmailVerificationScreen(),
+  // Stragglers with cheap or no dependencies.
+  'AddressFormScreen': () => const AddressFormScreen(),
+  'AddAdditionalItemMenuScreen': () => const AddAdditionalItemMenuScreen(),
+  // Asserts at construction that one of bookingId/reviewId is present.
+  'ReviewDetailScreen': () => const ReviewDetailScreen(bookingId: '42'),
 };
 
 void main() {
