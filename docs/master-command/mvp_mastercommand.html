@@ -39,8 +39,8 @@ b.grn { color: #2e7d32; }
 <tr><td>Prepared</td><td><b>19 August 2026</b>. Every figure marked <i>measured</i> was taken on this date against <code>api.servana.com.ph</code> or the repository itself.</td></tr>
 <tr><td>Repository</td><td><code>C:\Users\paulg\OneDrive\Desktop\servana_client-unified</code> &mdash; the unified working copy. Supersedes <code>servana_client-mobile</code>.</td></tr>
 <tr><td>Remote</td><td><code>github.com/Upupapp/ServanaClientAPP</code>. Nothing in this document has been pushed.</td></tr>
-<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2590 passed</b>, 6 skipped. Backend: <code>npm run verify</code> exit 0, <b>6509 tests</b>.</td></tr>
-<tr><td>Revision</td><td><b>Rev 4</b>, 20 Aug. TABs <b class="grn">01, 02, 04, 05 closed</b>. Backend <b class="grn">B1, B2, B7, B9 closed</b>; production healthy for 11 hours. A full front-end sweep has since fixed <b class="grn">34 layout defects</b> and taken rendered screen coverage from <b>11 to 56 of 62</b>.</td></tr>
+<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2644 passed</b>, 6 skipped. Backend: <code>npm run verify</code> exit 0, <b>6509 tests</b>.</td></tr>
+<tr><td>Revision</td><td><b>Rev 5</b>, 20 Aug. TABs <b class="grn">01, 02, 04, 05 closed</b>. Backend <b class="grn">B1, B2, B7, B9 closed</b>; production healthy for 11 hours. A full front-end sweep has since fixed <b class="grn">46 defects</b> and taken rendered screen coverage from <b>11 to ALL 62</b>.</td></tr>
 <tr><td>Scope</td><td><b>Front-end only.</b> Backend items appear as blockers and evidence, never as tasks in a TAB.</td></tr>
 <tr><td>Definition of MVP</td><td>One customer can install the app, create an account, sign in, find a service, book it, pay for it, watch it happen, talk to the provider, and review it &mdash; without hitting a screen that lies, dead-ends, or cannot be completed.</td></tr>
 </table>
@@ -324,7 +324,7 @@ b.grn { color: #2e7d32; }
 
 <h2 class="tab">Section F &mdash; The layout sweep (20 August)</h2>
 <div class="ok">
-<p><b>34 defects found and fixed</b>, every one of them <b>silent in a release build</b> &mdash; the content is clipped, no error is reported, and the customer simply sees less than was written. Rendered screen coverage went from <b>11 to 56 of 62</b>; the suite from 1,901 to <b>2,590</b> tests.</p>
+<p><b>46 defects found and fixed</b>, and <b>every one of the 43 layout defects was silent in a release build</b> &mdash; the content is clipped, no error is reported, and the customer simply sees less than was written. Rendered screen coverage went from <b>11 to ALL 62</b>; the suite from 1,901 to <b>2,644</b> tests.</p>
 </div>
 
 <h3>Three root causes account for nearly all of them</h3>
@@ -339,18 +339,21 @@ b.grn { color: #2e7d32; }
 <h3>Six fixes were in SHARED widgets</h3>
 <p>Two separate primary-button implementations, the QR placeholder on both confirmation screens, the analytics consent sheet, the booking dialog sheet (which alone carried <b>nine</b> overflows), and the settings tile. Those reach screens the matrix has not even rendered yet.</p>
 
-<h3>One defect was not a layout problem at all</h3>
+<h3>THREE defects were not layout problems at all</h3>
 <div class="warn">
 <p><code>CreateAccountScreen</code> started an <code>overlay_tooltip</code> tour in <code>initState</code>, registered no tooltip item, and the app has no <code>OverlayTooltipScaffold</code> anywhere &mdash; so it <b>threw 500ms after every new customer opened the sign-up screen</b>, and the tour never appeared. The widget written to render it has no callers.</p>
-<p>It surfaced because the screen could not be added to the matrix. I had recorded that as &ldquo;a harness gap, not a layout defect&rdquo;. It was both: the harness could not build the screen <i>because the screen throws in production too</i>. Taking the first explanation at face value would have left a live defect hidden behind a note saying it was only test infrastructure.</p>
+<p><code>JobOrderScreen</code> was worse: a <code>firstWhere</code> with no <code>orElse</code>, looking each service up in the merchant's <b>asynchronously loaded</b> catalog. An empty list threw <code>Bad state: No element</code> out of <code>build</code> and <b>the whole screen failed to render</b>. That list is empty on the first frame every time and stays empty whenever the load fails &mdash; so during the 19 August outage, every render would have thrown rather than degraded.</p>
+<p>And <code>CategoryExperienceController</code> was used after disposal: the screen fires an async load in <code>initState</code> and disposes in <code>dispose</code>, so a customer leaving the category mid-load notified a dead controller.</p>
+<p><b>All three surfaced because a screen RESISTED being rendered, and I recorded each as &ldquo;a harness gap&rdquo; first.</b> Two were live production defects. If a screen will not build in the matrix, find out why before writing it off as test infrastructure.</p>
 </div>
 
 <h3>Where the remaining risk is</h3>
 <p>Every defect came from <b>older hand-built screens</b> &mdash; the booking and job-order flows, the auth funnel, the settings tiles, the shared buttons. The last thirteen screens added to the matrix, all repository-backed and newer, produced <b>none</b>. The newer code was written with responsive layout in mind; the older code was not.</p>
 <p>Patterns and remedies are recorded in <code>docs/runbooks/LAYOUT_PATTERNS.md</code>.</p>
 
-<h3>Six screens remain uncovered, named rather than omitted</h3>
-<p><code>JobOrderScreen</code> and <code>ItemOptionMenuScreen</code> need a <code>MerchantServiceModel</code> with seventeen required fields; <code>PaymentWebViewScreen</code> and <code>CategoryExperienceScreen</code> need model arguments; <code>LiveTrackingScreen</code> needs a <code>TrackingDataSource</code> that <code>main_injector</code> references but does not register under that name; and <code>SplashScreen</code> is blocked on <code>flutter_secure_storage</code>'s platform channel, which never completes under the test binding.</p>
+<h3>Every screen is covered, and a hook now keeps it that way</h3>
+<p>All 62. Standing them up needed the whole DI graph &mdash; bookings, lifecycle, experiences, payments, messaging, notifications, home composition, tracking, identity, registration, catalog &mdash; four Bloc providers, and for <code>SplashScreen</code> stubs for the secure-storage and path-provider channels plus a Hive temp directory.</p>
+<p><code>scripts/hooks/pre-push</code> now runs format, analyze and test before any push. With Actions disabled these three ARE the deploy step, and until now nothing enforced them. Enable per clone: <code>git config core.hooksPath scripts/hooks</code>.</p>
 
 <h2 class="tab">Section E &mdash; Deploy notes (backend)</h2>
 <p>Recorded here because the deploy is now manual and undocumented anywhere else. <b>There is no CI.</b> Actions are disabled on <code>Upupapp/servana_api</code> and on <code>Upupapp/ServanaClientAPP</code>.</p>

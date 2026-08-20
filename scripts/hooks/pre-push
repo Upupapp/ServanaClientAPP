@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# Pre-push gate for ServanaClientAPP.
+#
+# There is no CI: GitHub Actions is disabled on this repository and on
+# servana_api. So these three commands ARE the deploy step, and until now
+# nothing enforced them — the discipline was manual, and manual discipline is
+# what a tired evening removes first.
+#
+# On 2026-08-20 a sweep found 46 defects that all three gates would not have
+# caught on their own, but which the test suite now does: 62 screens are
+# rendered at three handset sizes and three text scales, including 2.0. That
+# suite is the reason `flutter test` below is not optional.
+#
+# stdin is redirected from /dev/null for every command. git hands a pre-push
+# hook the ref list on stdin, and a child process inherits that pipe and can
+# block on it forever. The backend's hook hung for 7.8 hours on its first real
+# push before this was understood; do not remove the redirects.
+#
+# Install (per clone — git does not do this for you):
+#     git config core.hooksPath scripts/hooks
+#
+# Never use --no-verify. If a check fails for a reason about the MACHINE rather
+# than the code, fix the check: three of the backend's gates asserted Linux-only
+# facts and blocked every push from a Windows machine until they were repaired.
+
+set -e
+
+echo "pre-push: no CI runs after this, so these gates are the deploy step"
+
+echo "pre-push: dart format --set-exit-if-changed ."
+dart format --set-exit-if-changed . < /dev/null
+
+echo "pre-push: flutter analyze --no-fatal-infos"
+flutter analyze --no-fatal-infos < /dev/null
+
+echo "pre-push: flutter test"
+flutter test < /dev/null
+
+echo "pre-push: all three gates green; allowing the push"

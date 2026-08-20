@@ -31,8 +31,22 @@ flutter test
 
 All three must be clean. This mirrors what `.github/workflows/flutter-ci.yml`
 would have run, and it is the only thing standing between a defect and `main`.
-Unlike the backend, this repository has no `pre-push` hook, so nothing enforces
-it automatically — the discipline is yours.
+
+**`scripts/hooks/pre-push` now runs all three for you.** Enable it once per
+clone — git does not do this itself:
+
+```
+git config core.hooksPath scripts/hooks
+```
+
+`flutter test` is the heaviest of the three and the least optional: it renders
+all 62 screens at three handset sizes and three text scales, and that suite is
+what found 46 defects on 2026-08-20 — including two screens that threw outright
+in production. See `docs/runbooks/LAYOUT_PATTERNS.md`.
+
+**Never use `--no-verify`.** If a check fails for a reason about the machine
+rather than the code, fix the check: three of the backend's gates asserted
+Linux-only facts and blocked every push from a Windows machine until repaired.
 
 ### Why Actions is off, and what was really protecting us
 
