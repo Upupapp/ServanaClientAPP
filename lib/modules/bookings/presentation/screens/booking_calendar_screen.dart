@@ -2,7 +2,7 @@ import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
-import 'package:client/modules/job_order/presentation/screens/job_order_summary_screen.dart';
+import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
@@ -126,10 +126,39 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
                               itemBuilder: (context, i) {
                                 final b = selectedBookings[i];
                                 return InkWell(
+                                  // Opens the repository-backed booking
+                                  // detail, not `JobOrderSummaryScreen`.
+                                  //
+                                  // That screen reads the merchant/job-order
+                                  // surface of `Backend`, and in a release
+                                  // build every method of it is a stub:
+                                  // `HttpBackend.getMerchantJoDetails` returns
+                                  // null, `getJobOrderItems` and
+                                  // `getJobOrderEmployees` return empty lists.
+                                  // Measured against that composition, tapping
+                                  // a REAL booking showed a fabricated summary
+                                  // — status "ACCEPTED" regardless of the
+                                  // booking's actual status, today's date as
+                                  // the schedule, no services, "Distance From
+                                  // Office: null km", and a total of PHP 0.00.
+                                  //
+                                  // The list this calendar draws is real (it
+                                  // comes from `GET /api/users/:id/bookings`
+                                  // through HomeStore); only the destination
+                                  // was not. `BookingDetailScreen` reads the
+                                  // same booking through `BookingRepository`
+                                  // and shows what the server actually holds.
+                                  //
+                                  // The job-order screens and their routes are
+                                  // left in place for the release that builds
+                                  // that surface — as Rewards and Favourites
+                                  // were — but the affordance is withdrawn.
                                   onTap: () {
                                     context.pushNamed(
-                                      JobOrderSummaryScreen.routeName,
-                                      pathParameters: {"id": b.jobOrderID},
+                                      BookingDetailScreen.routeName,
+                                      pathParameters: {
+                                        'bookingId': b.jobOrderID,
+                                      },
                                     );
                                   },
                                   borderRadius: BorderRadius.circular(16),
