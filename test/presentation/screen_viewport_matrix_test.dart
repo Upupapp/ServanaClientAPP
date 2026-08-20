@@ -40,40 +40,20 @@
 /// agree with the screen by construction, and a real controller over a dead
 /// network produces the empty states a real screen actually meets.
 ///
-/// Still NOT covered, and named rather than quietly omitted:
+/// ALL 62 screens are covered. Keep it that way: a new screen belongs in the
+/// map below on the day it is written, not after a sweep finds what it clips.
 ///
-///  - **Home and the booking flows** — a live MobX store graph.
-///  - **The permissions screen** — reaches Firebase Messaging directly.
-///  - **`BookingsScreen`, `MessagesInboxScreen`, `BookingCalendarScreen`** —
-///    all three resolve `HomeStore`, which is the same MobX graph. They are
-///    the shell's own tabs, so covering them means standing that graph up;
-///    worth doing, and not free.
-///  - **`NotificationsScreen`** — needs the notifications repository graph
-///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
-///  - **`MerchantMenuScreen`, `StoreItemsScreen`** — both build under a
-///    `StoreItemsBloc` provider this harness does not supply yet.
-///  - **`ItemOptionMenuScreen`** — ⚠ REAL overflow remaining at text scale
-///    2.0 only. Its 1.3 failure WAS fixed: `menu_item_widget.dart` pinned a
-///    fixed `height: 120` around text that scales, and that widget is used
-///    by three screens.
-///  - **`ItemOptionMenuScreen`** — ⚠ a REAL 112px bottom overflow remains at
-///    text scale 2.0 ONLY; 1.0 and 1.3 are clean. Two attempts did not land
-///    it, and it resists the usual probe because the screen also raises an
-///    ASYNC error, which kills a harness that overrides FlutterError.onError
-///    (the binding then asserts on `_pendingExceptionDetails`). Whoever
-///    picks this up should read the widget location from an unswallowed
-///    run rather than reuse the probe pattern in this file's history.
-///    `menu_item_widget.dart` WAS fixed on the way: its 120px box now
-///    scales with the text and is capped at 180, because it holds an
-///    AspectRatio(1) image that would otherwise be a 240px square on a
-///    320px handset.
-///  - **`ProfileScreen`** — its dependencies ARE registered here now and it
-///    builds, but rendering it raises **four exceptions** the harness cannot
-///    yet attribute. That is an open question, not a clean skip: it may be
-///    image loading over the mock client, and it may not. It is named here
-///    rather than dropped so the next person starts from the finding.
+/// Standing every screen up needed the whole DI graph — bookings, lifecycle,
+/// experiences, payments, messaging, notifications, home composition, tracking,
+/// identity, registration, catalog — plus four Bloc providers and, for
+/// `SplashScreen`, stubs for the flutter_secure_storage and path_provider
+/// channels and a Hive temp directory.
 ///
-/// A GoRouter ancestor IS now supplied, so that limitation is gone.
+/// Three of this sweep's finds were NOT layout problems: two screens threw in
+/// `build`/`initState` and one used a controller after disposal. Every one
+/// surfaced because the screen RESISTED being rendered here. If a screen will
+/// not build, find out why before recording it as a harness limitation — twice
+/// that explanation was hiding a live production defect.
 ///
 /// A screen whose dependency is missing fails with GetIt's own message naming
 /// the type, which says exactly what to add to the container.
@@ -151,6 +131,7 @@ import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
 import 'package:client/modules/landing/presentation/screens/splash_screen.dart';
+import 'package:client/modules/job_order/presentation/screens/item_option_menu_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -247,6 +228,8 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
       ),
   'CategoryExperienceScreen': () =>
       const CategoryExperienceScreen(categoryId: ServiceCategoryId.aircon),
+  'ItemOptionMenuScreen': () =>
+      ItemOptionMenuScreen(service: MerchantServiceModel()),
   'JobOrderScreen': () => JobOrderScreen(
         service: MerchantServiceModel(),
         merchantId: '1',

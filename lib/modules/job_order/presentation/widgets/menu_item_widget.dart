@@ -26,21 +26,26 @@ class MenuItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      // No fixed height, and the thumbnail no longer derives its size from one.
+      //
+      // This started as SizedBox(height: 120) around text that scales, so the
+      // row clipped its own content. Scaling that height did not work either:
+      // the thumbnail was an AspectRatio(1) OF THE ROW HEIGHT, so the image
+      // grew with the text and a 240px square swallowed a 320px handset.
+      // Capping the height brought the clipping back at 2.0, because the text
+      // still needed more room than the cap allowed.
+      //
+      // The two were coupled and had to be separated: the thumbnail is now a
+      // fixed 120 square, and the row takes whatever height its tallest child
+      // needs. A list row growing with the text is correct; a thumbnail
+      // growing with it is not.
       child: SizedBox(
         width: double.maxFinite,
-        // Scaled, not fixed. The name, description and price inside all grow
-        // with the text scale while 120 did not, so the row clipped its own
-        // content at 1.3. This widget is used by three screens.
-        // Scaled but CAPPED. The row contains an AspectRatio(1) image, so
-        // height and width grow together — at text scale 2.0 an uncapped 240
-        // is a 240px square on a 320px handset, which pushes the whole screen
-        // over. 180 gives the text the room it needs without letting the
-        // thumbnail eat the row.
-        height: MediaQuery.textScalerOf(context).scale(120).clamp(120.0, 180.0),
         child: Row(
           children: [
-            AspectRatio(
-              aspectRatio: 1,
+            SizedBox(
+              width: 120,
+              height: 120,
               child: AppImage(
                 url: item.merchantServicePictureURL,
                 fit: BoxFit.cover,
