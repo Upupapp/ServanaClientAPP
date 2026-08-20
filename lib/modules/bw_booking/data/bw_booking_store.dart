@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:client/modules/catalog/domain/serviceability.dart';
+import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/common/domain/address/address_display.dart';
 import 'dart:math';
 
@@ -118,6 +121,18 @@ abstract class _BwBookingStore with Store {
   @observable
   Map<String, dynamic>? selectedAddress;
 
+  /// The backend's verdict on booking this service at [selectedAddress].
+  ///
+  /// Null means "not asked, or could not tell" — never "yes". The UI shows
+  /// nothing in that state rather than a reassurance it did not earn.
+  @observable
+  Serviceability? serviceability;
+
+  /// True while the check is in flight, so the screen can hold the submit
+  /// button rather than let a customer race the answer.
+  @observable
+  bool isCheckingServiceability = false;
+
   @observable
   String paymentMethod = 'CASH';
 
@@ -187,6 +202,7 @@ abstract class _BwBookingStore with Store {
     selectedSlot = null;
     selectedSchedule = null;
     selectedAddress = null;
+    serviceability = null;
     paymentMethod = 'CASH';
     bookingResult = null;
     createdBookingId = null;
@@ -239,6 +255,7 @@ abstract class _BwBookingStore with Store {
     selectedSlot = null;
     selectedSchedule = null;
     selectedAddress = null;
+    serviceability = null;
     paymentMethod = 'CASH';
     bookingResult = null;
     createdBookingId = null;
@@ -410,6 +427,77 @@ abstract class _BwBookingStore with Store {
   @action
   void selectAddress(Map<String, dynamic> address) {
     selectedAddress = address;
+    // Clear first: a verdict about the PREVIOUS address must not linger over
+    // the new one for the length of a round trip.
+    serviceability = null;
+    checkServiceability();
+  }
+
+  /// Asks whether this service can be booked at the chosen address.
+  ///
+  /// Runs on address selection rather than at submit, which is the whole point:
+  /// `createBooking` already answers this, and it answers it after the customer
+  /// has chosen a date and a payment method.
+  ///
+  /// **A failure clears the verdict rather than inventing one.** If the check
+  /// cannot be made, the app does not know — and it must not block a booking
+  /// the server would accept, nor promise one it would refuse. The server runs
+  /// the same test at submit and refuses honestly, so silence here costs a
+  /// wasted form at worst; a wrong "unavailable" costs the booking outright.
+  @action
+  Future<void> checkServiceability() async {
+    final address = selectedAddress;
+    final serviceId = _canonicalServiceId;
+    if (address == null || serviceId == null) {
+      serviceability = null;
+      return;
+    }
+
+    final lat = _coordinate(address['lat']);
+    final lon = _coordinate(address['lon']);
+    if (lat == null || lon == null) {
+      // An address with no usable coordinates cannot be judged, and the
+      // backend says so too (INVALID_LOCATION). Reported rather than assumed
+      // serviceable: `createBooking` will refuse it with "Address missing
+      // locationId." and the customer deserves to know before the form.
+      serviceability = const Serviceability(
+        serviceable: false,
+        reason: ServiceabilityReason.invalidLocation,
+      );
+      return;
+    }
+
+    isCheckingServiceability = true;
+    try {
+      serviceability = await dpLocator<CatalogRepository>()
+          .serviceability(serviceId: serviceId, lat: lat, lon: lon);
+    } catch (e) {
+      debugPrint('[BwBookingStore] serviceability check failed: $e');
+      serviceability = null;
+    } finally {
+      isCheckingServiceability = false;
+    }
+  }
+
+  /// The canonical `services.id` for the selected option, or null.
+  ///
+  /// `canonicalOptionMap` writes `catalogServiceId`; a legacy option map from
+  /// the curated category path does not carry one, and `id` there is a
+  /// `service_options.id`. They are equal for every promoted row today and stop
+  /// being equal for the first Service created through the Admin API — so the
+  /// canonical key is read by name and NOT inferred from `id`.
+  int? get _canonicalServiceId {
+    final raw = selectedOption?['catalogServiceId'];
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw);
+    return null;
+  }
+
+  static double? _coordinate(Object? raw) {
+    final value = raw is num ? raw.toDouble() : double.tryParse('$raw');
+    // Zero is Null Island, which is what an absent coordinate arrives as.
+    if (value == null || value == 0) return null;
+    return value;
   }
 
   @action

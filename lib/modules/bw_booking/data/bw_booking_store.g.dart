@@ -329,6 +329,39 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
     });
   }
 
+  late final _$serviceabilityAtom =
+      Atom(name: '_BwBookingStore.serviceability', context: context);
+
+  @override
+  Serviceability? get serviceability {
+    _$serviceabilityAtom.reportRead();
+    return super.serviceability;
+  }
+
+  @override
+  set serviceability(Serviceability? value) {
+    _$serviceabilityAtom.reportWrite(value, super.serviceability, () {
+      super.serviceability = value;
+    });
+  }
+
+  late final _$isCheckingServiceabilityAtom =
+      Atom(name: '_BwBookingStore.isCheckingServiceability', context: context);
+
+  @override
+  bool get isCheckingServiceability {
+    _$isCheckingServiceabilityAtom.reportRead();
+    return super.isCheckingServiceability;
+  }
+
+  @override
+  set isCheckingServiceability(bool value) {
+    _$isCheckingServiceabilityAtom
+        .reportWrite(value, super.isCheckingServiceability, () {
+      super.isCheckingServiceability = value;
+    });
+  }
+
   late final _$paymentMethodAtom =
       Atom(name: '_BwBookingStore.paymentMethod', context: context);
 
@@ -442,6 +475,15 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   Future<void> loadSavedAddresses() {
     return _$loadSavedAddressesAsyncAction
         .run(() => super.loadSavedAddresses());
+  }
+
+  late final _$checkServiceabilityAsyncAction =
+      AsyncAction('_BwBookingStore.checkServiceability', context: context);
+
+  @override
+  Future<void> checkServiceability() {
+    return _$checkServiceabilityAsyncAction
+        .run(() => super.checkServiceability());
   }
 
   late final _$createBookingAsyncAction =
@@ -627,6 +669,8 @@ selectedDate: ${selectedDate},
 selectedSlot: ${selectedSlot},
 selectedSchedule: ${selectedSchedule},
 selectedAddress: ${selectedAddress},
+serviceability: ${serviceability},
+isCheckingServiceability: ${isCheckingServiceability},
 paymentMethod: ${paymentMethod},
 bookingResult: ${bookingResult},
 createdBookingId: ${createdBookingId},

@@ -15,9 +15,7 @@
 library;
 
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/data/models/user_session.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -103,7 +101,7 @@ class _Backend {
       requests.where((r) => r.url.path.endsWith(pathSuffix)).length;
 }
 
-late _Backend backend;
+late _Backend backend; // ignore: library_private_types_in_public_api
 
 Future<void> _arrange() async {
   backend = _Backend();

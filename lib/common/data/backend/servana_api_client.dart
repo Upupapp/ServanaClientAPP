@@ -587,6 +587,28 @@ class ServanaApiClient {
   /// Resolves regardless of status so a deep link to an archived Service lands
   /// on an honest "currently unavailable" rather than a 404 the app would have
   /// to render as a dead end. Read `available` on the response, never infer it.
+  /// `GET /api/catalog/services/:id/serviceability?lat=&lon=` — can this be
+  /// booked at this point?
+  ///
+  /// Public, like the rest of the catalog reads, and it answers a verdict only:
+  /// never the coverage discs, never the legacy service id. The backend
+  /// resolves the service family with `createBooking`'s own statement, so this
+  /// cannot promise a booking the server will refuse.
+  Future<Map<String, dynamic>> getServiceability({
+    required int serviceId,
+    required double lat,
+    required double lon,
+  }) async {
+    final uri = _uri('/api/catalog/services/$serviceId/serviceability', {
+      // Six decimals, matching the `loc_{lat}_{lon}` location id format (§42),
+      // so the point asked about here is the point the booking will carry.
+      'lat': lat.toStringAsFixed(6),
+      'lon': lon.toStringAsFixed(6),
+    });
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getCanonicalService({
     required int serviceId,
   }) async {

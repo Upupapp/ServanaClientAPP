@@ -311,6 +311,51 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                 ),
               ],
 
+              // ──── Serviceability ────
+              //
+              // Shown ONLY for a definitive no. A yes says nothing — a banner
+              // reading "this works" is noise on every screen it appears on —
+              // and an unknown says nothing either, because the app has not
+              // earned either claim. `createBooking` runs the same test at
+              // submit and refuses honestly, so silence costs a wasted form at
+              // worst; a wrong "unavailable" costs the booking outright.
+              if (store.serviceability?.message != null) ...[
+                const SizedBox(height: 12),
+                Semantics(
+                  liveRegion: true,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.danger.withOpacity(.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: ColorPalette.danger.withOpacity(.4)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline_rounded,
+                            color: ColorPalette.danger, size: 20),
+                        const SizedBox(width: 10),
+                        // Expanded, or a two-line message overflows the row at
+                        // larger text scales and the customer reads half of it.
+                        Expanded(
+                          child: Text(
+                            store.serviceability!.message!,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              color: ColorPalette.danger,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 24),
 
               // ──── Schedule ────
@@ -581,6 +626,14 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
       errors.add('Choose a date and time.');
     }
     if (store.selectedAddress == null) errors.add('Select an address.');
+    // A definitive no blocks; an unknown does not. `serviceable` is only false
+    // when the backend said so — the store leaves the verdict null when it
+    // could not ask, precisely so this cannot refuse a booking the server would
+    // have taken.
+    final verdict = store.serviceability;
+    if (verdict != null && !verdict.serviceable) {
+      errors.add(verdict.message ?? 'This service is not available here.');
+    }
 
     if (errors.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
