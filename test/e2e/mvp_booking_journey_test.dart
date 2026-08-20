@@ -34,7 +34,8 @@ library;
 import 'dart:convert';
 
 import 'package:client/common/domain/booking/booking_create_request.dart';
-import 'package:client/common/domain/booking/booking_draft.dart' show BookingFlowType;
+import 'package:client/common/domain/booking/booking_draft.dart'
+    show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/services/auth_state_service.dart';
 import 'package:client/common/data/models/user_session.dart';
@@ -146,7 +147,8 @@ class _RecordingBackend {
           // Production's answer for nine of ten families.
           return _json({'success': true, 'branches': <dynamic>[]});
         }
-        return _json({'success': true, 'status': 'success', 'data': <dynamic>[]});
+        return _json(
+            {'success': true, 'status': 'success', 'data': <dynamic>[]});
       });
 
   http.Response _json(Object body) => http.Response(
@@ -331,7 +333,8 @@ void main() {
       expect(store.branchRequired, isTrue);
     });
 
-    test('a branch list left over from another category does not follow the '
+    test(
+        'a branch list left over from another category does not follow the '
         'customer into a canonical booking', () async {
       final store = dpLocator<BwBookingStore>();
       // What a visit to Beauty & Wellness (legacy family 2 — the one family
@@ -364,7 +367,8 @@ void main() {
       expect(find.text('No branch selected.'), findsNothing);
     });
 
-    testWidgets('the customer can pick a date and time and see it', (tester) async {
+    testWidgets('the customer can pick a date and time and see it',
+        (tester) async {
       final store = dpLocator<BwBookingStore>();
       store.beginBranchlessBooking();
       store.selectOption(canonicalOptionMap(_personalCareService()));

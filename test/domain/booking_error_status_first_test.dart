@@ -42,7 +42,8 @@ void main() {
 
     test('504 too — the status that matched no keyword list before', () {
       expect(
-        BookingErrorMapper.fromException(_api(504, 'Gateway Time-out')).category,
+        BookingErrorMapper.fromException(_api(504, 'Gateway Time-out'))
+            .category,
         BookingErrorCategory.serverFailure,
       );
     });
@@ -68,7 +69,7 @@ void main() {
         _api(
           409,
           '{"success":false,"code":"SLOT_FULL","message":'
-              '"That branch slot just filled up. Choose another time."}',
+          '"That branch slot just filled up. Choose another time."}',
         ),
       );
       expect(result.category, BookingErrorCategory.slotUnavailable);
