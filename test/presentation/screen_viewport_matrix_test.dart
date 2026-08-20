@@ -125,6 +125,7 @@ import 'package:client/modules/job_order/presentation/screens/job_order_summary_
 import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
 import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
+import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -211,6 +212,14 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'AddressFormScreen': () => const AddressFormScreen(),
   'AuthenticationGateScreen': () => const AuthenticationGateScreen(),
   'ProfileEditScreen': () => const ProfileEditScreen(),
+  // Empty lists on purpose: this renders the empty state, which is what a
+  // customer sees whenever the catalog cannot answer.
+  'ServiceCategoryListScreen': () => ServiceCategoryListScreen(
+        title: 'Aircon Services',
+        filterChips: const [],
+        items: const [],
+        onCardTap: (_, __) {},
+      ),
   'PermissionsScreen': () => const PermissionsScreen(),
   'AccountPendingForApprovalScreen': () =>
       const AccountPendingForApprovalScreen(),

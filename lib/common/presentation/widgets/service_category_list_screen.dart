@@ -297,40 +297,45 @@ class _ServiceCategoryListScreenState extends State<ServiceCategoryListScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                'assets/images/states/end_of_list.png',
-                width: 180,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                hasFilter
-                    ? 'No services match your search.'
-                    : 'No services available.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  color: ColorPalette.secondaryText.withOpacity(0.6),
+          // Scrollable: a fixed 180px illustration plus text that grows put
+          // this empty state 53px over the viewport at text scale 2.0. Safe to
+          // wrap — the Column is mainAxisSize.min with no flex children.
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/states/end_of_list.png',
+                  width: 180,
+                  fit: BoxFit.contain,
                 ),
-              ),
-              if (hasFilter) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                      _selectedChip = 0;
-                    });
-                  },
-                  icon: const Icon(Icons.filter_alt_off_outlined),
-                  label: const Text('Clear search and filters'),
+                const SizedBox(height: 16),
+                Text(
+                  hasFilter
+                      ? 'No services match your search.'
+                      : 'No services available.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    color: ColorPalette.secondaryText.withOpacity(0.6),
+                  ),
                 ),
+                if (hasFilter) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                        _selectedChip = 0;
+                      });
+                    },
+                    icon: const Icon(Icons.filter_alt_off_outlined),
+                    label: const Text('Clear search and filters'),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       );
