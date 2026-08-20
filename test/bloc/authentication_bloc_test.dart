@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:flutter/services.dart';
 
 // ──────────────────────── fakes / mocks ────────────────────────
 
@@ -67,6 +68,18 @@ void _registerAdaptersSafe() {
 
 void main() {
   setUpAll(() async {
+    // Answer the flutter_secure_storage channel. Three tests below were skipped
+    // for years because it "hangs in unit tests" — it does not hang, it simply
+    // has no implementation under the test binding, and a stub is enough. They
+    // cover logout, logout when the server call FAILS, and successful login:
+    // the session-handling paths, and the ones least safe to leave unrun.
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      (call) async => call.method == 'readAll' ? <String, String>{} : null,
+    );
+
     _hiveDir = await Directory.systemTemp.createTemp('hive_test_');
     Hive.init(_hiveDir.path);
     _registerAdaptersSafe();
@@ -120,8 +133,6 @@ void main() {
         );
         await bloc.close();
       },
-      skip:
-          'Requires flutter_secure_storage platform channel — use integration_test',
     );
 
     test(
@@ -136,8 +147,6 @@ void main() {
         );
         await bloc.close();
       },
-      skip:
-          'Requires flutter_secure_storage platform channel — use integration_test',
     );
   });
 
@@ -167,8 +176,6 @@ void main() {
         );
         await bloc.close();
       },
-      skip:
-          'Requires flutter_secure_storage platform channel — use integration_test',
     );
 
     test('emits Loading then Unauthenticated on failure', () async {
