@@ -44,6 +44,19 @@ class CategoryExperienceController extends ChangeNotifier {
         .toList();
   }
 
+  /// Set in [dispose]. The screen owns this controller — it constructs one in
+  /// `initState` and disposes it in `dispose` — so a customer who leaves the
+  /// category while it is still loading disposes it mid-flight. Without this
+  /// guard the completion calls `notifyListeners()` on a dead controller, which
+  /// asserts "A CategoryExperienceController was used after being disposed".
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   Future<void> load({
     required ServiceCategoryId categoryId,
     required CategoryPresentationConfig config,
@@ -81,6 +94,8 @@ class CategoryExperienceController extends ChangeNotifier {
       _status = CategoryExperienceStatus.failure;
     }
 
+    // The await above means the screen may be gone by now.
+    if (_disposed) return;
     notifyListeners();
   }
 

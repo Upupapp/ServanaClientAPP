@@ -152,6 +152,9 @@ import 'package:client/modules/tracking/presentation/screens/live_tracking_scree
 import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
 import 'package:client/common/data/models/merchant_service.dart';
 import 'package:client/modules/job_order/presentation/screens/job_order_screen.dart';
+import 'package:client/common/domain/services/service_category_config.dart';
+import 'package:client/common/presentation/screens/payment_webview_screen.dart';
+import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -241,6 +244,12 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'MessagesInboxScreen': () => const MessagesInboxScreen(),
   'NotificationsScreen': () => const NotificationsScreen(),
   'LiveTrackingScreen': () => const LiveTrackingScreen(bookingId: '42'),
+  'PaymentWebViewScreen': () => const PaymentWebViewScreen(
+        bookingId: 42,
+        checkoutUrl: 'https://example.invalid/checkout',
+      ),
+  'CategoryExperienceScreen': () =>
+      const CategoryExperienceScreen(categoryId: ServiceCategoryId.aircon),
   'JobOrderScreen': () => JobOrderScreen(
         service: MerchantServiceModel(),
         merchantId: '1',

@@ -132,6 +132,7 @@ import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.
 // there are TWO StoreOptionsRepository classes. This is the one the use
 // case and main_injector use; the merchant_menu copy is the other.
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
+import 'package:client/modules/categories/data/category_experience_repository.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -381,6 +382,9 @@ Future<void> registerScreenDependencies() async {
         router: const CanonicalRouter(availability: CanonicalAvailability()),
       ),
     ),
+  );
+  dpLocator.registerSingleton<CategoryExperienceRepository>(
+    CategoryExperienceRepository(api),
   );
   dpLocator.registerSingleton<HomeCampaignController>(HomeCampaignController());
   dpLocator.registerSingleton<NotificationNavigationCoordinator>(
