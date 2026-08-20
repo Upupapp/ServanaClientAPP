@@ -91,6 +91,24 @@ import 'package:client/common/domain/use_cases/get_barangays_in_city_use_case.da
 import 'package:client/common/domain/use_cases/get_provinces_use_case.dart';
 import 'package:client/common/domain/use_cases/get_cities_in_region_use_case.dart';
 import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
+import 'package:client/modules/messaging/data/messaging_canonical_data_source.dart';
+import 'package:client/modules/messaging/data/messaging_compatibility_data_source.dart';
+import 'package:client/modules/messaging/data/services/chat_socket_service.dart';
+import 'package:client/modules/messaging/domain/repositories/messaging_repository.dart';
+import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
+import 'package:client/modules/booking_experiences/application/booking_experiences_controller.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_canonical_data_source.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_compatibility_data_source.dart';
+import 'package:client/modules/booking_experiences/data/booking_experiences_repository.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_canonical_data_source.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_compatibility_data_source.dart';
+import 'package:client/modules/bookings/data/booking_lifecycle_repository.dart';
+import 'package:client/modules/bookings/data/booking_repository.dart';
+import 'package:client/modules/bookings/data/bookings_canonical_data_source.dart';
+import 'package:client/modules/bookings/data/bookings_compatibility_data_source.dart';
+import 'package:client/modules/payments/data/payments_canonical_data_source.dart';
+import 'package:client/modules/payments/data/payments_compatibility_data_source.dart';
+import 'package:client/modules/payments/data/payments_repository.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -240,6 +258,69 @@ Future<void> registerScreenDependencies() async {
   // PermissionsScreen resolves this; it takes nothing.
   dpLocator.registerSingleton<NotificationPermissionCoordinator>(
     NotificationPermissionCoordinator(),
+  );
+
+  // ── Messaging ─────────────────────────────────────────────────────────────
+  // ChatSocketService creates its socket lazily (`io.Socket? _socket`), so
+  // constructing it dials nothing. The host is deliberately unreachable: if
+  // anything did try to connect, it must fail rather than reach a real server
+  // from a test run.
+  final v1ForMessaging = V1ApiClient(
+    baseUrl: 'https://example.invalid',
+    httpClient: emptyBackend(),
+  );
+  dpLocator.registerSingleton<MessagingStore>(
+    MessagingStore(
+      repository: MessagingRepository(
+        api: api,
+        compatibility: MessagingCompatibilityDataSource(api),
+        canonical: MessagingCanonicalDataSource(v1ForMessaging),
+        router: const CanonicalRouter(availability: CanonicalAvailability()),
+      ),
+      socketService: ChatSocketService(baseUrl: 'https://example.invalid'),
+    ),
+  );
+
+  // ── Bookings, lifecycle, experiences and payments ─────────────────────────
+  // BookingDetailScreen resolves eight dependencies; this is the deepest graph
+  // in the app after Home. Every repository takes the same
+  // compatibility/canonical/router shape, and the router is disabled, so the
+  // compatibility source answers — the transport a real customer is on.
+  const disabledRouter = CanonicalRouter(availability: CanonicalAvailability());
+  final v1ForBookings = V1ApiClient(
+    baseUrl: 'https://example.invalid',
+    httpClient: emptyBackend(),
+  );
+  dpLocator.registerSingleton<BookingRepository>(
+    BookingRepository(
+      api,
+      compatibility: BookingsCompatibilityDataSource(api),
+      canonical: BookingsCanonicalDataSource(v1ForBookings),
+      router: disabledRouter,
+    ),
+  );
+  dpLocator.registerSingleton<BookingLifecycleRepository>(
+    BookingLifecycleRepository(
+      compatibility: BookingLifecycleCompatibilityDataSource(api),
+      canonical: BookingLifecycleCanonicalDataSource(v1ForBookings),
+      router: disabledRouter,
+    ),
+  );
+  final experiences = BookingExperiencesRepository(
+    compatibility: BookingExperiencesCompatibilityDataSource(api),
+    canonical: BookingExperiencesCanonicalDataSource(v1ForBookings),
+    router: disabledRouter,
+  );
+  dpLocator.registerSingleton<BookingExperiencesRepository>(experiences);
+  dpLocator.registerSingleton<BookingExperiencesController>(
+    BookingExperiencesController(experiences),
+  );
+  dpLocator.registerSingleton<PaymentsRepository>(
+    PaymentsRepository(
+      compatibility: PaymentsCompatibilityDataSource(api),
+      canonical: PaymentsCanonicalDataSource(v1ForBookings),
+      router: disabledRouter,
+    ),
   );
 
   // ── Catalog and search ────────────────────────────────────────────────────

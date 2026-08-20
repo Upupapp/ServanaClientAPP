@@ -126,6 +126,10 @@ import 'package:client/common/presentation/screens/authentication_gate_screen.da
 import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
 import 'package:client/common/presentation/widgets/service_category_list_screen.dart';
+import 'package:client/modules/messaging/presentation/screens/booking_chat_screen.dart';
+import 'package:client/modules/messaging/presentation/screens/messages_inbox_screen.dart';
+import 'package:client/common/presentation/screens/booking_otp_screen.dart';
+import 'package:client/modules/bookings/presentation/screens/booking_detail_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -212,6 +216,13 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'AddressFormScreen': () => const AddressFormScreen(),
   'AuthenticationGateScreen': () => const AuthenticationGateScreen(),
   'ProfileEditScreen': () => const ProfileEditScreen(),
+  'MessagesInboxScreen': () => const MessagesInboxScreen(),
+  'BookingDetailScreen': () => const BookingDetailScreen(bookingId: '42'),
+  'BookingOtpScreen': () => const BookingOtpScreen(
+        bookingId: 42,
+        flow: BookingOtpFlow.resume,
+      ),
+  'BookingChatScreen': () => const BookingChatScreen(jobOrderId: '42'),
   // Empty lists on purpose: this renders the empty state, which is what a
   // customer sees whenever the catalog cannot answer.
   'ServiceCategoryListScreen': () => ServiceCategoryListScreen(
