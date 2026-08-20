@@ -160,12 +160,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                 const SizedBox(
                   width: 25,
                 ),
-                Text(
-                  widget.merchantName,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                // Flexible: this row overflowed on a 320px handset.
+                Flexible(
+                  child: Text(
+                    widget.merchantName,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
               ],
@@ -415,12 +418,17 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
             Row(
               children: [
                 const Gap(25),
-                Text(
-                  "Booking Summary",
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                // Expanded, or the heading demands its full intrinsic width and
+                // the row runs 8.8px over on a 320px handset. Same shape as the
+                // "Select Payment Method" and "Create your Account" headings.
+                Expanded(
+                  child: Text(
+                    "Booking Summary",
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
               ],
@@ -445,15 +453,38 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                                     BlocProvider.of<StoreItemsBloc>(context);
                                 return Column(
                                   children: bloc.joServices.map((e) {
+                                    // orElse, or this throws "Bad state: No
+                                    // element" and the WHOLE screen fails to
+                                    // build. The lookup searches the merchant's
+                                    // catalog, which loads asynchronously — so
+                                    // an empty list is the normal state while
+                                    // it is still arriving, and the permanent
+                                    // state whenever that load fails. On
+                                    // 2026-08-19 the backend answered 500 for
+                                    // hours; every render of this screen would
+                                    // have thrown rather than degraded.
+                                    //
+                                    // It also matches by NAME, so a renamed
+                                    // service breaks the link even when the
+                                    // catalog loads fine.
+                                    //
+                                    // An empty model is a safe fallback: its
+                                    // selectionOptions default to [], and the
+                                    // only uses of `service` below are guarded
+                                    // by isNotEmpty, so the tile still renders
+                                    // without its option rows.
                                     final service =
                                         itemsBloc.storeItemCategories.fold(
                                             <MerchantServiceModel>[],
                                             (previousValue, element) => [
                                                   ...previousValue,
                                                   ...element.services
-                                                ]).firstWhere((element) =>
-                                            element.merchantServiceName ==
-                                            e.serviceName);
+                                                ]).firstWhere(
+                                      (element) =>
+                                          element.merchantServiceName ==
+                                          e.serviceName,
+                                      orElse: () => MerchantServiceModel(),
+                                    );
                                     return Column(
                                       children: [
                                         ServiceListTile(
@@ -571,12 +602,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                               size: 22,
                             ),
                             const Gap(5),
-                            Text(
-                              "Add Service",
-                              style: TextStyle(
-                                  color: ColorPalette.primaryColorDark,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500),
+                            // Flexible: this row overflowed on a 320px handset.
+                            Flexible(
+                              child: Text(
+                                "Add Service",
+                                style: TextStyle(
+                                    color: ColorPalette.primaryColorDark,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500),
+                              ),
                             ),
                           ],
                         ),
@@ -602,12 +636,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 25.0),
                       child: Row(
                         children: [
-                          Text(
-                            "Subtotal:",
-                            style: TextStyle(
-                              color: ColorPalette.secondaryText,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
+                          // Flexible: this row overflowed on a 320px handset.
+                          Flexible(
+                            child: Text(
+                              "Subtotal:",
+                              style: TextStyle(
+                                color: ColorPalette.secondaryText,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const Spacer(),
@@ -626,12 +663,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 25.0),
                       child: Row(
                         children: [
-                          Text(
-                            "Transportation::",
-                            style: TextStyle(
-                              color: ColorPalette.secondaryText,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
+                          // Flexible: this row overflowed on a 320px handset.
+                          Flexible(
+                            child: Text(
+                              "Transportation::",
+                              style: TextStyle(
+                                color: ColorPalette.secondaryText,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const Spacer(),
@@ -659,12 +699,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
             Row(
               children: [
                 const Gap(25),
-                Text(
-                  "Payment Details",
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                // Flexible: this row overflowed on a 320px handset.
+                Flexible(
+                  child: Text(
+                    "Payment Details",
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
               ],
@@ -686,12 +729,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                       height: 30,
                     ),
                     const Gap(10),
-                    Text(
-                      "************1396",
-                      style: TextStyle(
-                        color: ColorPalette.secondaryText,
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
+                    // Flexible: this row overflowed on a 320px handset.
+                    Flexible(
+                      child: Text(
+                        "************1396",
+                        style: TextStyle(
+                          color: ColorPalette.secondaryText,
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const Spacer(),
@@ -719,12 +765,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                   size: 24,
                 ),
                 const Gap(10),
-                Text(
-                  "Use vouchers to get discounts",
-                  style: TextStyle(
-                    color: ColorPalette.secondaryText,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
+                // Flexible: this row overflowed on a 320px handset.
+                Flexible(
+                  child: Text(
+                    "Use vouchers to get discounts",
+                    style: TextStyle(
+                      color: ColorPalette.secondaryText,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
                 const Spacer(),
@@ -755,12 +804,15 @@ class _JobOrderScreenState extends State<JobOrderScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
                     child: Row(
                       children: [
-                        Text(
-                          "Total:",
-                          style: TextStyle(
-                            color: ColorPalette.secondaryText,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        // Flexible: this row overflowed on a 320px handset.
+                        Flexible(
+                          child: Text(
+                            "Total:",
+                            style: TextStyle(
+                              color: ColorPalette.secondaryText,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const Spacer(),
