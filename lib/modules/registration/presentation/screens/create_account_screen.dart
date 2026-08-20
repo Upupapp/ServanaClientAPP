@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:overlay_tooltip/overlay_tooltip.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
@@ -34,7 +33,15 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
-  late TooltipController _toolTipController;
+  // The overlay_tooltip machinery that used to live here is gone. It could
+  // never have worked: the screen registered no OverlayTooltipItem and the app
+  // has no OverlayTooltipScaffold anywhere, so `controller.start()` hit the
+  // package's own `playWidgetLength == 0` guard and THREW — 500ms after every
+  // new customer opened the sign-up screen. The tour never appeared; the only
+  // thing it produced was an unhandled async error.
+  //
+  // `CustomToolTip`, the widget written to render it, has no callers at all.
+  // Left in place rather than deleted, in case the intent is to finish it.
   String _firstName = '';
   String _lastName = '';
   late final TapGestureRecognizer _termsRecognizer;
@@ -43,7 +50,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   @override
   void initState() {
     final bloc = BlocProvider.of<RegistrationBloc>(context);
-    _toolTipController = TooltipController();
     _termsRecognizer = TapGestureRecognizer()
       ..onTap = () => launchUrl(Uri.parse(ServanaUrls.termsAndConditions));
     _privacyRecognizer = TapGestureRecognizer()
@@ -56,12 +62,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       _lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     }
 
-    if (!bloc.isToolTipShown) {
-      bloc.isToolTipShown = true;
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _toolTipController.start();
-      });
-    }
     super.initState();
   }
 
@@ -75,7 +75,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   void dispose() {
     final bloc = dpLocator<RegistrationBloc>();
     bloc.add(const ValidationReset());
-    _toolTipController.dispose();
     _termsRecognizer.dispose();
     _privacyRecognizer.dispose();
     super.dispose();
