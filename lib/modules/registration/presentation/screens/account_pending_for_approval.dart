@@ -43,113 +43,126 @@ class _AccountPendingForApprovalScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                TextButton.icon(
-                  onPressed: () {
-                    context.goNamed(WelcomeScreen.routeName);
-                  },
-                  icon: Icon(
-                    Icons.logout,
-                    size: 25,
-                    color: ColorPalette.primaryColorDark,
-                  ),
-                  label: Text(
-                    "Logout",
-                    maxLines: 4,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      decoration: TextDecoration.underline,
-                      color: ColorPalette.primaryColorDark,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Expanded(
-              child: Container(),
-            ),
-            Container(
-              width: 200,
-              margin: const EdgeInsets.all(20),
-              child: Image.asset(
-                "assets/images/pending.png",
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(
-              height: 50,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                "Verifying your Account",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                "We are currently processing you business credentials. This process will take 3-7 business days. You will may receive an sms or a call during the verification process.",
-                maxLines: 4,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  color: ColorPalette.secondaryText,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Container(),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text.rich(
-                TextSpan(
-                  text: "By giving your information, you agree to our ",
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    color: ColorPalette.secondaryText,
-                    fontSize: 12,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: "Terms & Conditions",
-                      style: TextStyle(
-                        color: ColorPalette.primaryColorDark,
-                      ),
-                      recognizer: _termsRecognizer,
-                    ),
-                    const TextSpan(text: " and "),
-                    TextSpan(
-                      text: "Privacy Policy.",
-                      style: TextStyle(
-                        color: ColorPalette.primaryColorDark,
-                      ),
-                      recognizer: _privacyRecognizer,
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-          ],
-        ),
+        // Scroll when the content does not fit, fill the screen when it
+        // does. This Column has two Expanded children with growing text
+        // between them, so at text scale 1.3 the fixed parts already exceed a
+        // small handset and it overflowed. A bare SingleChildScrollView cannot
+        // be used — the Expanded children would get unbounded height and throw.
+        // Same pattern, and same reason, as WelcomeScreen.
+        child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                        child: Column(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                context.goNamed(WelcomeScreen.routeName);
+                              },
+                              icon: Icon(
+                                Icons.logout,
+                                size: 25,
+                                color: ColorPalette.primaryColorDark,
+                              ),
+                              label: Text(
+                                "Logout",
+                                maxLines: 4,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: FontPalette.primaryFontFamily,
+                                  decoration: TextDecoration.underline,
+                                  color: ColorPalette.primaryColorDark,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Expanded(
+                          child: Container(),
+                        ),
+                        Container(
+                          width: 200,
+                          margin: const EdgeInsets.all(20),
+                          child: Image.asset(
+                            "assets/images/pending.png",
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 50,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            "Verifying your Account",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            "We are currently processing you business credentials. This process will take 3-7 business days. You will may receive an sms or a call during the verification process.",
+                            maxLines: 4,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              color: ColorPalette.secondaryText,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text.rich(
+                            TextSpan(
+                              text:
+                                  "By giving your information, you agree to our ",
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                color: ColorPalette.secondaryText,
+                                fontSize: 12,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: "Terms & Conditions",
+                                  style: TextStyle(
+                                    color: ColorPalette.primaryColorDark,
+                                  ),
+                                  recognizer: _termsRecognizer,
+                                ),
+                                const TextSpan(text: " and "),
+                                TextSpan(
+                                  text: "Privacy Policy.",
+                                  style: TextStyle(
+                                    color: ColorPalette.primaryColorDark,
+                                  ),
+                                  recognizer: _privacyRecognizer,
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                      ],
+                    ))))),
       ),
     );
   }

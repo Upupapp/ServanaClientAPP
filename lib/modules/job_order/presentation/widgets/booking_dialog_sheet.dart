@@ -125,44 +125,51 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                       padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       child: Row(
                         children: [
-                          BlocConsumer<JobOrderBloc, JOState>(
-                            listener: (context, state) {
-                              // TODO: implement listener
-                            },
-                            builder: (context, state) {
-                              var bloc = BlocProvider.of<JobOrderBloc>(context);
-                              return Text.rich(
-                                TextSpan(
-                                  text: "Booking: ",
-                                  children: [
-                                    TextSpan(
-                                      text: bloc.jobOrder?.jobOrderNumber ??
-                                          (() {
-                                            final id = bloc.jobOrderId;
-                                            if (id == null || id.isEmpty) {
-                                              return "—";
-                                            }
-                                            // Avoid RangeError when id is shorter than 10.
-                                            final start = id.length > 10
-                                                ? id.length - 10
-                                                : 0;
-                                            return id.substring(start);
-                                          })(),
-                                      style: TextStyle(
-                                        color:
-                                            ColorPalette.primaryButtonTextColor,
-                                        fontWeight: FontWeight.bold,
+                          // Expanded: the Text.rich this builds overflowed the row by 104px at
+                          // text scale 1.3. Anchored on the enclosing Row deliberately — the
+                          // first BlocConsumer in this file sits in a Column inside a
+                          // SingleChildScrollView, where a flex child throws instead.
+                          Expanded(
+                            child: BlocConsumer<JobOrderBloc, JOState>(
+                              listener: (context, state) {
+                                // TODO: implement listener
+                              },
+                              builder: (context, state) {
+                                var bloc =
+                                    BlocProvider.of<JobOrderBloc>(context);
+                                return Text.rich(
+                                  TextSpan(
+                                    text: "Booking: ",
+                                    children: [
+                                      TextSpan(
+                                        text: bloc.jobOrder?.jobOrderNumber ??
+                                            (() {
+                                              final id = bloc.jobOrderId;
+                                              if (id == null || id.isEmpty) {
+                                                return "—";
+                                              }
+                                              // Avoid RangeError when id is shorter than 10.
+                                              final start = id.length > 10
+                                                  ? id.length - 10
+                                                  : 0;
+                                              return id.substring(start);
+                                            })(),
+                                        style: TextStyle(
+                                          color: ColorPalette
+                                              .primaryButtonTextColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                style: TextStyle(
-                                  color: ColorPalette.secondaryText,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              );
-                            },
+                                    ],
+                                  ),
+                                  style: TextStyle(
+                                    color: ColorPalette.secondaryText,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                           const Spacer(),
                           BlocConsumer<JobOrderBloc, JOState>(
@@ -667,13 +674,17 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    "Services",
-                                    style: TextStyle(
-                                      fontFamily: FontPalette.primaryFontFamily,
-                                      fontWeight: FontWeight.bold,
-                                      color: ColorPalette.secondaryText,
-                                      fontSize: 20,
+                                  // Expanded: 36px of overflow at text scale 2.0.
+                                  Expanded(
+                                    child: Text(
+                                      "Services",
+                                      style: TextStyle(
+                                        fontFamily:
+                                            FontPalette.primaryFontFamily,
+                                        fontWeight: FontWeight.bold,
+                                        color: ColorPalette.secondaryText,
+                                        fontSize: 20,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -753,12 +764,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                                   const EdgeInsets.symmetric(horizontal: 15.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    "Transportation:",
-                                    style: TextStyle(
-                                      color: ColorPalette.secondaryText,
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w500,
+                                  // Expanded: 95px of overflow.
+                                  Expanded(
+                                    child: Text(
+                                      "Transportation:",
+                                      style: TextStyle(
+                                        color: ColorPalette.secondaryText,
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                   const Spacer(),
@@ -779,12 +793,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                                   const EdgeInsets.symmetric(horizontal: 15.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    "Discount:",
-                                    style: TextStyle(
-                                      color: ColorPalette.secondaryText,
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w500,
+                                  // Expanded: 246px of overflow at text scale 2.0.
+                                  Expanded(
+                                    child: Text(
+                                      "Discount:",
+                                      style: TextStyle(
+                                        color: ColorPalette.secondaryText,
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                   const Spacer(),
@@ -804,12 +821,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                                   const EdgeInsets.symmetric(horizontal: 15.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    "Downpayment:",
-                                    style: TextStyle(
-                                      color: ColorPalette.secondaryText,
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w500,
+                                  // Expanded: 37px of overflow.
+                                  Expanded(
+                                    child: Text(
+                                      "Downpayment:",
+                                      style: TextStyle(
+                                        color: ColorPalette.secondaryText,
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                   const Spacer(),
@@ -837,12 +857,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                                   const EdgeInsets.symmetric(horizontal: 15.0),
                               child: Row(
                                 children: [
-                                  Text(
-                                    "Total:",
-                                    style: TextStyle(
-                                      color: ColorPalette.secondaryText,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                                  // Expanded: 153px of overflow at text scale 2.0.
+                                  Expanded(
+                                    child: Text(
+                                      "Total:",
+                                      style: TextStyle(
+                                        color: ColorPalette.secondaryText,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   const Spacer(),
@@ -875,12 +898,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            "Payment:",
-                            style: TextStyle(
-                              color: ColorPalette.secondaryText,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
+                          // Expanded: 106px of overflow.
+                          Expanded(
+                            child: Text(
+                              "Payment:",
+                              style: TextStyle(
+                                color: ColorPalette.secondaryText,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const Gap(10),
@@ -890,12 +916,18 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                             fit: BoxFit.contain,
                           ),
                           const Gap(5),
-                          Text(
-                            "Cash on Site",
-                            style: TextStyle(
-                              color: ColorPalette.secondaryText,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 17,
+                          // Flexible as well. "Payment:" is already Expanded,
+                          // but this value grows too, so the row was still 13px
+                          // over at text scale 1.3. Bounding only one side of a
+                          // row leaves the other free to overflow it.
+                          Flexible(
+                            child: Text(
+                              "Cash on Site",
+                              style: TextStyle(
+                                color: ColorPalette.secondaryText,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 17,
+                              ),
                             ),
                           ),
                         ],
@@ -914,12 +946,15 @@ class _BookingDialogSheetState extends State<BookingDialogSheet> {
                             padding: const EdgeInsets.symmetric(horizontal: 15),
                             child: Row(
                               children: [
-                                Text(
-                                  "No assigned personnel",
-                                  style: TextStyle(
-                                    color: ColorPalette.secondaryText,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w500,
+                                // Expanded: 135px of overflow.
+                                Expanded(
+                                  child: Text(
+                                    "No assigned personnel",
+                                    style: TextStyle(
+                                      color: ColorPalette.secondaryText,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ],
