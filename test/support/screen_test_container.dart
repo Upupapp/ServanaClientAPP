@@ -109,6 +109,17 @@ import 'package:client/modules/bookings/data/bookings_compatibility_data_source.
 import 'package:client/modules/payments/data/payments_canonical_data_source.dart';
 import 'package:client/modules/payments/data/payments_compatibility_data_source.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
+import 'package:client/core/recovery/pending_payment_service.dart';
+import 'package:client/modules/homepage/application/home_composition_controller.dart';
+import 'package:client/modules/homepage/data/home_composition_compatibility_data_source.dart';
+import 'package:client/modules/homepage/data/home_composition_repository.dart';
+import 'package:client/modules/homepage/presentation/controllers/home_campaign_controller.dart';
+import 'package:client/modules/notifications/application/notifications_controller.dart';
+import 'package:client/modules/notifications/data/notifications_canonical_data_source.dart';
+import 'package:client/modules/notifications/data/notifications_local_data_source.dart';
+import 'package:client/modules/notifications/data/notifications_remote_data_source.dart';
+import 'package:client/modules/notifications/data/notifications_repository.dart';
+import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -320,6 +331,41 @@ Future<void> registerScreenDependencies() async {
       compatibility: PaymentsCompatibilityDataSource(api),
       canonical: PaymentsCanonicalDataSource(v1ForBookings),
       router: disabledRouter,
+    ),
+  );
+
+  // ── Home composition and notifications ────────────────────────────────────
+  // The loaders map is EMPTY on purpose: every Home section then reports
+  // Absent, which is a real state the app models deliberately (there is
+  // nothing to retry, so no retry affordance is offered) and the one a build
+  // with no canonical home surface actually produces.
+  dpLocator.registerSingleton<HomeCompositionController>(
+    HomeCompositionController(
+      HomeCompositionRepository(
+        compatibility:
+            HomeCompositionCompatibilityDataSource(loaders: const {}),
+        router: const CanonicalRouter(availability: CanonicalAvailability()),
+      ),
+    ),
+  );
+  dpLocator.registerSingleton<HomeCampaignController>(HomeCampaignController());
+  dpLocator.registerSingleton<NotificationNavigationCoordinator>(
+    NotificationNavigationCoordinator(),
+  );
+  dpLocator.registerSingleton<PendingPaymentService>(PendingPaymentService());
+  dpLocator.registerSingleton<NotificationsController>(
+    NotificationsController(
+      repository: NotificationsRepository(
+        remote: NotificationsRemoteDataSource(api),
+        local: NotificationsLocalDataSource(),
+        canonical: NotificationsCanonicalDataSource(
+          V1ApiClient(
+            baseUrl: 'https://example.invalid',
+            httpClient: emptyBackend(),
+          ),
+        ),
+        router: const CanonicalRouter(availability: CanonicalAvailability()),
+      ),
     ),
   );
 
