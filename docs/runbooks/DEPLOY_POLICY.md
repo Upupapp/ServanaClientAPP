@@ -39,6 +39,24 @@ clone — git does not do this itself:
 git config core.hooksPath scripts/hooks
 ```
 
+### There is a second clone of this repository, and it has no gate
+
+`C:\Users\paulg\OneDrive\Desktop\servana_client-mobile` points at the **same
+GitHub repository**, sits on `main`, and as of 2026-08-20 is **82 commits
+behind** with nothing ahead. It holds nothing unique — its single uncommitted
+change was verified byte-identical to what is already on the remote before
+anything was done to it.
+
+A plain `git push` from it is refused, because the branch is strictly behind.
+A `--force` would not be, and would delete a full front-end sweep. **Its push
+URL has therefore been disabled**; `STALE-DO-NOT-USE.md` in that directory says
+how to reverse that.
+
+This is the sharp edge of "enable it once per clone": a working copy that
+predates the hook has **no gate at all**, and it is indistinguishable from the
+good one in a file browser. When a repository has more than one clone on disk,
+assume the unprotected one is the one that gets used by accident.
+
 `flutter test` is the heaviest of the three and the least optional: it renders
 all 62 screens at three handset sizes and three text scales, and that suite is
 what found 46 defects on 2026-08-20 — including two screens that threw outright
