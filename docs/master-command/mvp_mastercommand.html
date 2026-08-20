@@ -39,8 +39,8 @@ b.grn { color: #2e7d32; }
 <tr><td>Prepared</td><td><b>19 August 2026</b>. Every figure marked <i>measured</i> was taken on this date against <code>api.servana.com.ph</code> or the repository itself.</td></tr>
 <tr><td>Repository</td><td><code>C:\Users\paulg\OneDrive\Desktop\servana_client-unified</code> &mdash; the unified working copy. Supersedes <code>servana_client-mobile</code>.</td></tr>
 <tr><td>Remote</td><td><code>github.com/Upupapp/ServanaClientAPP</code>. Nothing in this document has been pushed.</td></tr>
-<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2185 passed</b>, 6 skipped. Backend: <code>npm run verify</code> exit 0, <b>6509 tests</b>.</td></tr>
-<tr><td>Revision</td><td><b>Rev 3</b>. TABs <b class="grn">01, 02, 04, 05 closed</b>; TAB 03 in progress. Backend <b class="grn">B1, B2, B7, B9 closed</b>. The outage is resolved, <b>its cause removed</b>, and the pipeline that produced it disabled.</td></tr>
+<tr><td>Gates today</td><td><b class="grn">All green</b> &mdash; <code>dart format</code> exit 0 (732 files, 0 changed); <code>flutter analyze</code> <b>No issues found</b>; <code>flutter test</code> <b>2590 passed</b>, 6 skipped. Backend: <code>npm run verify</code> exit 0, <b>6509 tests</b>.</td></tr>
+<tr><td>Revision</td><td><b>Rev 4</b>, 20 Aug. TABs <b class="grn">01, 02, 04, 05 closed</b>. Backend <b class="grn">B1, B2, B7, B9 closed</b>; production healthy for 11 hours. A full front-end sweep has since fixed <b class="grn">34 layout defects</b> and taken rendered screen coverage from <b>11 to 56 of 62</b>.</td></tr>
 <tr><td>Scope</td><td><b>Front-end only.</b> Backend items appear as blockers and evidence, never as tasks in a TAB.</td></tr>
 <tr><td>Definition of MVP</td><td>One customer can install the app, create an account, sign in, find a service, book it, pay for it, watch it happen, talk to the provider, and review it &mdash; without hitting a screen that lies, dead-ends, or cannot be completed.</td></tr>
 </table>
@@ -321,6 +321,36 @@ b.grn { color: #2e7d32; }
 <li>Run the built artefact, not the debug one. R8, signing and the version floors are already done; confirm the shrunk build still runs the journey from TAB 01.</li>
 <li>Confirm the version gate can retire this build later, and that the deep links resolve.</li>
 </ul>
+
+<h2 class="tab">Section F &mdash; The layout sweep (20 August)</h2>
+<div class="ok">
+<p><b>34 defects found and fixed</b>, every one of them <b>silent in a release build</b> &mdash; the content is clipped, no error is reported, and the customer simply sees less than was written. Rendered screen coverage went from <b>11 to 56 of 62</b>; the suite from 1,901 to <b>2,590</b> tests.</p>
+</div>
+
+<h3>Three root causes account for nearly all of them</h3>
+<table>
+<tr><th style="width:34%">Pattern</th><th style="width:10%">Count</th><th>Worst instance</th></tr>
+<tr><td>A bare <code>Text</code> inside a <code>Row</code></td><td>~20</td><td>&ldquo;Continue with Facebook&rdquo; on the sign-in screen &mdash; <b>122px over at text scale 1.0</b>, the default</td></tr>
+<tr><td>A fixed-size box or <code>Column</code> around scaling content</td><td>~8</td><td>The booking calendar: <b>every one of its 27+ day cells</b> overflowed at 1.3</td></tr>
+<tr><td><b>Only ONE side of a row bounded</b></td><td>3</td><td>The shared <code>settings_tile</code> &mdash; already had <code>Expanded</code> on the title, so it read as handled</td></tr>
+</table>
+<p>The third is the one that hides: somebody has already written <code>Expanded</code>, so the row looks fixed, but the value beside it grows too. <b>If both sides of a row can grow, both have to be able to give.</b></p>
+
+<h3>Six fixes were in SHARED widgets</h3>
+<p>Two separate primary-button implementations, the QR placeholder on both confirmation screens, the analytics consent sheet, the booking dialog sheet (which alone carried <b>nine</b> overflows), and the settings tile. Those reach screens the matrix has not even rendered yet.</p>
+
+<h3>One defect was not a layout problem at all</h3>
+<div class="warn">
+<p><code>CreateAccountScreen</code> started an <code>overlay_tooltip</code> tour in <code>initState</code>, registered no tooltip item, and the app has no <code>OverlayTooltipScaffold</code> anywhere &mdash; so it <b>threw 500ms after every new customer opened the sign-up screen</b>, and the tour never appeared. The widget written to render it has no callers.</p>
+<p>It surfaced because the screen could not be added to the matrix. I had recorded that as &ldquo;a harness gap, not a layout defect&rdquo;. It was both: the harness could not build the screen <i>because the screen throws in production too</i>. Taking the first explanation at face value would have left a live defect hidden behind a note saying it was only test infrastructure.</p>
+</div>
+
+<h3>Where the remaining risk is</h3>
+<p>Every defect came from <b>older hand-built screens</b> &mdash; the booking and job-order flows, the auth funnel, the settings tiles, the shared buttons. The last thirteen screens added to the matrix, all repository-backed and newer, produced <b>none</b>. The newer code was written with responsive layout in mind; the older code was not.</p>
+<p>Patterns and remedies are recorded in <code>docs/runbooks/LAYOUT_PATTERNS.md</code>.</p>
+
+<h3>Six screens remain uncovered, named rather than omitted</h3>
+<p><code>JobOrderScreen</code> and <code>ItemOptionMenuScreen</code> need a <code>MerchantServiceModel</code> with seventeen required fields; <code>PaymentWebViewScreen</code> and <code>CategoryExperienceScreen</code> need model arguments; <code>LiveTrackingScreen</code> needs a <code>TrackingDataSource</code> that <code>main_injector</code> references but does not register under that name; and <code>SplashScreen</code> is blocked on <code>flutter_secure_storage</code>'s platform channel, which never completes under the test binding.</p>
 
 <h2 class="tab">Section E &mdash; Deploy notes (backend)</h2>
 <p>Recorded here because the deploy is now manual and undocumented anywhere else. <b>There is no CI.</b> Actions are disabled on <code>Upupapp/servana_api</code> and on <code>Upupapp/ServanaClientAPP</code>.</p>
