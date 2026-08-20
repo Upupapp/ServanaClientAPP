@@ -1,5 +1,4 @@
 import 'package:client/common/domain/address/address_display.dart';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -7,6 +6,7 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/common/domain/booking/booking_create_request.dart';
+import 'package:client/common/domain/booking/booking_submission_result.dart';
 import 'package:client/common/domain/booking/booking_draft.dart'
     show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
@@ -569,19 +569,17 @@ abstract class _AirconBookingStore with Store {
     return 0;
   }
 
-  String _errorMsg(Object e) {
-    if (e is ServanaApiException) {
-      try {
-        final decoded = jsonDecode(e.body);
-        if (decoded is Map<String, dynamic>) {
-          final msg = decoded['message'] ?? decoded['error'];
-          if (msg != null) return msg.toString();
-        }
-      } catch (_) {}
-      return 'Something went wrong (${e.statusCode}).';
-    }
-    return e.toString();
-  }
+  /// What the customer is told when something goes wrong.
+  ///
+  /// This used to put the backend's own sentence on screen for an API error,
+  /// and `e.toString()` for anything else — so a dropped connection rendered
+  /// "SocketException: Failed host lookup: 'api.servana.com.ph'" in a snackbar,
+  /// and an out-of-coverage refusal arrived as raw server prose (§21).
+  ///
+  /// [BookingErrorMapper] was written for exactly this and had ZERO callers.
+  /// It classifies by status first, so a 500 can no longer be reported as a
+  /// connectivity problem.
+  String _errorMsg(Object e) => BookingErrorMapper.fromException(e).message;
 
   static String _uuidV4() {
     final rng = Random.secure();
