@@ -265,6 +265,69 @@ abstract class _MessagingStore with Store {
     }
   }
 
+  /// Sends a photo or document, with the same optimistic contract as text.
+  ///
+  /// The pending bubble carries the CAPTION, not the file name — a customer who
+  /// sends a photo of a broken tap is not sending a document called
+  /// "IMG_20260820.jpg", and putting the storage name on screen is the kind of
+  /// internal detail §58 keeps off it. The confirmed message that replaces it
+  /// carries the real attachment.
+  ///
+  /// Failure marks the bubble failed exactly as a text send does, so the retry
+  /// affordance the screen already draws works for both. What it does NOT do is
+  /// retry through [retryMessage]: that resends a body, and the bytes are no
+  /// longer in hand. An attachment retry has to start from the file again.
+  @action
+  Future<void> sendAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+    required String mimeType,
+    String caption = '',
+  }) async {
+    final clientMsgId = _generateClientMsgId();
+    final gen = _generation;
+
+    final pending = MessageModel(
+      conversationId: conversationId,
+      senderRole: 3,
+      type:
+          mimeType.startsWith('image/') ? MessageType.image : MessageType.file,
+      body: caption,
+      createdAt: DateTime.now(),
+      clientMsgId: clientMsgId,
+      sendStatus: MessageSendStatus.pending,
+    );
+    _insertMessage(conversationId, pending);
+    _track(MessageSendStartedEvent(
+      contentType: mimeType.startsWith('image/') ? 'image' : 'file',
+    ));
+
+    try {
+      final confirmed = await repository.sendAttachment(
+        conversationId: conversationId,
+        dataUri: dataUri,
+        fileName: fileName,
+        mimeType: mimeType,
+        clientMsgId: clientMsgId,
+        caption: caption,
+      );
+      if (_generation != gen) return;
+      _replaceByClientMsgId(conversationId, clientMsgId, confirmed);
+      _track(MessageSendSucceededEvent(
+        contentType: mimeType.startsWith('image/') ? 'image' : 'file',
+      ));
+    } catch (e) {
+      if (_generation != gen) return;
+      debugPrint('[MessagingStore] sendAttachment error: $e');
+      _markFailed(conversationId, clientMsgId);
+      _track(MessageSendFailedEvent(
+        contentType: mimeType.startsWith('image/') ? 'image' : 'file',
+        failureCode: 'api_error',
+      ));
+    }
+  }
+
   @action
   Future<void> retryMessage({
     required int conversationId,

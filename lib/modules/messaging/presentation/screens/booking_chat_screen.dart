@@ -1,3 +1,8 @@
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:client/core/media/upload_preparation.dart';
+import 'dart:io';
+import 'dart:convert';
 import 'package:client/modules/bookings/domain/booking_provider_profile.dart';
 import 'package:client/common/services/error_message_mapper.dart';
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -40,6 +45,11 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
   final _timeFormat = DateFormat('h:mm a');
 
   int? _conversationId;
+
+  /// True while a photo is being read, compressed and uploaded. Distinct from
+  /// the store's per-message pending state: this covers the work that happens
+  /// BEFORE a message exists to be pending.
+  bool _attaching = false;
   String _providerLabel = 'Service Provider';
   bool _resolving = true;
   String? _errorMessage;
@@ -175,6 +185,73 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
     try {
       dpLocator<AnalyticsCoordinator>().track(event).ignore();
     } catch (_) {}
+  }
+
+  /// Picks a photo, shrinks it, and sends it.
+  ///
+  /// Bounded twice on purpose. `pickImage` caps what is ever read into memory;
+  /// `UploadCompressor` decides what actually goes on the wire. The endpoint
+  /// takes a **data URI in a JSON body**, so base64 costs 4 bytes for every 3
+  /// and `express.json`'s 10 MB limit is reached by a 7.5 MB file — the
+  /// `chatPhoto` budget targets 800 KB, well clear of it and of nginx's 12 MB.
+  ///
+  /// Compression runs on a background isolate: it is real CPU work and the
+  /// customer is looking at a conversation while it happens.
+  Future<void> _pickAttachment() async {
+    final conversationId = _conversationId;
+    if (conversationId == null || _attaching) return;
+
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 2000,
+      maxHeight: 2000,
+      imageQuality: 90,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _attaching = true);
+    try {
+      final original = await File(picked.path).readAsBytes();
+      final prepared = await compute(_compressChatPhoto, original);
+      if (!mounted) return;
+
+      switch (prepared) {
+        case UploadReady(:final bytes, :final contentType):
+          // The caption is whatever is already typed, and the field is cleared
+          // only once the send has been handed over — so a failed send leaves
+          // the customer's words where they left them.
+          final caption = _controller.text.trim();
+          _controller.clear();
+          await _store.sendAttachment(
+            conversationId: conversationId,
+            dataUri: 'data:$contentType;base64,${base64Encode(bytes)}',
+            fileName: picked.name,
+            mimeType: contentType,
+            caption: caption,
+          );
+          if (mounted) _scrollToBottom();
+        case UploadTooLarge(:final message):
+          _showAttachmentProblem(message);
+        case UploadUnsupported(:final message):
+          _showAttachmentProblem(message);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showAttachmentProblem(
+          ErrorMessageMapper.forConversation(
+            e.toString(),
+            statusCode: e is ServanaApiException ? e.statusCode : null,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  void _showAttachmentProblem(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _send() async {
@@ -318,6 +395,30 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
       ),
       child: Row(
         children: [
+          // Attach. Disabled with the send button, for the same reason: there
+          // is nothing to attach to until the conversation resolves.
+          Semantics(
+            button: true,
+            label: 'Attach a photo',
+            child: IconButton(
+              onPressed: _conversationId != null && !_attaching
+                  ? _pickAttachment
+                  : null,
+              icon: _attaching
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: _conversationId != null
+                          ? ColorPalette.primaryColorDark
+                          : ColorPalette.accentText,
+                    ),
+              tooltip: 'Attach a photo',
+            ),
+          ),
           Expanded(
             child: Semantics(
               label: 'Message input',
@@ -642,3 +743,7 @@ class _SystemMessage extends StatelessWidget {
     );
   }
 }
+
+/// Runs on a background isolate, so it must be top-level.
+UploadPreparation _compressChatPhoto(Uint8List bytes) =>
+    UploadCompressor.prepareImage(bytes, budget: UploadBudget.chatPhoto);

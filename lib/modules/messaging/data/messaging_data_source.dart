@@ -71,6 +71,25 @@ abstract interface class MessagingDataSource {
     required String clientMsgId,
   });
 
+  /// Stores [dataUri] and sends one message referencing it.
+  ///
+  /// Two calls, not one, on BOTH transports — the endpoints are separate and
+  /// the order is load-bearing: an attachment is inert until a message
+  /// references it, so a failed send leaves an orphaned object rather than a
+  /// message pointing at nothing.
+  ///
+  /// Idempotency rides on the SEND, which carries [clientMsgId]. The upload has
+  /// none and claims none: a repeat stores a second object under a fresh key,
+  /// which is wasted storage rather than a duplicate message.
+  Future<MessageModel> sendAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+    required String mimeType,
+    required String clientMsgId,
+    String caption = '',
+  });
+
   Future<void> markRead({
     required int conversationId,
     required int lastReadMessageId,

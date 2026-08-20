@@ -92,6 +92,55 @@ class MessagingCompatibilityDataSource implements MessagingDataSource {
   }
 
   @override
+  Future<MessageModel> sendAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+    required String mimeType,
+    required String clientMsgId,
+    String caption = '',
+  }) async {
+    final uploaded = await _api.uploadChatAttachment(
+      conversationId: conversationId,
+      dataUri: dataUri,
+      fileName: fileName,
+    );
+
+    // 201 `{success, attachmentId, previewUrl, fileName, mimeType, sizeBytes}`.
+    // `previewUrl` is the reference a message carries; the server re-derives
+    // ownership from the storage key on send, so quoting somebody else's URL
+    // does not attach their file.
+    final url = uploaded['previewUrl']?.toString() ?? '';
+    if (url.isEmpty) {
+      throw ServanaApiException(
+        statusCode: 502,
+        body: 'uploadChatAttachment: no previewUrl in the response. '
+            'Keys: ${uploaded.keys.join(', ')}',
+      );
+    }
+
+    final json = await _api.sendChatMessage(
+      conversationId: conversationId,
+      body: caption,
+      clientMsgId: clientMsgId,
+      // `image` and `file` are both in SENDABLE_MESSAGE_TYPES; a PDF sent as
+      // `image` would render as a broken thumbnail.
+      type: mimeType.startsWith('image/') ? 'image' : 'file',
+      attachments: [
+        {
+          'url': url,
+          'fileName': uploaded['fileName']?.toString() ?? fileName,
+          'mimeType': uploaded['mimeType']?.toString() ?? mimeType,
+          if (uploaded['sizeBytes'] != null) 'sizeBytes': uploaded['sizeBytes'],
+        },
+      ],
+    );
+
+    final data = (json['message'] as Map<String, dynamic>?) ?? json;
+    return MessageMapper.fromJson(data, conversationId: conversationId);
+  }
+
+  @override
   Future<void> markRead({
     required int conversationId,
     required int lastReadMessageId,

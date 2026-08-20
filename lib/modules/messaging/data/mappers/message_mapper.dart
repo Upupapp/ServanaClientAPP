@@ -8,6 +8,8 @@ class MessageMapper {
         return MessageType.text;
       case 'image':
         return MessageType.image;
+      case 'file':
+        return MessageType.file;
       case 'system':
         return MessageType.system;
       default:
