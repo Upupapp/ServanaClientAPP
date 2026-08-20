@@ -90,6 +90,7 @@ import 'package:client/modules/registration/presentation/bloc/registration_bloc.
 import 'package:client/common/domain/use_cases/get_barangays_in_city_use_case.dart';
 import 'package:client/common/domain/use_cases/get_provinces_use_case.dart';
 import 'package:client/common/domain/use_cases/get_cities_in_region_use_case.dart';
+import 'package:client/modules/notifications/application/notification_permission_coordinator.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -234,6 +235,11 @@ Future<void> registerScreenDependencies() async {
       getProvincesUseCase: GetProvincesUseCase(),
       getCitiesInregionUseCase: GetCitiesInregionUseCase(),
     ),
+  );
+
+  // PermissionsScreen resolves this; it takes nothing.
+  dpLocator.registerSingleton<NotificationPermissionCoordinator>(
+    NotificationPermissionCoordinator(),
   );
 
   // ── Catalog and search ────────────────────────────────────────────────────

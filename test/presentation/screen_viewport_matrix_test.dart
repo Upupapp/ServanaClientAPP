@@ -122,6 +122,9 @@ import 'package:client/modules/job_order/presentation/screens/add_additional_ite
 import 'package:client/modules/review/presentation/screens/review_detail_screen.dart';
 import 'package:client/modules/registration/presentation/screens/account_pending_for_approval.dart';
 import 'package:client/modules/job_order/presentation/screens/job_order_summary_screen.dart';
+import 'package:client/common/presentation/screens/authentication_gate_screen.dart';
+import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
+import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -206,6 +209,9 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'EmailVerificationScreen': () => const EmailVerificationScreen(),
   // Stragglers with cheap or no dependencies.
   'AddressFormScreen': () => const AddressFormScreen(),
+  'AuthenticationGateScreen': () => const AuthenticationGateScreen(),
+  'ProfileEditScreen': () => const ProfileEditScreen(),
+  'PermissionsScreen': () => const PermissionsScreen(),
   'AccountPendingForApprovalScreen': () =>
       const AccountPendingForApprovalScreen(),
   'AddAdditionalItemMenuScreen': () => const AddAdditionalItemMenuScreen(),

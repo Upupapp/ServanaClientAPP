@@ -42,124 +42,135 @@ class _AuthGateSheet extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Close / back
-              Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  tooltip: 'Close',
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: ColorPalette.primaryColorDark,
-                    size: 28,
-                  ),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.goNamed(WelcomeScreen.routeName);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
+          // Scroll when it does not fit, fill when it does. This Column
+          // overflowed 91px at text scale 1.3 and contains a Spacer, which
+          // needs a bounded height — so a bare SingleChildScrollView would
+          // throw rather than fix it. Same pattern as WelcomeScreen.
+          child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                          child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Close / back
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: IconButton(
+                              tooltip: 'Close',
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: ColorPalette.primaryColorDark,
+                                size: 28,
+                              ),
+                              onPressed: () {
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.goNamed(WelcomeScreen.routeName);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
-              // Branding mark
-              Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1F44F2).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const Icon(
-                    Icons.lock_outline_rounded,
-                    color: Color(0xFF1F44F2),
-                    size: 32,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
+                          // Branding mark
+                          Center(
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color:
+                                    const Color(0xFF1F44F2).withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Icon(
+                                Icons.lock_outline_rounded,
+                                color: Color(0xFF1F44F2),
+                                size: 32,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
 
-              // Headline
-              Text(
-                'Sign in to continue',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 24,
-                  color: const Color(0xFF111827),
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 12),
+                          // Headline
+                          Text(
+                            'Sign in to continue',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 24,
+                              color: const Color(0xFF111827),
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
-              // Context copy
-              Text(
-                'Sign in or create an account $reason.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: FontPalette.primaryFontFamily,
-                  fontSize: 15,
-                  color: const Color(0xFF6B7280),
-                  height: 1.5,
-                ),
-              ),
-              const Spacer(),
+                          // Context copy
+                          Text(
+                            'Sign in or create an account $reason.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              fontSize: 15,
+                              color: const Color(0xFF6B7280),
+                              height: 1.5,
+                            ),
+                          ),
+                          const Spacer(),
 
-              // Sign In
-              _GateButton(
-                label: 'Sign In',
-                filled: true,
-                onTap: () {
-                  AppHaptics.selection();
-                  context.goNamed(AuthenticationScreen.routeName);
-                },
-              ),
-              const SizedBox(height: 12),
+                          // Sign In
+                          _GateButton(
+                            label: 'Sign In',
+                            filled: true,
+                            onTap: () {
+                              AppHaptics.selection();
+                              context.goNamed(AuthenticationScreen.routeName);
+                            },
+                          ),
+                          const SizedBox(height: 12),
 
-              // Create Account
-              _GateButton(
-                label: 'Create Account',
-                filled: false,
-                onTap: () {
-                  AppHaptics.selection();
-                  context.goNamed(CreateAccountScreen.routeName);
-                },
-              ),
-              const SizedBox(height: 16),
+                          // Create Account
+                          _GateButton(
+                            label: 'Create Account',
+                            filled: false,
+                            onTap: () {
+                              AppHaptics.selection();
+                              context.goNamed(CreateAccountScreen.routeName);
+                            },
+                          ),
+                          const SizedBox(height: 16),
 
-              // Continue browsing
-              GestureDetector(
-                onTap: () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.goNamed(WelcomeScreen.routeName);
-                  }
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'Continue Browsing',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: FontPalette.primaryFontFamily,
-                      fontSize: 14,
-                      color: ColorPalette.secondaryText,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
+                          // Continue browsing
+                          GestureDetector(
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.goNamed(WelcomeScreen.routeName);
+                              }
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                'Continue Browsing',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: FontPalette.primaryFontFamily,
+                                  fontSize: 14,
+                                  color: ColorPalette.secondaryText,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ))))),
         ),
       ),
     );

@@ -124,12 +124,18 @@ class SettingsNavTile extends StatelessWidget {
               ),
               if (trailingValue != null) ...[
                 const SizedBox(width: 8),
-                Text(
-                  trailingValue!,
-                  style: TextStyle(
-                    fontFamily: FontPalette.primaryFontFamily,
-                    fontSize: 13,
-                    color: ColorPalette.accentText,
+                // Flexible. The title beside it is already Expanded, but this
+                // trailing value grows too — so the row was still 8.8px over.
+                // Bounding one side of a row leaves the other free to overflow
+                // it. This tile is shared across the settings screens.
+                Flexible(
+                  child: Text(
+                    trailingValue!,
+                    style: TextStyle(
+                      fontFamily: FontPalette.primaryFontFamily,
+                      fontSize: 13,
+                      color: ColorPalette.accentText,
+                    ),
                   ),
                 ),
               ],
