@@ -56,6 +56,17 @@
 ///    2.0 only. Its 1.3 failure WAS fixed: `menu_item_widget.dart` pinned a
 ///    fixed `height: 120` around text that scales, and that widget is used
 ///    by three screens.
+///  - **`ItemOptionMenuScreen`** — ⚠ a REAL 112px bottom overflow remains at
+///    text scale 2.0 ONLY; 1.0 and 1.3 are clean. Two attempts did not land
+///    it, and it resists the usual probe because the screen also raises an
+///    ASYNC error, which kills a harness that overrides FlutterError.onError
+///    (the binding then asserts on `_pendingExceptionDetails`). Whoever
+///    picks this up should read the widget location from an unswallowed
+///    run rather than reuse the probe pattern in this file's history.
+///    `menu_item_widget.dart` WAS fixed on the way: its 120px box now
+///    scales with the text and is capped at 180, because it holds an
+///    AspectRatio(1) image that would otherwise be a 240px square on a
+///    320px handset.
 ///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
 ///    whose platform channel never completes under the test binding. It
 ///    logs `session unreadable, treating as signed out` after a 4s timeout

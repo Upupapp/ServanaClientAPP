@@ -31,7 +31,12 @@ class MenuItemWidget extends StatelessWidget {
         // Scaled, not fixed. The name, description and price inside all grow
         // with the text scale while 120 did not, so the row clipped its own
         // content at 1.3. This widget is used by three screens.
-        height: MediaQuery.textScalerOf(context).scale(120),
+        // Scaled but CAPPED. The row contains an AspectRatio(1) image, so
+        // height and width grow together — at text scale 2.0 an uncapped 240
+        // is a 240px square on a 320px handset, which pushes the whole screen
+        // over. 180 gives the text the room it needs without letting the
+        // thumbnail eat the row.
+        height: MediaQuery.textScalerOf(context).scale(120).clamp(120.0, 180.0),
         child: Row(
           children: [
             AspectRatio(

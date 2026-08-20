@@ -98,6 +98,50 @@ mainAxisExtent: MediaQuery.textScalerOf(context).scale(44),
 
 ---
 
+## 4. An unguarded lookup against an async-loaded list — NOT a layout bug, but it kills the screen
+
+This one does not clip anything. It takes the screen out entirely, and it was
+found by the same harness, so it belongs here.
+
+```dart
+// WRONG
+final service = catalogItems
+    .firstWhere((e) => e.name == orderLine.serviceName);   // no orElse
+```
+
+`firstWhere` without `orElse` throws `Bad state: No element` when nothing
+matches, and that propagates out of `build` — the whole screen fails to render.
+
+**An empty list is not an edge case.** These lists load asynchronously, so they
+are empty on the first frame *every time*, and they stay empty whenever the load
+fails. On 2026-08-19 the backend answered 500 for hours: every render of
+`JobOrderScreen` would have thrown rather than degraded.
+
+```dart
+// RIGHT — fall back to something the rest of the code already tolerates
+final service = catalogItems.firstWhere(
+  (e) => e.name == orderLine.serviceName,
+  orElse: () => MerchantServiceModel(),   // every field defaults; uses below are isNotEmpty-guarded
+);
+```
+
+Note also that this lookup matched by **name**. A renamed service breaks the
+link even when the catalog loads perfectly. Prefer an id.
+
+### The same class, in another screen
+
+`CreateAccountScreen` called `controller.start()` on an `overlay_tooltip` tour
+in `initState`, having registered no tooltip item — and the app has no
+`OverlayTooltipScaffold` anywhere. It threw 500ms after every new customer
+opened the sign-up screen. The widget written to render the tour has no callers.
+
+**Both were first recorded as "the harness cannot build this screen".** Both
+turned out to be live defects: the harness could not build them *because they
+throw in production too*. If a screen resists the matrix, find out why before
+writing it off as test infrastructure.
+
+---
+
 ## When a whole screen does not fit
 
 A `Column` whose fixed children already exceed the viewport overflows no matter
