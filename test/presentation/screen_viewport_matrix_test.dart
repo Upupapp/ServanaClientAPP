@@ -52,6 +52,14 @@
 ///    (`remote`, `local`, `canonical`, `router`), four dependencies deep.
 ///  - **`MerchantMenuScreen`, `StoreItemsScreen`** — both build under a
 ///    `StoreItemsBloc` provider this harness does not supply yet.
+///  - **`JobOrderScreen`** — ⚠ REAL failures at EVERY text scale including
+///    1.0, several exceptions each. Constructing it is trivial
+///    (`MerchantServiceModel()` defaults every field), so this is a
+///    genuine defect awaiting a look, not a harness gap.
+///  - **`ItemOptionMenuScreen`** — ⚠ REAL overflow remaining at text scale
+///    2.0 only. Its 1.3 failure WAS fixed: `menu_item_widget.dart` pinned a
+///    fixed `height: 120` around text that scales, and that widget is used
+///    by three screens.
 ///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
 ///    whose platform channel never completes under the test binding. It
 ///    logs `session unreadable, treating as signed out` after a 4s timeout
@@ -133,6 +141,8 @@ import 'package:client/modules/bookings/presentation/screens/booking_detail_scre
 import 'package:client/common/presentation/screens/notifications_screen.dart';
 import 'package:client/modules/homepage/presentation/screens/home_screen.dart';
 import 'package:client/modules/support/presentation/screens/support_ticket_detail_screen.dart';
+import 'package:client/modules/tracking/presentation/screens/live_tracking_screen.dart';
+import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -221,6 +231,7 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'ProfileEditScreen': () => const ProfileEditScreen(),
   'MessagesInboxScreen': () => const MessagesInboxScreen(),
   'NotificationsScreen': () => const NotificationsScreen(),
+  'LiveTrackingScreen': () => const LiveTrackingScreen(bookingId: '42'),
   'SupportTicketDetailScreen': () =>
       const SupportTicketDetailScreen(ticketKey: 'TKT-1'),
   'HomeScreen': () => const HomeScreen(),
@@ -283,6 +294,9 @@ void main() {
                       ),
                       BlocProvider<StoreItemsBloc>(
                         create: (_) => buildTestStoreItemsBloc(),
+                      ),
+                      BlocProvider<StoreOptionsBloc>(
+                        create: (_) => buildTestStoreOptionsBloc(),
                       ),
                       BlocProvider<RegistrationBloc>(
                         create: (_) => dpLocator<RegistrationBloc>(),

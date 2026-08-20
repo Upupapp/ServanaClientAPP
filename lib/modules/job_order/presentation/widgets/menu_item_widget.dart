@@ -28,7 +28,10 @@ class MenuItemWidget extends StatelessWidget {
       onTap: onTap,
       child: SizedBox(
         width: double.maxFinite,
-        height: 120,
+        // Scaled, not fixed. The name, description and price inside all grow
+        // with the text scale while 120 did not, so the row clipped its own
+        // content at 1.3. This widget is used by three screens.
+        height: MediaQuery.textScalerOf(context).scale(120),
         child: Row(
           children: [
             AspectRatio(

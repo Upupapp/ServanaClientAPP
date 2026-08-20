@@ -121,6 +121,17 @@ import 'package:client/modules/notifications/data/notifications_remote_data_sour
 import 'package:client/modules/notifications/data/notifications_repository.dart';
 import 'package:client/modules/notifications/application/notification_navigation_coordinator.dart';
 import 'package:client/modules/support/application/support_ticket_controller.dart';
+import 'package:client/modules/tracking/application/tracking_controller.dart';
+import 'package:client/modules/tracking/data/tracking_canonical_data_source.dart';
+import 'package:client/modules/tracking/data/tracking_compatibility_data_source.dart';
+import 'package:client/modules/tracking/data/tracking_data_source.dart';
+import 'package:client/modules/tracking/data/tracking_repository.dart';
+import 'package:client/modules/store_items/domain/use_cases/get_store_options_use_case.dart';
+import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.dart';
+// Second duplicate pair in this codebase, after StoreItemsReporsitory:
+// there are TWO StoreOptionsRepository classes. This is the one the use
+// case and main_injector use; the merchant_menu copy is the other.
+import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -355,6 +366,22 @@ Future<void> registerScreenDependencies() async {
       supportController: supportController,
     ),
   );
+  dpLocator.registerSingleton<TrackingController>(
+    TrackingController(
+      repository: TrackingRepository(
+        compatibility: TrackingCompatibilityDataSource(
+          TrackingDataSource(api),
+        ),
+        canonical: TrackingCanonicalDataSource(
+          V1ApiClient(
+            baseUrl: 'https://example.invalid',
+            httpClient: emptyBackend(),
+          ),
+        ),
+        router: const CanonicalRouter(availability: CanonicalAvailability()),
+      ),
+    ),
+  );
   dpLocator.registerSingleton<HomeCampaignController>(HomeCampaignController());
   dpLocator.registerSingleton<NotificationNavigationCoordinator>(
     NotificationNavigationCoordinator(),
@@ -418,6 +445,13 @@ StoreItemsBloc buildTestStoreItemsBloc() {
     storeItemsRepo: repo,
   );
 }
+
+/// A [StoreOptionsBloc] for ItemOptionMenuScreen.
+StoreOptionsBloc buildTestStoreOptionsBloc() => StoreOptionsBloc(
+      getStoreOptionsUseCase: GetStoreOptionsUseCase(
+        storeOptionsRepository: StoreOptionsRepository(backend: MockBackend()),
+      ),
+    );
 
 /// A [JobOrderBloc] for SelectPaymentMethodScreen, which builds under one.
 ///
