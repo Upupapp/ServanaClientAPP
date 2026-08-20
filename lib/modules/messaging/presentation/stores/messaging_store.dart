@@ -120,20 +120,34 @@ abstract class _MessagingStore with Store {
 
   /// Resolves the conversation for a booking on demand (called when user opens
   /// a chat screen for a booking not yet in convsByBookingId).
+  /// The conversation for [bookingId], or null when the backend says there is
+  /// not one yet.
+  ///
+  /// **Null means absent, and nothing else.** This used to catch everything and
+  /// return null, so a 403, a 500, a 502 and a dead socket were all reported to
+  /// the customer as:
+  ///
+  ///   "This conversation is not available yet. It opens once a provider
+  ///    accepts the booking."
+  ///
+  /// — the screen's copy for the one case null is supposed to mean. During an
+  /// outage every customer opening a chat that already existed was told their
+  /// provider had not accepted yet, which is a fact about their booking that
+  /// the app had not learned and that was not true.
+  ///
+  /// The data source already draws the line correctly: 404 becomes null, and
+  /// everything else rethrows. This is the layer that was erasing it. The chat
+  /// screen has carried a `catch` for exactly this since it was written; it
+  /// could simply never fire.
   Future<ConversationModel?> resolveConversation(String bookingId) async {
     if (convsByBookingId.containsKey(bookingId)) {
       return convsByBookingId[bookingId];
     }
-    try {
-      final conv = await repository.resolveForBooking(bookingId);
-      if (conv != null) {
-        _setConversation(conv);
-      }
-      return conv;
-    } catch (e) {
-      debugPrint('[MessagingStore] resolveConversation error: $e');
-      return null;
+    final conv = await repository.resolveForBooking(bookingId);
+    if (conv != null) {
+      _setConversation(conv);
     }
+    return conv;
   }
 
   // ── Message loading ────────────────────────────────────────────────────────

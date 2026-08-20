@@ -1,10 +1,12 @@
+import 'package:client/modules/bookings/domain/booking_provider_profile.dart';
+import 'package:client/common/services/error_message_mapper.dart';
+import 'package:client/common/data/backend/servana_api_client.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/common/presentation/responsive/servana_responsive.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/events/message_events.dart';
-import 'package:client/modules/job_order/domain/repositories/jo_repo.dart';
 import 'package:client/modules/messaging/data/models/message_model.dart';
 import 'package:client/modules/messaging/presentation/stores/messaging_store.dart';
 import 'package:flutter/material.dart';
@@ -100,21 +102,45 @@ class _BookingChatScreenState extends State<BookingChatScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      // Classified rather than flattened. Until the store stopped swallowing
+      // them, none of these could reach this branch at all: every failure came
+      // back as null and was reported as "it opens once a provider accepts the
+      // booking", which is a claim about the booking, not about the request.
       setState(() {
         _resolving = false;
-        _errorMessage = 'Could not load messages. Pull down to try again.';
+        _errorMessage = ErrorMessageMapper.forConversation(
+          e.toString(),
+          statusCode: e is ServanaApiException ? e.statusCode : null,
+        );
       });
     }
   }
 
+  /// The provider's name for the header, the empty state and the bubbles.
+  ///
+  /// Read from `GET /api/booking/:id/provider` — the endpoint the booking
+  /// detail screen already uses. It used to come from
+  /// `JonOrderRepository.getJobOrderEmployees`, which is
+  /// `HttpBackend.getJobOrderEmployees`, which returns `[]` unconditionally in
+  /// every release build. So this always fell through and the chat said
+  /// "Service Provider" for a provider the booking screen could name.
+  ///
+  /// Still best-effort: a chat that works with an unnamed provider is better
+  /// than one that refuses to open because a name lookup failed.
   Future<void> _loadProviderName() async {
+    final bookingId = int.tryParse(widget.jobOrderId);
+    if (bookingId == null) return;
     try {
-      final repo = dpLocator<JonOrderRepository>();
-      final employees = await repo.getJobOrderEmployees(widget.jobOrderId);
-      if (!mounted || employees.isEmpty) return;
-      final name = employees.first.fullname.trim();
-      if (name.isNotEmpty) setState(() => _providerLabel = name);
-    } catch (_) {}
+      final response =
+          await dpLocator<ServanaApiClient>().getBookingProvider(bookingId);
+      final provider = BookingProviderProfile.fromResponse(response);
+      final name = provider.name;
+      if (!mounted || name == null || name.isEmpty) return;
+      setState(() => _providerLabel = name);
+    } catch (_) {
+      // Leave the generic label. Naming the failure here would put an error
+      // about a header on top of a conversation that opened perfectly well.
+    }
   }
 
   void _onFocusChange() {

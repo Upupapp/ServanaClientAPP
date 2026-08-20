@@ -129,6 +129,57 @@ void main() {
     );
   });
 
+  test('no live screen reads the stubbed surface for data it will show', () {
+    // A route is not the only way into a stub. `BookingChatScreen` never
+    // navigated into the job-order flow — it CALLED into it, taking the
+    // provider's name from `JonOrderRepository.getJobOrderEmployees`, which is
+    // `HttpBackend.getJobOrderEmployees`, which returns `[]` in every release
+    // build. So the chat header, its empty state and every message bubble said
+    // "Service Provider" for a provider the booking screen could name from
+    // `GET /api/booking/:id/provider`.
+    //
+    // Reachability and data are two different dependencies on the same dead
+    // surface, and closing one says nothing about the other.
+    const stubbedMethods = {
+      'getMerchantDetails',
+      'getMerchantJoDetails',
+      'getJobOrderItems',
+      'getJobOrderEmployees',
+      'insertJobOrder',
+      'markAsCompleted',
+    };
+    final lineComment = RegExp(r'^[ \t]*//.*$', multiLine: true);
+
+    final offenders = <String>[];
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      if (_insideFlow(entity.path)) continue;
+      // The Backend contract and its two implementations must name them.
+      if (entity.path.replaceAll(r'\', '/').contains('/data/backend/')) {
+        continue;
+      }
+
+      final source = entity
+          .readAsStringSync()
+          .replaceAll('\r\n', '\n')
+          .replaceAll(lineComment, '');
+
+      for (final method in stubbedMethods) {
+        if (source.contains('$method(')) {
+          offenders.add('${entity.path} -> $method');
+        }
+      }
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason: 'These read a Backend method that returns null/[]/false in every '
+          'release build, and will render its emptiness as though the server '
+          'had answered: ${offenders.join(', ')}',
+    );
+  });
+
   test('the stubbed methods really are unconditional stubs', () {
     // Without this the test above is a rule about nothing: if the surface were
     // implemented, keeping these screens unreachable would be wrong rather
