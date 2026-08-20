@@ -133,6 +133,10 @@ import 'package:client/modules/store_items/presentation/bloc/store_options_bloc.
 // case and main_injector use; the merchant_menu copy is the other.
 import 'package:client/modules/store_items/domain/repositories/store_options_repo.dart';
 import 'package:client/modules/categories/data/category_experience_repository.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'dart:io';
+import 'package:hive/hive.dart';
 
 /// Analytics that records nothing and reaches nothing.
 ///
@@ -173,6 +177,8 @@ Future<void> registerScreenDependencies() async {
     baseUrl: 'https://api.example.test',
     client: emptyBackend(),
   );
+
+  registerPlatformChannelStubs();
 
   dpLocator.registerSingleton<ServanaApiClient>(api);
   dpLocator.registerSingleton<AnalyticsCoordinator>(NoOpAnalyticsCoordinator());
@@ -448,6 +454,36 @@ StoreItemsBloc buildTestStoreItemsBloc() {
     getStoreItemsUseCase: GetStoreItemsUseCase(storeItemsRepo: repo),
     storeItemsRepo: repo,
   );
+}
+
+/// Answers the platform channels that have no implementation under the test
+/// binding, so screens which touch storage on build can be rendered at all.
+///
+/// `SplashScreen` reads the session through flutter_secure_storage. Its channel
+/// never completes in a test, so the screen sat behind a 4s timeout, logged
+/// "session unreadable, treating as signed out", and could not be covered. That
+/// degradation is the right behaviour in production — but it is not a reason to
+/// leave the app's ENTRY POINT unrendered in every test run.
+///
+/// Returning null/empty is deliberate: it is the signed-out state, which is
+/// what a first launch actually looks like.
+void registerPlatformChannelStubs() {
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+  messenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+    (call) async => call.method == 'readAll' ? <String, String>{} : null,
+  );
+  messenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/path_provider'),
+    (call) async => '.',
+  );
+
+  // Hive needs a real directory before any box opens. os.tmpdir, never the
+  // repo: release-gate hermeticity asserts no test writes into a tracked
+  // directory, and it is right to.
+  Hive.init(Directory.systemTemp.createTempSync('servana-hive-').path);
 }
 
 /// A [StoreOptionsBloc] for ItemOptionMenuScreen.

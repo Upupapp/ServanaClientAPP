@@ -67,11 +67,6 @@
 ///    scales with the text and is capped at 180, because it holds an
 ///    AspectRatio(1) image that would otherwise be a 240px square on a
 ///    320px handset.
-///  - **`SplashScreen`** — reads the session through flutter_secure_storage,
-///    whose platform channel never completes under the test binding. It
-///    logs `session unreadable, treating as signed out` after a 4s timeout
-///    and carries on, which is the right behaviour and still not a screen
-///    this harness can render.
 ///  - **`ProfileScreen`** — its dependencies ARE registered here now and it
 ///    builds, but rendering it raises **four exceptions** the harness cannot
 ///    yet attribute. That is an open question, not a clean skip: it may be
@@ -155,6 +150,7 @@ import 'package:client/modules/job_order/presentation/screens/job_order_screen.d
 import 'package:client/common/domain/services/service_category_config.dart';
 import 'package:client/common/presentation/screens/payment_webview_screen.dart';
 import 'package:client/modules/categories/presentation/screens/category_experience_screen.dart';
+import 'package:client/modules/landing/presentation/screens/splash_screen.dart';
 
 /// Real handsets, smallest first. 320x568 is an iPhone SE 1st gen — still the
 /// floor Play and the App Store will serve.
@@ -244,6 +240,7 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'MessagesInboxScreen': () => const MessagesInboxScreen(),
   'NotificationsScreen': () => const NotificationsScreen(),
   'LiveTrackingScreen': () => const LiveTrackingScreen(bookingId: '42'),
+  'SplashScreen': () => const SplashScreen(),
   'PaymentWebViewScreen': () => const PaymentWebViewScreen(
         bookingId: 42,
         checkoutUrl: 'https://example.invalid/checkout',

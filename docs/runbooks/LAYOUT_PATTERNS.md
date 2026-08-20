@@ -129,6 +129,30 @@ final service = catalogItems.firstWhere(
 Note also that this lookup matched by **name**. A renamed service breaks the
 link even when the catalog loads perfectly. Prefer an id.
 
+### A third of the same family: used after disposal
+
+`CategoryExperienceScreen` constructs its controller in `initState`, fires an
+async `load()`, and disposes it in `dispose()`. Nothing guarded the gap, so a
+load completing after disposal called `notifyListeners()` on a dead controller.
+In production that is a customer opening a category and navigating away before
+it finishes — likeliest on exactly the slow connection that makes the load slow
+enough to matter.
+
+```dart
+// RIGHT — the guard belongs in the controller, which owns its lifecycle
+bool _disposed = false;
+
+@override
+void dispose() {
+  _disposed = true;
+  super.dispose();
+}
+
+// ...after every await:
+if (_disposed) return;
+notifyListeners();
+```
+
 ### The same class, in another screen
 
 `CreateAccountScreen` called `controller.start()` on an `overlay_tooltip` tour
