@@ -14,6 +14,7 @@ import 'package:client/modules/homepage/presentation/stores/hompage_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 
 /// Step 3: Booking confirmed — shows confirmation and, for PAYMONGO bookings,
 /// the hosted-checkout launcher.
@@ -351,12 +352,13 @@ class _AirconConfirmationScreenState extends State<AirconConfirmationScreen> {
 
   String _optionName() {
     final opt = store.selectedOption;
-    if (opt == null) return 'Aircon Service';
-    return (opt['level_3'] ??
-            opt['name'] ??
-            opt['optionName'] ??
-            'Aircon Service')
-        .toString();
+    if (opt == null) return kAirconBookingFallbackLabel;
+    // ServiceOptionDisplay is the ONE reader: it accepts both `level3`
+    // (what canonicalOptionMap writes) and `level_3` (what legacy
+    // service_options maps carry). Hand-rolling this lookup is what let
+    // the two spellings drift apart.
+    return ServiceOptionDisplay.name(opt,
+        fallback: kAirconBookingFallbackLabel);
   }
 
   String _formatSchedule(DateTime dt) {

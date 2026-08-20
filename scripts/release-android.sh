@@ -134,9 +134,21 @@ echo "-> verify AAB signature"
 AAB=build/app/outputs/bundle/release/app-release.aab
 out=$(jarsigner -verify -verbose:summary -certs "$AAB" 2>&1) || true
 echo "$out" | tail -25
-echo "$out" | grep -q "jar verified" \
+# Herestrings, NOT `echo "$out" | grep -q`. Piping into `grep -q` is broken
+# under the `set -o pipefail` at the top of this script: grep exits the instant
+# it matches and closes the pipe, echo is killed by SIGPIPE mid-write, and
+# pipefail promotes that 141 to the pipeline's status — so a SUCCESSFUL match is
+# reported as a failure. It is size-dependent, which is what makes it vicious: a
+# pipe holds 64KB, so this passed for every smaller artefact and only began
+# failing once jarsigner's output grew past the buffer. Build 40 emits 1023
+# lines / 126KB because the bundle carries ~980 debug-symbol entries, and this
+# check declared an UNSIGNED AAB for a bundle jarsigner had just verified.
+#
+# `tail -25` above is safe by contrast: tail reads its input to the end, so the
+# writer is never signalled. The bug needs an early-exiting reader.
+grep -q "jar verified" <<< "$out" \
   || fail "AAB is NOT signed. jarsigner did not report 'jar verified'."
-echo "$out" | grep -qi "CN=Servana Client" \
+grep -qi "CN=Servana Client" <<< "$out" \
   || fail "AAB is signed, but not by the expected upload certificate."
 echo "   AAB signed by the expected upload key."
 
@@ -156,7 +168,19 @@ flutter build apk --release \
 
 echo "-> verify APK signature"
 APK=build/app/outputs/flutter-apk/app-release.apk
-APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name 'apksigner*' -type f 2>/dev/null | sort -V | tail -1)
+# `-name 'apksigner*'` also matched build-tools/<ver>/lib/apksigner.jar, and
+# `sort -V | tail -1` then selected the JAR over the launcher — because "lib/…"
+# sorts after the bare name. Running it produced
+#   cannot execute binary file: Exec format error
+# and exit 126, which reads like a missing tool rather than a wrong pick.
+#
+# Fixed by naming the launchers explicitly and bounding the depth so lib/ is out
+# of reach. Both launcher spellings are listed: the SDK ships `apksigner` on
+# Linux and macOS, `apksigner.bat` on Windows, and this script now runs on a
+# developer machine rather than an ubuntu runner.
+APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 2 -maxdepth 2 \
+  \( -name 'apksigner' -o -name 'apksigner.bat' \) -type f 2>/dev/null \
+  | sort -V | tail -1)
 [ -n "$APKSIGNER" ] || fail "apksigner not found under $ANDROID_SDK_ROOT/build-tools"
 "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/apksig.txt
 grep -qi "CN=Servana Client" /tmp/apksig.txt \

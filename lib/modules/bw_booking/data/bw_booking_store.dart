@@ -21,8 +21,17 @@ import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 
 part 'bw_booking_store.g.dart';
+
+/// Shown only when no option has been selected at all.
+///
+/// ONE definition, referenced by this module's screens. It used to be a
+/// literal repeated in three files, alongside a hand-rolled key lookup that
+/// silently disagreed with the only writer of the option map -- so every
+/// canonical booking rendered this label instead of the service's real name.
+const String kBwBookingFallbackLabel = 'Beauty & Wellness Service';
 
 class BwBookingStore extends _BwBookingStore with _$BwBookingStore {
   BwBookingStore({required super.api});
@@ -818,12 +827,12 @@ abstract class _BwBookingStore with Store {
 
   String _optionName() {
     final opt = selectedOption;
-    if (opt == null) return 'Beauty & Wellness Service';
-    return (opt['level_3'] ??
-            opt['name'] ??
-            opt['optionName'] ??
-            'Beauty & Wellness Service')
-        .toString();
+    if (opt == null) return kBwBookingFallbackLabel;
+    // ServiceOptionDisplay is the ONE reader: it accepts both `level3`
+    // (what canonicalOptionMap writes) and `level_3` (what legacy
+    // service_options maps carry). Hand-rolling this lookup is what let
+    // the two spellings drift apart.
+    return ServiceOptionDisplay.name(opt, fallback: kBwBookingFallbackLabel);
   }
 
   void _track(dynamic event) {
