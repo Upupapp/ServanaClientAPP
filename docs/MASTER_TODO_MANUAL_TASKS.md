@@ -6,44 +6,67 @@ else is done in-tree and reported per TAB.
 Rules in force: nothing is pushed, nothing is deployed, no production data is
 touched, no credential is changed. Local commits only.
 
-Last updated: 2026-08-18 (TAB 01).
+Last updated: 2026-08-20 (sweep of `origin/main`; M1 closed).
 
 ---
 
-## M1 — The canonical v1 client layer is not on this machine · **BLOCKS TABs 02, 05–12**
+## M1 — ~~The canonical v1 client layer is not on this machine~~ · **CLOSED 2026-08-20**
 
-**Owner:** repository owner · **Raised:** TAB 01
+**Owner:** repository owner · **Raised:** TAB 01 · **Closed:** sweep of `origin/main`
 
-The Master Command describes the client at HEAD `edda43b`, 43 commits ahead of
-`origin/main`, holding a complete canonical v1 layer behind 15 capability
-flags. **None of that is here.** Measured on this machine:
+**It arrived by the option this item did not recommend.** TAB 01 offered three
+ways out — bundle the commits, continue on the Windows machine, or authorise a
+push — and listed the push third, as an option rather than a recommendation.
+The push is what happened. So no bundle was ever needed: this clone was 95
+commits behind and 0 ahead, and a plain fast-forward to `d2315ec` landed the
+whole layer. Nothing had to be salvaged or reconciled, because nothing local
+was ever ahead of the remote.
 
-| | Master Command | This machine |
-| --- | --- | --- |
-| Client HEAD | `edda43b` (43 ahead) | `80eff51` (level with `origin/main`) |
-| `edda43b` in history | — | **absent** |
-| `lib/**/v1_endpoints.dart` | 60 path constants | **file does not exist** |
-| `CanonicalAvailability` | 15 capabilities | **no such symbol** |
-| `api_error_mapper.dart` | maps 5 of 36 codes | **file does not exist** |
-| occurrences of `api/v1` in `lib/` | — | **0** |
-| test files | 149 | 106 |
+Re-measured on this machine after the fast-forward:
 
-Those 43 commits exist only at `C:\Users\paulg\OneDrive\Desktop\servana_client-mobile`
-and were never pushed — correctly, under the standing "nothing is pushed" rule.
-The consequence is that the entire Phase C migration is unbuildable here: there
-are no capability flags to enable, because the layer they gate is not present.
+| | TAB 01 claim | Master Command | Measured at `d2315ec` |
+| --- | --- | --- | --- |
+| `lib/**/v1_endpoints.dart` | file does not exist | 60 path constants | **61 paths, 62 members** |
+| `CanonicalAvailability` | no such symbol | 15 capabilities | **15 capabilities** |
+| `api_error_mapper.dart` | file does not exist | maps 5 of 36 codes | **present, 10 codes** |
+| occurrences of `api/v1` in `lib/` | 0 | — | **105** |
+| test files | 106 | 149 | **159** |
 
-**To unblock, one of:**
+So TABs 02 and 05–12 are no longer blocked by a missing layer. **02 is moot** —
+there are no commits to land. 05–12 are now actionable in-tree.
 
-1. Bundle the 43 commits on the Windows machine and transfer them —
-   `git bundle create servana-client.bundle origin/main..HEAD`, then
-   `git fetch` the bundle here. Keeps the "nothing is pushed" rule intact.
-2. Continue the client-side TABs on the Windows machine instead.
-3. Authorise a push of the 43 commits to `origin/main` (**explicitly outside
-   the current rules** — recorded as an option, not a recommendation).
+Two things this does NOT close:
 
-Until then, TABs that touch only files present in `origin/main` — 13, 14, 15,
-17, 18, 19 — remain fully actionable here.
+- **The capabilities are still all off.** `CanonicalAvailability.enabled` is
+  `false` unless built with `--dart-define=CANONICAL_V1_ENABLED=true`, and
+  `docs/runbooks/DEPLOY_POLICY.md` keeps all 15 off for MVP deliberately.
+  Migrating a capability is its own command with its own evidence.
+- **`canonical_availability.dart`'s own doc comment is now stale.** It states
+  the `/api/v1` namespace is *absent* from `servana_api`'s `origin/main`.
+  `DEPLOY_POLICY.md` states `/api/v1` is deployed and healthy. Both cannot be
+  true; the deploy policy is the newer of the two. Left as written rather than
+  guessed at — the rationale comment is load-bearing and correcting it needs a
+  backend measurement, not an edit. Tracked as **M9**.
+
+The stale second clone at `C:\Users\paulg\OneDrive\Desktop\servana_client-mobile`
+is unrelated to this item and remains disabled; see `DEPLOY_POLICY.md`.
+
+---
+
+## M9 — `canonical_availability.dart` contradicts `DEPLOY_POLICY.md` on whether v1 is deployed
+
+**Owner:** backend owner · **Raised:** 2026-08-20 sweep
+
+`lib/core/network/canonical_availability.dart` documents, as the reason the
+gate exists, that the entire `/api/v1` namespace is absent from `servana_api`'s
+`origin/main`. `docs/runbooks/DEPLOY_POLICY.md` says `/api/v1` is deployed and
+healthy and that the flags stay off for a different reason — that the surface
+has never carried real customer traffic.
+
+Only one can be current. This is not fixable from the client repository: it
+needs a measurement of what `servana_api` actually mounts on production. The
+gate's *behaviour* is correct either way (deny by default), so this is a
+correctness-of-record defect, not a runtime one.
 
 ---
 
