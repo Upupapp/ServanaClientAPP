@@ -1,14 +1,15 @@
 # Layout patterns that broke this app
 
-**Written 2026-08-20, after a sweep that found and fixed 34 defects.**
+**Written 2026-08-20, after a sweep that found and fixed 44 defects.**
 
 Every one was **silent in a release build**. In debug an overflow paints the
 yellow-and-black hatching and throws, which is loud. In release it does
 neither: the content is simply clipped. Nobody gets an error report; the
 customer just sees less than was written.
 
-Three root causes account for nearly all of them. They are worth recognising by
-shape, because the same three keep being written.
+Four root causes account for nearly all of them — three layout, one that kills
+the screen outright. They are worth recognising by shape, because the same
+handful keep being written.
 
 ---
 
@@ -182,7 +183,7 @@ mis-targeted `Expanded` took another from 6 exceptions to 19.
 `test/presentation/screen_viewport_matrix_test.dart` renders whole screens at
 three real handset sizes and three text scales, including **2.0**, which
 `AccessibilityTokens.maxRequiredTextScale` declares supported. Coverage went
-from 11 screens to 56 during this sweep.
+from 11 screens to 58 during this sweep.
 
 Two things about it are worth preserving:
 
@@ -197,7 +198,7 @@ Two things about it are worth preserving:
   broken that were not. A harness that asserts a cause it does not know wastes
   more time than the bug.
 
-**Where the risk actually is:** every one of the 34 defects came from older
+**Where the risk actually is:** every one of the defects came from older
 hand-built screens — the booking and job-order flows, the auth funnel, the
 settings tiles, the shared buttons. The last thirteen screens added to the
 matrix, all repository-backed and newer, produced none.
