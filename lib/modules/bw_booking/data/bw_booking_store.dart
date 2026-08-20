@@ -104,6 +104,17 @@ abstract class _BwBookingStore with Store {
   @observable
   Map<String, dynamic>? selectedSlot;
 
+  /// A schedule the customer picked directly, for a service with no branch
+  /// slots to choose from.
+  ///
+  /// Measured on production 2026-08-20: `GET /api/services/:id/branches`
+  /// answers `branches: []` for NINE of the ten legacy families, and the
+  /// canonical catalog handoff routes a Service straight to checkout without
+  /// passing a branch screen at all. For 65 of the 95 services on offer there
+  /// is therefore no slot to pick, and this is how the customer says when.
+  @observable
+  DateTime? selectedSchedule;
+
   @observable
   Map<String, dynamic>? selectedAddress;
 
@@ -174,6 +185,7 @@ abstract class _BwBookingStore with Store {
     selectedBranch = null;
     selectedDate = null;
     selectedSlot = null;
+    selectedSchedule = null;
     selectedAddress = null;
     paymentMethod = 'CASH';
     bookingResult = null;
@@ -194,6 +206,26 @@ abstract class _BwBookingStore with Store {
     isLoading = true;
   }
 
+  /// Prepares the store for a Service scheduled directly, with no branch.
+  ///
+  /// Needed because [clearSelectionOnly] deliberately preserves `branches` for
+  /// catalog reuse. Without this, a customer who opened Beauty & Wellness
+  /// (legacy family 2, the one family that HAS a branch) and then picked a
+  /// Personal Care service out of Search would arrive at checkout with a stale
+  /// branch list — so [branchRequired] would be true, the screen would draw no
+  /// branch control, and the booking would be refused for a field that flow
+  /// never had.
+  @action
+  void beginBranchlessBooking() {
+    selectedServiceId = null;
+    selectedBranch = null;
+    selectedSlot = null;
+    selectedSchedule = null;
+    selectedDate = null;
+    branches.clear();
+    slots.clear();
+  }
+
   /// Clears only the active booking-flow selections without touching the
   /// cached service catalog. Use this when entering a category screen so the
   /// user starts a fresh booking while already-loaded options are reused.
@@ -205,6 +237,7 @@ abstract class _BwBookingStore with Store {
     selectedBranch = null;
     selectedDate = null;
     selectedSlot = null;
+    selectedSchedule = null;
     selectedAddress = null;
     paymentMethod = 'CASH';
     bookingResult = null;
@@ -341,12 +374,37 @@ abstract class _BwBookingStore with Store {
   void setDate(DateTime date) {
     selectedDate = date;
     selectedSlot = null;
+    // Carry a directly-chosen time onto the new day rather than dropping it.
+    // Leaving `selectedSchedule` alone would submit the OLD date with the new
+    // one on screen — the screen and the payload disagreeing about when.
+    final existing = selectedSchedule;
+    if (existing != null) {
+      selectedSchedule = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        existing.hour,
+        existing.minute,
+      );
+    }
     loadSlots();
   }
 
   @action
   void selectSlot(Map<String, dynamic> slot) {
     selectedSlot = slot;
+  }
+
+  /// Sets a directly-chosen date and time.
+  ///
+  /// Clears any branch slot: the two are alternative answers to the same
+  /// question, and holding both would leave [effectiveSchedule] deciding
+  /// silently which one the customer meant.
+  @action
+  void setSchedule(DateTime schedule) {
+    selectedSchedule = schedule;
+    selectedSlot = null;
+    selectedDate = DateTime(schedule.year, schedule.month, schedule.day);
   }
 
   @action
@@ -364,13 +422,12 @@ abstract class _BwBookingStore with Store {
     submissionError = null;
     _track(const BookingSubmittedEvent(serviceCategory: 'beauty_wellness'));
     try {
-      // The slot must be structurally valid before a schedule can be built at
-      // all — this is not a "missing field" check, it is what makes
-      // `_buildScheduleDateTime()` meaningful, so it stays ahead of the shared
-      // validation rather than inside it.
-      final slotUsable = selectedDate != null &&
-          selectedSlot != null &&
-          _hasValidSelectedSlot();
+      // The schedule must be resolvable before the shared validation can say
+      // anything useful about it — this is not a "missing field" check, it is
+      // what makes a submitted timestamp meaningful, so it stays ahead of the
+      // shared validation rather than inside it. Either a structurally valid
+      // branch slot or a directly-chosen date and time will do.
+      final schedule = effectiveSchedule;
 
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
 
@@ -384,10 +441,10 @@ abstract class _BwBookingStore with Store {
           serviceOptionId: optionId,
           userAddressId:
               '${selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? ''}',
-          schedule: slotUsable ? _buildScheduleDateTime() : null,
+          schedule: schedule,
           paymentMethod: paymentMethod,
           branchId: selectedBranch?['branchId'] ?? selectedBranch?['id'],
-          requiresBranch: true,
+          requiresBranch: branchRequired,
           pricingInputs: <String, dynamic>{
             'addonOptionIds': selectedAddonIds.toList(),
           },
@@ -411,7 +468,7 @@ abstract class _BwBookingStore with Store {
         // never chosen. They are different customer mistakes and this flow has
         // always distinguished them.
         case BookingRefused(reasons: final reasons)
-            when slotUsable &&
+            when schedule != null &&
                 reasons.contains(BookingRequestInvalidity.scheduleInPast):
           submissionError = 'Choose a future booking schedule.';
           isSubmitting = false;
@@ -420,9 +477,8 @@ abstract class _BwBookingStore with Store {
             failureCode: 'invalid_schedule',
           ));
 
-        case BookingRefused():
-          submissionError =
-              'Complete the service, branch, schedule, address, and payment details.';
+        case BookingRefused(reasons: final reasons):
+          submissionError = _refusalMessage(reasons);
           isSubmitting = false;
           _track(const BookingFailedEvent(
             serviceCategory: 'beauty_wellness',
@@ -517,6 +573,64 @@ abstract class _BwBookingStore with Store {
     } finally {
       isPaymentLoading = false;
     }
+  }
+
+  /// Names only what is actually missing.
+  ///
+  /// The previous copy read "Complete the service, branch, schedule, address,
+  /// and payment details." on EVERY refusal. For a service with no branch that
+  /// sent the customer hunting for a control the screen does not draw, and for
+  /// a customer who had only forgotten their address it listed four fields they
+  /// had already filled in. A refusal that names the wrong cause is the same
+  /// class of defect as a sign-in screen blaming a password during an outage.
+  String _refusalMessage(List<BookingRequestInvalidity> reasons) {
+    final missing = <String>[
+      for (final reason in reasons)
+        switch (reason) {
+          BookingRequestInvalidity.noService => 'a service',
+          BookingRequestInvalidity.noAddress => 'a service address',
+          BookingRequestInvalidity.noBranch => 'a branch',
+          BookingRequestInvalidity.noSchedule => 'a date and time',
+          BookingRequestInvalidity.scheduleInPast => 'a future date and time',
+          BookingRequestInvalidity.noPaymentMethod => 'a payment method',
+        },
+    ];
+    if (missing.isEmpty) return 'Complete your booking details to continue.';
+    if (missing.length == 1) return 'Choose ${missing.single} to continue.';
+    final last = missing.removeLast();
+    return 'Choose ${missing.join(', ')} and $last to continue.';
+  }
+
+  // ───────── Derived state ─────────
+
+  /// Whether this service actually offers a branch to choose.
+  ///
+  /// The client used to demand a branch on EVERY Beauty & Wellness booking
+  /// (`requiresBranch: true`, unconditionally), which is stricter than the
+  /// server: the backend's own validator types `branchId?: number` and
+  /// `createBooking` guards every branch read with
+  /// `if (payload.branchId !== undefined)`. Since production answers
+  /// `branches: []` for nine of the ten legacy families, that rule refused
+  /// bookings the server would have accepted — and the checkout screen draws
+  /// no branch control, so the refusal named a field the customer could not
+  /// fill in.
+  ///
+  /// Keyed on what was actually loaded rather than on the flow, so the one
+  /// family that DOES have a branch still requires it.
+  bool get branchRequired => branches.isNotEmpty;
+
+  /// When the service is to happen, however the customer answered.
+  ///
+  /// A branch slot carries capacity the backend locks; a directly-chosen
+  /// schedule does not. They are alternatives, never both, and null here is
+  /// what makes "no schedule chosen" distinguishable from "a schedule that has
+  /// passed" — two different customer mistakes this flow has always reported
+  /// separately.
+  DateTime? get effectiveSchedule {
+    if (selectedDate != null && _hasValidSelectedSlot()) {
+      return _buildScheduleDateTime();
+    }
+    return selectedSchedule;
   }
 
   // ───────── Helpers ─────────

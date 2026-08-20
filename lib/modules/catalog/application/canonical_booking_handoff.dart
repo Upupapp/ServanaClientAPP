@@ -28,6 +28,11 @@
 ///
 /// Neither is reachable from this handoff for a non-branch Service, which is
 /// every Service in production today. See CLIENT_BOOKING_V2_CONTRACT.md.
+///
+/// That is no longer a dead end. Measured 2026-08-20, production answers
+/// `branches: []` for nine of the ten legacy families, and the backend accepts
+/// a create with no `branchId` at all — so the checkout now schedules such a
+/// Service directly instead of refusing it for a branch nobody can choose.
 library;
 
 import 'package:flutter/widgets.dart';
@@ -130,6 +135,11 @@ void startCanonicalBooking({
       context.pushNamed(AirconCheckoutScreen.routeName);
     case CanonicalBookingFlow.beautyWellness:
       final store = dpLocator<BwBookingStore>();
+      // A canonical Service is not reached through a branch family, so any
+      // branch list still held from a previous category visit does not apply
+      // to it. Clearing first is what keeps `branchRequired` keyed to THIS
+      // booking rather than to whatever the customer browsed before.
+      store.beginBranchlessBooking();
       store.selectOption(option);
       for (final id in selectedAddonIds) {
         store.toggleAddon(id);

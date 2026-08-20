@@ -297,6 +297,22 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
     });
   }
 
+  late final _$selectedScheduleAtom =
+      Atom(name: '_BwBookingStore.selectedSchedule', context: context);
+
+  @override
+  DateTime? get selectedSchedule {
+    _$selectedScheduleAtom.reportRead();
+    return super.selectedSchedule;
+  }
+
+  @override
+  set selectedSchedule(DateTime? value) {
+    _$selectedScheduleAtom.reportWrite(value, super.selectedSchedule, () {
+      super.selectedSchedule = value;
+    });
+  }
+
   late final _$selectedAddressAtom =
       Atom(name: '_BwBookingStore.selectedAddress', context: context);
 
@@ -469,6 +485,17 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   }
 
   @override
+  void beginBranchlessBooking() {
+    final _$actionInfo = _$_BwBookingStoreActionController.startAction(
+        name: '_BwBookingStore.beginBranchlessBooking');
+    try {
+      return super.beginBranchlessBooking();
+    } finally {
+      _$_BwBookingStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void clearSelectionOnly() {
     final _$actionInfo = _$_BwBookingStoreActionController.startAction(
         name: '_BwBookingStore.clearSelectionOnly');
@@ -546,6 +573,17 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   }
 
   @override
+  void setSchedule(DateTime schedule) {
+    final _$actionInfo = _$_BwBookingStoreActionController.startAction(
+        name: '_BwBookingStore.setSchedule');
+    try {
+      return super.setSchedule(schedule);
+    } finally {
+      _$_BwBookingStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void selectAddress(Map<String, dynamic> address) {
     final _$actionInfo = _$_BwBookingStoreActionController.startAction(
         name: '_BwBookingStore.selectAddress');
@@ -587,6 +625,7 @@ selectedAddonIds: ${selectedAddonIds},
 selectedBranch: ${selectedBranch},
 selectedDate: ${selectedDate},
 selectedSlot: ${selectedSlot},
+selectedSchedule: ${selectedSchedule},
 selectedAddress: ${selectedAddress},
 paymentMethod: ${paymentMethod},
 bookingResult: ${bookingResult},

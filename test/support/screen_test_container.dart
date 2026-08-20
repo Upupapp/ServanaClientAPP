@@ -58,6 +58,9 @@ import 'package:client/modules/profile/application/address_controller.dart';
 import 'package:client/modules/profile/application/profile_controller.dart';
 import 'package:client/modules/profile/data/profile_repository.dart';
 import 'package:client/common/data/backend/mock_backend.dart';
+import 'package:client/common/data/booking/booking_submission_service.dart';
+import 'package:client/common/domain/helpers/session_service.dart';
+import 'package:client/core/recovery/operation_journal.dart';
 import 'package:client/modules/authentication/domain/authentication_repo.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:client/modules/homepage/data/repositories/home_repo.dart.dart';
@@ -167,7 +170,13 @@ http.Client emptyBackend() => MockClient(
 /// Call from `setUp`, and pair with [resetScreenDependencies] in `tearDown`.
 /// GetIt is global: a registration that leaks between tests makes one test's
 /// state another test's starting point.
-Future<void> registerScreenDependencies() async {
+///
+/// [client] replaces the empty backend for the graph's own API client. The
+/// viewport matrix wants the empty envelope — that is what produces the empty
+/// states it measures — but a journey test needs the transport to ANSWER, with
+/// the bodies production actually returns. Optional, so every existing caller
+/// keeps the behaviour it was written against.
+Future<void> registerScreenDependencies({http.Client? client}) async {
   // Several controllers read preferences on construction or first build.
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -175,7 +184,7 @@ Future<void> registerScreenDependencies() async {
 
   final api = ServanaApiClient(
     baseUrl: 'https://api.example.test',
-    client: emptyBackend(),
+    client: client ?? emptyBackend(),
   );
 
   registerPlatformChannelStubs();
@@ -255,6 +264,20 @@ Future<void> registerScreenDependencies() async {
   dpLocator.registerSingleton<BookingDraftService>(BookingDraftService());
   dpLocator.registerSingleton<AirconBookingStore>(AirconBookingStore(api: api));
   dpLocator.registerSingleton<BwBookingStore>(BwBookingStore(api: api));
+
+  // The submission ceremony both stores resolve when the customer confirms.
+  // Registered with the SAME session-backed customer id production uses, so a
+  // journey test that signs in exercises the real resolution rather than a
+  // handed-in constant. Neither the matrix nor any other caller reaches these:
+  // they are resolved at submit time, not build time.
+  dpLocator.registerSingleton<OperationJournal>(OperationJournal());
+  dpLocator.registerSingleton<BookingSubmissionService>(
+    BookingSubmissionService(
+      api: api,
+      journal: dpLocator<OperationJournal>(),
+      customerId: () async => (await SessionService.getSession())?.customerID,
+    ),
+  );
 
   // ── Identity and registration ─────────────────────────────────────────────
   // The canonical side is constructed but never chosen: CanonicalAvailability
