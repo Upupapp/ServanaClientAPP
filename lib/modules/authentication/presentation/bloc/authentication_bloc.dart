@@ -106,7 +106,21 @@ class AuthenticationBloc
     final store = _tokenStore;
     final switching = await store.isDifferentSubjectFrom(session.customerID);
     if (switching) {
-      await _cleanup.run(customerScopedCleanupSteps(''));
+      // The OUTGOING uid, read before it is overwritten below.
+      //
+      // This used to pass '' — and two of the customer-scoped steps are guarded
+      // by `if (logoutUid.isNotEmpty)`, because they clear per-account keyed
+      // storage: `DraftRepository.clearAllForAccount` and
+      // `OperationJournal.clearForAccount`. With an empty string both became
+      // silent no-ops, so an account SWITCH cleared everything EXCEPT the two
+      // things that are actually keyed by customer — the drafts and the journal
+      // this block exists to remove. The doc comment above said their drafts
+      // must not leak into the new session while the code left them on disk.
+      //
+      // The logout path already captured the uid for this exact reason. This is
+      // the same fix on the path that never got it.
+      final outgoingUid = (await store.read()).subject;
+      await _cleanup.run(customerScopedCleanupSteps(outgoingUid));
     }
 
     await store.write(

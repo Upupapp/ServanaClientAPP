@@ -63,6 +63,7 @@ import 'package:client/common/presentation/screens/drawer_placeholder_screens.da
 import 'package:client/modules/review/presentation/screens/review_form_screen.dart';
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
 import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
+import 'package:client/modules/settings/presentation/screens/delete_account_screen.dart';
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
 import 'package:client/modules/support/presentation/screens/help_center_screen.dart';
@@ -155,6 +156,7 @@ final Map<String, Widget Function()> _screens = <String, Widget Function()>{
   'FavouritesScreen': () => const FavouritesScreen(),
   'AppearanceScreen': () => const AppearanceScreen(),
   'PrivacyLegalScreen': () => const PrivacyLegalScreen(),
+  'DeleteAccountScreen': () => const DeleteAccountScreen(),
   'SupportHomeScreen': () => const SupportHomeScreen(),
   'SupportTicketsScreen': () => const SupportTicketsScreen(),
   'HelpCenterScreen': () => const HelpCenterScreen(),

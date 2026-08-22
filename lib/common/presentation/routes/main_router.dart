@@ -53,6 +53,7 @@ import 'package:client/modules/categories/presentation/screens/category_experien
 import 'package:client/modules/settings/presentation/screens/about_screen.dart';
 import 'package:client/modules/settings/presentation/screens/appearance_screen.dart';
 import 'package:client/modules/settings/presentation/screens/permissions_screen.dart';
+import 'package:client/modules/settings/presentation/screens/delete_account_screen.dart';
 import 'package:client/modules/settings/presentation/screens/privacy_legal_screen.dart';
 import 'package:client/modules/settings/presentation/screens/profile_edit_screen.dart';
 import 'package:client/modules/settings/presentation/screens/security_screen.dart';
@@ -709,6 +710,12 @@ class MainRouter {
           path: PrivacyLegalScreen.route,
           name: PrivacyLegalScreen.routeName,
           builder: (context, state) => const PrivacyLegalScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: rootNavigatorKey,
+          path: DeleteAccountScreen.route,
+          name: DeleteAccountScreen.routeName,
+          builder: (context, state) => const DeleteAccountScreen(),
         ),
         GoRoute(
           parentNavigatorKey: rootNavigatorKey,

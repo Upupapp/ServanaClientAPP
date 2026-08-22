@@ -357,6 +357,33 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
+  /// Ask for this account to be deleted.
+  ///
+  /// `POST /api/account/deletion-request/me`, authenticated — the self-service
+  /// half of the pair; the public variant exists for the web page and takes an
+  /// identifier instead of a session.
+  ///
+  /// ## What the backend does, and why the app must not overpromise
+  ///
+  /// The request is recorded `pending`. Identity columns are anonymised while
+  /// the financial trail is retained — a hard DELETE would throw a foreign-key
+  /// violation the moment an account has any booking history, and the money
+  /// records have to survive for accounting reasons regardless. So the honest
+  /// wording in the UI is that the account is closed and personal details are
+  /// removed, not that every row is erased.
+  ///
+  /// ## Pressing twice is safe
+  ///
+  /// `idx_adr_open_identifier` is UNIQUE on (identifier) WHERE status =
+  /// 'pending', and the insert is ON CONFLICT DO NOTHING. A second request
+  /// collapses into the first, so a retry after a timeout is not an error and
+  /// must not be shown as one.
+  Future<Map<String, dynamic>> requestAccountDeletion() async {
+    final uri = _uri('/api/account/deletion-request/me');
+    final res = await _client.post(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> resendVerification(
       {required String email}) async {
     final uri = _uri('/api/auth/resendverification', {'email': email});
@@ -511,18 +538,6 @@ class ServanaApiClient {
     return _decodeJson(res);
   }
 
-  Future<Map<String, dynamic>> getRegisteredUsers({
-    bool? isArchived,
-    int? role,
-  }) async {
-    final query = <String, dynamic>{};
-    if (isArchived != null) query['isArchived'] = isArchived;
-    if (role != null) query['role'] = role;
-    final uri = _uri('/api/user/registereduser', query.isEmpty ? null : query);
-    final res = await _client.get(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
-
   // ───────────────────── Services & Coverage ─────────────────────
 
   Future<Map<String, dynamic>> listServices() async {
@@ -634,19 +649,6 @@ class ServanaApiClient {
       {'date': date.toIso8601String().split('T').first},
     );
     final res = await _client.get(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
-
-  Future<Map<String, dynamic>> createGeoCoverage({
-    required int serviceId,
-    required Map<String, dynamic> payload,
-  }) async {
-    final uri = _uri('/api/services/$serviceId/coverage-geo');
-    final res = await _client.post(
-      uri,
-      headers: await _headers(),
-      body: jsonEncode(payload),
-    );
     return _decodeJson(res);
   }
 
@@ -823,22 +825,6 @@ class ServanaApiClient {
       headers: await _headers(),
       body: jsonEncode(payload),
     );
-    return _decodeJson(res);
-  }
-
-  Future<Map<String, dynamic>> approveGcashPayment({
-    required int bookingId,
-  }) async {
-    final uri = _uri('/api/$bookingId/approve');
-    final res = await _client.post(uri, headers: await _headers());
-    return _decodeJson(res);
-  }
-
-  Future<Map<String, dynamic>> approveCashPayment({
-    required int bookingId,
-  }) async {
-    final uri = _uri('/api/$bookingId/mark-cash-paid');
-    final res = await _client.post(uri, headers: await _headers());
     return _decodeJson(res);
   }
 
@@ -1080,17 +1066,6 @@ class ServanaApiClient {
   }
 
   // ─────���─────────────── Admin ─────────────────────
-
-  Future<Map<String, dynamic>> createBranchSlot(
-      Map<String, dynamic> payload) async {
-    final uri = _uri('/api/branches/slots');
-    final res = await _client.post(
-      uri,
-      headers: await _headers(),
-      body: jsonEncode(payload),
-    );
-    return _decodeJson(res);
-  }
 
   // ─── Customer Support ─────────────────────────────────────────────────────
 

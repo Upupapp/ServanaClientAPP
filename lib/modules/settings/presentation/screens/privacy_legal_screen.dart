@@ -4,8 +4,10 @@ import 'package:client/common/constants/font_palette.dart';
 import 'package:client/common/injectors/main_injector.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
 import 'package:client/core/analytics/domain/analytics_consent.dart';
+import 'package:client/modules/settings/presentation/screens/delete_account_screen.dart';
 import 'package:client/modules/settings/presentation/widgets/settings_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyLegalScreen extends StatefulWidget {
@@ -113,17 +115,21 @@ class _PrivacyLegalScreenState extends State<PrivacyLegalScreen> {
                   ),
                 ]),
                 const SettingsSectionHeader('Your Data'),
-                const SettingsGroup(children: [
-                  SettingsUnavailableTile(
+                SettingsGroup(children: [
+                  const SettingsUnavailableTile(
                     icon: Icons.download_outlined,
                     title: 'Export My Data',
                     reason: 'Data export requires a backend update',
                   ),
-                  SettingsUnavailableTile(
+                  // Was a SettingsUnavailableTile reading "Account deletion will
+                  // be available in a future update" — the dead end App Store
+                  // Review rejected under Guideline 5.1.1(v) on 2026-08-22. The
+                  // endpoint existed the whole time; only the wiring was absent.
+                  SettingsDestructiveTile(
                     icon: Icons.person_off_outlined,
                     title: 'Delete Account',
-                    reason:
-                        'Account deletion will be available in a future update',
+                    onTap: () =>
+                        context.pushNamed(DeleteAccountScreen.routeName),
                   ),
                 ]),
                 const SizedBox(height: 24),

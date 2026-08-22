@@ -79,9 +79,49 @@ void main() {
       // same leak as a missed logout, and it does not go through _onLogout.
       expect(bloc, contains('isDifferentSubjectFrom('));
       final i = bloc.indexOf('isDifferentSubjectFrom(');
+      // Window widened from 400 to 1400 on 2026-08-22: the fix for the empty-uid
+      // defect added the rationale for it between these two lines, and 400
+      // characters no longer reached the call. The assertion is unchanged.
       expect(
-          bloc.substring(i, i + 400), contains('customerScopedCleanupSteps('),
+          bloc.substring(i, i + 1400), contains('customerScopedCleanupSteps('),
           reason: 'a detected switch must run the same teardown as a logout');
+    });
+
+    test('the switch teardown is given the OUTGOING uid, not an empty string',
+        () {
+      // This assertion exists because the test directly above it passed for as
+      // long as the defect was live.
+      //
+      // `customerScopedCleanupSteps(String logoutUid)` guards its two
+      // account-keyed steps with `if (logoutUid.isNotEmpty)` — they are the
+      // ones that clear `DraftRepository.clearAllForAccount` and
+      // `OperationJournal.clearForAccount`. The switch path called it with a
+      // literal '', so on an account switch every step ran EXCEPT the two that
+      // clear per-customer storage: exactly the drafts and journal the switch
+      // teardown exists to remove. Checking only that the call is present could
+      // not see that, because the call WAS present.
+      //
+      // Measured 2026-08-22 during the SWEEP+STITCH+LEAK+REPEAT+TEST pass.
+      expect(bloc.contains("customerScopedCleanupSteps('')"), isFalse,
+          reason: 'an empty uid makes the drafts and operationJournal steps '
+              'silent no-ops — pass the outgoing subject instead');
+
+      final i = bloc.indexOf('isDifferentSubjectFrom(');
+      final window = bloc.substring(i, i + 1400);
+      expect(window, contains('.subject'),
+          reason: 'the switch branch must read the outgoing subject from the '
+              'token store before that store is overwritten');
+    });
+
+    test('the two account-keyed steps really are uid-guarded', () {
+      // The floor under the assertion above: if these guards were ever removed
+      // the empty-string check would still pass while proving nothing, because
+      // an empty uid would no longer matter. If this test fails, re-read the
+      // one above — its reasoning may no longer hold.
+      expect(bloc, contains('clearAllForAccount('));
+      expect(bloc, contains('clearForAccount('));
+      expect(bloc, contains('logoutUid.isNotEmpty'),
+          reason: 'the uid guard is the reason an empty string was a defect');
     });
   });
 
