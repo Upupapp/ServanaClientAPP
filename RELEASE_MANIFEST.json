@@ -4,7 +4,7 @@
   "branch": "main",
   "commitSha": "c7cef82",
   "version": "1.0.0",
-  "buildNumber": 41,
+  "buildNumber": 44,
   "environment": "production",
   "backendBaseUrl": "https://api.servana.com.ph",
   "socketUrl": "wss://api.servana.com.ph",
@@ -13,8 +13,8 @@
   "androidApplicationId": "com.servana.serviceclient",
   "iosBundleId": "com.servana.client",
   "minimumAndroidSdk": 24,
-  "minimumIosDeploymentTarget": "13.0",
-  "releaseTag": "v1.0.0+41",
+  "minimumIosDeploymentTarget": "15.6",
+  "releaseTag": "v1.0.0+44",
   "releaseCommands": "C01-C23 (STABILIZE through RELEASEFORTRESS+)",
   "certifiedAt": "2026-08-20T00:00:00Z",
   "certifiedBy": "Claude Code / Engineering Lead",
@@ -24,5 +24,6 @@
   "appSigningCertificateSha256": "79:D9:1D:63:A5:2C:70:58:C7:D2:97:F6:9D:DD:9B:D7:C3:FC:9E:EA:BD:6D:82:BA:4B:57:C9:42:98:29:1D:B1",
   "uploadCertificateSha1": "38:40:B7:9D:CC:E9:E0:89:C9:08:AC:E3:F3:48:9B:B9:46:7F:25:FF",
   "playAppSigningEnrolled": true,
-  "playAppSigningNote": "Classical key. The app is also enrolled in Play Quantum-ready (beta); the PQC fingerprints are NOT the ones to register with Firebase or Google Maps."
+  "playAppSigningNote": "Classical key. The app is also enrolled in Play Quantum-ready (beta); the PQC fingerprints are NOT the ones to register with Firebase or Google Maps.",
+  "iosTeamId": "2K2SF7NRQP"
 }
