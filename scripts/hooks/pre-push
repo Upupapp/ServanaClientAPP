@@ -41,6 +41,46 @@ set -e
 
 echo "pre-push: no CI runs after this, so these gates are the deploy step"
 
+# ── Gate 0: the toolchain is pinned, and the lock must resolve under it ───────
+#
+# Added 2026-08-22 after `flutter pub get --enforce-lockfile` exited 65 against
+# a tree that had just passed all three gates below. The committed lock pinned
+# matcher 0.12.19 / meta 1.18.0 / test_api 0.7.11 / vector_math 2.2.0; stable
+# 3.47.0 mandates newer ones. Those four are SDK-aligned — flutter_test decides
+# them, not this app — so the mismatch was never a free choice.
+#
+# It survived because `flutter test` runs an IMPLICIT `pub get`, which silently
+# rewrote the lock on every run. The gate therefore kept passing while testing a
+# dependency set that differed from the committed one, and every clone went
+# dirty on first use. A green gate was not evidence the committed tree resolved.
+#
+# The root cause was that nothing pinned the toolchain at all. The deleted
+# flutter-ci.yml used subosito/flutter-action with `channel: stable` and no
+# flutter-version key, so it tracked whatever stable was that day; pubspec.yaml
+# carries only a floor (`flutter: '>=3.24.0'`). Deleting the workflow removed
+# the last place a version was even mentioned.
+#
+# So: .flutter-version is the pin, and it is checked BEFORE the lock. Order
+# matters — a lock can only be reproducible with respect to a known toolchain,
+# and --enforce-lockfile must run before `flutter test` gets a chance to rewrite
+# the file it is checking.
+#
+# Upgrading Flutter is allowed and expected. It is meant to be DELIBERATE: bump
+# .flutter-version, run `flutter pub get`, commit the lock it produces.
+PINNED="$(tr -d ' \r\n' < .flutter-version)"
+ACTUAL="$(flutter --version < /dev/null | head -1 | awk '{print $2}')"
+echo "pre-push: flutter toolchain pin ($PINNED)"
+if [ "$PINNED" != "$ACTUAL" ]; then
+  echo "pre-push: FAIL — .flutter-version pins $PINNED, this machine runs $ACTUAL." >&2
+  echo "  The lock is only reproducible against the pinned toolchain." >&2
+  echo "  Either switch Flutter to $PINNED, or upgrade deliberately:" >&2
+  echo "    echo $ACTUAL > .flutter-version && flutter pub get && git add -A" >&2
+  exit 1
+fi
+
+echo "pre-push: flutter pub get --enforce-lockfile"
+flutter pub get --enforce-lockfile < /dev/null
+
 echo "pre-push: dart format --set-exit-if-changed ."
 dart format --set-exit-if-changed . < /dev/null
 
