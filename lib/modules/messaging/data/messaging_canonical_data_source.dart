@@ -117,6 +117,53 @@ class MessagingCanonicalDataSource implements MessagingDataSource {
   }
 
   @override
+  Future<MessageModel> sendAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+    required String mimeType,
+    required String clientMsgId,
+    String caption = '',
+  }) async {
+    // Same two steps and the same order as the legacy transport: store, then
+    // reference. The paths differ; the semantics must not, or flipping the
+    // capability would change what a customer's attachment does.
+    final uploaded = await _api.post(
+      V1Endpoints.conversationAttachments('$conversationId'),
+      body: <String, dynamic>{'file': dataUri, 'name': fileName},
+    );
+
+    final stored = uploaded.asMap;
+    final url = stored['previewUrl']?.toString() ?? '';
+    if (url.isEmpty) {
+      throw StateError(
+        'conversations.attachments.create returned no previewUrl; '
+        'keys: ${stored.keys.join(', ')}',
+      );
+    }
+
+    final envelope = await _api.post(
+      V1Endpoints.conversationMessages('$conversationId'),
+      body: <String, dynamic>{
+        'type': mimeType.startsWith('image/') ? 'image' : 'file',
+        'body': caption,
+        'clientMsgId': clientMsgId,
+        'attachments': [
+          {
+            'url': url,
+            'fileName': stored['fileName']?.toString() ?? fileName,
+            'mimeType': stored['mimeType']?.toString() ?? mimeType,
+            if (stored['sizeBytes'] != null) 'sizeBytes': stored['sizeBytes'],
+          },
+        ],
+      },
+    );
+
+    return MessageMapper.fromJson(envelope.asMap,
+        conversationId: conversationId);
+  }
+
+  @override
   Future<void> markRead({
     required int conversationId,
     required int lastReadMessageId,

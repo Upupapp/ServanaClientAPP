@@ -118,6 +118,28 @@ import 'package:client/modules/authentication/data/identity_repository.dart';
 import 'package:client/modules/notifications/data/notifications_canonical_data_source.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// The single owner of "this session is over".
+///
+/// Both transports must mean the same thing by a 401, or the two would
+/// disagree about whether the customer is signed in — and this closure was
+/// written out TWICE, identically, once per client. Two copies of a rule is
+/// one edit away from being two rules (§10).
+///
+/// Safe to call from several 401s at once: `AuthStateService.update` returns
+/// early when the status is unchanged, so concurrent in-flight requests that
+/// all fail produce ONE transition and one notification, not one each.
+/// `deleteSession` is likewise safe to repeat.
+///
+/// Swallows its own errors on purpose. This runs inside a failed request's
+/// error path; throwing here would replace "your session expired" with a
+/// crash, which is the one outcome worse than being signed out.
+void _endSessionOnUnauthorized() {
+  try {
+    dpLocator<AuthStateService>().update(AuthStatus.expired);
+    SessionService.deleteSession().ignore();
+  } catch (_) {}
+}
+
 final dpLocator = GetIt.instance;
 
 void initInjector(AppConfig config) {
@@ -218,12 +240,7 @@ void initInjector(AppConfig config) {
         return user.getIdToken();
       },
       // STITCH B1: force session expiry on any 401 so the router redirects to login.
-      onUnauthorized: () {
-        try {
-          dpLocator<AuthStateService>().update(AuthStatus.expired);
-          SessionService.deleteSession().ignore();
-        } catch (_) {}
-      },
+      onUnauthorized: _endSessionOnUnauthorized,
     ),
   );
 
@@ -249,16 +266,11 @@ void initInjector(AppConfig config) {
       },
       // A 401 must mean the same thing on both transports, or the two would
       // disagree about whether the session is alive.
-      onUnauthorized: () {
-        try {
-          dpLocator<AuthStateService>().update(AuthStatus.expired);
-          SessionService.deleteSession().ignore();
-        } catch (_) {}
-      },
+      onUnauthorized: _endSessionOnUnauthorized,
     ),
   );
 
-  // Session hardening (TAB 03).
+// Session hardening (TAB 03).
   //
   // SecureSessionStore is additive: it keeps credentials in flutter_secure_storage
   // with their own lifetime, alongside the existing Hive-backed SessionService

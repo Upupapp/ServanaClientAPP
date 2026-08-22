@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 
 /// Step 4: Booking confirmed — shows confirmation, payment follow-up.
 class BwConfirmationScreen extends StatefulWidget {
@@ -360,12 +361,12 @@ class _BwConfirmationScreenState extends State<BwConfirmationScreen> {
 
   String _optionName() {
     final opt = store.selectedOption;
-    if (opt == null) return 'Beauty & Wellness Service';
-    return (opt['level_3'] ??
-            opt['name'] ??
-            opt['optionName'] ??
-            'Beauty & Wellness Service')
-        .toString();
+    if (opt == null) return kBwBookingFallbackLabel;
+    // ServiceOptionDisplay is the ONE reader: it accepts both `level3`
+    // (what canonicalOptionMap writes) and `level_3` (what legacy
+    // service_options maps carry). Hand-rolling this lookup is what let
+    // the two spellings drift apart.
+    return ServiceOptionDisplay.name(opt, fallback: kBwBookingFallbackLabel);
   }
 
   String _branchName() {

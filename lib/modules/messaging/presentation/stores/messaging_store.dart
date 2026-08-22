@@ -120,20 +120,34 @@ abstract class _MessagingStore with Store {
 
   /// Resolves the conversation for a booking on demand (called when user opens
   /// a chat screen for a booking not yet in convsByBookingId).
+  /// The conversation for [bookingId], or null when the backend says there is
+  /// not one yet.
+  ///
+  /// **Null means absent, and nothing else.** This used to catch everything and
+  /// return null, so a 403, a 500, a 502 and a dead socket were all reported to
+  /// the customer as:
+  ///
+  ///   "This conversation is not available yet. It opens once a provider
+  ///    accepts the booking."
+  ///
+  /// — the screen's copy for the one case null is supposed to mean. During an
+  /// outage every customer opening a chat that already existed was told their
+  /// provider had not accepted yet, which is a fact about their booking that
+  /// the app had not learned and that was not true.
+  ///
+  /// The data source already draws the line correctly: 404 becomes null, and
+  /// everything else rethrows. This is the layer that was erasing it. The chat
+  /// screen has carried a `catch` for exactly this since it was written; it
+  /// could simply never fire.
   Future<ConversationModel?> resolveConversation(String bookingId) async {
     if (convsByBookingId.containsKey(bookingId)) {
       return convsByBookingId[bookingId];
     }
-    try {
-      final conv = await repository.resolveForBooking(bookingId);
-      if (conv != null) {
-        _setConversation(conv);
-      }
-      return conv;
-    } catch (e) {
-      debugPrint('[MessagingStore] resolveConversation error: $e');
-      return null;
+    final conv = await repository.resolveForBooking(bookingId);
+    if (conv != null) {
+      _setConversation(conv);
     }
+    return conv;
   }
 
   // ── Message loading ────────────────────────────────────────────────────────
@@ -248,6 +262,69 @@ abstract class _MessagingStore with Store {
       _markFailed(conversationId, clientMsgId);
       _track(const MessageSendFailedEvent(
           contentType: 'text', failureCode: 'api_error'));
+    }
+  }
+
+  /// Sends a photo or document, with the same optimistic contract as text.
+  ///
+  /// The pending bubble carries the CAPTION, not the file name — a customer who
+  /// sends a photo of a broken tap is not sending a document called
+  /// "IMG_20260820.jpg", and putting the storage name on screen is the kind of
+  /// internal detail §58 keeps off it. The confirmed message that replaces it
+  /// carries the real attachment.
+  ///
+  /// Failure marks the bubble failed exactly as a text send does, so the retry
+  /// affordance the screen already draws works for both. What it does NOT do is
+  /// retry through [retryMessage]: that resends a body, and the bytes are no
+  /// longer in hand. An attachment retry has to start from the file again.
+  @action
+  Future<void> sendAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+    required String mimeType,
+    String caption = '',
+  }) async {
+    final clientMsgId = _generateClientMsgId();
+    final gen = _generation;
+
+    final pending = MessageModel(
+      conversationId: conversationId,
+      senderRole: 3,
+      type:
+          mimeType.startsWith('image/') ? MessageType.image : MessageType.file,
+      body: caption,
+      createdAt: DateTime.now(),
+      clientMsgId: clientMsgId,
+      sendStatus: MessageSendStatus.pending,
+    );
+    _insertMessage(conversationId, pending);
+    _track(MessageSendStartedEvent(
+      contentType: mimeType.startsWith('image/') ? 'image' : 'file',
+    ));
+
+    try {
+      final confirmed = await repository.sendAttachment(
+        conversationId: conversationId,
+        dataUri: dataUri,
+        fileName: fileName,
+        mimeType: mimeType,
+        clientMsgId: clientMsgId,
+        caption: caption,
+      );
+      if (_generation != gen) return;
+      _replaceByClientMsgId(conversationId, clientMsgId, confirmed);
+      _track(MessageSendSucceededEvent(
+        contentType: mimeType.startsWith('image/') ? 'image' : 'file',
+      ));
+    } catch (e) {
+      if (_generation != gen) return;
+      debugPrint('[MessagingStore] sendAttachment error: $e');
+      _markFailed(conversationId, clientMsgId);
+      _track(MessageSendFailedEvent(
+        contentType: mimeType.startsWith('image/') ? 'image' : 'file',
+        failureCode: 'api_error',
+      ));
     }
   }
 

@@ -139,8 +139,74 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
                 ),
               ),
 
+              // ──── Time ────
+              //
+              // A branch slot carries capacity the backend locks; a service
+              // with no branch has none to offer, and production answers
+              // `branches: []` for nine of the ten legacy families. Before
+              // this, such a service showed an empty slot list, left Continue
+              // permanently disabled, and gave the customer nothing to read
+              // that explained why — a silent dead end at the last step before
+              // checkout.
+              if (!store.branchRequired) ...[
+                const SizedBox(height: 24),
+                const _SectionTitle('Time'),
+                const SizedBox(height: 8),
+                Semantics(
+                  button: true,
+                  label: 'Choose a time',
+                  child: InkWell(
+                    onTap: _pickTime,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: ColorPalette.secondaryBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: ColorPalette.border(.55)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule_rounded,
+                              color: ColorPalette.primaryColorDark),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              store.selectedSchedule != null
+                                  ? DateFormat('h:mm a')
+                                      .format(store.selectedSchedule!)
+                                  : 'Tap to choose a time',
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontWeight: FontWeight.w600,
+                                color: store.selectedSchedule != null
+                                    ? ColorPalette.secondaryText
+                                    : ColorPalette.accentText,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded,
+                              color: ColorPalette.accentText),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This service is scheduled directly with your provider, so '
+                  'there are no branch times to choose from.',
+                  style: TextStyle(
+                    fontFamily: FontPalette.primaryFontFamily,
+                    fontSize: 12,
+                    color: ColorPalette.accentText,
+                  ),
+                ),
+              ],
+
               // ──── Available Time Slots ────
-              if (store.selectedDate != null) ...[
+              if (store.branchRequired && store.selectedDate != null) ...[
                 const SizedBox(height: 24),
                 const _SectionTitle('Available Time Slots'),
                 const SizedBox(height: 8),
@@ -262,14 +328,37 @@ class _BwBranchSlotScreenState extends State<BwBranchSlotScreen> {
     );
   }
 
+  /// The same rule the checkout and the store apply: a branch only when one is
+  /// on offer, and a resolvable schedule however it was answered.
   bool _canContinue() {
-    return store.selectedBranch != null &&
-        store.selectedDate != null &&
-        store.selectedSlot != null;
+    if (store.branchRequired && store.selectedBranch == null) return false;
+    return store.effectiveSchedule != null;
   }
 
   void _onContinue() {
     context.pushNamed(BwCheckoutScreen.routeName);
+  }
+
+  /// Time only — the date is already chosen above, and `setSchedule` keeps the
+  /// two in one value so nothing downstream has to recombine them.
+  Future<void> _pickTime() async {
+    final date = store.selectedDate;
+    if (date == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose a date first.')),
+      );
+      return;
+    }
+    final time = await showTimePicker(
+      context: context,
+      initialTime: store.selectedSchedule != null
+          ? TimeOfDay.fromDateTime(store.selectedSchedule!)
+          : TimeOfDay.now(),
+    );
+    if (time == null || !mounted) return;
+    store.setSchedule(
+      DateTime(date.year, date.month, date.day, time.hour, time.minute),
+    );
   }
 
   Future<void> _pickDate() async {

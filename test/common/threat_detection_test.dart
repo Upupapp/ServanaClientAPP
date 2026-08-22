@@ -280,20 +280,37 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     });
 
-    test('CI does not claim iOS protection is off when it is on', () {
-      // The build log said "APPLE_TEAM_ID is not set — building without
+    test('no build script claims iOS protection is off when it is on', () {
+      // The build log said "APPLE_TEAM_ID is not set - building without
       // freeRASP iOS runtime protection." That was true while the team id came
       // only from a --dart-define, and became false the moment a real default
-      // was compiled in — leaving CI asserting a security control was disabled
-      // on builds where it was active. A log that misstates that is worse than
-      // one that says nothing.
-      final ci = _read('.github/workflows/flutter-ci.yml');
-      expect(
-        ci,
-        isNot(contains('building without freeRASP iOS runtime protection')),
-        reason: 'the compiled-in team id means protection is ON without the '
-            'secret; the workflow must not say otherwise',
-      );
+      // was compiled in - leaving the build asserting a security control was
+      // disabled on builds where it was active. A log that misstates that is
+      // worse than one that says nothing.
+      //
+      // This used to read `.github/workflows/flutter-ci.yml`, which was deleted
+      // on 2026-08-20. Pointed at a file that no longer exists it threw rather
+      // than checked. It now asserts the PROPERTY over every build script in
+      // the repository, so the next script to carry a release cannot
+      // reintroduce the claim unnoticed - which naming one file could not
+      // prevent.
+      final scripts = Directory('scripts')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => !f.path.contains('.git'))
+          .toList();
+
+      expect(scripts, isNotEmpty,
+          reason: 'no build scripts found - this test would be vacuous');
+
+      for (final script in scripts) {
+        expect(
+          script.readAsStringSync(),
+          isNot(contains('building without freeRASP iOS runtime protection')),
+          reason: '${script.path}: the compiled-in team id means protection is '
+              'ON without the secret; no script may say otherwise',
+        );
+      }
     });
 
     test('the iOS bundle id it would register matches the Xcode target', () {

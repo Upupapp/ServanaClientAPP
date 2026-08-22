@@ -118,6 +118,13 @@ class V1Endpoints {
       '$prefix/conversations/${_seg(conversationId)}';
   static String conversationMessages(String conversationId) =>
       '$prefix/conversations/${_seg(conversationId)}/messages';
+
+  /// `POST /api/v1/conversations/:id/attachments` — stores one file for a
+  /// conversation the caller may write to. Separate from the send, and
+  /// deliberately not idempotent: a repeat stores a second object under a fresh
+  /// key, which is wasted storage rather than a duplicate message.
+  static String conversationAttachments(String conversationId) =>
+      '$prefix/conversations/${_seg(conversationId)}/attachments';
   static String conversationRead(String conversationId) =>
       '$prefix/conversations/${_seg(conversationId)}/read';
 

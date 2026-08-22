@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:client/modules/bookings/domain/booking_provider_profile.dart';
 import 'package:client/common/constants/color_palette.dart';
 import 'package:client/common/constants/font_palette.dart';
 import 'package:client/core/analytics/application/analytics_coordinator.dart';
@@ -320,20 +321,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     try {
       final api = dpLocator<ServanaApiClient>();
       final res = await api.getBookingProvider(bookingId);
-      final w = res['worker'] as Map<String, dynamic>? ??
-          res['data'] as Map<String, dynamic>? ??
-          res;
-      final first = w['firstName']?.toString() ?? '';
-      final last = w['lastName']?.toString() ?? '';
-      final composed = '$first $last'.trim();
-      final name = composed.isNotEmpty
-          ? composed
-          : (w['name']?.toString() ?? w['email']?.toString() ?? 'Provider');
-      final phone = w['phoneNumber']?.toString();
+      // One reading of this payload, shared with the chat header. Two parses of
+      // one response is how they drift.
+      final provider = BookingProviderProfile.fromResponse(res);
       if (!mounted) return;
       setState(() {
-        _workerName = name;
-        _workerPhone = phone == null || phone.isEmpty ? null : phone;
+        _workerName = provider.name ?? 'Provider';
+        _workerPhone = provider.phone;
       });
     } catch (_) {
       // Name lookup is best-effort; UID alone is still useful in the UI.

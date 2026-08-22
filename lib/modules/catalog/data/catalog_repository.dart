@@ -21,6 +21,7 @@ import 'package:client/modules/catalog/data/catalog_compatibility_data_source.da
 import 'package:client/modules/catalog/data/catalog_data_source.dart';
 import 'package:client/modules/catalog/data/catalog_cache.dart';
 import 'package:client/modules/catalog/domain/catalog_models.dart';
+import 'package:client/modules/catalog/domain/serviceability.dart';
 
 /// A catalog plus where it came from, so the UI can distinguish "live" from
 /// "this is what we had".
@@ -45,12 +46,18 @@ class CatalogRepository {
     CatalogDataSource? canonical,
     CanonicalRouter? router,
     CatalogCache? canonicalCache,
-  })  : _compatibility = compatibility ?? CatalogCompatibilityDataSource(api),
+  })  : _api = api,
+        _compatibility = compatibility ?? CatalogCompatibilityDataSource(api),
         _canonical = canonical,
         _router = router,
         _cache = cache ?? CatalogCache(),
         _canonicalCache = canonicalCache ??
             CatalogCache(source: CatalogCacheSource.canonical);
+
+  /// Held for the reads that are NOT part of the two-transport contract —
+  /// today that is [serviceability], whose v1 successor is `planned` and
+  /// mounts nothing. See the note there.
+  final ServanaApiClient _api;
 
   final CatalogDataSource _compatibility;
   final CatalogDataSource? _canonical;
@@ -165,6 +172,38 @@ class CatalogRepository {
   Catalog? get cachedCatalog => _memory;
 
   /// Clears catalog state only. Not auth, not profile, not drafts (§46).
+  /// Whether [serviceId] can be booked at a point.
+  ///
+  /// ## Why this is NOT on `CatalogDataSource`
+  ///
+  /// It was, briefly, and that was wrong. The interface exists so a canonical
+  /// build and a legacy build answer the same questions — and there is no
+  /// canonical serviceability route to answer with: the v1 contract entry is
+  /// `planned`, which mounts nothing. `CatalogCanonicalDataSource` holds only a
+  /// `V1ApiClient`, so satisfying the interface would have meant either giving
+  /// it a legacy client (parity in name, one transport in fact) or throwing
+  /// (reporting "unavailable" for something the app can answer perfectly).
+  ///
+  /// So it goes straight to the public route both builds would use anyway. When
+  /// the v1 successor mounts, it moves onto the interface and both sources
+  /// implement it honestly.
+  ///
+  /// ## Not cached, deliberately
+  ///
+  /// A catalog is a slowly-changing tree and caching it is right. A
+  /// serviceability answer is about one address at one moment, and a cached
+  /// "no" would outlive the address that caused it.
+  Future<Serviceability> serviceability({
+    required int serviceId,
+    required double lat,
+    required double lon,
+  }) async =>
+      Serviceability.fromJson(await _api.getServiceability(
+        serviceId: serviceId,
+        lat: lat,
+        lon: lon,
+      ));
+
   Future<void> clearCache() async {
     _memory = null;
     // BOTH boxes. A build that flips the capability must not leave the other

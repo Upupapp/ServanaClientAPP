@@ -33,7 +33,19 @@ class CustomImagePicker extends StatelessWidget {
         final aspectFraction = Fraction.fromDouble(aspectRation);
 
         // ignore: unused_local_variable
-        final XFile? image = await picker.pickImage(source: source);
+        // Bounded at the picker, before the bytes are ever read.
+        //
+        // This used to be a bare `pickImage()`: a current phone hands
+        // back a 12MP frame of 3-8 MB, which was then cropped and
+        // uploaded whole. The bounds below are the cheapest possible
+        // saving — the full frame is never decoded into memory at all —
+        // and `UploadCompressor` still governs what finally goes out.
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 2000,
+          maxHeight: 2000,
+          imageQuality: 88,
+        );
 
         if (image != null) {
           CroppedFile? croppedFile = await ImageCropper().cropImage(

@@ -106,6 +106,43 @@ class ErrorMessageMapper {
     return null;
   }
 
+  /// Copy for a conversation that could not be opened.
+  ///
+  /// The one thing this must never do is claim the provider has not accepted
+  /// the booking. That sentence is the screen's copy for a 404 — the backend
+  /// saying, in as many words, "No conversation for this booking yet" — and it
+  /// is a statement about the booking's lifecycle. Reporting a 500 or a dead
+  /// socket with it tells the customer something about their provider that the
+  /// app never learned.
+  ///
+  /// A 404 does not reach here at all: the data source maps it to null, which
+  /// is the genuinely-absent case, and the screen has its own copy for it.
+  static String forConversation(String? raw, {int? statusCode}) {
+    final byStatus = _byStatus(statusCode);
+    if (byStatus != null) return byStatus;
+
+    if (statusCode == 401) return forSessionExpiry();
+    if (statusCode == 403) {
+      // §21: no storage keys, no participant ids, nothing about who else is on
+      // the thread. Actionable and true, and nothing more.
+      return 'This conversation is not available to you.';
+    }
+
+    final lower = raw?.toLowerCase() ?? '';
+    if (_contains(lower, [
+      'socket',
+      'failed host lookup',
+      'connection',
+      'network',
+      'offline',
+      'timeout',
+    ])) {
+      return forNetwork();
+    }
+
+    return 'Could not load this conversation. Pull down to try again.';
+  }
+
   static const _tooManyAttempts =
       'Too many attempts. Please wait a moment and try again.';
 

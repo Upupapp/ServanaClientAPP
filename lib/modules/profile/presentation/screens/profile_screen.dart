@@ -23,6 +23,8 @@ import 'package:client/modules/profile/presentation/screens/email_verification_s
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:client/core/media/upload_preparation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -54,24 +56,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAndUploadPhoto() async {
     final picker = ImagePicker();
+    // The picker's own bounds are the cheap first pass — they keep a 12MP
+    // frame from ever being read into memory. `UploadCompressor` is what makes
+    // the result fit the transport.
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 75,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 90,
     );
     if (picked == null || !mounted) return;
-    final bytes = await File(picked.path).readAsBytes();
-    final base64 = base64Encode(bytes);
-    final ext = picked.path.split('.').last.toLowerCase();
-    final dataUri = 'data:image/$ext;base64,$base64';
-    if (mounted) {
-      final ok = await _profileCtrl.uploadPhoto(dataUri);
-      if (mounted && !ok && _profileCtrl.saveError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_profileCtrl.saveError!)),
-        );
-      }
+
+    final original = await File(picked.path).readAsBytes();
+
+    // Off the UI thread: decoding and re-encoding an image is real CPU work
+    // and this runs while the customer is looking at their profile.
+    final prepared = await compute(_compressAvatar, original);
+    if (!mounted) return;
+
+    switch (prepared) {
+      case UploadReady(:final bytes, :final contentType):
+        // Still a base64 data URI, because that is what the endpoint takes.
+        // Base64 costs 4 bytes for every 3, so this path pays a 33% tax on
+        // top of whatever it sends — which is exactly why the avatar budget
+        // is the tightest one and why it is measured against express's 10 MB
+        // JSON limit rather than nginx's 12 MB wall.
+        final dataUri = 'data:$contentType;base64,${base64Encode(bytes)}';
+        final ok = await _profileCtrl.uploadPhoto(dataUri);
+        if (mounted && !ok && _profileCtrl.saveError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_profileCtrl.saveError!)),
+          );
+        }
+      case UploadTooLarge(:final message):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      case UploadUnsupported(:final message):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -699,3 +721,10 @@ class _MenuItem extends StatelessWidget {
     );
   }
 }
+
+/// Runs on a background isolate, so it must be top-level.
+///
+/// The avatar is displayed at about 96 logical pixels. The path this replaced
+/// sent whatever the picker produced, base64-encoded into a JSON body.
+UploadPreparation _compressAvatar(Uint8List bytes) =>
+    UploadCompressor.prepareImage(bytes, budget: UploadBudget.avatar);

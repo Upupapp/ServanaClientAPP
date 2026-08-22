@@ -587,6 +587,28 @@ class ServanaApiClient {
   /// Resolves regardless of status so a deep link to an archived Service lands
   /// on an honest "currently unavailable" rather than a 404 the app would have
   /// to render as a dead end. Read `available` on the response, never infer it.
+  /// `GET /api/catalog/services/:id/serviceability?lat=&lon=` — can this be
+  /// booked at this point?
+  ///
+  /// Public, like the rest of the catalog reads, and it answers a verdict only:
+  /// never the coverage discs, never the legacy service id. The backend
+  /// resolves the service family with `createBooking`'s own statement, so this
+  /// cannot promise a booking the server will refuse.
+  Future<Map<String, dynamic>> getServiceability({
+    required int serviceId,
+    required double lat,
+    required double lon,
+  }) async {
+    final uri = _uri('/api/catalog/services/$serviceId/serviceability', {
+      // Six decimals, matching the `loc_{lat}_{lon}` location id format (§42),
+      // so the point asked about here is the point the booking will carry.
+      'lat': lat.toStringAsFixed(6),
+      'lon': lon.toStringAsFixed(6),
+    });
+    final res = await _client.get(uri, headers: await _headers());
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> getCanonicalService({
     required int serviceId,
   }) async {
@@ -936,6 +958,7 @@ class ServanaApiClient {
     required String body,
     required String clientMsgId,
     String type = 'text',
+    List<Map<String, dynamic>> attachments = const [],
   }) async {
     final uri = _uri('/api/chat/conversations/$conversationId/messages');
     final res = await _client.post(
@@ -945,6 +968,44 @@ class ServanaApiClient {
         'type': type,
         'body': body,
         'clientMsgId': clientMsgId,
+        // Omitted rather than sent empty. `chat.service.sendMessage` reads
+        // `attachments?.length` to decide whether a body-less message is
+        // allowed, and an empty array is the same answer as absent — but the
+        // legacy handler is read by four shipped clients and none of them
+        // sends the key, so this keeps the wire identical for a text message.
+        if (attachments.isNotEmpty) 'attachments': attachments,
+      }),
+    );
+    return _decodeJson(res);
+  }
+
+  /// `POST /api/chat/attachments/upload` — stores one file and returns the
+  /// reference a message can carry.
+  ///
+  /// The file travels as a **data URI in a JSON body**, which is the endpoint's
+  /// contract (`validateDataUri`), and that is what makes the size budget
+  /// tighter than it looks: base64 costs 4 bytes for every 3, so `express.json`'s
+  /// 10 MB limit is reached by a 7.5 MB file, and nginx's `client_max_body_size
+  /// 12m` sits behind it. `UploadBudget.chatPhoto` targets 800 KB, two orders
+  /// below the wall — see `upload_preparation.dart`.
+  ///
+  /// [conversationId] is optional on the wire and supplied here always. Omitting
+  /// it skips the server's access check; the backend keeps it optional only so
+  /// installed builds that never sent it keep working, and a new caller has no
+  /// reason to inherit that hole.
+  Future<Map<String, dynamic>> uploadChatAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+  }) async {
+    final uri = _uri('/api/chat/attachments/upload');
+    final res = await _client.post(
+      uri,
+      headers: await _headers(),
+      body: jsonEncode({
+        'file': dataUri,
+        'name': fileName,
+        'conversationId': conversationId,
       }),
     );
     return _decodeJson(res);

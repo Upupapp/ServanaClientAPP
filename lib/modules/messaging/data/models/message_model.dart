@@ -1,6 +1,14 @@
 import 'package:client/modules/messaging/data/models/message_attachment_model.dart';
 
-enum MessageType { text, image, system, unknown }
+/// The message kinds this client can represent.
+///
+/// `file` was missing while the backend's `SENDABLE_MESSAGE_TYPES` has carried
+/// `text`, `image` and `file` throughout — so a PDF sent from the provider app
+/// arrived here as `unknown` and rendered as nothing in particular. A
+/// vocabulary written before a case existed cannot grow on its own; this one
+/// is now pinned against the sendable set in
+/// `test/modules/messaging/message_type_vocabulary_test.dart`.
+enum MessageType { text, image, file, system, unknown }
 
 enum MessageSendStatus { sent, pending, failed }
 

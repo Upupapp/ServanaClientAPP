@@ -108,6 +108,27 @@ class MessagingRepository {
         clientMsgId: clientMsgId,
       );
 
+  /// Stores a file and sends the message that references it.
+  ///
+  /// Routed like every other call here, so an attachment travels on whichever
+  /// transport the capability selects rather than pinning itself to one.
+  Future<MessageModel> sendAttachment({
+    required int conversationId,
+    required String dataUri,
+    required String fileName,
+    required String mimeType,
+    required String clientMsgId,
+    String caption = '',
+  }) =>
+      _source.sendAttachment(
+        conversationId: conversationId,
+        dataUri: dataUri,
+        fileName: fileName,
+        mimeType: mimeType,
+        clientMsgId: clientMsgId,
+        caption: caption,
+      );
+
   // ── Read receipts ─────────────────────────────────────────────────────────
 
   Future<void> markRead({

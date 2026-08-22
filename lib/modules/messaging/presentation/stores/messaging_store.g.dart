@@ -166,6 +166,24 @@ mixin _$MessagingStore on _MessagingStore, Store {
         () => super.sendMessage(conversationId: conversationId, body: body));
   }
 
+  late final _$sendAttachmentAsyncAction =
+      AsyncAction('_MessagingStore.sendAttachment', context: context);
+
+  @override
+  Future<void> sendAttachment(
+      {required int conversationId,
+      required String dataUri,
+      required String fileName,
+      required String mimeType,
+      String caption = ''}) {
+    return _$sendAttachmentAsyncAction.run(() => super.sendAttachment(
+        conversationId: conversationId,
+        dataUri: dataUri,
+        fileName: fileName,
+        mimeType: mimeType,
+        caption: caption));
+  }
+
   late final _$retryMessageAsyncAction =
       AsyncAction('_MessagingStore.retryMessage', context: context);
 

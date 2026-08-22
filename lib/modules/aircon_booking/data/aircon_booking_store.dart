@@ -1,5 +1,4 @@
 import 'package:client/common/domain/address/address_display.dart';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -7,6 +6,7 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/common/domain/booking/booking_create_request.dart';
+import 'package:client/common/domain/booking/booking_submission_result.dart';
 import 'package:client/common/domain/booking/booking_draft.dart'
     show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
@@ -17,8 +17,17 @@ import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 
 part 'aircon_booking_store.g.dart';
+
+/// Shown only when no option has been selected at all.
+///
+/// ONE definition, referenced by this module's screens. It used to be a
+/// literal repeated in three files, alongside a hand-rolled key lookup that
+/// silently disagreed with the only writer of the option map -- so every
+/// canonical booking rendered this label instead of the service's real name.
+const String kAirconBookingFallbackLabel = 'Aircon Service';
 
 class AirconBookingStore extends _AirconBookingStore with _$AirconBookingStore {
   AirconBookingStore({required super.api});
@@ -569,19 +578,17 @@ abstract class _AirconBookingStore with Store {
     return 0;
   }
 
-  String _errorMsg(Object e) {
-    if (e is ServanaApiException) {
-      try {
-        final decoded = jsonDecode(e.body);
-        if (decoded is Map<String, dynamic>) {
-          final msg = decoded['message'] ?? decoded['error'];
-          if (msg != null) return msg.toString();
-        }
-      } catch (_) {}
-      return 'Something went wrong (${e.statusCode}).';
-    }
-    return e.toString();
-  }
+  /// What the customer is told when something goes wrong.
+  ///
+  /// This used to put the backend's own sentence on screen for an API error,
+  /// and `e.toString()` for anything else — so a dropped connection rendered
+  /// "SocketException: Failed host lookup: 'api.servana.com.ph'" in a snackbar,
+  /// and an out-of-coverage refusal arrived as raw server prose (§21).
+  ///
+  /// [BookingErrorMapper] was written for exactly this and had ZERO callers.
+  /// It classifies by status first, so a 500 can no longer be reported as a
+  /// connectivity problem.
+  String _errorMsg(Object e) => BookingErrorMapper.fromException(e).message;
 
   static String _uuidV4() {
     final rng = Random.secure();
@@ -629,12 +636,13 @@ abstract class _AirconBookingStore with Store {
 
   String _optionName() {
     final opt = selectedOption;
-    if (opt == null) return 'Aircon Service';
-    return (opt['level_3'] ??
-            opt['name'] ??
-            opt['optionName'] ??
-            'Aircon Service')
-        .toString();
+    if (opt == null) return kAirconBookingFallbackLabel;
+    // ServiceOptionDisplay is the ONE reader: it accepts both `level3`
+    // (what canonicalOptionMap writes) and `level_3` (what legacy
+    // service_options maps carry). Hand-rolling this lookup is what let
+    // the two spellings drift apart.
+    return ServiceOptionDisplay.name(opt,
+        fallback: kAirconBookingFallbackLabel);
   }
 
   void _track(dynamic event) {

@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
+import 'package:client/modules/catalog/domain/serviceability.dart';
+import 'package:client/modules/catalog/data/catalog_repository.dart';
 import 'package:client/common/domain/address/address_display.dart';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:client/common/data/backend/servana_api_client.dart';
@@ -7,6 +9,7 @@ import 'package:client/common/data/models/job_order_model.dart';
 import 'package:client/common/domain/helpers/session_service.dart';
 import 'package:client/common/data/booking/booking_submission_service.dart';
 import 'package:client/common/domain/booking/booking_create_request.dart';
+import 'package:client/common/domain/booking/booking_submission_result.dart';
 import 'package:client/common/domain/booking/booking_draft.dart'
     show BookingFlowType;
 import 'package:client/common/injectors/main_injector.dart';
@@ -18,8 +21,17 @@ import 'package:client/core/recovery/draft_repository.dart';
 import 'package:client/modules/job_order/data/enums/job_order_status.dart';
 import 'package:client/modules/payments/data/payments_repository.dart';
 import 'package:mobx/mobx.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 
 part 'bw_booking_store.g.dart';
+
+/// Shown only when no option has been selected at all.
+///
+/// ONE definition, referenced by this module's screens. It used to be a
+/// literal repeated in three files, alongside a hand-rolled key lookup that
+/// silently disagreed with the only writer of the option map -- so every
+/// canonical booking rendered this label instead of the service's real name.
+const String kBwBookingFallbackLabel = 'Beauty & Wellness Service';
 
 class BwBookingStore extends _BwBookingStore with _$BwBookingStore {
   BwBookingStore({required super.api});
@@ -104,8 +116,31 @@ abstract class _BwBookingStore with Store {
   @observable
   Map<String, dynamic>? selectedSlot;
 
+  /// A schedule the customer picked directly, for a service with no branch
+  /// slots to choose from.
+  ///
+  /// Measured on production 2026-08-20: `GET /api/services/:id/branches`
+  /// answers `branches: []` for NINE of the ten legacy families, and the
+  /// canonical catalog handoff routes a Service straight to checkout without
+  /// passing a branch screen at all. For 65 of the 95 services on offer there
+  /// is therefore no slot to pick, and this is how the customer says when.
+  @observable
+  DateTime? selectedSchedule;
+
   @observable
   Map<String, dynamic>? selectedAddress;
+
+  /// The backend's verdict on booking this service at [selectedAddress].
+  ///
+  /// Null means "not asked, or could not tell" — never "yes". The UI shows
+  /// nothing in that state rather than a reassurance it did not earn.
+  @observable
+  Serviceability? serviceability;
+
+  /// True while the check is in flight, so the screen can hold the submit
+  /// button rather than let a customer race the answer.
+  @observable
+  bool isCheckingServiceability = false;
 
   @observable
   String paymentMethod = 'CASH';
@@ -174,7 +209,9 @@ abstract class _BwBookingStore with Store {
     selectedBranch = null;
     selectedDate = null;
     selectedSlot = null;
+    selectedSchedule = null;
     selectedAddress = null;
+    serviceability = null;
     paymentMethod = 'CASH';
     bookingResult = null;
     createdBookingId = null;
@@ -194,6 +231,26 @@ abstract class _BwBookingStore with Store {
     isLoading = true;
   }
 
+  /// Prepares the store for a Service scheduled directly, with no branch.
+  ///
+  /// Needed because [clearSelectionOnly] deliberately preserves `branches` for
+  /// catalog reuse. Without this, a customer who opened Beauty & Wellness
+  /// (legacy family 2, the one family that HAS a branch) and then picked a
+  /// Personal Care service out of Search would arrive at checkout with a stale
+  /// branch list — so [branchRequired] would be true, the screen would draw no
+  /// branch control, and the booking would be refused for a field that flow
+  /// never had.
+  @action
+  void beginBranchlessBooking() {
+    selectedServiceId = null;
+    selectedBranch = null;
+    selectedSlot = null;
+    selectedSchedule = null;
+    selectedDate = null;
+    branches.clear();
+    slots.clear();
+  }
+
   /// Clears only the active booking-flow selections without touching the
   /// cached service catalog. Use this when entering a category screen so the
   /// user starts a fresh booking while already-loaded options are reused.
@@ -205,7 +262,9 @@ abstract class _BwBookingStore with Store {
     selectedBranch = null;
     selectedDate = null;
     selectedSlot = null;
+    selectedSchedule = null;
     selectedAddress = null;
+    serviceability = null;
     paymentMethod = 'CASH';
     bookingResult = null;
     createdBookingId = null;
@@ -341,6 +400,19 @@ abstract class _BwBookingStore with Store {
   void setDate(DateTime date) {
     selectedDate = date;
     selectedSlot = null;
+    // Carry a directly-chosen time onto the new day rather than dropping it.
+    // Leaving `selectedSchedule` alone would submit the OLD date with the new
+    // one on screen — the screen and the payload disagreeing about when.
+    final existing = selectedSchedule;
+    if (existing != null) {
+      selectedSchedule = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        existing.hour,
+        existing.minute,
+      );
+    }
     loadSlots();
   }
 
@@ -349,9 +421,92 @@ abstract class _BwBookingStore with Store {
     selectedSlot = slot;
   }
 
+  /// Sets a directly-chosen date and time.
+  ///
+  /// Clears any branch slot: the two are alternative answers to the same
+  /// question, and holding both would leave [effectiveSchedule] deciding
+  /// silently which one the customer meant.
+  @action
+  void setSchedule(DateTime schedule) {
+    selectedSchedule = schedule;
+    selectedSlot = null;
+    selectedDate = DateTime(schedule.year, schedule.month, schedule.day);
+  }
+
   @action
   void selectAddress(Map<String, dynamic> address) {
     selectedAddress = address;
+    // Clear first: a verdict about the PREVIOUS address must not linger over
+    // the new one for the length of a round trip.
+    serviceability = null;
+    checkServiceability();
+  }
+
+  /// Asks whether this service can be booked at the chosen address.
+  ///
+  /// Runs on address selection rather than at submit, which is the whole point:
+  /// `createBooking` already answers this, and it answers it after the customer
+  /// has chosen a date and a payment method.
+  ///
+  /// **A failure clears the verdict rather than inventing one.** If the check
+  /// cannot be made, the app does not know — and it must not block a booking
+  /// the server would accept, nor promise one it would refuse. The server runs
+  /// the same test at submit and refuses honestly, so silence here costs a
+  /// wasted form at worst; a wrong "unavailable" costs the booking outright.
+  @action
+  Future<void> checkServiceability() async {
+    final address = selectedAddress;
+    final serviceId = _canonicalServiceId;
+    if (address == null || serviceId == null) {
+      serviceability = null;
+      return;
+    }
+
+    final lat = _coordinate(address['lat']);
+    final lon = _coordinate(address['lon']);
+    if (lat == null || lon == null) {
+      // An address with no usable coordinates cannot be judged, and the
+      // backend says so too (INVALID_LOCATION). Reported rather than assumed
+      // serviceable: `createBooking` will refuse it with "Address missing
+      // locationId." and the customer deserves to know before the form.
+      serviceability = const Serviceability(
+        serviceable: false,
+        reason: ServiceabilityReason.invalidLocation,
+      );
+      return;
+    }
+
+    isCheckingServiceability = true;
+    try {
+      serviceability = await dpLocator<CatalogRepository>()
+          .serviceability(serviceId: serviceId, lat: lat, lon: lon);
+    } catch (e) {
+      debugPrint('[BwBookingStore] serviceability check failed: $e');
+      serviceability = null;
+    } finally {
+      isCheckingServiceability = false;
+    }
+  }
+
+  /// The canonical `services.id` for the selected option, or null.
+  ///
+  /// `canonicalOptionMap` writes `catalogServiceId`; a legacy option map from
+  /// the curated category path does not carry one, and `id` there is a
+  /// `service_options.id`. They are equal for every promoted row today and stop
+  /// being equal for the first Service created through the Admin API — so the
+  /// canonical key is read by name and NOT inferred from `id`.
+  int? get _canonicalServiceId {
+    final raw = selectedOption?['catalogServiceId'];
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw);
+    return null;
+  }
+
+  static double? _coordinate(Object? raw) {
+    final value = raw is num ? raw.toDouble() : double.tryParse('$raw');
+    // Zero is Null Island, which is what an absent coordinate arrives as.
+    if (value == null || value == 0) return null;
+    return value;
   }
 
   @action
@@ -364,13 +519,12 @@ abstract class _BwBookingStore with Store {
     submissionError = null;
     _track(const BookingSubmittedEvent(serviceCategory: 'beauty_wellness'));
     try {
-      // The slot must be structurally valid before a schedule can be built at
-      // all — this is not a "missing field" check, it is what makes
-      // `_buildScheduleDateTime()` meaningful, so it stays ahead of the shared
-      // validation rather than inside it.
-      final slotUsable = selectedDate != null &&
-          selectedSlot != null &&
-          _hasValidSelectedSlot();
+      // The schedule must be resolvable before the shared validation can say
+      // anything useful about it — this is not a "missing field" check, it is
+      // what makes a submitted timestamp meaningful, so it stays ahead of the
+      // shared validation rather than inside it. Either a structurally valid
+      // branch slot or a directly-chosen date and time will do.
+      final schedule = effectiveSchedule;
 
       final optionId = selectedOption?['id'] ?? selectedOption?['optionId'];
 
@@ -384,10 +538,10 @@ abstract class _BwBookingStore with Store {
           serviceOptionId: optionId,
           userAddressId:
               '${selectedAddress?['addressId'] ?? selectedAddress?['id'] ?? ''}',
-          schedule: slotUsable ? _buildScheduleDateTime() : null,
+          schedule: schedule,
           paymentMethod: paymentMethod,
           branchId: selectedBranch?['branchId'] ?? selectedBranch?['id'],
-          requiresBranch: true,
+          requiresBranch: branchRequired,
           pricingInputs: <String, dynamic>{
             'addonOptionIds': selectedAddonIds.toList(),
           },
@@ -411,7 +565,7 @@ abstract class _BwBookingStore with Store {
         // never chosen. They are different customer mistakes and this flow has
         // always distinguished them.
         case BookingRefused(reasons: final reasons)
-            when slotUsable &&
+            when schedule != null &&
                 reasons.contains(BookingRequestInvalidity.scheduleInPast):
           submissionError = 'Choose a future booking schedule.';
           isSubmitting = false;
@@ -420,9 +574,8 @@ abstract class _BwBookingStore with Store {
             failureCode: 'invalid_schedule',
           ));
 
-        case BookingRefused():
-          submissionError =
-              'Complete the service, branch, schedule, address, and payment details.';
+        case BookingRefused(reasons: final reasons):
+          submissionError = _refusalMessage(reasons);
           isSubmitting = false;
           _track(const BookingFailedEvent(
             serviceCategory: 'beauty_wellness',
@@ -519,6 +672,64 @@ abstract class _BwBookingStore with Store {
     }
   }
 
+  /// Names only what is actually missing.
+  ///
+  /// The previous copy read "Complete the service, branch, schedule, address,
+  /// and payment details." on EVERY refusal. For a service with no branch that
+  /// sent the customer hunting for a control the screen does not draw, and for
+  /// a customer who had only forgotten their address it listed four fields they
+  /// had already filled in. A refusal that names the wrong cause is the same
+  /// class of defect as a sign-in screen blaming a password during an outage.
+  String _refusalMessage(List<BookingRequestInvalidity> reasons) {
+    final missing = <String>[
+      for (final reason in reasons)
+        switch (reason) {
+          BookingRequestInvalidity.noService => 'a service',
+          BookingRequestInvalidity.noAddress => 'a service address',
+          BookingRequestInvalidity.noBranch => 'a branch',
+          BookingRequestInvalidity.noSchedule => 'a date and time',
+          BookingRequestInvalidity.scheduleInPast => 'a future date and time',
+          BookingRequestInvalidity.noPaymentMethod => 'a payment method',
+        },
+    ];
+    if (missing.isEmpty) return 'Complete your booking details to continue.';
+    if (missing.length == 1) return 'Choose ${missing.single} to continue.';
+    final last = missing.removeLast();
+    return 'Choose ${missing.join(', ')} and $last to continue.';
+  }
+
+  // ───────── Derived state ─────────
+
+  /// Whether this service actually offers a branch to choose.
+  ///
+  /// The client used to demand a branch on EVERY Beauty & Wellness booking
+  /// (`requiresBranch: true`, unconditionally), which is stricter than the
+  /// server: the backend's own validator types `branchId?: number` and
+  /// `createBooking` guards every branch read with
+  /// `if (payload.branchId !== undefined)`. Since production answers
+  /// `branches: []` for nine of the ten legacy families, that rule refused
+  /// bookings the server would have accepted — and the checkout screen draws
+  /// no branch control, so the refusal named a field the customer could not
+  /// fill in.
+  ///
+  /// Keyed on what was actually loaded rather than on the flow, so the one
+  /// family that DOES have a branch still requires it.
+  bool get branchRequired => branches.isNotEmpty;
+
+  /// When the service is to happen, however the customer answered.
+  ///
+  /// A branch slot carries capacity the backend locks; a directly-chosen
+  /// schedule does not. They are alternatives, never both, and null here is
+  /// what makes "no schedule chosen" distinguishable from "a schedule that has
+  /// passed" — two different customer mistakes this flow has always reported
+  /// separately.
+  DateTime? get effectiveSchedule {
+    if (selectedDate != null && _hasValidSelectedSlot()) {
+      return _buildScheduleDateTime();
+    }
+    return selectedSchedule;
+  }
+
   // ───────── Helpers ─────────
 
   DateTime _buildScheduleDateTime() {
@@ -569,19 +780,17 @@ abstract class _BwBookingStore with Store {
     return null;
   }
 
-  String _errorMsg(Object e) {
-    if (e is ServanaApiException) {
-      try {
-        final decoded = jsonDecode(e.body);
-        if (decoded is Map<String, dynamic>) {
-          final msg = decoded['message'] ?? decoded['error'];
-          if (msg != null) return msg.toString();
-        }
-      } catch (_) {}
-      return 'Something went wrong (${e.statusCode}).';
-    }
-    return e.toString();
-  }
+  /// What the customer is told when something goes wrong.
+  ///
+  /// This used to put the backend's own sentence on screen for an API error,
+  /// and `e.toString()` for anything else — so a dropped connection rendered
+  /// "SocketException: Failed host lookup: 'api.servana.com.ph'" in a snackbar,
+  /// and an out-of-coverage refusal arrived as raw server prose (§21).
+  ///
+  /// [BookingErrorMapper] was written for exactly this and had ZERO callers.
+  /// It classifies by status first, so a 500 can no longer be reported as a
+  /// connectivity problem.
+  String _errorMsg(Object e) => BookingErrorMapper.fromException(e).message;
 
   /// Snapshot of the just-created booking built from current selections, used
   /// to open the booking detail screen and seed the bookings list immediately
@@ -618,12 +827,12 @@ abstract class _BwBookingStore with Store {
 
   String _optionName() {
     final opt = selectedOption;
-    if (opt == null) return 'Beauty & Wellness Service';
-    return (opt['level_3'] ??
-            opt['name'] ??
-            opt['optionName'] ??
-            'Beauty & Wellness Service')
-        .toString();
+    if (opt == null) return kBwBookingFallbackLabel;
+    // ServiceOptionDisplay is the ONE reader: it accepts both `level3`
+    // (what canonicalOptionMap writes) and `level_3` (what legacy
+    // service_options maps carry). Hand-rolling this lookup is what let
+    // the two spellings drift apart.
+    return ServiceOptionDisplay.name(opt, fallback: kBwBookingFallbackLabel);
   }
 
   void _track(dynamic event) {

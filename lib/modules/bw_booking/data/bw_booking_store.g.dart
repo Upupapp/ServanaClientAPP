@@ -297,6 +297,22 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
     });
   }
 
+  late final _$selectedScheduleAtom =
+      Atom(name: '_BwBookingStore.selectedSchedule', context: context);
+
+  @override
+  DateTime? get selectedSchedule {
+    _$selectedScheduleAtom.reportRead();
+    return super.selectedSchedule;
+  }
+
+  @override
+  set selectedSchedule(DateTime? value) {
+    _$selectedScheduleAtom.reportWrite(value, super.selectedSchedule, () {
+      super.selectedSchedule = value;
+    });
+  }
+
   late final _$selectedAddressAtom =
       Atom(name: '_BwBookingStore.selectedAddress', context: context);
 
@@ -310,6 +326,39 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   set selectedAddress(Map<String, dynamic>? value) {
     _$selectedAddressAtom.reportWrite(value, super.selectedAddress, () {
       super.selectedAddress = value;
+    });
+  }
+
+  late final _$serviceabilityAtom =
+      Atom(name: '_BwBookingStore.serviceability', context: context);
+
+  @override
+  Serviceability? get serviceability {
+    _$serviceabilityAtom.reportRead();
+    return super.serviceability;
+  }
+
+  @override
+  set serviceability(Serviceability? value) {
+    _$serviceabilityAtom.reportWrite(value, super.serviceability, () {
+      super.serviceability = value;
+    });
+  }
+
+  late final _$isCheckingServiceabilityAtom =
+      Atom(name: '_BwBookingStore.isCheckingServiceability', context: context);
+
+  @override
+  bool get isCheckingServiceability {
+    _$isCheckingServiceabilityAtom.reportRead();
+    return super.isCheckingServiceability;
+  }
+
+  @override
+  set isCheckingServiceability(bool value) {
+    _$isCheckingServiceabilityAtom
+        .reportWrite(value, super.isCheckingServiceability, () {
+      super.isCheckingServiceability = value;
     });
   }
 
@@ -428,6 +477,15 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
         .run(() => super.loadSavedAddresses());
   }
 
+  late final _$checkServiceabilityAsyncAction =
+      AsyncAction('_BwBookingStore.checkServiceability', context: context);
+
+  @override
+  Future<void> checkServiceability() {
+    return _$checkServiceabilityAsyncAction
+        .run(() => super.checkServiceability());
+  }
+
   late final _$createBookingAsyncAction =
       AsyncAction('_BwBookingStore.createBooking', context: context);
 
@@ -463,6 +521,17 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
         name: '_BwBookingStore.reset');
     try {
       return super.reset();
+    } finally {
+      _$_BwBookingStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
+  void beginBranchlessBooking() {
+    final _$actionInfo = _$_BwBookingStoreActionController.startAction(
+        name: '_BwBookingStore.beginBranchlessBooking');
+    try {
+      return super.beginBranchlessBooking();
     } finally {
       _$_BwBookingStoreActionController.endAction(_$actionInfo);
     }
@@ -546,6 +615,17 @@ mixin _$BwBookingStore on _BwBookingStore, Store {
   }
 
   @override
+  void setSchedule(DateTime schedule) {
+    final _$actionInfo = _$_BwBookingStoreActionController.startAction(
+        name: '_BwBookingStore.setSchedule');
+    try {
+      return super.setSchedule(schedule);
+    } finally {
+      _$_BwBookingStoreActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void selectAddress(Map<String, dynamic> address) {
     final _$actionInfo = _$_BwBookingStoreActionController.startAction(
         name: '_BwBookingStore.selectAddress');
@@ -587,7 +667,10 @@ selectedAddonIds: ${selectedAddonIds},
 selectedBranch: ${selectedBranch},
 selectedDate: ${selectedDate},
 selectedSlot: ${selectedSlot},
+selectedSchedule: ${selectedSchedule},
 selectedAddress: ${selectedAddress},
+serviceability: ${serviceability},
+isCheckingServiceability: ${isCheckingServiceability},
 paymentMethod: ${paymentMethod},
 bookingResult: ${bookingResult},
 createdBookingId: ${createdBookingId},

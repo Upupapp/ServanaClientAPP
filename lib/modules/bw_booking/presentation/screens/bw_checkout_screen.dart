@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:client/common/domain/services/service_option_display.dart';
 
 /// Step 3: User selects address, confirms payment method, reviews summary.
 class BwCheckoutScreen extends StatefulWidget {
@@ -115,12 +116,12 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    if (store.selectedDate != null &&
-                        store.selectedSlot != null)
+                    if (store.effectiveSchedule != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          '${DateFormat('EEE, MMM d yyyy').format(store.selectedDate!)} • ${_slotTime()}',
+                          DateFormat('EEE, MMM d yyyy – h:mm a')
+                              .format(store.effectiveSchedule!),
                           style: TextStyle(
                             fontFamily: FontPalette.primaryFontFamily,
                             color: ColorPalette.accentText,
@@ -311,7 +312,112 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
                 ),
               ],
 
+              // ──── Serviceability ────
+              //
+              // Shown ONLY for a definitive no. A yes says nothing — a banner
+              // reading "this works" is noise on every screen it appears on —
+              // and an unknown says nothing either, because the app has not
+              // earned either claim. `createBooking` runs the same test at
+              // submit and refuses honestly, so silence costs a wasted form at
+              // worst; a wrong "unavailable" costs the booking outright.
+              if (store.serviceability?.message != null) ...[
+                const SizedBox(height: 12),
+                Semantics(
+                  liveRegion: true,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.danger.withOpacity(.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: ColorPalette.danger.withOpacity(.4)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline_rounded,
+                            color: ColorPalette.danger, size: 20),
+                        const SizedBox(width: 10),
+                        // Expanded, or a two-line message overflows the row at
+                        // larger text scales and the customer reads half of it.
+                        Expanded(
+                          child: Text(
+                            store.serviceability!.message!,
+                            style: TextStyle(
+                              fontFamily: FontPalette.primaryFontFamily,
+                              color: ColorPalette.danger,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 24),
+
+              // ──── Schedule ────
+              //
+              // Drawn only when this Service has no branch to book a slot in.
+              // Measured on production 2026-08-20, that is nine of the ten
+              // legacy families and every Service reached from the canonical
+              // catalog — which used to arrive here with no date, no time, and
+              // no control to supply either, so the booking could never be
+              // completed. Where a branch DOES exist its slot still decides the
+              // time, because that slot carries capacity the backend locks.
+              if (!store.branchRequired) ...[
+                const _SectionHeader(title: 'Schedule'),
+                const SizedBox(height: 8),
+                Semantics(
+                  button: true,
+                  label: 'Choose service schedule',
+                  child: InkWell(
+                    onTap: _pickSchedule,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: ColorPalette.secondaryBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: ColorPalette.border(.55)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_month_rounded,
+                              color: ColorPalette.primaryColorDark),
+                          const SizedBox(width: 12),
+                          // Expanded, or the formatted schedule demands its
+                          // full intrinsic width and the Row overflows at large
+                          // text scales — the clipped part being the date the
+                          // customer just chose.
+                          Expanded(
+                            child: Text(
+                              store.selectedSchedule != null
+                                  ? DateFormat('EEE, MMM d yyyy – h:mm a')
+                                      .format(store.selectedSchedule!)
+                                  : 'Tap to choose a date and time',
+                              style: TextStyle(
+                                fontFamily: FontPalette.primaryFontFamily,
+                                fontWeight: FontWeight.w600,
+                                color: store.selectedSchedule != null
+                                    ? ColorPalette.secondaryText
+                                    : ColorPalette.accentText,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded,
+                              color: ColorPalette.accentText),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // ──── Payment method ────
               const _SectionHeader(title: 'Payment Method'),
@@ -395,12 +501,12 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
 
   String _optionName() {
     final opt = store.selectedOption;
-    if (opt == null) return 'Beauty & Wellness Service';
-    return (opt['level_3'] ??
-            opt['name'] ??
-            opt['optionName'] ??
-            'Beauty & Wellness Service')
-        .toString();
+    if (opt == null) return kBwBookingFallbackLabel;
+    // ServiceOptionDisplay is the ONE reader: it accepts both `level3`
+    // (what canonicalOptionMap writes) and `level_3` (what legacy
+    // service_options maps carry). Hand-rolling this lookup is what let
+    // the two spellings drift apart.
+    return ServiceOptionDisplay.name(opt, fallback: kBwBookingFallbackLabel);
   }
 
   String _branchName() {
@@ -409,17 +515,29 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
     return (b['branchName'] ?? b['name'] ?? '').toString();
   }
 
-  String _slotTime() {
-    final slot = store.selectedSlot;
-    if (slot == null) return '';
-    final slotTime = slot['slotTime']?.toString() ?? '';
-    final parts = slotTime.split(':');
-    if (parts.length < 2) return slotTime;
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
+  /// Date then time, the same two-step the aircon checkout uses.
+  ///
+  /// `firstDate: DateTime.now()` keeps the picker itself from offering a past
+  /// day; the store still validates, because a customer can sit on this screen
+  /// past the time they chose.
+  Future<void> _pickSchedule() async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      initialDate: store.selectedSchedule ?? DateTime.now(),
+    );
+    if (date == null || !mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: store.selectedSchedule != null
+          ? TimeOfDay.fromDateTime(store.selectedSchedule!)
+          : TimeOfDay.now(),
+    );
+    if (time == null || !mounted) return;
+
+    store.setSchedule(date.copyWith(hour: time.hour, minute: time.minute));
   }
 
   Future<void> _addNewAddress() async {
@@ -479,7 +597,9 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
         addressLine: store.selectedAddress?['addressOne']?.toString(),
         lat: (store.selectedAddress?['lat'] as num?)?.toDouble(),
         lon: (store.selectedAddress?['lon'] as num?)?.toDouble(),
-        selectedDate: store.selectedDate,
+        // The effective schedule, so a directly-chosen time is preserved in
+        // the draft record too — `selectedDate` alone drops the hour.
+        selectedDate: store.effectiveSchedule ?? store.selectedDate,
         selectedSlot: (store.selectedSlot?['slotTime'] ?? '').toString(),
         pricingSnapshot: store.estimatedTotal > 0 ? store.estimatedTotal : null,
       ));
@@ -494,12 +614,27 @@ class _BwCheckoutScreenState extends State<BwCheckoutScreen> {
 
     if (store.isSubmitting) return;
 
+    // Each check names something this screen can actually offer. Demanding a
+    // branch and a slot unconditionally is what made 65 of the 95 Services on
+    // offer impossible to book: neither control is drawn for a Service that
+    // has no branch, so the customer was told to choose from nothing.
     final errors = <String>[];
     if (store.selectedOption == null) errors.add('No service selected.');
-    if (store.selectedBranch == null) errors.add('No branch selected.');
-    if (store.selectedDate == null) errors.add('No date selected.');
-    if (store.selectedSlot == null) errors.add('No time slot selected.');
+    if (store.branchRequired && store.selectedBranch == null) {
+      errors.add('No branch selected.');
+    }
+    if (store.effectiveSchedule == null) {
+      errors.add('Choose a date and time.');
+    }
     if (store.selectedAddress == null) errors.add('Select an address.');
+    // A definitive no blocks; an unknown does not. `serviceable` is only false
+    // when the backend said so — the store leaves the verdict null when it
+    // could not ask, precisely so this cannot refuse a booking the server would
+    // have taken.
+    final verdict = store.serviceability;
+    if (verdict != null && !verdict.serviceable) {
+      errors.add(verdict.message ?? 'This service is not available here.');
+    }
 
     if (errors.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

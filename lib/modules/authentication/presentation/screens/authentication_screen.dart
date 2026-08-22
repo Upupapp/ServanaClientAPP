@@ -19,8 +19,7 @@ import 'package:client/modules/authentication/presentation/bloc/authentication_b
 import 'package:client/modules/authentication/presentation/bloc/authentication_event.dart';
 import 'package:client/modules/authentication/presentation/bloc/authentication_state.dart';
 import 'package:client/modules/landing/presentation/screens/welcome_screen.dart';
-import 'package:client/modules/registration/presentation/bloc/registration_bloc.dart';
-import 'package:client/modules/registration/presentation/bloc/registration_events.dart';
+import 'package:client/modules/profile/presentation/screens/email_verification_screen.dart';
 import 'package:client/modules/registration/presentation/screens/create_account_screen.dart';
 
 class AuthenticationScreen extends StatefulWidget {
@@ -359,26 +358,42 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
                                     if (isUnverifiedEmail &&
                                         _identifier.isNotEmpty) {
+                                      // Sends the customer to the screen that
+                                      // can actually clear the gate.
+                                      //
+                                      // This dialog used to promise "a
+                                      // verification link ... open it from your
+                                      // inbox" and offer only "Resend link" and
+                                      // "Close". Two things were wrong with
+                                      // that. The app cannot complete a link —
+                                      // the single call that clears the gate is
+                                      // `verifyEmail(email:, otp:)`, a six-digit
+                                      // code typed into
+                                      // EmailVerificationScreen. And that screen
+                                      // was reachable from signup ALONE, so
+                                      // anyone who signed up, closed the app and
+                                      // came back to sign in could resend
+                                      // forever without ever reaching the field
+                                      // that accepts the code — locked out of an
+                                      // account they had successfully created.
+                                      //
+                                      // Resending lives on that screen, beside
+                                      // the field the code goes into, rather
+                                      // than here where there is nowhere to type
+                                      // it.
                                       ServanaAlertDialog.show(
                                         context: context,
                                         type: ServanaAlertType.warning,
                                         title: 'Verify your email',
                                         message:
-                                            'We sent a verification link to $_identifier. '
-                                            'Open it from your inbox, then come back to sign in.',
-                                        okText: 'Resend link',
+                                            'Enter the verification code we sent to $_identifier '
+                                            'to finish signing in.',
+                                        okText: 'Enter code',
                                         onOk: () {
-                                          BlocProvider.of<RegistrationBloc>(
-                                                  context)
-                                              .add(
-                                            ResendVerificationEmail(
+                                          context.goNamed(
+                                            EmailVerificationScreen.routeName,
+                                            extra: SignupEmailVerificationArgs(
                                                 email: _identifier),
-                                          );
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'Verification link sent. Check your inbox.')),
                                           );
                                         },
                                         cancelText: 'Close',
