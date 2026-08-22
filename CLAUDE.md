@@ -8,6 +8,33 @@ pointer.
 
 ---
 
+## Which machine does what — read this before any release work
+
+**This is a two-machine project, split by platform. The split is not a
+preference; iOS release work is physically impossible off a Mac.**
+
+| Platform | Owner | Tooling |
+| --- | --- | --- |
+| **iOS / App Store / TestFlight** | the **Mac** agent | Xcode, signing keychain, `flutter build ipa`, `ios/ExportOptions.plist` |
+| **Android / Google Play** | the **Windows** agent | `scripts/release-android.sh`, `docs/PLAY_CONSOLE_STATE.md` |
+
+**The collision point is `pubspec.yaml`.** `version: x.y.z+build` is **shared by
+both stores**. Two agents bumping it independently is how you get a build number
+already used on one store and rejected on the other. **Coordinate the bump; do
+not assume you own it.**
+
+If you are on the Mac: do not run `release-android.sh`, do not produce a release
+AAB/APK, and do not drive Play Console items — read `PLAY_CONSOLE_STATE.md`,
+don't edit it. If you are on Windows: the reverse, and note that nothing in
+`ios/` can be verified from there at all.
+
+Cross-platform code, and backend work that **blocks** a store submission, belong
+to whoever is blocked. The Sign in with Apple refusal, for instance, lives in
+`servana_api` and blocks iOS — so it is the Mac agent's to chase even though it
+is not Flutter code.
+
+Findings for the other platform are **recorded** (`SC-###`), not fixed.
+
 ## Where the findings live
 
 **Do not start a new list.** Three registers exist and each has a job:

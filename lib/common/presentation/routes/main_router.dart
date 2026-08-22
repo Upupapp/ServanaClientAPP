@@ -154,26 +154,44 @@ class MainRouter {
 
         final loc = state.matchedLocation;
 
-        // Protected routes require a signed-in session.
+        // Compared in lower case, deliberately.
+        //
+        // Route constants in this app disagree about capitalisation:
+        // `SettingsScreen.route` is '/Settings' while every settings SUB-screen
+        // is lower case — '/settings/privacy', '/settings/security',
+        // '/settings/profile-edit', '/settings/delete-account' and three more.
+        // `String.startsWith` is case-sensitive, so a guard written against
+        // '/Settings' protected none of them: SEVEN routes, including account
+        // deletion and profile editing, were reachable without a session.
+        //
+        // Lower-casing once here fixes the whole class rather than the seven
+        // instances, so the next screen added at '/settings/...' is protected by
+        // default instead of silently joining the hole.
+        final locLower = loc.toLowerCase();
+
+        // Protected routes require a signed-in session. Prefixes are written in
+        // lower case to match `locLower` — do not use a route constant here
+        // unless you lower-case it too.
+        const protectedPrefixes = <String>[
+          '/settings', // hub AND every '/settings/...' sub-screen
+          '/bookings', // "/Bookings" tab and "/bookings/:id" detail
+          '/booking/', // legacy "/booking/:id" singular alias
+          '/messages',
+          '/profile',
+          '/support',
+          '/review/', // /review/new, /review/detail
+          '/bookingchat', // /BookingChat/:jobOrderId
+          '/savedaddresses',
+          '/rewards',
+          '/favourites',
+          '/notifications',
+          '/calendar',
+          '/jobordersummaryscreen', // '/JobOrderSummaryScreen/:id'
+          '/language',
+        ];
+
         final isProtected =
-            loc.startsWith(SettingsScreen.route) || // '/Settings'
-                loc.startsWith(BookingsScreen.route) || // "/Bookings" tab
-                loc.startsWith('/bookings') || // "/bookings/:id" detail routes
-                loc.startsWith(
-                    '/booking/') || // legacy "/booking/:id" singular alias
-                loc.startsWith(MessagesInboxScreen.route) ||
-                loc.startsWith(ProfileScreen.route) ||
-                loc.startsWith('/support') ||
-                loc.startsWith('/review/') || // /review/new, /review/detail
-                loc.startsWith('/BookingChat') || // /BookingChat/:jobOrderId
-                loc.startsWith('/SavedAddresses') ||
-                loc.startsWith('/Rewards') ||
-                loc.startsWith('/Favourites') ||
-                loc.startsWith(NotificationsScreen.route) || // '/Notifications'
-                loc.startsWith(BookingCalendarScreen.route) || // '/Calendar'
-                loc.startsWith(
-                    '/JobOrderSummaryScreen') || // '/JobOrderSummaryScreen/:id'
-                loc.startsWith(LanguageScreen.route); // '/Language'
+            protectedPrefixes.any((p) => locLower.startsWith(p));
 
         if (isProtected && !authState.isAuthenticated) {
           // Always land on WelcomeScreen — post-logout and unauthenticated

@@ -5,6 +5,7 @@ import 'package:client/modules/messaging/presentation/screens/messages_inbox_scr
 import 'package:client/modules/notifications/domain/notification_target.dart';
 import 'package:client/modules/notifications/domain/servana_notification.dart';
 import 'package:client/modules/support/presentation/screens/support_ticket_detail_screen.dart';
+import 'package:client/common/presentation/screens/drawer_placeholder_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,8 +56,14 @@ class NotificationNavigationCoordinator {
         context.go('/HomeScreen');
 
       // ALIGN WARN-02: go to the settings hub, not the home screen.
+      //
+      // Pushed via the route CONSTANT, not a literal. The literal was
+      // '/settings' while the registered path is '/Settings', and GoRouter
+      // matches case-sensitively — so a settings notification opened an error
+      // page rather than settings. Using the constant makes the two impossible
+      // to drift apart again.
       case SettingsTarget():
-        context.push('/settings');
+        context.push(SettingsScreen.route);
 
       // REPEAT FAIL-04: use GoRouter so the auth guard applies.
       case SupportTicketTarget(:final ticketKey):
