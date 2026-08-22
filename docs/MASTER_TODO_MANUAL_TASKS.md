@@ -3,10 +3,12 @@
 Items that **cannot** be closed from this machine by writing code. Everything
 else is done in-tree and reported per TAB.
 
-Rules in force: nothing is pushed, nothing is deployed, no production data is
-touched, no credential is changed. Local commits only.
+Rules in force: no deployment, no production data is touched, no credential is
+changed. Pushing to `main` IS now in force for this repo — the five-step
+procedure (sweep, test, merge, re-test, push) runs after every completed TAB.
 
-Last updated: 2026-08-20 (sweep of `origin/main`; M1 closed).
+Last updated: 2026-08-22 (App Store rejection recorded; A-1..A-7 raised; M8
+reopened and re-closed structurally).
 
 ---
 
@@ -146,9 +148,26 @@ version. When stable moved to **3.47.0**, its minimum Gradle (8.14.0) and Kotlin
 (2.2.20) floors rose above what the repository pinned (8.13, 2.0.0) and
 **the Android release build stopped building** — with no repository change.
 
-**CLOSED by TAB 19 (`404dc23`).** `flutter-version: 3.47.0` is now pinned in all
-five CI jobs, converting a surprise outage into a deliberate upgrade. Raising it
-is now a decision: bump, run the gates, run a release build, commit.
+**Closed by TAB 19 (`404dc23`)** — `flutter-version: 3.47.0` pinned in all five
+CI jobs.
+
+**REOPENED, silently, by `27e5793`.** That commit deleted `flutter-ci.yml` for
+the no-CI policy and took the only pin in the repository with it. Nothing
+announced the regression, because the thing that carried the pin was the thing
+being deleted on purpose.
+
+The consequence surfaced on 2026-08-22: `pubspec.lock` had been resolved against
+an older stable and no longer resolved at all under 3.47.0
+(`flutter pub get --enforce-lockfile` exit 65). It stayed invisible because
+`flutter test` runs an implicit `pub get` that silently rewrote the lock on every
+run — so the only gate this repo has was testing a dependency set other than the
+committed one.
+
+**CLOSED STRUCTURALLY 2026-08-22 (`f6082bb`, `26b34eb`)**, and no longer a manual
+item. `.flutter-version` now holds the pin, and the pre-push hook checks it
+before every push and then runs `--enforce-lockfile`. This is strictly stronger
+than the TAB 19 fix: it binds **every clone**, not just a CI runner, and it
+cannot be removed by deleting a workflow — there is no workflow left to delete.
 
 ---
 
@@ -230,3 +249,41 @@ a store account, a console, or a deploy.
 | M4.10 | **Create and staff `security@servana.com.ph`** as a distribution list with at least two people. The code change is done (TAB 18) and now points there; the alias must actually exist and be monitored, and the response procedure is `docs/runbooks/RASP_ALERTS.md`. An alert with no named owner is telemetry, not security | 18 |
 | M4.11 | IAM verification that both historical service-account keys are **deleted**, not merely rotated | 18 |
 | M4.12 | Play data-safety declaration and Apple privacy nutrition labels | 20 |
+
+---
+
+## A — App Store rejection 2026-08-22 · Guidelines 2.1(a), 5.1.1(v), 2.3.6
+
+Raised by `docs/SERVANA_CLIENT_APPSTORE_REMEDIATION_MASTER_COMMAND.md`. These
+are the items that **cannot** be closed by writing code in this repository.
+
+**The rejection, verbatim in substance:**
+
+- **2.1(a) Performance — App Completeness.** *"The app did not log us in when
+  using Sign in with Apple."* Review device: **iPad Air 11-inch (M3), iPadOS
+  26.6**, active internet connection.
+- **5.1.1(v) Data Collection and Storage.** The app supports account creation
+  but offers no way to initiate account deletion. Temporary deactivation is
+  explicitly insufficient. Requires a screen recording of the full flow.
+- **2.3.6 Accurate Metadata.** Age Rating must answer **Yes** to
+  **"Messaging and Chat"**, because the app ships chat.
+
+| # | Item | Where | Blocks |
+| --- | --- | --- | --- |
+| **A-1** | Enable **Sign In with Apple** on App ID `com.servana.client` | Apple Developer portal | TAB 04 if cause C1 |
+| **A-2** | Enable the **Apple provider** for Firebase project `servana-59bee` | Firebase Console | TAB 04 if cause C2 |
+| **A-3** | Confirm `POST /api/auth/customer-firebase-login` accepts Apple-issued Firebase ID tokens **in production** | `servana_api` owner | TAB 04 if cause C3 |
+| **A-4** | Provide a working **demo account** for App Review, verified on a clean install | App Store Connect | TAB 10 |
+| **A-5** | Age Rating → **Messaging and Chat = Yes** | App Store Connect → App Information | TAB 11, TAB 12 |
+| **A-6** | Attach the account-deletion **screen recording** to App Review Information | App Store Connect | TAB 12 |
+| **A-7** | Decide iPad support: stay iPhone-only (`TARGETED_DEVICE_FAMILY = "1"`) or adopt iPad | Owner | TAB 02, TAB 05 |
+
+**A-5 is one field and it will cost a whole review cycle if missed.** It is the
+cheapest item on this list and the only one that is certain — the other two
+findings still need root-causing, this one does not.
+
+**Note on 2.1(a):** the cause is **not yet known**. The Apple handler and the
+iOS entitlement were both measured correct on 2026-08-22. Four candidates
+survive (C1–C4 in the Master Command, §1.2), and three of them are A-1, A-2 and
+A-3 above — i.e. **most of the likely causes are manual items, not code.** Do
+not let TAB 04 start editing Dart before TAB 01 names the cause.
