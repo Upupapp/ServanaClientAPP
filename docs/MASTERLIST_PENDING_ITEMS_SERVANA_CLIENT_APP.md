@@ -23,12 +23,18 @@ Round 2 was scoped to verify the eleven prior fixes rather than re-audit from sc
 | Severity | Open | Closed (round 2) | Closed (release session) |
 | --- | ---: | ---: | ---: |
 | **P0** | 0 | 20 | 0 |
-| **P1** | 88 | 5 | 6 |
+| **P1** | 90 | 5 | 6 |
 | **P2** | 48 | 2 | 5 |
 | **P3** | 10 | 0 | 2 |
 | **info** | 5 | 0 | 0 |
 
-**151 open (146 + 5 info) · 27 closed (round 2) · 13 closed (release session, `SC-R01`–`SC-R13`) · 3 closed + 1 disproved (local-fixes session).**
+**153 open (148 + 5 info) · 27 closed (round 2) · 13 closed (release session, `SC-R01`–`SC-R13`) · 3 closed + 1 disproved (local-fixes session) · 3 closed (sweep 2026-08-23, `SC-186`–`SC-188`).**
+
+> **Counts re-measured 2026-08-23 by counting table rows.** The P1 header said
+> 84 while this table said 88, and neither matched the file: there were 84 rows
+> under a header that had drifted from a glance figure that had drifted
+> separately. Both now read the measured number. If they disagree again, count
+> the rows — `grep -c '^| SC-'` per section — rather than trusting either.
 
 Open went **up** by 8 while 13 were closed. That is the file working: the
 release-pipeline session opened SC-166 through SC-173, most of which were
@@ -37,7 +43,7 @@ whose output no code reads — has been shipping that way for some time.
 
 > **Verification status.** 18 P0 claims went through adversarial verification: **17 confirmed, 1 downgraded**. The other 152 findings are agent-reported and were NOT independently verified — re-read the cited files before acting on one.
 
-## P1 — open (84)
+## P1 — open (90)
 
 | ID | Pass | Finding | Fix in | Release | Verified |
 | --- | --- | --- | --- | --- | --- |
@@ -125,6 +131,13 @@ whose output no code reads — has been shipping that way for some time.
 | SC-107 | TEST | verifyAuth.ts — the single middleware all nine security fixes rest on — has zero behavioural tests, including its production TEMP_ID kill-switch | servana_api-main/tests/verify-auth.test.ts (new); covers src/middleware/verifyAuth.ts:8-63 | no | agent |
 | SC-169 | RELEASE | JobOrder submission has no backend endpoint. `HttpBackend.insertJobOrder` (`http_backend.dart:571`) is a stub returning false; `servana_api` exposes no job-order route. `da02f94` made the failure honest — it no longer fabricates a booking — but the flow is now visibly non-functional on a path customers can reach from Store Items and the category tiles. Decide: wire an endpoint, route through `POST /api/bookings`, or remove the entry points. | backend + client-mobile | no | **verified — flow traced end to end** |
 | SC-174 | RELEASE | **Google Sign-In cannot work in any build.** The Firebase Android app `com.servana.serviceclient` has NO SHA certificate fingerprints registered, so `android/app/google-services.json` contains only a WEB oauth client (`client_type: 3`) and no ANDROID one (`client_type: 1`). The app ships `google_sign_in: ^6.2.1` and constructs `GoogleSignIn()` at `authentication_bloc.dart:54` with no `serverClientId`, which requires the ANDROID client — it fails with `ApiException: 10` (DEVELOPER_ERROR) in debug AND release. This predates the sign-up social buttons; those simply surfaced it on a second screen. Fix: register the debug SHA-1 `92:6E:B8:…:91:33`, the upload SHA-1 `38:40:B7:…:25:FF`, and (after the first Play upload) Play's app-signing SHA-1, then **re-download google-services.json and commit it** — adding fingerprints does not update the file already in the repo. | Firebase Console + client-mobile | yes | **verified — oauth_client inspected, only type 3 present** |
+
+| SC-189 | REPEAT | Customer safety incidents can still duplicate: `customerSupportService` does `findOne` then `insertOne` on `(uid, clientIncidentId)`. `providerSafetyService` documents why that is not idempotent under retry and was fixed with an atomic upsert **plus a unique index** — and `createIndex` appears in exactly ONE file in the backend, the provider one. The client already sends the key | backend | no | agent |
+| SC-190 | REPEAT | `uploadAttachment` (`chat.controller.ts:173`) reads only `{file, name, conversationId}` — no replay key, so a retried customer photo files a SECOND attachment. Migration 043 gave provider booking evidence exactly this protection; `sendChatMessage` next door already understands `clientMsgId` | backend | no | agent |
+| SC-191 | SWEEP | Account deletion requests are recorded `pending` and apparently never fulfilled — `recordDeletionRequest` only INSERTs; a targeted search of `src/` and `scripts/` found no anonymisation code. **Urgent from 2026-08-23: the app now ships the deletion flow and is sending real requests**, and Apple re-checks 5.1.1(v) | backend | no | agent |
+| SC-192 | SWEEP | Customers cannot export their data; providers can. `POST /provider/privacy/export` exists with no customer equivalent, which is what keeps the honest 'Export My Data' tile dead | backend | no | agent |
+| SC-193 | STITCH | No active-sessions endpoint exists, so the Security screen's 'Active Sessions' tile is a dead end. Honest rather than broken — if sessions are ever listed, revocation must ship with them | backend | no | agent |
+| SC-194 | REPEAT | Only **5 of 35** customer mutating operations carry any replay key. Ten unprotected ones have a real duplication consequence: `uploadChatAttachment`, `createPaymongoSession`, `submitGcashProof`, `addSupportTicketReply`, `reportChatMessage`, `reportReview`, `addUserAddress`, `getAirconQuote`, `editReview`, `cancelBooking`. Extends SC-036 | backend | no | agent |
 
 ## P2 — open (48)
 
@@ -330,6 +343,22 @@ how the round-1 closure count went wrong.
 | SC-R11 | `android/app/build.gradle` pinned the Talsec **native** SDK to 6.4.0 while the plugin declares 18.3.0 — twelve majors apart. Gradle highest-wins resolved 18.3.0, which is the only reason the build produced an aligned `libts.so`; a dependency lock or `resolutionStrategy` would have selected 6.4.0 and silently restored the misaligned libraries. | `da02f94` |
 | SC-R12 | **JobOrder ghost success.** `onJoRequested` called `repo.insertJobOrder(...)` without `await` and never read the bool. In release the Backend is `HttpBackend`, whose stub returns false — so submission always failed and the customer was always told it worked: a "Job order submitted." snackbar, the screen popped, and a placeholder booking with status "For Review" appeared that the server never received. `JobOrderScreen` is routed and reachable, so this was a live path. Now awaited and checked; a rejection emits `FailedJOState` and writes nothing. 6 regression tests. | `da02f94` |
 | SC-R13 | Home spacing: the category grid inherited `MediaQuery.padding` because a vertical `GridView` with `padding: null` adopts it, opening a device-dependent ~48pt gap; and the header computed its own height from assumed child sizes, producing `BOTTOM OVERFLOWED BY 5.0 PIXELS`. | `06bedfd`, `72dd3a1` |
+
+## Closed — SWEEP+STITCH+LEAK+REPEAT+TEST (2026-08-23)
+
+| ID | Pass | Finding | Fixed in | Verified |
+| --- | --- | --- | --- | --- |
+| SC-186 | LEAK | An account switch left the previous customer's drafts and operation journal on the device. `_persistSession` called `customerScopedCleanupSteps('')`, and the two steps that clear per-account keyed storage are guarded by `if (logoutUid.isNotEmpty)` — so both were silent no-ops on the one path that needed them. The pre-existing test asserted only that the teardown was CALLED, which it was | `95b7e52` | **yes** — mutation-tested |
+| SC-187 | STITCH | 'Delete Account' was a `SettingsUnavailableTile` reading "available in a future update" while `POST /api/account/deletion-request/me` had existed all along. App Review rejected it under Guideline 5.1.1(v). Now a routed screen with acknowledgement, confirmation, sign-out, and no path to support | `95b7e52` | **yes** — mutation-tested, 9/9 viewport x text-scale |
+| SC-188 | SWEEP | Five administrative endpoints shipped in the customer binary with no caller: `approveGcashPayment`, `approveCashPayment`, `createGeoCoverage`, `createBranchSlot`, `getRegisteredUsers`. Deleted; a ratchet test now fails on new dead surface unless a reason is written down | `95b7e52` | **yes** — mutation-tested |
+
+**Deliberately NOT changed:** the 'Export My Data' tile stays dead (SC-192 — no
+backend), and the six remaining unwired API methods stay, pinned with a written
+reason each. `submitGcashProof` in particular looks like half-finished work, and
+deleting that is a different decision from deleting a privileged endpoint.
+
+Full report: `docs/mvp/SWEEP_STITCH_LEAK_REPEAT_TEST_2026_08_23.md`.
+Backend work order: `servana_api/docs/SERVANA_CUSTOMER_SWEEP_BACKEND_MASTER_COMMAND.md`.
 
 ## Closed this session
 
