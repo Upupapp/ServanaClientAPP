@@ -44,7 +44,7 @@ echo "pre-push: no CI runs after this, so these gates are the deploy step"
 # ── Gate 0: the toolchain is pinned, and the lock must resolve under it ───────
 #
 # Added 2026-08-22 after `flutter pub get --enforce-lockfile` exited 65 against
-# a tree that had just passed all three gates below. The committed lock pinned
+# a tree that had just passed the three code gates below. The committed lock pinned
 # matcher 0.12.19 / meta 1.18.0 / test_api 0.7.11 / vector_math 2.2.0; stable
 # 3.47.0 mandates newer ones. Those four are SDK-aligned — flutter_test decides
 # them, not this app — so the mismatch was never a free choice.
@@ -90,4 +90,4 @@ flutter analyze --no-fatal-infos < /dev/null
 echo "pre-push: flutter test"
 flutter test < /dev/null
 
-echo "pre-push: all three gates green; allowing the push"
+echo "pre-push: all five gates green; allowing the push"
